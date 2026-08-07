@@ -69,7 +69,7 @@ public class PmsPrivacyController {
                 user, UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_MANAGE,
                 "PMS-Verwaltungsrecht erforderlich.");
         boolean administrator = user.getRoles().stream().anyMatch(role ->
-                "ADMIN".equals(role.getRoleName()) || "SUPERADMIN".equals(role.getRoleName()));
+                "ROLE_ADMIN".equals(role.getRoleName()) || "ROLE_SUPERADMIN".equals(role.getRoleName()));
         if (!administrator) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Datenschutzaktionen sind Administratoren vorbehalten.");

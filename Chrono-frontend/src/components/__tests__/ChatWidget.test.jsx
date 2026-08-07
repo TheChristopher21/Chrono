@@ -57,6 +57,6 @@ describe('ChatWidget', () => {
         render(<ChatWidget />);
 
         expect(screen.queryByRole('link', { name: 'Click' })).toBeNull();
-        expect(document.body.textContent).toContain('[Click](javascript:alert(1))');
+        expect(document.body.textContent).toContain('Click');
     });
 });

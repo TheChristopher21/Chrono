@@ -87,6 +87,34 @@ const STATUS_FILTERS = [
     { key: 'canceled', label: 'Gekündigt' },
 ];
 
+const createWithAdminInitialState = () => ({
+    companyName: '',
+    adminUsername: '',
+    adminPassword: '',
+    adminEmail: '',
+    adminFirstName: '',
+    adminLastName: '',
+    adminDepartment: '',
+    adminCountry: 'CH',
+    adminTaxClass: '',
+    adminTarifCode: 'A0',
+    adminCanton: 'SG',
+    adminPersonnelNumber: '',
+    adminIncludeInTimeTracking: false,
+    adminPmsAccess: false,
+    addressLine1: '',
+    addressLine2: '',
+    postalCode: '',
+    city: '',
+    companyCanton: '',
+    slackWebhookUrl: '',
+    teamsWebhookUrl: '',
+    notifyVacation: false,
+    notifyOvertime: false,
+    customerTrackingEnabled: false,
+    enabledFeatures: [],
+});
+
 const toFeatureKeyArray = (rawKeys) => {
     if (!rawKeys) {
         return [];
@@ -248,25 +276,7 @@ const CompanyManagementPage = () => {
     const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
     const [newEnabledFeatures, setNewEnabledFeatures] = useState([]);
 
-    const [createWithAdmin, setCreateWithAdmin] = useState({
-        companyName: '',
-        adminUsername: '',
-        adminPassword: '',
-        adminEmail: '',
-        adminFirstName: '',
-        adminLastName: '',
-        addressLine1: '',
-        addressLine2: '',
-        postalCode: '',
-        city: '',
-        companyCanton: '',
-        slackWebhookUrl: '',
-        teamsWebhookUrl: '',
-        notifyVacation: false,
-        notifyOvertime: false,
-        customerTrackingEnabled: false,
-        enabledFeatures: [],
-    });
+    const [createWithAdmin, setCreateWithAdmin] = useState(createWithAdminInitialState);
 
     const [editingCompany, setEditingCompany] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState({});
@@ -285,12 +295,21 @@ const CompanyManagementPage = () => {
     const quickCreateRef = useRef(null);
     const advancedCreateRef = useRef(null);
     const companiesRef = useRef(null);
+    const companyRefreshInFlightRef = useRef(false);
+    const companiesLoadedRef = useRef(false);
+    const companyPageMountedRef = useRef(false);
     const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPERADMIN');
 
     useEffect(() => {
-        fetchCompanies();
-        const interval = setInterval(fetchCompanies, 30000);
-        return () => clearInterval(interval);
+        companyPageMountedRef.current = true;
+        void fetchCompanies({ initial: true });
+        const interval = setInterval(() => {
+            void fetchCompanies();
+        }, 30000);
+        return () => {
+            companyPageMountedRef.current = false;
+            clearInterval(interval);
+        };
     }, []);
 
     useEffect(() => {
@@ -337,9 +356,18 @@ const CompanyManagementPage = () => {
         };
     }, [analyticsDays, isSuperAdmin]);
 
-    async function fetchCompanies() {
-        setLoading(true);
-        setError('');
+    async function fetchCompanies({ initial = false } = {}) {
+        if (companyRefreshInFlightRef.current) {
+            return;
+        }
+
+        companyRefreshInFlightRef.current = true;
+        const showInitialLoading = initial && !companiesLoadedRef.current;
+        if (showInitialLoading) {
+            setLoading(true);
+            setError('');
+        }
+
         try {
             const res = await api.get('/api/superadmin/companies');
             const payload = Array.isArray(res.data)
@@ -348,12 +376,21 @@ const CompanyManagementPage = () => {
                       enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
                   }))
                 : [];
-            setCompanies(payload);
+            if (companyPageMountedRef.current) {
+                setCompanies(payload);
+                setError('');
+                companiesLoadedRef.current = true;
+            }
         } catch (err) {
             console.error('Error fetching companies:', err);
-            setError('Fehler beim Laden der Firmenliste');
+            if (companyPageMountedRef.current && !companiesLoadedRef.current) {
+                setError('Fehler beim Laden der Firmenliste');
+            }
         } finally {
-            setLoading(false);
+            companyRefreshInFlightRef.current = false;
+            if (companyPageMountedRef.current && showInitialLoading) {
+                setLoading(false);
+            }
         }
     }
 
@@ -449,9 +486,22 @@ const CompanyManagementPage = () => {
         if (
             !createWithAdmin.companyName.trim() ||
             !createWithAdmin.adminUsername.trim() ||
-            !createWithAdmin.adminPassword.trim()
+            !createWithAdmin.adminPassword.trim() ||
+            !createWithAdmin.adminPersonnelNumber.trim()
         ) {
-            alert('Bitte Firmenname, Admin-Username und Admin-Passwort angeben');
+            alert('Bitte Firmenname, Admin-Benutzername, Passwort und Personalnummer angeben.');
+            return;
+        }
+        if (createWithAdmin.adminPassword.length < 12) {
+            alert('Das Admin-Passwort muss mindestens 12 Zeichen lang sein.');
+            return;
+        }
+        if (createWithAdmin.adminCountry === 'CH' && !createWithAdmin.adminTarifCode.trim()) {
+            alert('Bitte für die Schweiz einen Tarifcode angeben.');
+            return;
+        }
+        if (createWithAdmin.adminCountry === 'DE' && !createWithAdmin.adminTaxClass.trim()) {
+            alert('Bitte für Deutschland eine Steuerklasse angeben.');
             return;
         }
 
@@ -463,6 +513,23 @@ const CompanyManagementPage = () => {
                 adminEmail: createWithAdmin.adminEmail,
                 adminFirstName: createWithAdmin.adminFirstName,
                 adminLastName: createWithAdmin.adminLastName,
+                adminDepartment: createWithAdmin.adminDepartment,
+                adminCountry: createWithAdmin.adminCountry,
+                adminTaxClass:
+                    createWithAdmin.adminCountry === 'DE'
+                        ? createWithAdmin.adminTaxClass.trim()
+                        : null,
+                adminTarifCode:
+                    createWithAdmin.adminCountry === 'CH'
+                        ? createWithAdmin.adminTarifCode.trim()
+                        : null,
+                adminCanton:
+                    createWithAdmin.adminCountry === 'CH'
+                        ? createWithAdmin.adminCanton.trim().toUpperCase() || null
+                        : null,
+                adminPersonnelNumber: createWithAdmin.adminPersonnelNumber.trim(),
+                adminIncludeInTimeTracking: createWithAdmin.adminIncludeInTimeTracking,
+                adminPmsAccess: createWithAdmin.adminPmsAccess,
                 addressLine1: createWithAdmin.addressLine1.trim() || null,
                 addressLine2: createWithAdmin.addressLine2.trim() || null,
                 postalCode: createWithAdmin.postalCode.trim() || null,
@@ -479,27 +546,9 @@ const CompanyManagementPage = () => {
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
             console.log('Created Company + Admin:', res.data);
 
-            setCreateWithAdmin({
-                companyName: '',
-                adminUsername: '',
-                adminPassword: '',
-                adminEmail: '',
-                adminFirstName: '',
-                adminLastName: '',
-                addressLine1: '',
-                addressLine2: '',
-                postalCode: '',
-                city: '',
-                companyCanton: '',
-                slackWebhookUrl: '',
-                teamsWebhookUrl: '',
-                notifyVacation: false,
-                notifyOvertime: false,
-                customerTrackingEnabled: false,
-                enabledFeatures: [],
-            });
+            setCreateWithAdmin(createWithAdminInitialState());
 
-            fetchCompanies();
+            void fetchCompanies();
             alert('Firma + AdminUser wurden erfolgreich erstellt.');
         } catch (err) {
             console.error('Error create-with-admin:', err);
@@ -1109,7 +1158,11 @@ const CompanyManagementPage = () => {
                                     <p>{t('companyManagement.advancedCreateHint', 'Alle Daten in einem strukturierten Formular erfassen.')}</p>
                                 </div>
                             </div>
-                            <form onSubmit={handleCreateWithAdmin} className="cmp-form">
+                            <form
+                                onSubmit={handleCreateWithAdmin}
+                                className="cmp-form"
+                                data-testid="company-admin-create-form"
+                            >
                                 <div className="cmp-form-group">
                                     <h4>{t('companyManagement.companyData', 'Firmendaten')}</h4>
                                     <div className="cmp-form-grid cmp-form-grid--two">
@@ -1279,6 +1332,8 @@ const CompanyManagementPage = () => {
                                                         adminPassword: e.target.value,
                                                     })
                                                 }
+                                                minLength={12}
+                                                autoComplete="new-password"
                                                 required
                                             />
                                         </label>
@@ -1307,6 +1362,126 @@ const CompanyManagementPage = () => {
                                                     })
                                                 }
                                             />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Abteilung / Funktion</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminDepartment}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminDepartment: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Personalnummer</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminPersonnelNumber}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminPersonnelNumber: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Land</span>
+                                            <select
+                                                value={createWithAdmin.adminCountry}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin((previous) => ({
+                                                        ...previous,
+                                                        adminCountry: e.target.value,
+                                                        adminTaxClass: e.target.value === 'DE' ? previous.adminTaxClass : '',
+                                                        adminTarifCode: e.target.value === 'CH' ? previous.adminTarifCode || 'A0' : '',
+                                                        adminCanton: e.target.value === 'CH' ? previous.adminCanton || 'SG' : '',
+                                                    }))
+                                                }
+                                            >
+                                                <option value="CH">Schweiz</option>
+                                                <option value="DE">Deutschland</option>
+                                            </select>
+                                        </label>
+                                        {createWithAdmin.adminCountry === 'CH' ? (
+                                            <>
+                                                <label className="cmp-field">
+                                                    <span>Tarifcode</span>
+                                                    <input
+                                                        type="text"
+                                                        value={createWithAdmin.adminTarifCode}
+                                                        onChange={(e) =>
+                                                            setCreateWithAdmin({
+                                                                ...createWithAdmin,
+                                                                adminTarifCode: e.target.value,
+                                                            })
+                                                        }
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="cmp-field">
+                                                    <span>Wohnkanton</span>
+                                                    <input
+                                                        type="text"
+                                                        value={createWithAdmin.adminCanton}
+                                                        onChange={(e) =>
+                                                            setCreateWithAdmin({
+                                                                ...createWithAdmin,
+                                                                adminCanton: e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        maxLength={2}
+                                                    />
+                                                </label>
+                                            </>
+                                        ) : (
+                                            <label className="cmp-field">
+                                                <span>Steuerklasse</span>
+                                                <input
+                                                    type="text"
+                                                    value={createWithAdmin.adminTaxClass}
+                                                    onChange={(e) =>
+                                                        setCreateWithAdmin({
+                                                            ...createWithAdmin,
+                                                            adminTaxClass: e.target.value,
+                                                        })
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                    <div className="cmp-admin-options">
+                                        <label className="cmp-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={createWithAdmin.adminPmsAccess}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminPmsAccess: e.target.checked,
+                                                    })
+                                                }
+                                            />
+                                            <span>Hotelverwaltung (PMS) verwalten</span>
+                                        </label>
+                                        <label className="cmp-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={createWithAdmin.adminIncludeInTimeTracking}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminIncludeInTimeTracking: e.target.checked,
+                                                    })
+                                                }
+                                            />
+                                            <span>Admin in der Zeiterfassung führen</span>
                                         </label>
                                     </div>
                                 </div>

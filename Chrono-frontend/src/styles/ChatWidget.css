@@ -197,6 +197,35 @@
     white-space: pre-wrap;
 }
 
+.scoped-chat-widget .msg-text p {
+    margin: 0 0 0.55rem;
+}
+
+.scoped-chat-widget .msg-text p:last-child {
+    margin-bottom: 0;
+}
+
+.scoped-chat-widget .msg-text ul,
+.scoped-chat-widget .msg-text ol {
+    margin: 0.35rem 0;
+    padding-left: 1.25rem;
+}
+
+.scoped-chat-widget .msg-text pre {
+    margin: 0.5rem 0;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0.65rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--cw-c-text) 8%, transparent);
+    white-space: pre;
+}
+
+.scoped-chat-widget .msg-text code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.88em;
+}
+
 .scoped-chat-widget .msg-meta {
     margin-top: 6px;
     color: var(--cw-c-muted);

@@ -1,12 +1,15 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.EmploymentModelType;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.StripeService;
+import com.chrono.chrono.services.UserPermissionService;
 import com.stripe.model.PaymentIntent;
 import com.chrono.chrono.utils.RegistrationFeatures;
 // import com.chrono.chrono.utils.PasswordEncoderConfig; // Wird nicht direkt verwendet, PasswordEncoder reicht
@@ -14,8 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -28,6 +33,8 @@ public class CompanyManagementController {
     @Autowired private RoleRepository    roleRepository;
     @Autowired private PasswordEncoder   passwordEncoder;
     @Autowired private StripeService     stripeService;
+    @Autowired private UserPermissionService userPermissionService;
+    @Autowired private EmploymentModelHistoryService employmentModelHistoryService;
 
     @GetMapping
     public List<CompanyDTO> getAllCompanies() {
@@ -45,6 +52,7 @@ public class CompanyManagementController {
     }
 
     @PostMapping("/create-with-admin")
+    @Transactional
     public ResponseEntity<?> createCompanyWithAdmin(@RequestBody CreateCompanyWithAdminDTO body) {
         if (body.getCompanyName() == null || body.getCompanyName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Company name is required");
@@ -52,8 +60,25 @@ public class CompanyManagementController {
         if (body.getAdminUsername() == null || body.getAdminUsername().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Admin username is required");
         }
-        if (body.getAdminPassword() == null || body.getAdminPassword().trim().isEmpty()) {
+        if (body.getAdminPassword() == null || body.getAdminPassword().isBlank()) {
             return ResponseEntity.badRequest().body("Admin password is required");
+        }
+        if (body.getAdminPassword().length() < 12) {
+            return ResponseEntity.badRequest().body("Admin password must contain at least 12 characters");
+        }
+        if (body.getAdminPersonnelNumber() == null || body.getAdminPersonnelNumber().isBlank()) {
+            return ResponseEntity.badRequest().body("Admin personnel number is required");
+        }
+
+        String country = normalizeCountry(body.getAdminCountry());
+        if (country == null) {
+            return ResponseEntity.badRequest().body("Admin country must be CH or DE");
+        }
+        if ("CH".equals(country) && trimToNull(body.getAdminTarifCode()) == null) {
+            return ResponseEntity.badRequest().body("Admin tariff code is required for CH");
+        }
+        if ("DE".equals(country) && trimToNull(body.getAdminTaxClass()) == null) {
+            return ResponseEntity.badRequest().body("Admin tax class is required for DE");
         }
         if (userRepository.existsByUsername(body.getAdminUsername().trim())) {
             return ResponseEntity.badRequest().body("Admin username already exists");
@@ -84,23 +109,59 @@ public class CompanyManagementController {
 
         User admin = new User();
         admin.setUsername(body.getAdminUsername().trim());
-        admin.setPassword(passwordEncoder.encode(body.getAdminPassword()));
-        admin.setEmail(body.getAdminEmail()); // Kann null sein
-        admin.setFirstName(body.getAdminFirstName()); // Kann null sein
-        admin.setLastName(body.getAdminLastName()); // Kann null sein
+        String encodedPassword = passwordEncoder.encode(body.getAdminPassword());
+        admin.setPassword(encodedPassword);
+        admin.setAdminPassword(encodedPassword);
+        admin.setEmail(trimToNull(body.getAdminEmail()));
+        admin.setFirstName(trimToNull(body.getAdminFirstName()));
+        admin.setLastName(trimToNull(body.getAdminLastName()));
+        admin.setDepartment(trimToNull(body.getAdminDepartment()));
+        admin.setCountry(country);
+        admin.setTaxClass("DE".equals(country) ? trimToNull(body.getAdminTaxClass()) : null);
+        admin.setTarifCode("CH".equals(country) ? trimToNull(body.getAdminTarifCode()) : null);
+        admin.setCanton("CH".equals(country) ? trimToNull(body.getAdminCanton()) : null);
+        admin.setPersonnelNumber(body.getAdminPersonnelNumber().trim());
+        admin.setEmailNotifications(false);
+        admin.setIncludeInTimeTracking(Boolean.TRUE.equals(body.getAdminIncludeInTimeTracking()));
+        admin.setTrackingBalanceInMinutes(0);
+        admin.setAnnualVacationDays(0);
+        admin.setBreakDuration(0);
+        admin.setIsHourly(false);
+        admin.setIsPercentage(false);
+        admin.setWorkPercentage(100);
+        admin.setExpectedWorkDays(5);
+        admin.setDailyWorkHours(8.5);
+        admin.setScheduleCycle(1);
+        admin.setWeeklySchedule(List.of(User.getDefaultWeeklyScheduleMap()));
+        LocalDate today = employmentModelHistoryService.currentBerlinDate();
+        admin.setEntryDate(today);
+        admin.setScheduleEffectiveDate(today);
         admin.setCompany(company);
 
         Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
         admin.getRoles().add(adminRole);
-        userRepository.save(admin);
+
+        Map<String, String> requestedPermissions = new HashMap<>();
+        if (Boolean.TRUE.equals(body.getAdminPmsAccess())) {
+            requestedPermissions.put(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_MANAGE);
+        }
+        admin.setPagePermissions(
+                userPermissionService.resolvePermissionsForPersistence(admin, requestedPermissions)
+        );
+
+        User savedAdmin = userRepository.save(admin);
+        employmentModelHistoryService.ensureBaselineEntry(savedAdmin, EmploymentModelType.STANDARD, today);
+        company.getUsers().add(savedAdmin);
 
         Map<String,Object> response = new LinkedHashMap<>();
         response.put("company", CompanyDTO.fromEntity(company));
         response.put("adminUser", Map.of(
-                "id", admin.getId(),
-                "username", admin.getUsername(),
-                "email", Optional.ofNullable(admin.getEmail()).orElse("")
+                "id", savedAdmin.getId(),
+                "username", savedAdmin.getUsername(),
+                "email", Optional.ofNullable(savedAdmin.getEmail()).orElse(""),
+                "role", "ROLE_ADMIN",
+                "pmsAccess", Boolean.TRUE.equals(body.getAdminPmsAccess())
         ));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -326,6 +387,14 @@ public class CompanyManagementController {
         private String adminFirstName;
         private String adminLastName;
         private String adminEmail;
+        private String adminDepartment;
+        private String adminCountry;
+        private String adminTaxClass;
+        private String adminTarifCode;
+        private String adminCanton;
+        private String adminPersonnelNumber;
+        private Boolean adminIncludeInTimeTracking;
+        private Boolean adminPmsAccess;
         private String addressLine1;
         private String addressLine2;
         private String postalCode;
@@ -351,6 +420,22 @@ public class CompanyManagementController {
         public void setAdminLastName(String adminLastName) { this.adminLastName = adminLastName; }
         public String getAdminEmail() { return adminEmail; }
         public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+        public String getAdminDepartment() { return adminDepartment; }
+        public void setAdminDepartment(String adminDepartment) { this.adminDepartment = adminDepartment; }
+        public String getAdminCountry() { return adminCountry; }
+        public void setAdminCountry(String adminCountry) { this.adminCountry = adminCountry; }
+        public String getAdminTaxClass() { return adminTaxClass; }
+        public void setAdminTaxClass(String adminTaxClass) { this.adminTaxClass = adminTaxClass; }
+        public String getAdminTarifCode() { return adminTarifCode; }
+        public void setAdminTarifCode(String adminTarifCode) { this.adminTarifCode = adminTarifCode; }
+        public String getAdminCanton() { return adminCanton; }
+        public void setAdminCanton(String adminCanton) { this.adminCanton = adminCanton; }
+        public String getAdminPersonnelNumber() { return adminPersonnelNumber; }
+        public void setAdminPersonnelNumber(String adminPersonnelNumber) { this.adminPersonnelNumber = adminPersonnelNumber; }
+        public Boolean getAdminIncludeInTimeTracking() { return adminIncludeInTimeTracking; }
+        public void setAdminIncludeInTimeTracking(Boolean adminIncludeInTimeTracking) { this.adminIncludeInTimeTracking = adminIncludeInTimeTracking; }
+        public Boolean getAdminPmsAccess() { return adminPmsAccess; }
+        public void setAdminPmsAccess(Boolean adminPmsAccess) { this.adminPmsAccess = adminPmsAccess; }
         public String getAddressLine1() { return addressLine1; }
         public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
         public String getAddressLine2() { return addressLine2; }
@@ -377,6 +462,23 @@ public class CompanyManagementController {
                     ? RegistrationFeatures.sanitizeOptionalFeatures(enabledFeatures)
                     : null;
         }
+    }
+
+    private static String normalizeCountry(String rawCountry) {
+        String country = trimToNull(rawCountry);
+        if (country == null) {
+            return null;
+        }
+        country = country.toUpperCase(Locale.ROOT);
+        return Set.of("CH", "DE").contains(country) ? country : null;
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public static class PaymentUpdateDTO {

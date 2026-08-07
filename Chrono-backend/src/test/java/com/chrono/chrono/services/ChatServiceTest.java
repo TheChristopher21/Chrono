@@ -59,6 +59,11 @@ class ChatServiceTest {
         );
         ReflectionTestUtils.setField(chatService, "llmBaseUrl", "http://llm.test/api/generate");
         ReflectionTestUtils.setField(chatService, "modelName", "llama3:8b");
+        ReflectionTestUtils.setField(chatService, "thinkingEnabled", true);
+        ReflectionTestUtils.setField(chatService, "temperature", 0.2);
+        ReflectionTestUtils.setField(chatService, "topP", 0.9);
+        ReflectionTestUtils.setField(chatService, "contextWindow", 8192);
+        ReflectionTestUtils.setField(chatService, "maxOutputTokens", 1200);
 
         Company company = new Company();
         company.setId(1L);
@@ -171,11 +176,37 @@ class ChatServiceTest {
 
         @SuppressWarnings("unchecked")
         Map<String, Object> body = (Map<String, Object>) requestCaptor.getValue().getBody();
+        String system = (String) body.get("system");
         String prompt = (String) body.get("prompt");
 
-        assertThat(prompt).contains("allgemeine Wissensfragen ausserhalb von Chrono");
+        assertThat(system).contains("allgemeine Wissensfragen ausserhalb von Chrono");
         assertThat(prompt).contains("Wir sprechen ueber Europa.");
         assertThat(prompt).contains("Was ist die Hauptstadt von Frankreich?");
+        assertThat(prompt).doesNotContain("RELEVANTES CHRONO-WISSEN");
+        assertThat(body.get("think")).isEqualTo(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> options = (Map<String, Object>) body.get("options");
+        assertThat(options).containsEntry("num_ctx", 8192).containsEntry("num_predict", 1200);
+    }
+
+    @Test
+    void ask_resolvesShortAdminFollowUpFromConversationHistory() {
+        User zoe = new User();
+        zoe.setUsername("zoe");
+        zoe.setCompany(admin.getCompany());
+        zoe.setTrackingBalanceInMinutes(60);
+
+        when(userRepository.findByCompany_IdAndDeletedFalse(1L)).thenReturn(List.of(employee, zoe));
+
+        List<ChatRequest.ChatMessage> history = List.of(
+                new ChatRequest.ChatMessage("user", "Wie viele Ueberstunden hat Zoe?"),
+                new ChatRequest.ChatMessage("bot", "Zoe hat 1:00 Stunden.")
+        );
+
+        String answer = chatService.ask("Und Max?", history, admin);
+
+        assertThat(answer).contains("max").contains("2:05");
+        verify(restTemplate, never()).postForObject(anyString(), any(), eq(String.class));
     }
 
     @Test

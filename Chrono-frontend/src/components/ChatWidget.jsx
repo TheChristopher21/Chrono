@@ -1,5 +1,6 @@
 // src/components/ChatWidget.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { getUserDisplayName } from '../utils/userDisplay';
@@ -25,44 +26,17 @@ function isSafeHref(href) {
     }
 }
 
-function renderWithLinks(text) {
-    const content = String(text ?? '');
-    const linkPattern = /\[([^\]]+)\]\(([^)\s]+)\)/g;
-    const nodes = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = linkPattern.exec(content)) !== null) {
-        const [rawMatch, label, href] = match;
-        if (match.index > lastIndex) {
-            nodes.push(content.slice(lastIndex, match.index));
-        }
-
-        if (isSafeHref(href)) {
-            nodes.push(
-                <a href={href} rel="noopener noreferrer nofollow">
-                    {label}
-                </a>
-            );
-        } else {
-            nodes.push(rawMatch);
-        }
-
-        lastIndex = match.index + rawMatch.length;
-    }
-
-    if (lastIndex < content.length) {
-        nodes.push(content.slice(lastIndex));
-    }
-
+function MarkdownMessage({ text }) {
     return (
-        <span>
-            {nodes.map((node, index) => (
-                typeof node === 'string'
-                    ? <React.Fragment key={index}>{node}</React.Fragment>
-                    : React.cloneElement(node, { key: index })
-            ))}
-        </span>
+        <ReactMarkdown
+            components={{
+                a: ({ href, children }) => isSafeHref(href)
+                    ? <a href={href} rel="noopener noreferrer nofollow">{children}</a>
+                    : <span>{children}</span>,
+            }}
+        >
+            {String(text ?? '')}
+        </ReactMarkdown>
     );
 }
 
@@ -144,15 +118,8 @@ function renderSuggestions(suggestions) {
 
 function getRandomFallback() {
     const fallbacks = [
-        "Das habe ich leider nicht im Repertoire, aber ich lerne gerne dazu! Versuche es gerne nochmal anders oder schau in die Hilfeseite.",
-        "Puh, diese Frage ist echt knifflig! Magst du sie noch mal anders formulieren – oder ich leite dich an den Support weiter?",
-        "Da muss ich passen – aber vielleicht findest du Hilfe im Menü unter 'Hilfe & FAQ'.",
-        "Hier stoße ich an meine Grenzen – aber keine Sorge, du kannst immer auch deinen Admin oder den Support kontaktieren!",
-        "Sorry, das weiß ich leider nicht, aber ich bin immer neugierig auf neue Themen!",
-        "Das ist spannend – aber da bin ich leider überfragt. Vielleicht kann dir der technische Support helfen.",
-        "Diese Antwort habe ich gerade nicht parat. Probiere es nochmal oder frage nach Support.",
-        "Du hast mich erwischt – das weiß ich (noch) nicht. Aber zusammen finden wir sicher eine Lösung!",
-        "Gute Frage! Im Moment kann ich darauf nicht antworten, aber ich kann dich an einen echten Menschen weiterleiten."
+        "Der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es in einem Moment noch einmal.",
+        "Die Antwort wurde unterbrochen. Sende deine Frage bitte erneut; der bisherige Chat bleibt erhalten."
     ];
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
@@ -241,7 +208,7 @@ export default function ChatWidget() {
         const userMsg = { sender: 'user', text: input };
         const history = messages
             .filter(message => message?.text)
-            .slice(-8)
+            .slice(-16)
             .map(message => ({
                 sender: message.sender,
                 text: message.text,
@@ -302,7 +269,9 @@ export default function ChatWidget() {
                         {messages.map((m, i) => (
                             <div key={i} className={`msg-container msg-${m.sender}`}>
                                 <div className="msg-bubble">
-                                    <div className="msg-text">{renderWithLinks(m.text)}</div>
+                                    <div className="msg-text">
+                                        {m.sender === 'bot' ? <MarkdownMessage text={m.text} /> : String(m.text ?? '')}
+                                    </div>
                                     {m.sender === 'bot' && renderMeta(m.meta)}
                                     {m.sender === 'bot' && renderSources(m.sources)}
                                     {m.sender === 'bot' && renderSuggestions(m.suggestions)}

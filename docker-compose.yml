@@ -283,7 +283,7 @@ services:
     networks: [chrono]
     environment:
       OLLAMA_HOST: "http://llm:11434"
-      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3:8b}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-qwen3:8b}"
     entrypoint: ["/bin/sh", "-c"]
     command: ["ollama pull \"$$OLLAMA_MODEL\""]
 
