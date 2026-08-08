@@ -22,7 +22,7 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Backend tests and package
-        run: ./mvnw -B clean verify
+        run: mvn -B clean verify
 
   frontend:
     runs-on: ubuntu-latest
@@ -77,7 +77,7 @@ jobs:
           cache: maven
       - name: Verify fresh and legacy MySQL migrations
         run: >-
-          ./mvnw -B
+          mvn -B
           -Dchrono.test.mysql.url=jdbc:mysql://127.0.0.1:3306/chrono_migration_test?allowPublicKeyRetrieval=true\&useSSL=false
           -Dchrono.test.mysql.username=root
           -Dchrono.test.mysql.password=chrono-ci-root
