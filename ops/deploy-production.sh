@@ -6,6 +6,7 @@ cd "${REPOSITORY_ROOT}"
 
 readonly ENV_FILE=".env"
 readonly DEPLOY_COMPOSE="docker-compose.production.yml"
+readonly MYSQL_TRUSTSTORE="./data/mysql-tls/mysql-truststore.jks"
 readonly SHARED_NETWORK="chrono_chrono"
 readonly MYSQL_CONTAINER="chrono-mysql-1"
 readonly PROXY_CONTAINER="chrono-nginx-1"
@@ -60,6 +61,8 @@ done
 
 [[ -f "${ENV_FILE}" ]] || fail "${ENV_FILE} fehlt."
 [[ -f "${DEPLOY_COMPOSE}" ]] || fail "${DEPLOY_COMPOSE} fehlt."
+[[ -r "${MYSQL_TRUSTSTORE}" ]] ||
+  fail "MySQL-Truststore fehlt oder ist nicht lesbar: ${MYSQL_TRUSTSTORE}"
 
 read_env_value() {
   local key="$1"
@@ -313,14 +316,16 @@ if [[ "${REQUESTED_IMAGE_TAG}" =~ ^[0-9a-f]{12}$ ]]; then
 fi
 
 echo "[INFO] Validiere strikt begrenzte Produktionskonfiguration..."
-mapfile -t DEPLOY_SERVICES < <(
+if ! DEPLOY_SERVICE_OUTPUT="$(
   CHRONO_ENV_FILE="${ENV_FILE}" \
     docker compose \
       --file "${DEPLOY_COMPOSE}" \
       --env-file "${ENV_FILE}" \
-      config --services |
-    sort
-)
+      config --services
+)"; then
+  fail "${DEPLOY_COMPOSE} konnte mit der Produktionsumgebung nicht validiert werden."
+fi
+mapfile -t DEPLOY_SERVICES < <(printf '%s\n' "${DEPLOY_SERVICE_OUTPUT}" | sort)
 [[ "${DEPLOY_SERVICES[*]}" == "backend frontend" ]] ||
   fail "${DEPLOY_COMPOSE} darf ausschließlich backend und frontend enthalten."
 

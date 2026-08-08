@@ -38,6 +38,7 @@ services:
     volumes:
       - ./knowledge_base:/app/knowledge_base:ro
       - ./data/backups:/backups:ro
+      - ./data/mysql-tls/mysql-truststore.jks:/run/secrets/mysql-truststore.jks:ro
     networks:
       chrono:
         aliases: [backend]
