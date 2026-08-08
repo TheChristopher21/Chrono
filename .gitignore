@@ -23,3 +23,7 @@ backup.sh
 .idea/
 release/
 
+# Local generated artifacts
+outputs/
+tmp/
+
