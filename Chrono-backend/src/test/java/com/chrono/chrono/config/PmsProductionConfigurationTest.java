@@ -1,9 +1,12 @@
 package com.chrono.chrono.config;
 
+import com.chrono.chrono.entities.pms.PmsAuditEvent;
+import jakarta.persistence.Column;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,5 +45,14 @@ class PmsProductionConfigurationTest {
                 .contains("next_attempt_at")
                 .contains("last_error")
                 .contains("lock_owner");
+    }
+
+    @Test
+    void auditChainPreviousHashMatchesProductionColumnType() throws NoSuchFieldException {
+        Field previousHash = PmsAuditEvent.class.getDeclaredField("previousHash");
+        Column column = previousHash.getAnnotation(Column.class);
+
+        assertThat(column).isNotNull();
+        assertThat(column.columnDefinition()).isEqualTo("char(64)");
     }
 }

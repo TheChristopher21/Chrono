@@ -44,7 +44,7 @@ public class PmsAuditEvent {
     @Column(name = "sequence_number", updatable = false)
     private Long sequenceNumber;
 
-    @Column(name = "previous_hash", length = 64, updatable = false)
+    @Column(name = "previous_hash", length = 64, columnDefinition = "char(64)", updatable = false)
     private String previousHash;
 
     @Column(name = "signature_version", nullable = false, updatable = false)
