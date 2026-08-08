@@ -1,311 +1,1048 @@
-/* AdminPayslipsPageScoped.css · Light/Dark fix + Tokens scoped
-   — Die Farb-Variablen sind nun standardmäßig HELL
-   — und werden nur im Darkmode überschrieben. */
-
-/* ---------------- Tokens (scoped) ---------------- */
 .admin-payslips-page.scoped-dashboard {
-    /* Spacing / Radius */
-    --ud-gap-xs: 0.25rem;
-    --ud-gap-sm: 0.5rem;
-    --ud-gap-md: 1rem;
-    --ud-gap-lg: 1.5rem;
-    --ud-gap-xl: 2rem;
-    --ud-radius-md: 8px;
+  --pay-bg: #f4f6fb;
+  --pay-surface: #ffffff;
+  --pay-surface-soft: #f8fafc;
+  --pay-border: #dde3ee;
+  --pay-border-strong: #cbd5e1;
+  --pay-line: #e8edf5;
+  --pay-text: #172033;
+  --pay-muted: #64748b;
+  --pay-primary: #3157d5;
+  --pay-primary-hover: #2748b8;
+  --pay-primary-soft: #e7edff;
+  --pay-success: #157347;
+  --pay-success-soft: #e8f7ef;
+  --pay-warning: #b7791f;
+  --pay-warning-soft: #fff6df;
+  --pay-danger: #c2413a;
+  --pay-danger-soft: #fff0ef;
+  --pay-info: #0f766e;
+  --pay-info-soft: #e4f7f4;
+  --pay-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  --pay-radius: 8px;
 
-    /* LIGHT palette (Default) */
-    --ud-c-card: #ffffff;
-    --ud-c-surface: #f5f7fb;          /* Seitenhintergrund */
-    --ud-c-border: #e5e7eb;
-    --ud-c-line: #e9edf5;
-    --ud-c-text: #111827;
-    --ud-c-text-muted: #6b7280;
-    --ud-c-primary: #475bff;
-    --ud-c-primary-hover: #6b7cff;
-    --ud-c-danger: #e53935;
-    --ud-c-danger-hover: #b71c1c;
-    --ud-c-warning: #ffc741;
-    --ud-c-warning-hover: #e0a800;
-    --ud-c-hover: #eef2ff;            /* zarte Hover-Fläche in Tabellen */
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1.5rem;
+  background: var(--pay-bg);
+  color: var(--pay-text);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-/* DARK palette (nur wenn Darkmode aktiv ist) */
 [data-theme="dark"] .admin-payslips-page.scoped-dashboard {
-    --ud-c-card: #2c2c3e;
-    --ud-c-surface: #242433;
-    --ud-c-border: #404058;
-    --ud-c-line: #3a3a4c;
-    --ud-c-text: #ffffff;
-    --ud-c-text-muted: #a0a0b8;
-    --ud-c-hover: #3a3a4c;
+  --pay-bg: #161922;
+  --pay-surface: #202431;
+  --pay-surface-soft: #252b38;
+  --pay-border: #343b4d;
+  --pay-border-strong: #4b5568;
+  --pay-line: #303747;
+  --pay-text: #eff4ff;
+  --pay-muted: #a7b0c0;
+  --pay-primary: #8aa0ff;
+  --pay-primary-hover: #a6b6ff;
+  --pay-primary-soft: rgba(138, 160, 255, 0.14);
+  --pay-success: #5ee2a0;
+  --pay-success-soft: rgba(94, 226, 160, 0.12);
+  --pay-warning: #f4bf5f;
+  --pay-warning-soft: rgba(244, 191, 95, 0.14);
+  --pay-danger: #ff8a83;
+  --pay-danger-soft: rgba(255, 138, 131, 0.13);
+  --pay-info: #6ee7d8;
+  --pay-info-soft: rgba(110, 231, 216, 0.13);
+  --pay-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
 }
 
-/* ---------------- Seite / Layout ---------------- */
-.admin-payslips-page.scoped-dashboard {
-    padding: var(--ud-gap-lg);
-    background-color: var(--ud-c-surface);
-    color: var(--ud-c-text);
-
-    /* Vollhöhe, damit unten nichts weiß bleibt bei wenig Inhalt */
-    min-height: 100vh;   /* Fallback */
-    min-height: 100dvh;  /* modernes Viewport-Height */
-    display: flex;
-    flex-direction: column;
-}
-.admin-payslips-page.scoped-dashboard > :last-child {
-    margin-bottom: 1.5rem;
+.admin-payslips-page * {
+  box-sizing: border-box;
 }
 
-/* (Nur Darkmode) Body angleichen, falls global anders gesetzt ist */
-[data-theme="dark"] body {
-    background-color: var(--ud-c-surface);
-}
-
-/* ---------------- Cards / Sektionen ---------------- */
-.admin-payslips-page .dashboard-card {
-    background-color: var(--ud-c-card);
-    border-radius: var(--ud-radius-md);
-    padding: var(--ud-gap-lg);
-    margin-bottom: var(--ud-gap-xl);
-    border: 1px solid var(--ud-c-border);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-.admin-payslips-page h2 {
-    margin-top: 0;
-    margin-bottom: var(--ud-gap-sm);
-    border-bottom: 1px solid var(--ud-c-line);
-    padding-bottom: var(--ud-gap-md);
-}
-.admin-payslips-page .section-description {
-    font-size: 0.875rem;
-    color: var(--ud-c-text-muted);
-    margin-top: -0.5rem;
-    margin-bottom: var(--ud-gap-lg);
-    max-width: 80ch;
-}
-
-/* Grid für die oberen Sektionen (Erstellen & Logo) */
-.admin-payslips-page .top-sections-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: var(--ud-gap-lg);
-}
-
-/* ---------------- Formulare ---------------- */
-.admin-payslips-page .generate-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--ud-gap-md);
-    align-items: flex-end;
-}
-.admin-payslips-page .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ud-gap-sm);
-}
-.admin-payslips-page label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--ud-c-text-muted);
-}
+.admin-payslips-page button,
 .admin-payslips-page input,
 .admin-payslips-page select {
-    padding: 0.6rem var(--ud-gap-md);
-    border-radius: var(--ud-radius-md);
-    border: 1px solid var(--ud-c-border);
-    background-color: var(--ud-c-surface);
-    color: var(--ud-c-text);
-    font-size: 0.875rem;
-}
-[data-theme="dark"] .admin-payslips-page input[type="date"] {
-    color-scheme: dark;
+  font: inherit;
 }
 
-/* Logo Upload */
-.admin-payslips-page .logo-upload-form {
-    display: flex;
-    align-items: center;
-    gap: var(--ud-gap-md);
-}
-.admin-payslips-page .custom-file-upload {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0.6rem var(--ud-gap-md);
-    border: 1px dashed var(--ud-c-border);
-    border-radius: var(--ud-radius-md);
-    background-color: var(--ud-c-surface);
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    color: var(--ud-c-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.admin-payslips-page .custom-file-upload:hover {
-    background-color: var(--ud-c-line);
-    border-color: var(--ud-c-primary);
-    color: var(--ud-c-text);
-    border-style: solid;
-}
-
-/* ---------------- Steuerleiste / Aktionen ---------------- */
-.admin-payslips-page .controls-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--ud-gap-md);
-    margin: var(--ud-gap-md) 0;
-    padding-bottom: var(--ud-gap-md);
-    align-items: flex-end;
-}
-.admin-payslips-page .controls-bar .form-group {
-    flex-grow: 1;
-    min-width: 160px;
-}
-.admin-payslips-page .controls-bar .action-btn,
-.admin-payslips-page .controls-bar .primary-btn {
-    margin-top: auto;
-}
-
-/* ---------------- Buttons ---------------- */
 .admin-payslips-page button {
-    padding: 0.6rem var(--ud-gap-md);
-    border-radius: var(--ud-radius-md);
-    border: 1px solid var(--ud-c-border);
-    background-color: var(--ud-c-surface);
-    color: var(--ud-c-text);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    font-size: 0.875rem;
-}
-.admin-payslips-page button:hover {
-    border-color: var(--ud-c-primary);
-    background-color: var(--ud-c-primary);
-    color: #fff;
+  min-height: 2.35rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  color: var(--pay-text);
+  padding: 0.55rem 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
-/* Primär */
-.admin-payslips-page .primary-btn,
-.admin-payslips-page .generate-form button {
-    background-color: var(--ud-c-primary);
-    border-color: var(--ud-c-primary);
-    color: #fff;
-}
-.admin-payslips-page .primary-btn:hover,
-.admin-payslips-page .generate-form button:hover {
-    background-color: var(--ud-c-primary-hover);
-    border-color: var(--ud-c-primary-hover);
+.admin-payslips-page button:hover:not(:disabled),
+.admin-payslips-page button:focus-visible {
+  border-color: var(--pay-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pay-primary) 16%, transparent);
+  outline: none;
 }
 
-/* Danger / Warning */
-.admin-payslips-page .danger-btn {
-    background-color: var(--ud-c-danger);
-    border-color: var(--ud-c-danger);
-    color: #fff;
-}
-.admin-payslips-page .danger-btn:hover {
-    background-color: var(--ud-c-danger-hover);
-    border-color: var(--ud-c-danger-hover);
-}
-.admin-payslips-page .warning-btn {
-    background-color: var(--ud-c-warning);
-    border-color: var(--ud-c-warning);
-    color: #000;
-}
-.admin-payslips-page .warning-btn:hover {
-    background-color: var(--ud-c-warning-hover);
-    border-color: var(--ud-c-warning-hover);
-    color: #000;
-}
-
-/* Disabled */
 .admin-payslips-page button:disabled {
-    background-color: var(--ud-c-line);
-    border-color: var(--ud-c-border);
-    color: var(--ud-c-text-muted);
-    opacity: 0.6;
-    cursor: not-allowed;
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
-/* ---------------- Tabellen ---------------- */
-.admin-payslips-page .table-wrapper {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid var(--ud-c-border);
-    border-radius: var(--ud-radius-md);
+.admin-payslips-page input,
+.admin-payslips-page select {
+  width: 100%;
+  min-height: 2.45rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  color: var(--pay-text);
+  padding: 0.5rem 0.7rem;
 }
-.admin-payslips-page .payslip-table {
+
+[data-theme="dark"] .admin-payslips-page input[type="date"] {
+  color-scheme: dark;
+}
+
+.admin-payslips-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--pay-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.payroll-hero,
+.payroll-workspace {
+  background: var(--pay-surface);
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  box-shadow: var(--pay-shadow);
+}
+
+.payroll-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.3rem;
+}
+
+.payroll-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.payroll-eyebrow {
+  margin: 0;
+  color: var(--pay-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.payroll-hero h1,
+.payroll-modal h2,
+.payslip-drawer h2 {
+  margin: 0;
+  color: var(--pay-text);
+  letter-spacing: 0;
+}
+
+.payroll-hero h1 {
+  font-size: clamp(1.75rem, 2.8vw, 2.35rem);
+}
+
+.payroll-hero p {
+  margin: 0;
+  color: var(--pay-muted);
+}
+
+.payroll-run-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+}
+
+.payroll-run-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface-soft);
+  border: 1px solid var(--pay-border);
+  color: var(--pay-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.payroll-hero-actions,
+.toolbar-actions,
+.modal-actions,
+.drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.primary-btn,
+.admin-payslips-page .primary-btn {
+  background: var(--pay-primary);
+  border-color: var(--pay-primary);
+  color: #ffffff;
+}
+
+.primary-btn:hover:not(:disabled),
+.admin-payslips-page .primary-btn:hover:not(:disabled) {
+  background: var(--pay-primary-hover);
+  border-color: var(--pay-primary-hover);
+  color: #ffffff;
+}
+
+.secondary-btn {
+  background: var(--pay-primary-soft);
+  border-color: color-mix(in srgb, var(--pay-primary) 28%, var(--pay-border));
+  color: var(--pay-primary);
+}
+
+.danger-btn {
+  background: var(--pay-danger);
+  border-color: var(--pay-danger);
+  color: #ffffff;
+}
+
+.warning-btn {
+  background: var(--pay-warning-soft);
+  border-color: color-mix(in srgb, var(--pay-warning) 42%, var(--pay-border));
+  color: var(--pay-warning);
+}
+
+.ghost-btn {
+  background: transparent;
+}
+
+.payroll-process {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.process-step {
+  min-height: 3.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  color: var(--pay-muted);
+}
+
+.process-step span {
+  width: 1.65rem;
+  height: 1.65rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--pay-surface-soft);
+  border: 1px solid var(--pay-border);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.process-step strong {
+  font-size: 0.88rem;
+}
+
+.process-step.is-active {
+  border-color: color-mix(in srgb, var(--pay-primary) 34%, var(--pay-border));
+  background: var(--pay-primary-soft);
+  color: var(--pay-text);
+}
+
+.process-step.is-active span {
+  background: var(--pay-primary);
+  border-color: var(--pay-primary);
+  color: #ffffff;
+}
+
+.payroll-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.payroll-kpi {
+  min-height: 7rem;
+  padding: 0.9rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.payroll-kpi span {
+  color: var(--pay-muted);
+  font-size: 0.83rem;
+  font-weight: 750;
+}
+
+.payroll-kpi strong {
+  display: block;
+  margin: 0.35rem 0;
+  color: var(--pay-text);
+  font-size: clamp(1.4rem, 2vw, 1.85rem);
+  line-height: 1.15;
+}
+
+.payroll-kpi small {
+  color: var(--pay-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.kpi-warning {
+  background: var(--pay-warning-soft);
+  border-color: color-mix(in srgb, var(--pay-warning) 28%, var(--pay-border));
+}
+
+.kpi-success {
+  background: var(--pay-success-soft);
+  border-color: color-mix(in srgb, var(--pay-success) 24%, var(--pay-border));
+}
+
+.payroll-workspace {
+  padding: 1rem;
+}
+
+.payroll-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.payroll-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--pay-surface-soft);
+  color: var(--pay-muted);
+}
+
+.payroll-tabs button span {
+  min-width: 1.55rem;
+  min-height: 1.35rem;
+  display: grid;
+  place-items: center;
+  padding: 0 0.3rem;
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  color: var(--pay-muted);
+  border: 1px solid var(--pay-border);
+  font-size: 0.75rem;
+}
+
+.payroll-tabs button.is-active {
+  background: var(--pay-primary);
+  border-color: var(--pay-primary);
+  color: #ffffff;
+}
+
+.payroll-tabs button.is-active span {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.payroll-toolbar {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.35fr) repeat(4, minmax(9rem, 1fr)) minmax(18rem, auto);
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface-soft);
+}
+
+.saved-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.8rem 0;
+}
+
+.saved-views button {
+  min-height: 2rem;
+  padding: 0.35rem 0.62rem;
+  font-size: 0.78rem;
+  color: var(--pay-muted);
+  background: transparent;
+}
+
+.bulk-action-bar {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.85rem;
+  padding: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--pay-primary) 36%, var(--pay-border));
+  border-radius: var(--pay-radius);
+  background: color-mix(in srgb, var(--pay-primary-soft) 84%, var(--pay-surface));
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.bulk-action-bar strong {
+  margin-right: auto;
+}
+
+.payroll-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+}
+
+.payslip-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.payslip-table th,
+.payslip-table td {
+  padding: 0.72rem 0.75rem;
+  border-bottom: 1px solid var(--pay-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.payslip-table th {
+  background: var(--pay-surface-soft);
+  color: var(--pay-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.payslip-table tbody tr {
+  background: var(--pay-surface);
+}
+
+.payslip-table tbody tr:hover {
+  background: color-mix(in srgb, var(--pay-primary-soft) 55%, var(--pay-surface));
+}
+
+.payslip-table tbody tr.has-warning {
+  background: color-mix(in srgb, var(--pay-warning-soft) 48%, var(--pay-surface));
+}
+
+.check-col {
+  width: 3rem;
+  text-align: center;
+}
+
+.check-col input {
+  width: 1.05rem;
+  min-height: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+}
+
+.employee-link {
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--pay-text);
+  text-align: left;
+}
+
+.employee-link:hover:not(:disabled),
+.employee-link:focus-visible {
+  box-shadow: none;
+  color: var(--pay-primary);
+}
+
+.employee-link span {
+  color: var(--pay-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.amount-negative {
+  color: var(--pay-danger);
+  font-weight: 800;
+}
+
+.inline-warning {
+  display: block;
+  width: fit-content;
+  margin-top: 0.25rem;
+  padding: 0.15rem 0.38rem;
+  border-radius: var(--pay-radius);
+  background: var(--pay-danger-soft);
+  color: var(--pay-danger);
+  border: 1px solid color-mix(in srgb, var(--pay-danger) 24%, var(--pay-border));
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--pay-radius);
+  border: 1px solid var(--pay-border);
+  font-size: 0.75rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.status-open {
+  color: var(--pay-info);
+  background: var(--pay-info-soft);
+  border-color: color-mix(in srgb, var(--pay-info) 28%, var(--pay-border));
+}
+
+.status-review {
+  color: var(--pay-warning);
+  background: var(--pay-warning-soft);
+  border-color: color-mix(in srgb, var(--pay-warning) 30%, var(--pay-border));
+}
+
+.status-approved,
+.status-paid {
+  color: var(--pay-success);
+  background: var(--pay-success-soft);
+  border-color: color-mix(in srgb, var(--pay-success) 30%, var(--pay-border));
+}
+
+.status-archive {
+  color: var(--pay-muted);
+  background: var(--pay-surface-soft);
+}
+
+.actions-col {
+  width: 10rem;
+  text-align: right;
+  position: relative;
+  white-space: nowrap;
+}
+
+.compact-action {
+  min-height: 2.05rem;
+  padding: 0.35rem 0.58rem;
+  background: var(--pay-primary-soft);
+  color: var(--pay-primary);
+  border-color: color-mix(in srgb, var(--pay-primary) 24%, var(--pay-border));
+}
+
+.icon-action {
+  width: 2.2rem;
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.row-menu {
+  position: absolute;
+  right: 0.55rem;
+  top: calc(100% - 0.25rem);
+  min-width: 13rem;
+  z-index: 10;
+  padding: 0.35rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface);
+  box-shadow: var(--pay-shadow);
+  display: grid;
+  gap: 0.2rem;
+}
+
+.row-menu button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.row-menu button:hover {
+  background: var(--pay-surface-soft);
+  box-shadow: none;
+}
+
+.row-menu .danger-text {
+  color: var(--pay-danger);
+}
+
+.empty-state {
+  height: 7rem;
+  color: var(--pay-muted);
+  text-align: center;
+}
+
+.payroll-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding-top: 0.85rem;
+  color: var(--pay-muted);
+  font-size: 0.85rem;
+}
+
+.payroll-pagination label {
+  min-width: 9rem;
+}
+
+.payroll-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.drawer-layer,
+.modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-layer {
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.admin-payslips-page .drawer-backdrop,
+.admin-payslips-page .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 0;
+}
+
+.admin-payslips-page .drawer-backdrop:hover,
+.admin-payslips-page .modal-backdrop:hover,
+.admin-payslips-page .drawer-backdrop:focus-visible,
+.admin-payslips-page .modal-backdrop:focus-visible {
+  border: 0;
+  background: rgba(15, 23, 42, 0.48);
+  box-shadow: none;
+  outline: none;
+}
+
+.payslip-drawer,
+.payroll-modal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 32rem);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--pay-surface);
+  color: var(--pay-text);
+  border-left: 1px solid var(--pay-border);
+  box-shadow: -20px 0 38px rgba(15, 23, 42, 0.22);
+  padding: 1.1rem;
+}
+
+.payroll-modal {
+  width: min(100%, 58rem);
+  max-height: min(92vh, 52rem);
+  height: auto;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  box-shadow: var(--pay-shadow);
+}
+
+.compact-modal {
+  width: min(100%, 34rem);
+}
+
+.drawer-head,
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--pay-line);
+}
+
+.admin-payslips-page .modal-head .icon-action,
+.admin-payslips-page .drawer-head .icon-action {
+  flex: 0 0 3rem;
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
+  margin-left: auto;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.drawer-head p {
+  margin: 0.25rem 0 0;
+  color: var(--pay-muted);
+}
+
+.drawer-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.drawer-metrics div,
+.run-preview dl div {
+  padding: 0.75rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface-soft);
+}
+
+.drawer-metrics dt,
+.run-preview dt {
+  color: var(--pay-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.drawer-metrics dd,
+.run-preview dd {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.drawer-section {
+  padding: 1rem 0;
+  border-top: 1px solid var(--pay-line);
+}
+
+.drawer-section h3,
+.run-preview h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.contribution-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.contribution-list li,
+.drawer-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.58rem 0;
+  border-bottom: 1px solid var(--pay-line);
+}
+
+.drawer-total {
+  margin-top: 0.35rem;
+  border-bottom: 0;
+  font-weight: 850;
+}
+
+.muted-text {
+  margin: 0;
+  color: var(--pay-muted);
+}
+
+.drawer-grid {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) 1fr;
+  gap: 0.5rem 1rem;
+}
+
+.drawer-grid dt {
+  color: var(--pay-muted);
+  font-weight: 750;
+}
+
+.drawer-grid dd {
+  margin: 0;
+  text-align: right;
+}
+
+.drawer-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 1rem;
+  background: linear-gradient(180deg, transparent, var(--pay-surface) 20%);
+}
+
+.wizard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.wizard-grid fieldset,
+.settings-grid {
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wizard-grid legend {
+  padding: 0 0.3rem;
+  color: var(--pay-text);
+  font-weight: 850;
+}
+
+.admin-payslips-page .checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-height: 2.65rem;
+  color: var(--pay-text);
+  text-align: left;
+  line-height: 1.25;
+}
+
+.admin-payslips-page .checkbox-label input {
+  flex: 0 0 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 1.1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--pay-primary);
+}
+
+.admin-payslips-page .checkbox-label span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.segmented-control button {
+  min-height: 3.2rem;
+  padding: 0.25rem 0.35rem;
+  background: var(--pay-surface);
+  color: var(--pay-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.18;
+  white-space: normal;
+}
+
+.segmented-control button.is-active {
+  background: var(--pay-primary-soft);
+  color: var(--pay-primary);
+  border-color: color-mix(in srgb, var(--pay-primary) 28%, var(--pay-border));
+}
+
+.run-preview {
+  margin-top: 0.95rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--pay-primary) 24%, var(--pay-border));
+  border-radius: var(--pay-radius);
+  background: color-mix(in srgb, var(--pay-primary-soft) 70%, var(--pay-surface));
+}
+
+.run-preview dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.modal-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pay-line);
+}
+
+@media (max-width: 1180px) {
+  .payroll-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .payroll-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wizard-grid,
+  .run-preview dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .admin-payslips-page.scoped-dashboard {
+    padding: 0.85rem;
+  }
+
+  .payroll-hero {
+    flex-direction: column;
+  }
+
+  .payroll-hero-actions,
+  .toolbar-actions,
+  .modal-actions,
+  .drawer-actions {
     width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-.admin-payslips-page .payslip-table th,
-.admin-payslips-page .payslip-table td {
-    padding: var(--ud-gap-sm) var(--ud-gap-md);
-    border-bottom: 1px solid var(--ud-c-line);
-    text-align: left;
-}
-.admin-payslips-page .payslip-table th {
-    position: sticky;
-    top: 0;
-    background: var(--ud-c-surface);
-    z-index: 2;
-    text-transform: uppercase;
-    font-weight: 600;
-    font-size: 0.75rem;
-    color: var(--ud-c-text-muted);
-}
-.admin-payslips-page .payslip-table tr:hover {
-    background: var(--ud-c-hover); /* statt hartem #3a3a4c */
-}
-.admin-payslips-page .actions-col {
-    text-align: right;
-    white-space: nowrap;
-}
-.admin-payslips-page .actions-col > button {
-    margin-left: var(--ud-gap-sm);
-}
+    justify-content: flex-start;
+  }
 
-/* ---------------- Responsive Tabellen ---------------- */
-@media (max-width: 768px) {
-    .admin-payslips-page .top-sections-grid,
-    .admin-payslips-page .generate-form {
-        grid-template-columns: 1fr;
-    }
-    .admin-payslips-page .payslip-table thead {
-        display: none;
-    }
-    .admin-payslips-page .payslip-table tr {
-        display: block;
-        margin-bottom: var(--ud-gap-lg);
-        border: 1px solid var(--ud-c-border);
-        border-radius: var(--ud-radius-md);
-        padding: var(--ud-gap-md);
-        background: var(--ud-c-surface);
-    }
-    .admin-payslips-page .payslip-table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        text-align: right;
-        padding: var(--ud-gap-sm) 0;
-        border-bottom: 1px dashed var(--ud-c-line);
-    }
-    .admin-payslips-page .payslip-table tr td:last-child {
-        border-bottom: none;
-        padding-top: var(--ud-gap-md);
-    }
-    .admin-payslips-page .payslip-table td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--ud-c-text-muted);
-        text-align: left;
-        margin-right: var(--ud-gap-md);
-    }
-    .admin-payslips-page .actions-col {
-        text-align: right;
-        justify-content: flex-end !important;
-    }
-    .admin-payslips-page .actions-col::before {
-        content: '' !important; /* Kein Label für die Aktionsspalte */
-    }
+  .payroll-process {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-kpi-grid,
+  .payroll-toolbar,
+  .wizard-grid,
+  .run-preview dl,
+  .settings-grid,
+  .drawer-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-action-bar {
+    position: static;
+  }
+
+  .payroll-table-wrap {
+    border: 0;
+    overflow: visible;
+  }
+
+  .payslip-table {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 0.7rem;
+  }
+
+  .payslip-table thead {
+    display: none;
+  }
+
+  .payslip-table tbody tr {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.8rem;
+    border: 1px solid var(--pay-border);
+    border-radius: var(--pay-radius);
+    background: var(--pay-surface);
+  }
+
+  .payslip-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.2rem 0;
+    border-bottom: 0;
+    text-align: right;
+  }
+
+  .payslip-table td::before {
+    content: attr(data-label);
+    color: var(--pay-muted);
+    font-weight: 750;
+    text-align: left;
+  }
+
+  .payslip-table .check-col,
+  .payslip-table .actions-col {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .payslip-table .check-col::before,
+  .payslip-table .actions-col::before {
+    content: '';
+  }
+
+  .actions-col {
+    white-space: normal;
+  }
+
+  .row-menu {
+    right: 0;
+    top: 2.7rem;
+  }
+
+  .payroll-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .payslip-drawer {
+    width: min(100%, 28rem);
+  }
+
+  .payroll-modal {
+    max-height: calc(100vh - 1.5rem);
+  }
 }

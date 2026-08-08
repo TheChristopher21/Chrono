@@ -19,23 +19,27 @@ import {
     formatLocalDateYMD,
     formatDate, // Your existing formatDate
     formatTime, // <--- HIER HINZUFÜGEN
-    getExpectedHoursForDay,
-    computeDailyDiff,
     minutesToHHMM,
-    calculateWeeklyActualMinutes,
-    calculateWeeklyExpectedMinutes,
     // isLateTime, // isLateTime might be used internally by formatTimeEntryForDisplay or similar
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
     addDays,
+    getDatesUpToReferenceDate,
     selectTrackableUsers,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
+import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
 const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
 const MONTH_RANGE_SETTINGS_LOCAL_STORAGE_PREFIX = 'adminDashboard_monthRangeSettings_v1';
+const WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY = 'adminDashboard_weeklyDeltaAcknowledged_v1';
+const UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES = 240;
 
 const DEFAULT_MONTH_RANGE_SETTINGS = {
     mode: 'calendar',
@@ -45,6 +49,8 @@ const DEFAULT_MONTH_RANGE_SETTINGS = {
 };
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+const getAbsenceDayFlipKey = (username, isoDate) => `${username || ''}::${isoDate}`;
 
 const areSetsEqual = (setA, setB) => {
     if (setA === setB) return true;
@@ -131,6 +137,31 @@ const parseHolidayOptionsFromStorage = (rawValue) => {
     }
 };
 
+
+
+const parseWeeklyDeltaAcknowledgedFromStorage = (rawValue) => {
+    if (!rawValue) return {};
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (!parsed || typeof parsed !== 'object') return {};
+        return Object.entries(parsed).reduce((acc, [username, weekMap]) => {
+            if (!username || !weekMap || typeof weekMap !== 'object') return acc;
+            const normalizedWeekMap = Object.entries(weekMap).reduce((userAcc, [weekIso, isAcknowledged]) => {
+                if (typeof weekIso === 'string' && weekIso && isAcknowledged === true) {
+                    userAcc[weekIso] = true;
+                }
+                return userAcc;
+            }, {});
+            if (Object.keys(normalizedWeekMap).length > 0) {
+                acc[username] = normalizedWeekMap;
+            }
+            return acc;
+        }, {});
+    } catch (error) {
+        console.error('Error parsing weekly delta acknowledgements from localStorage:', error);
+        return {};
+    }
+};
 
 const clampMonthStartDay = (value) => {
     if (value === null || value === undefined) return 1;
@@ -255,6 +286,7 @@ const EMPTY_PROBLEM_INDICATORS = {
     incompleteDaysCount: 0,
     autoCompletedUncorrectedCount: 0,
     holidayPendingCount: 0,
+    unusualWeeklyDeltaCount: 0,
     problematicDays: [],
 };
 
@@ -272,6 +304,10 @@ const doesProblemMatchType = (problem, problemType) => {
 
     if (problemType === 'any_problem') {
         return !['holiday_pending_decision'].includes(problem.type);
+    }
+
+    if (problemType === 'weekly_delta') {
+        return problem.type === 'weekly_delta_unusual';
     }
 
     return problem.type === problemType;
@@ -292,13 +328,18 @@ const sortUserCollection = (collection, sortConfig) => {
             const totalA = (a.problemIndicators?.missingEntriesCount || 0)
                 + (a.problemIndicators?.incompleteDaysCount || 0)
                 + (a.problemIndicators?.autoCompletedUncorrectedCount || 0)
-                + (a.problemIndicators?.holidayPendingCount || 0);
+                + (a.problemIndicators?.holidayPendingCount || 0)
+                + (a.problemIndicators?.unusualWeeklyDeltaCount || 0);
             const totalB = (b.problemIndicators?.missingEntriesCount || 0)
                 + (b.problemIndicators?.incompleteDaysCount || 0)
                 + (b.problemIndicators?.autoCompletedUncorrectedCount || 0)
-                + (b.problemIndicators?.holidayPendingCount || 0);
+                + (b.problemIndicators?.holidayPendingCount || 0)
+                + (b.problemIndicators?.unusualWeeklyDeltaCount || 0);
             valA = totalA;
             valB = totalB;
+        } else if (sortConfig.key === 'username') {
+            valA = (a.displayName || a.username || '').toLowerCase();
+            valB = (b.displayName || b.username || '').toLowerCase();
         } else if (typeof valA === 'string' && typeof valB === 'string') {
             valA = valA.toLowerCase();
             valB = valB.toLowerCase();
@@ -318,6 +359,7 @@ const ISSUE_FILTER_KEYS = {
     incomplete: 'incompleteDaysCount',
     autoCompleted: 'autoCompletedUncorrectedCount',
     holidayPending: 'holidayPendingCount',
+    weeklyDelta: 'unusualWeeklyDeltaCount',
 };
 
 const DEFAULT_ISSUE_FILTER_STATE = {
@@ -325,6 +367,7 @@ const DEFAULT_ISSUE_FILTER_STATE = {
     incomplete: true,
     autoCompleted: true,
     holidayPending: true,
+    weeklyDelta: true,
 };
 
 
@@ -350,6 +393,7 @@ const AdminWeekSection = forwardRef(({
                                          onDataReloadNeeded,
                                          onIssueSummaryChange,
                                          showSmartOverview = true,
+                                         onOpenUserOverview,
                                      }, ref) => {
     const { notify } = useNotification();
     const { currentUser } = useAuth();
@@ -362,15 +406,33 @@ const AdminWeekSection = forwardRef(({
 
     const [searchTerm, setSearchTerm] = useState("");
     const [detailedUser, setDetailedUser] = useState(null); // Username of the user whose details are expanded
-    const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'ascending' });
+    const [sortConfig, setSortConfig] = useState({ key: 'problemIndicators', direction: 'descending' });
     const [focusedProblem, setFocusedProblem] = useState({ username: null, dateIso: null, type: null });
     const [showOnlyIssues, setShowOnlyIssues] = useState(false);
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
     const [weekJumpInputValue, setWeekJumpInputValue] = useState(() => formatLocalDateYMD(selectedMonday));
+    const [flippedAbsenceDayCards, setFlippedAbsenceDayCards] = useState(() => new Set());
+    const [backendWeekPeriodSummaries, setBackendWeekPeriodSummaries] = useState([]);
+    const [backendMonthPeriodSummaries, setBackendMonthPeriodSummaries] = useState([]);
+    const [backendWeekStatus, setBackendWeekStatus] = useState(CALCULATION_STATUS.IDLE);
+    const [backendMonthStatus, setBackendMonthStatus] = useState(CALCULATION_STATUS.IDLE);
 
     useEffect(() => {
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
     }, [selectedMonday]);
+
+    const toggleAbsenceDayCard = useCallback((username, isoDate) => {
+        const flipKey = getAbsenceDayFlipKey(username, isoDate);
+        setFlippedAbsenceDayCards(prev => {
+            const next = new Set(prev);
+            if (next.has(flipKey)) {
+                next.delete(flipKey);
+            } else {
+                next.add(flipKey);
+            }
+            return next;
+        });
+    }, []);
 
     const readHiddenUsersFromStorage = useCallback(() => {
         if (!browserHasStorage) return new Set();
@@ -379,6 +441,19 @@ const AdminWeekSection = forwardRef(({
 
     const [hiddenUsers, setHiddenUsers] = useState(() => readHiddenUsersFromStorage());
     const [showHiddenUsersManager, setShowHiddenUsersManager] = useState(false);
+    const [weeklyDeltaAcknowledged, setWeeklyDeltaAcknowledged] = useState(() => {
+        if (!isBrowserEnvironment()) return {};
+        return parseWeeklyDeltaAcknowledgedFromStorage(window.localStorage.getItem(WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY));
+    });
+
+    useEffect(() => {
+        if (!isBrowserEnvironment()) return;
+        try {
+            window.localStorage.setItem(WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY, JSON.stringify(weeklyDeltaAcknowledged));
+        } catch (error) {
+            console.error('Error persisting weekly delta acknowledgements:', error);
+        }
+    }, [weeklyDeltaAcknowledged]);
     const detailSectionRef = useRef(null); // For scrolling to problem
     const sectionRef = useRef(null);
 
@@ -396,7 +471,7 @@ const AdminWeekSection = forwardRef(({
     const [customMonthStartDay, setCustomMonthStartDay] = useState(DEFAULT_MONTH_RANGE_SETTINGS.customStartDay);
     const [manualMonthRangeStart, setManualMonthRangeStart] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualStart);
     const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
-    const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
+    const [monthSortConfig, setMonthSortConfig] = useState({ key: 'problemIndicators', direction: 'descending' });
 
     const {
         trackableUsers,
@@ -649,14 +724,131 @@ const AdminWeekSection = forwardRef(({
     }, [monthRangeStart, monthRangeEnd]);
 
     const monthRangeIsValid = monthRangeDates.length > 0;
+    const accountingMonthRangeDates = useMemo(
+        () => getDatesUpToReferenceDate(monthRangeDates),
+        [monthRangeDates]
+    );
+    const todayIsoForAccounting = formatLocalDateYMD(new Date());
+    const shouldShowWeeklyDeltaIssues = useMemo(() => {
+        if (!(selectedMonday instanceof Date) || Number.isNaN(selectedMonday.getTime())) return false;
+        const weekEndDate = addDays(selectedMonday, 6);
+        weekEndDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return today.getTime() >= weekEndDate.getTime();
+    }, [selectedMonday]);
+
     const monthRangeLabel = useMemo(() => {
         if (!monthRangeStart || !monthRangeEnd) return '';
         return `${formatDate(monthRangeStart)} – ${formatDate(monthRangeEnd)}`;
     }, [monthRangeStart, monthRangeEnd]);
 
+    const weekStartIso = useMemo(() => formatLocalDateYMD(weekDates[0]), [weekDates]);
+    const weekEndIso = useMemo(() => formatLocalDateYMD(weekDates[weekDates.length - 1]), [weekDates]);
+    const selectedWeekIsCurrent = weekStartIso <= todayIsoForAccounting && todayIsoForAccounting <= weekEndIso;
+    const selectedWeekIsFuture = weekStartIso > todayIsoForAccounting;
+    const weekActualLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.actualThroughToday', 'Ist (bis heute)')
+        : t('actualHours', 'Ist (Wo)');
+    const weekExpectedLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.expectedThroughToday', 'Soll (bis heute)')
+        : t('expectedHours', 'Soll (Wo)');
+    const weekBalanceLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.balanceThroughToday', 'Saldo (bis heute)')
+        : selectedWeekIsFuture
+            ? t('adminDashboard.weekView.balanceOpen', 'Saldo (noch offen)')
+            : t('balanceWeek', 'Saldo (Wo)');
+    const formatWeeklyMinutes = useCallback((value) => {
+        if (selectedWeekIsFuture) return '–';
+        return formatCalculatedMinutes(value, backendWeekStatus, minutesToHHMM);
+    }, [backendWeekStatus, selectedWeekIsFuture]);
+    const accountingMonthStartIso = accountingMonthRangeDates.length > 0
+        ? formatLocalDateYMD(accountingMonthRangeDates[0])
+        : '';
+    const accountingMonthEndIso = accountingMonthRangeDates.length > 0
+        ? formatLocalDateYMD(accountingMonthRangeDates[accountingMonthRangeDates.length - 1])
+        : '';
+
+    useEffect(() => {
+        if (!weekStartIso || !weekEndIso) {
+            setBackendWeekPeriodSummaries([]);
+            setBackendWeekStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+        let cancelled = false;
+        setBackendWeekPeriodSummaries([]);
+        setBackendWeekStatus(CALCULATION_STATUS.LOADING);
+        api.get('/api/admin/timetracking/admin/period-summary', {
+            params: { startDate: weekStartIso, endDate: weekEndIso },
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setBackendWeekPeriodSummaries(Array.isArray(response.data) ? response.data : []);
+                    setBackendWeekStatus(Array.isArray(response.data) ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Failed to load backend week period summaries', error);
+                    setBackendWeekPeriodSummaries([]);
+                    setBackendWeekStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [weekStartIso, weekEndIso]);
+
+    useEffect(() => {
+        if (!monthRangeIsValid || !accountingMonthStartIso || !accountingMonthEndIso) {
+            setBackendMonthPeriodSummaries([]);
+            setBackendMonthStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+        let cancelled = false;
+        setBackendMonthPeriodSummaries([]);
+        setBackendMonthStatus(CALCULATION_STATUS.LOADING);
+        api.get('/api/admin/timetracking/admin/period-summary', {
+            params: { startDate: accountingMonthStartIso, endDate: accountingMonthEndIso },
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setBackendMonthPeriodSummaries(Array.isArray(response.data) ? response.data : []);
+                    setBackendMonthStatus(Array.isArray(response.data) ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Failed to load backend month period summaries', error);
+                    setBackendMonthPeriodSummaries([]);
+                    setBackendMonthStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [monthRangeIsValid, accountingMonthStartIso, accountingMonthEndIso]);
+
+    const backendWeekSummaryMap = useMemo(() => {
+        const map = new Map();
+        backendWeekPeriodSummaries.forEach(summary => {
+            if (summary?.username) map.set(summary.username, summary);
+        });
+        return map;
+    }, [backendWeekPeriodSummaries]);
+
+    const backendMonthSummaryMap = useMemo(() => {
+        const map = new Map();
+        backendMonthPeriodSummaries.forEach(summary => {
+            if (summary?.username) map.set(summary.username, summary);
+        });
+        return map;
+    }, [backendMonthPeriodSummaries]);
+
     const userAnalytics = useMemo(() => {
-        const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
-        const currentWeekIsoSet = new Set(currentWeekIsoDates);
+        const selectedWeekIso = formatLocalDateYMD(selectedMonday);
 
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return trackableUsers
@@ -664,12 +856,18 @@ const AdminWeekSection = forwardRef(({
                 const userConfig = user; // UserDTO from backend
                 // Get all DailyTimeSummaryDTOs for this user (can be for multiple days/weeks if AdminDashboard fetches more)
                 const allUserSummariesList = dailySummariesForWeekSection.filter(s => s.username === user.username);
+                const backendWeekSummary = backendWeekSummaryMap.get(user.username);
+                const backendWeekDailyMap = new Map(
+                    (backendWeekSummary?.dailySummaries || [])
+                        .filter(summary => summary?.date)
+                        .map(summary => [summary.date, summary])
+                );
 
                 // Create a map of summaries for the current display week for easy lookup
                 const userDayMapCurrentWeek = {};
                 weekDates.forEach(date => {
                     const isoDate = formatLocalDateYMD(date);
-                    const summaryForDay = allUserSummariesList.find(s => s.date === isoDate);
+                    const summaryForDay = backendWeekDailyMap.get(isoDate) || allUserSummariesList.find(s => s.date === isoDate);
                     userDayMapCurrentWeek[isoDate] = summaryForDay ||
                         { date: isoDate, username: user.username, entries: [], workedMinutes: 0, breakMinutes: 0, needsCorrection: false, primaryTimes: {isOpen: false, firstStartTime: null, lastEndTime: null}, dailyNote: null };
                 });
@@ -682,22 +880,12 @@ const AdminWeekSection = forwardRef(({
                 const holidaysForThisUserYearObj = allHolidays[userCantonKey] || allHolidays['GENERAL']; // allHolidays is now holidaysByCanton
                 const holidaysForThisUserYear = holidaysForThisUserYearObj?.data || {}; // Ensure data field is accessed
 
-                const weeklyActualMinutes = calculateWeeklyActualMinutes(Object.values(userDayMapCurrentWeek));
+                const weeklyActualMinutes = Number.isFinite(backendWeekSummary?.workedMinutes) ? backendWeekSummary.workedMinutes : null;
 
                 const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
                 const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
-                const holidayOptionsForThisUserInThisWeek = allHolidayOptionsForUser
-                    .filter(opt => opt?.holidayDate && currentWeekIsoSet.has(opt.holidayDate))
-                    .sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
-
-
-                const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(
-                    userConfig, weekDates, defaultExpectedHours,
-                    userApprovedVacations, userCurrentSickLeaves, holidaysForThisUserYear,
-                    holidayOptionsForThisUserInThisWeek // Pass options here
-                );
-
-                const currentWeekOvertimeMinutes = weeklyActualMinutes - weeklyExpectedMinutes;
+                const weeklyExpectedMinutes = Number.isFinite(backendWeekSummary?.expectedMinutes) ? backendWeekSummary.expectedMinutes : null;
+                const currentWeekOvertimeMinutes = Number.isFinite(backendWeekSummary?.differenceMinutes) ? backendWeekSummary.differenceMinutes : null;
                 // Use rawUserTrackingBalances or fetch/calculate cumulativeBalance differently if needed
                 const cumulativeBalanceRecord = rawUserTrackingBalances.find(b => b.username === user.username);
                 const cumulativeBalanceMinutes = cumulativeBalanceRecord ? cumulativeBalanceRecord.trackingBalance : (userConfig.trackingBalanceInMinutes ?? 0);
@@ -711,14 +899,30 @@ const AdminWeekSection = forwardRef(({
                     allHolidayOptionsForUser // Pass relevant holiday options collected so far
                 );
 
+                const unusualWeeklyDelta = shouldShowWeeklyDeltaIssues
+                    && Number.isFinite(currentWeekOvertimeMinutes)
+                    && Math.abs(currentWeekOvertimeMinutes) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES;
+                const weeklyDeltaAlreadyAcknowledged = !!weeklyDeltaAcknowledged?.[user.username]?.[selectedWeekIso];
+                const adjustedProblemIndicators = {
+                    ...problemIndicators,
+                    unusualWeeklyDeltaCount: 0,
+                    problematicDays: Array.isArray(problemIndicators.problematicDays) ? [...problemIndicators.problematicDays] : [],
+                };
+                if (unusualWeeklyDelta && !weeklyDeltaAlreadyAcknowledged) {
+                    adjustedProblemIndicators.unusualWeeklyDeltaCount = 1;
+                    adjustedProblemIndicators.problematicDays.push({ dateIso: selectedWeekIso, type: 'weekly_delta_unusual' });
+                }
+
                 return {
                     username: user.username,
+                    displayName: getUserDisplayName(user),
+                    searchText: getUserSearchText(user),
                     userColor: /^#[0-9A-F]{6}$/i.test(userConfig.color || "") ? userConfig.color : "#007BFF", // Default color
                     weeklyActualMinutes,
                     weeklyExpectedMinutes,
                     currentWeekOvertimeMinutes,
                     cumulativeBalanceMinutes,
-                    problemIndicators,
+                    problemIndicators: adjustedProblemIndicators,
                     userConfig, // Pass the full UserDTO
                     userDayMap: userDayMapCurrentWeek, // Summaries for the currently displayed week
                     userApprovedVacations,
@@ -726,7 +930,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues, backendWeekSummaryMap]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -744,32 +948,13 @@ const AdminWeekSection = forwardRef(({
 
         return trackableUsers.map(user => {
             const baseData = userAnalyticsMap.get(user.username) || null;
+            const backendMonthSummary = backendMonthSummaryMap.get(user.username);
             const userConfig = baseData?.userConfig || user;
-            const allUserSummariesList = dailySummariesForWeekSection.filter(summary => summary.username === user.username);
-            const monthSummaries = allUserSummariesList.filter(summary => summary.date >= monthRangeStart && summary.date <= monthRangeEnd);
-            const monthlyActualMinutes = monthSummaries.reduce((acc, summary) => acc + (summary?.workedMinutes || 0), 0);
+            const monthlyActualMinutes = Number.isFinite(backendMonthSummary?.workedMinutes) ? backendMonthSummary.workedMinutes : null;
 
             const userApprovedVacations = allVacations.filter(vac => vac.username === user.username && vac.approved);
             const userCurrentSickLeaves = allSickLeaves.filter(sl => sl.username === user.username);
-            const userCantonKey = userConfig?.companyCantonAbbreviation || 'GENERAL';
-            const holidaysForThisUserYear = allHolidays[userCantonKey]?.data || allHolidays['GENERAL']?.data || {};
-            const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
-            const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
-
-            const monthlyExpectedMinutes = monthRangeDates.reduce((acc, dateObj) => {
-                const isoDate = formatLocalDateYMD(dateObj);
-                const holidayOptionForDay = allHolidayOptionsForUser.find(opt => opt?.holidayDate === isoDate);
-                const expectedHours = getExpectedHoursForDay(
-                    dateObj,
-                    userConfig,
-                    defaultExpectedHours,
-                    holidaysForThisUserYear,
-                    userApprovedVacations,
-                    userCurrentSickLeaves,
-                    holidayOptionForDay
-                );
-                return acc + Math.round((expectedHours || 0) * 60);
-            }, 0);
+            const monthlyExpectedMinutes = Number.isFinite(backendMonthSummary?.expectedMinutes) ? backendMonthSummary.expectedMinutes : null;
 
             const cumulativeBalanceMinutes = baseData?.cumulativeBalanceMinutes ?? (user.trackingBalanceInMinutes ?? 0);
             const problemIndicators = baseData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
@@ -778,12 +963,16 @@ const AdminWeekSection = forwardRef(({
             return {
                 ...(baseData || {
                     username: user.username,
+                    displayName: getUserDisplayName(user),
+                    searchText: getUserSearchText(user),
                     userConfig,
-                    weeklyActualMinutes: 0,
-                    weeklyExpectedMinutes: 0,
-                    currentWeekOvertimeMinutes: 0,
+                    weeklyActualMinutes: null,
+                    weeklyExpectedMinutes: null,
+                    currentWeekOvertimeMinutes: null,
                 }),
                 username: user.username,
+                displayName: baseData?.displayName || getUserDisplayName(user),
+                searchText: baseData?.searchText || getUserSearchText(user),
                 userColor,
                 userApprovedVacations,
                 userCurrentSickLeaves,
@@ -791,10 +980,10 @@ const AdminWeekSection = forwardRef(({
                 problemIndicators,
                 monthlyActualMinutes,
                 monthlyExpectedMinutes,
-                monthlyOvertimeMinutes: monthlyActualMinutes - monthlyExpectedMinutes,
+                monthlyOvertimeMinutes: Number.isFinite(backendMonthSummary?.differenceMinutes) ? backendMonthSummary.differenceMinutes : null,
             };
         });
-    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, monthRangeStart, monthRangeEnd, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, monthRangeDates, defaultExpectedHours]);
+    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours, backendMonthSummaryMap]);
 
 
     const issueSummary = useMemo(() => {
@@ -803,6 +992,7 @@ const AdminWeekSection = forwardRef(({
             incomplete: 0,
             autoCompleted: 0,
             holidayPending: 0,
+            weeklyDelta: 0,
             totalWithIssue: 0,
         };
 
@@ -825,6 +1015,10 @@ const AdminWeekSection = forwardRef(({
                 summary.holidayPending += 1;
                 hasAny = true;
             }
+            if ((indicators.unusualWeeklyDeltaCount || 0) > 0) {
+                summary.weeklyDelta += 1;
+                hasAny = true;
+            }
             if (hasAny) {
                 summary.totalWithIssue += 1;
             }
@@ -837,7 +1031,7 @@ const AdminWeekSection = forwardRef(({
 
     useEffect(() => {
         const previousSummary = lastIssueSummaryRef.current;
-        const summaryKeys = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'totalWithIssue'];
+        const summaryKeys = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'weeklyDelta', 'totalWithIssue'];
         const hasMeaningfulChanges = !previousSummary || summaryKeys.some((key) => {
             const previousValue = previousSummary?.[key] ?? 0;
             const nextValue = issueSummary?.[key] ?? 0;
@@ -860,7 +1054,7 @@ const AdminWeekSection = forwardRef(({
 
         return collection.filter(userData => {
             if (!userData?.username) return false;
-            if (normalizedSearch && !userData.username.toLowerCase().includes(normalizedSearch)) {
+            if (normalizedSearch && !(userData.searchText || userData.username.toLowerCase()).includes(normalizedSearch)) {
                 return false;
             }
             if (hiddenUsers.has(userData.username)) {
@@ -990,7 +1184,8 @@ const AdminWeekSection = forwardRef(({
         const hasProblems = (indicators.missingEntriesCount || 0) > 0
             || (indicators.incompleteDaysCount || 0) > 0
             || (indicators.autoCompletedUncorrectedCount || 0) > 0
-            || (indicators.holidayPendingCount || 0) > 0;
+            || (indicators.holidayPendingCount || 0) > 0
+            || (indicators.unusualWeeklyDeltaCount || 0) > 0;
 
         if (!hasProblems) {
             return <span role="img" aria-label={t('adminDashboard.noIssues', 'Keine Probleme')} className="text-green-500">✅</span>;
@@ -1046,6 +1241,18 @@ const AdminWeekSection = forwardRef(({
                         🎉❓
                     </span>
                 )}
+                {indicators.unusualWeeklyDeltaCount > 0 && (
+                    <span
+                        title={t('adminDashboard.problemTooltips.unusualWeeklyDelta', 'Unübliche Abweichung vom Wochensoll')}
+                        onClick={() => handleProblemIndicatorClick(userData.username, 'weekly_delta', formatLocalDateYMD(selectedMonday))}
+                        className="problem-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, 'weekly_delta', formatLocalDateYMD(selectedMonday))}
+                    >
+                        ↕️
+                    </span>
+                )}
             </div>
         );
     };
@@ -1092,7 +1299,34 @@ const AdminWeekSection = forwardRef(({
             count: issueSummary.holidayPending,
             icon: '🎉',
         },
-    ]), [issueSummary, t]);
+        ...(shouldShowWeeklyDeltaIssues ? [{
+            key: 'weeklyDelta',
+            label: t('adminDashboard.issueFilters.weeklyDelta', 'Unübliche Plus/Minusstunden zum Wochensoll'),
+            count: issueSummary.weeklyDelta,
+            icon: '↕️',
+        }] : []),
+    ]), [issueSummary, shouldShowWeeklyDeltaIssues, t]);
+
+    const handleWeeklyDeltaAcknowledgementChange = useCallback((username, weekIso, isChecked) => {
+        if (!username || !weekIso) return;
+        setWeeklyDeltaAcknowledged(prev => {
+            const next = { ...prev };
+            const userMap = { ...(next[username] || {}) };
+            if (isChecked) {
+                userMap[weekIso] = true;
+                next[username] = userMap;
+                return next;
+            }
+
+            delete userMap[weekIso];
+            if (Object.keys(userMap).length > 0) {
+                next[username] = userMap;
+            } else {
+                delete next[username];
+            }
+            return next;
+        });
+    }, []);
 
     const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
 
@@ -1271,7 +1505,7 @@ const AdminWeekSection = forwardRef(({
             }
         }
         return () => clearTimeout(highlightTimeoutId); // Cleanup timeout on unmount or if focusedProblem changes
-    }, [focusedProblem]); // Re-run when focusedProblem changes
+    }, [focusedProblem, detailedUser, weekDates, sortedUserData]); // Re-run when focused target or rendered week data changes
 
 
     const handleHideUser = (usernameToHide) => {
@@ -1417,6 +1651,21 @@ const AdminWeekSection = forwardRef(({
             setFocusedProblem({ username, dateIso: null, type: 'direct_focus' });
             scrollSectionIntoView();
         },
+        focusUserDate(username, dateIso = null, focusType = 'request_focus') {
+            if (!username) return;
+            setHiddenUsers(prev => {
+                if (!prev.has(username)) return prev;
+                const next = new Set(prev);
+                next.delete(username);
+                return next;
+            });
+            setActiveTab('week');
+            setShowOnlyIssues(false);
+            setSearchTerm(username);
+            setDetailedUser(username);
+            setFocusedProblem({ username, dateIso, type: focusType || 'request_focus' });
+            scrollSectionIntoView();
+        },
         focusNegativeBalances() {
             setSearchTerm('');
             setDetailedUser(null);
@@ -1433,7 +1682,10 @@ const AdminWeekSection = forwardRef(({
             setSortConfig({ key: 'cumulativeBalanceMinutes', direction: 'descending' });
             scrollSectionIntoView();
         },
-    }), [scrollSectionIntoView, setFiltersExclusive]);
+        printOverview() {
+            handlePrintOverview();
+        },
+    }), [handlePrintOverview, scrollSectionIntoView, setFiltersExclusive]);
 
     const commitWeekJumpInput = useCallback((rawValue) => {
         if (!rawValue) {
@@ -1449,6 +1701,29 @@ const AdminWeekSection = forwardRef(({
 
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
     }, [handleWeekJump, selectedMonday]);
+
+    const weekNavigationControls = activeTab === 'week' ? (
+        <div className="week-navigation table-week-navigation">
+            <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
+            <input
+                type="date"
+                value={weekJumpInputValue}
+                onChange={(e) => setWeekJumpInputValue(e.target.value)}
+                onBlur={(e) => commitWeekJumpInput(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        commitWeekJumpInput(e.currentTarget.value);
+                        e.currentTarget.blur();
+                    }
+                }}
+                aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
+            />
+            <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
+            <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>
+                {t('currentWeek', 'Aktuelle Woche')}
+            </button>
+        </div>
+    ) : null;
 
 
     return (
@@ -1471,28 +1746,7 @@ const AdminWeekSection = forwardRef(({
                             ? t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")
                             : t("adminDashboard.timeTrackingRangeTitle", "Zeiterfassung Zeitraum")}
                     </h3>
-                    {activeTab === 'week' ? (
-                        <div className="week-navigation">
-                            <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
-                            <input
-                                type="date"
-                                value={weekJumpInputValue}
-                                onChange={(e) => setWeekJumpInputValue(e.target.value)}
-                                onBlur={(e) => commitWeekJumpInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        commitWeekJumpInput(e.currentTarget.value);
-                                        e.currentTarget.blur();
-                                    }
-                                }}
-                                aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
-                            />
-                            <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
-                            <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>
-                                {t('currentWeek', 'Aktuelle Woche')}
-                            </button>
-                        </div>
-                    ) : (
+                    {activeTab === 'month' && (
                         <div className="month-range-controls">
                             <label className="month-range-field month-range-mode">
                                 <span>{t('adminDashboard.monthView.modeLabel', 'Zeitraum-Modus')}</span>
@@ -1717,7 +1971,7 @@ const AdminWeekSection = forwardRef(({
                                 <ul className="hidden-users-list list-disc list-inside ml-1 text-xs">
                                     {Array.from(hiddenUsers).sort().map(username => (
                                         <li key={username} className="flex justify-between items-center py-0.5">
-                                            <span>{username}</span>
+                                            <span>{getUserDisplayName(username, users, username)}</span>
                                             <button onClick={() => handleUnhideUser(username)} className="action-button unhide-button text-xs p-0.5 bg-blue-100 hover:bg-blue-200 rounded">
                                                 {t('adminDashboard.unhideUser', 'Einblenden')}
                                             </button>
@@ -1732,6 +1986,18 @@ const AdminWeekSection = forwardRef(({
                     </div>
                 )}
 
+                {weekNavigationControls}
+
+                {(activeTab === 'week' ? backendWeekStatus : backendMonthStatus) === CALCULATION_STATUS.ERROR && (
+                    <CalculationStatusNotice status={CALCULATION_STATUS.ERROR} />
+                )}
+                {activeTab === 'week' && (selectedWeekIsCurrent || selectedWeekIsFuture) && (
+                    <p className="week-evaluation-hint" role="status">
+                        {selectedWeekIsFuture
+                            ? t('adminDashboard.weekView.futureHint', 'Diese Woche liegt in der Zukunft und hat deshalb noch keinen Saldo.')
+                            : t('adminDashboard.weekView.currentHint', 'Laufende Woche: Ist, Soll und Saldo werden nur bis heute berechnet.')}
+                    </p>
+                )}
 
                 {activeTab === 'month' && !monthRangeIsValid ? (
                     <p className="no-data-message italic text-gray-600 p-4 text-center">
@@ -1755,16 +2021,16 @@ const AdminWeekSection = forwardRef(({
                                         {t('user', 'Benutzer')} {getSortIndicator('username')}
                                     </th>
                                     <th onClick={() => requestSort('weeklyActualMinutes')} className="sortable-header th-numeric">
-                                        {t('actualHours', 'Ist (Wo)')} {getSortIndicator('weeklyActualMinutes')}
+                                        {weekActualLabel} {getSortIndicator('weeklyActualMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('weeklyExpectedMinutes')} className="sortable-header th-numeric">
-                                        {t('expectedHours', 'Soll (Wo)')} {getSortIndicator('weeklyExpectedMinutes')}
+                                        {weekExpectedLabel} {getSortIndicator('weeklyExpectedMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('currentWeekOvertimeMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceWeek', 'Saldo (Wo)')} {getSortIndicator('currentWeekOvertimeMinutes')}
+                                        {weekBalanceLabel} {getSortIndicator('currentWeekOvertimeMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceTotal', 'Gesamtsaldo')} {getSortIndicator('cumulativeBalanceMinutes')}
+                                        {t('balanceTotal', 'Gesamtüberstunden')} {getSortIndicator('cumulativeBalanceMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('problemIndicators')} className="sortable-header th-center">
                                         {t('issues', 'Probleme')} {getSortIndicator('problemIndicators')}
@@ -1776,17 +2042,20 @@ const AdminWeekSection = forwardRef(({
                                 {sortedUserData.map((userData) => (
                                     <React.Fragment key={userData.username}>
                                         <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
-                                            <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
-                                            <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
-                                            <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
-                                            <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
-                                            <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                            <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
+                                            <td data-label={weekActualLabel} className="td-numeric">{formatWeeklyMinutes(userData.weeklyActualMinutes)}</td>
+                                            <td data-label={weekExpectedLabel} className="td-numeric">{formatWeeklyMinutes(userData.weeklyExpectedMinutes)}</td>
+                                            <td data-label={weekBalanceLabel} className={`td-numeric ${Number.isFinite(userData.currentWeekOvertimeMinutes) && userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatWeeklyMinutes(userData.currentWeekOvertimeMinutes)}</td>
+                                            <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                             <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                                 {renderProblemIndicatorsCell(userData)}
                                             </td>
                                             <td data-label={t('actions', 'Aktionen')} className="actions-cell">
                                                 <button onClick={() => toggleDetails(userData.username)} className="action-button details-toggle-button" title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')} aria-expanded={detailedUser === userData.username}>
                                                     {detailedUser === userData.username ? '📂' : '📄'}
+                                                </button>
+                                                <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
+                                                    {t('overview', 'Übersicht')}
                                                 </button>
                                                 <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                     🖨️
@@ -1801,10 +2070,20 @@ const AdminWeekSection = forwardRef(({
                                                 <td colSpan="7" ref={detailSectionRef}>
                                                     <div className="admin-week-display-detail p-2 bg-slate-50 rounded-b-md shadow-inner">
                                                         <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
-                                                            <span>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
+                                                            <span>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
                                                             <span className="mx-2">|</span>
-                                                            <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
+                                                            <span>{weekBalanceLabel}: {formatWeeklyMinutes(userData.currentWeekOvertimeMinutes)}</span>
                                                         </div>
+                                                        {shouldShowWeeklyDeltaIssues && Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
+                                                            <label className="text-xs flex items-center gap-2 mb-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!weeklyDeltaAcknowledged?.[userData.username]?.[formatLocalDateYMD(selectedMonday)]}
+                                                                    onChange={(event) => handleWeeklyDeltaAcknowledgementChange(userData.username, formatLocalDateYMD(selectedMonday), event.target.checked)}
+                                                                />
+                                                                <span>{t('adminDashboard.weeklyDeltaAcknowledgeLabel', 'Unübliche Plus/Minusstunden für diese Woche sind geprüft und in Ordnung.')}</span>
+                                                            </label>
+                                                        )}
                                                         <div className="admin-days-grid">
                                                             {weekDates.map((d) => {
                                                                 const isoDate = formatLocalDateYMD(d);
@@ -1812,18 +2091,67 @@ const AdminWeekSection = forwardRef(({
                                                                 const userCantonKeyForDay = userData.userConfig.companyCantonAbbreviation || 'GENERAL';
                                                                 const holidaysDataForDay = allHolidays[userCantonKeyForDay]?.data || allHolidays['GENERAL']?.data || {};
                                                                 const holidayNameOnThisDay = holidaysDataForDay[isoDate];
-                                                                const holidayOptionForThisDay = currentUserHolidayOptions.find(opt => opt.holidayDate === isoDate);
-
-                                                                const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, userData.userApprovedVacations, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
+                                                                const holidayOptionForThisDay = userData.holidayOptions?.find(option => option.holidayDate === isoDate);
                                                                 const actualMinsToday = dailySummary?.workedMinutes || 0;
-                                                                const diffMinsToday = actualMinsToday - expectedMinsToday;
+                                                                const expectedMinsToday = Number.isFinite(dailySummary?.expectedMinutes) ? dailySummary.expectedMinutes : null;
+                                                                const isFutureDate = isoDate > todayIsoForAccounting;
+                                                                const hasTrackedEntries = !!(dailySummary?.entries && dailySummary.entries.length > 0);
+                                                                const diffMinsToday = isFutureDate && !hasTrackedEntries && actualMinsToday === 0
+                                                                    ? 0
+                                                                    : (Number.isFinite(dailySummary?.differenceMinutes) ? dailySummary.differenceMinutes : null);
 
                                                                 const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
                                                                 let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
                                                                 if (dailySummary?.needsCorrection && !isFocused) cardClass += ' auto-completed-day-card';
 
-                                                                const vacationOnThisDay = userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
+                                                                const vacationRecordOnThisDay = userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
+                                                                const vacationOnThisDay = hasTrackedEntries ? null : vacationRecordOnThisDay;
                                                                 const sickOnThisDay = userData.userCurrentSickLeaves.find(sick => isoDate >= sick.startDate && isoDate <= sick.endDate);
+                                                                const absenceWithTrackedEntries = !!(hasTrackedEntries && (vacationRecordOnThisDay || sickOnThisDay));
+                                                                const showTrackedTimesForAbsenceDay = flippedAbsenceDayCards.has(getAbsenceDayFlipKey(userData.username, isoDate));
+                                                                const trackedTimesContent = hasTrackedEntries ? (
+                                                                    <>
+                                                                        <div className="admin-day-card-header justify-between items-start mb-1">
+                                                                            <div className="text-xs">
+                                                                                {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {formatCalculatedMinutes(expectedMinsToday, backendWeekStatus, minutesToHHMM)})</span>}
+                                                                                {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${Number.isFinite(diffMinsToday) && diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {formatCalculatedMinutes(diffMinsToday, backendWeekStatus, minutesToHHMM)})</span>}
+                                                                                {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
+                                                                            </div>
+                                                                            <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
+                                                                                {t("adminDashboard.editButton", "Bearb.")}
+                                                                            </button>
+                                                                        </div>
+                                                                        <ul className="time-entry-list-condensed text-xs">
+                                                                            {sortEntries(dailySummary.entries).map(entry => {
+                                                                                let typeLabel = entry.punchType;
+                                                                                try {
+                                                                                    typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
+                                                                                } catch (e) { /* Fallback */ }
+
+                                                                                let sourceIndicator = '';
+                                                                                if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
+                                                                                } else if (entry.source === 'ADMIN_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
+                                                                                } else if (entry.source === 'USER_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
+                                                                                } else if (entry.source === 'MANUAL_IMPORT') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
+                                                                                }
+
+                                                                                return (
+                                                                                    <li key={entry.id || entry.key} className="py-0.5">
+                                                                                        {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
+                                                                                    </li>
+                                                                                );
+                                                                            })}
+                                                                        </ul>
+                                                                        <p className="text-xs mt-1">
+                                                                            <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
+                                                                        </p>
+                                                                        {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
+                                                                    </>
+                                                                ) : null;
 
                                                                 let dayCardContent;
                                                                 if (holidayNameOnThisDay) {
@@ -1849,63 +2177,45 @@ const AdminWeekSection = forwardRef(({
                                                                             )}
                                                                         </>
                                                                     );
+                                                                } else if (absenceWithTrackedEntries) {
+                                                                    cardClass += ' admin-day-card-absence-conflict';
+                                                                    if (vacationRecordOnThisDay) cardClass += ' admin-day-card-vacation';
+                                                                    if (sickOnThisDay) cardClass += ' admin-day-card-sick';
+
+                                                                    dayCardContent = showTrackedTimesForAbsenceDay ? (
+                                                                        <>
+                                                                            <div className="day-card-flip-toolbar">
+                                                                                <span className="day-card-flip-label text-xs">{t('adminDashboard.trackedTimesLabel', 'Stempelzeiten')}</span>
+                                                                                <button type="button" className="edit-day-button flip-day-button secondary" onClick={() => toggleAbsenceDayCard(userData.username, isoDate)}>
+                                                                                    {t('adminDashboard.showAbsenceButton', 'Abwesenheit anzeigen')}
+                                                                                </button>
+                                                                            </div>
+                                                                            {trackedTimesContent}
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="absence-conflict-summary">
+                                                                            {vacationRecordOnThisDay && (
+                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationRecordOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationRecordOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                            )}
+                                                                            {sickOnThisDay && (
+                                                                                <p className="sick-indicator text-xs">🤒 {t('adminDashboard.onSickLeave', 'Krank gemeldet')}{sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}</p>
+                                                                            )}
+                                                                            <p className="absence-conflict-note text-xs">{t('adminDashboard.absenceWithEntriesNote', 'Stempelzeiten vorhanden - bitte prüfen.')}</p>
+                                                                            <button type="button" className="edit-day-button flip-day-button" onClick={() => toggleAbsenceDayCard(userData.username, isoDate)}>
+                                                                                {t('adminDashboard.showTrackedTimesButton', 'Zeiten anzeigen')}
+                                                                            </button>
+                                                                        </div>
+                                                                    );
                                                                 } else if (vacationOnThisDay) {
                                                                     cardClass += ' admin-day-card-vacation';
-                                                                    if (vacationOnThisDay.companyVacation && dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
-                                                                        dayCardContent = (
-                                                                            <>
-                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
-                                                                                <div className="admin-day-card-header justify-between items-start mb-1">
-                                                                                    <div className="text-xs">
-                                                                                        {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                                                                        {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
-                                                                                        {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
-                                                                                    </div>
-                                                                                    <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
-                                                                                        {t("adminDashboard.editButton", "Bearb.")}
-                                                                                    </button>
-                                                                                </div>
-                                                                                <ul className="time-entry-list-condensed text-xs">
-                                                                                    {sortEntries(dailySummary.entries).map(entry => {
-                                                                                        let typeLabel = entry.punchType;
-                                                                                        try {
-                                                                                            typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
-                                                                                        } catch (e) { /* Fallback */ }
-
-                                                                                        let sourceIndicator = '';
-                                                                                        if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-                                                                                            sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-                                                                                        } else if (entry.source === 'ADMIN_CORRECTION') {
-                                                                                            sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-                                                                                        } else if (entry.source === 'USER_CORRECTION') {
-                                                                                            sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-                                                                                        } else if (entry.source === 'MANUAL_IMPORT') {
-                                                                                            sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-                                                                                        }
-
-                                                                                        return (
-                                                                                            <li key={entry.id || entry.key} className="py-0.5">
-                                                                                                {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
-                                                                                            </li>
-                                                                                        );
-                                                                                    })}
-                                                                                </ul>
-                                                                                <p className="text-xs mt-1">
-                                                                                    <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
-                                                                                </p>
-                                                                                {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
-                                                                            </>
-                                                                        );
-                                                                    } else {
-                                                                        dayCardContent = (
-                                                                            <>
-                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
-                                                                                {vacationOnThisDay.halfDay && !userData.userConfig.isHourly && (
-                                                                                    <p className="text-xs">{t('adminDashboard.halfDayNote', 'Halbtägiger Urlaub – Restzeiten prüfen.')}</p>
-                                                                                )}
-                                                                            </>
-                                                                        );
-                                                                    }
+                                                                    dayCardContent = (
+                                                                        <>
+                                                                            <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                            {vacationOnThisDay.halfDay && !userData.userConfig.isHourly && (
+                                                                                <p className="text-xs">{t('adminDashboard.halfDayNote', 'Halbtägiger Urlaub – Restzeiten prüfen.')}</p>
+                                                                            )}
+                                                                        </>
+                                                                    );
                                                                 } else if (sickOnThisDay) {
                                                                     cardClass += ' admin-day-card-sick';
                                                                     dayCardContent = (
@@ -1935,49 +2245,7 @@ const AdminWeekSection = forwardRef(({
                                                                         </>
                                                                     );
                                                                 } else {
-                                                                    dayCardContent = (
-                                                                        <>
-                                                                            <div className="admin-day-card-header justify-between items-start mb-1">
-                                                                                <div className="text-xs">
-                                                                                    {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                                                                    {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
-                                                                                    {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
-                                                                                </div>
-                                                                                <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
-                                                                                    {t("adminDashboard.editButton", "Bearb.")}
-                                                                                </button>
-                                                                            </div>
-                                                                            <ul className="time-entry-list-condensed text-xs">
-                                                                                {sortEntries(dailySummary.entries).map(entry => {
-                                                                                    let typeLabel = entry.punchType;
-                                                                                    try {
-                                                                                        typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
-                                                                                    } catch (e) { /* Fallback */ }
-
-                                                                                    let sourceIndicator = '';
-                                                                                    if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-                                                                                    } else if (entry.source === 'ADMIN_CORRECTION') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-                                                                                    } else if (entry.source === 'USER_CORRECTION') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-                                                                                    } else if (entry.source === 'MANUAL_IMPORT') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-                                                                                    }
-
-                                                                                    return (
-                                                                                        <li key={entry.id || entry.key} className="py-0.5">
-                                                                                            {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
-                                                                                        </li>
-                                                                                    );
-                                                                                })}
-                                                                            </ul>
-                                                                            <p className="text-xs mt-1">
-                                                                                <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
-                                                                            </p>
-                                                                            {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
-                                                                        </>
-                                                                    );
+                                                                    dayCardContent = trackedTimesContent;
                                                                 }
 
                                                                 return (
@@ -2022,7 +2290,7 @@ const AdminWeekSection = forwardRef(({
                                         {t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} {getMonthSortIndicator('monthlyOvertimeMinutes')}
                                     </th>
                                     <th onClick={() => requestMonthSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceTotal', 'Gesamtsaldo')} {getMonthSortIndicator('cumulativeBalanceMinutes')}
+                                        {t('balanceTotal', 'Gesamtüberstunden')} {getMonthSortIndicator('cumulativeBalanceMinutes')}
                                     </th>
                                     <th onClick={() => requestMonthSort('problemIndicators')} className="sortable-header th-center">
                                         {t('issues', 'Probleme')} {getMonthSortIndicator('problemIndicators')}
@@ -2033,15 +2301,18 @@ const AdminWeekSection = forwardRef(({
                                 <tbody>
                                 {sortedMonthlyUserData.map((userData) => (
                                     <tr key={userData.username} className={`user-row ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
-                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
-                                        <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyActualMinutes)}</td>
-                                        <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyExpectedMinutes)}</td>
-                                        <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.monthlyOvertimeMinutes)}</td>
-                                        <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
+                                        <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{formatCalculatedMinutes(userData.monthlyActualMinutes, backendMonthStatus, minutesToHHMM)}</td>
+                                        <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{formatCalculatedMinutes(userData.monthlyExpectedMinutes, backendMonthStatus, minutesToHHMM)}</td>
+                                        <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${Number.isFinite(userData.monthlyOvertimeMinutes) && userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatCalculatedMinutes(userData.monthlyOvertimeMinutes, backendMonthStatus, minutesToHHMM)}</td>
+                                        <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                         <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                             {renderProblemIndicatorsCell(userData)}
                                         </td>
                                         <td data-label={t('actions', 'Aktionen')} className="actions-cell">
+                                            <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
+                                                {t('overview', 'Übersicht')}
+                                            </button>
                                             <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                 🖨️
                                             </button>
@@ -2065,7 +2336,7 @@ const AdminWeekSection = forwardRef(({
                         <h3 className="text-lg font-semibold mb-4">{t('adminDashboard.deleteSickLeaveConfirmTitle', 'Krankmeldung löschen bestätigen')}</h3>
                         <p className="mb-4 text-sm">
                             {t('adminDashboard.deleteSickLeaveConfirmMessage', 'Möchten Sie die Krankmeldung für')}
-                            <strong> {sickLeaveToDelete.username} </strong>
+                            <strong> {getUserDisplayName(sickLeaveToDelete.username, users, sickLeaveToDelete.username)} </strong>
                             ({formatDate(parseISO(sickLeaveToDelete.startDate))} - {formatDate(parseISO(sickLeaveToDelete.endDate))})
                             {sickLeaveToDelete.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
                             {t('adminDashboard.deleteSickLeaveIrreversible', ' wirklich löschen? Das Tagessoll und der Saldo werden neu berechnet.')}
@@ -2148,6 +2419,8 @@ AdminWeekSection.propTypes = {
     users: PropTypes.arrayOf(
         PropTypes.shape({ // Matches UserDTO more closely
             username: PropTypes.string.isRequired,
+            firstName: PropTypes.string,
+            lastName: PropTypes.string,
             trackingBalanceInMinutes: PropTypes.number,
             isPercentage: PropTypes.bool,
             isHourly: PropTypes.bool,
@@ -2171,6 +2444,7 @@ AdminWeekSection.propTypes = {
     onDataReloadNeeded: PropTypes.func.isRequired,
     onIssueSummaryChange: PropTypes.func,
     showSmartOverview: PropTypes.bool,
+    onOpenUserOverview: PropTypes.func,
 };
 
 AdminWeekSection.displayName = 'AdminWeekSection';

@@ -1,0 +1,328 @@
+name: chrono
+
+services:
+  mysql:
+    profiles: ["infrastructure"]
+    image: mysql:${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-chrono_db}"
+      MYSQL_USER: "${MYSQL_USER:?MYSQL_USER must be set}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [chrono-data]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    profiles: ["infrastructure"]
+    image: ${CHRONO_BACKEND_IMAGE:-chrisubuntu1/chrono-backend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      model-puller:
+        condition: service_completed_successfully
+    networks: [chrono, chrono-data, chrono-monitoring]
+    environment:
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: "live"
+      APP_PRODUCTION: "true"
+      APP_DEMO_LOGIN_ENABLED: "false"
+      APP_DEMO_LOGIN_ALLOW_PRODUCTION: "false"
+      APP_PMS_TEST_ACCOUNT_ENABLED: "false"
+      APP_PMS_DEMO_DATA_ENABLED: "false"
+      APP_INITIALIZE_ADMIN: "false"
+      APP_BACKUP_ENABLED: "false"
+      APP_BACKUP_MONITORING_ENABLED: "true"
+      BACKUP_DIR: "/backups"
+      APP_PMS_OUTBOX_ENABLED: "${APP_PMS_OUTBOX_ENABLED:-true}"
+      APP_PMS_ALERTS_ENABLED: "${APP_PMS_ALERTS_ENABLED:-true}"
+      APP_SECURITY_ALLOWED_ORIGINS: "${APP_SECURITY_ALLOWED_ORIGINS:?APP_SECURITY_ALLOWED_ORIGINS must be set}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set}"
+      NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN:?NFC_AGENT_TOKEN must be set}"
+      REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN:?REPORT_ICS_FEED_TOKEN must be set}"
+      APP_PMS_DOCUMENT_HMAC_KEY: "${APP_PMS_DOCUMENT_HMAC_KEY:?APP_PMS_DOCUMENT_HMAC_KEY must be set}"
+      APP_PMS_AUDIT_HMAC_KEY: "${APP_PMS_AUDIT_HMAC_KEY:?APP_PMS_AUDIT_HMAC_KEY must be set}"
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL:?SPRING_DATASOURCE_URL with verified MySQL TLS must be set}"
+      SPRING_DATASOURCE_USERNAME: "${MYSQL_USER:?MYSQL_USER must be set}"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      LLM_BASE_URL: "http://llm:11434/api/generate"
+      LLM_WARMUP_ENABLED: "${LLM_WARMUP_ENABLED:-false}"
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+      - ./data/backups:/backups:ro
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+
+  frontend:
+    profiles: ["infrastructure"]
+    image: ${CHRONO_FRONTEND_IMAGE:-chrisubuntu1/chrono-frontend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks: [chrono]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+
+  nginx:
+    profiles: ["infrastructure"]
+    image: ${NGINX_PROXY_MANAGER_IMAGE:?NGINX_PROXY_MANAGER_IMAGE must be pinned by digest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks: [chrono]
+    depends_on:
+      frontend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-backup:
+    profiles: ["infrastructure"]
+    build:
+      context: ./ops/backup
+      args:
+        MYSQL_IMAGE_TAG: "${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}"
+    image: chrono/mysql-backup:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-chrono_db}"
+      MYSQL_USER: "${MYSQL_USER:?MYSQL_USER must be set}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      BACKUP_INTERVAL_SECONDS: "${BACKUP_INTERVAL_SECONDS:-86400}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
+      BACKUP_MAX_AGE_MINUTES: "${BACKUP_MAX_AGE_MINUTES:-1560}"
+    volumes:
+      - ./data/backups:/backups
+    networks: [chrono-data]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/chrono/check-backup.sh"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-restore-test:
+    image: mysql:${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}
+    profiles: ["restore-test"]
+    environment:
+      MYSQL_DATABASE: chrono_restore
+      MYSQL_ROOT_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
+    networks: [chrono-restore]
+    tmpfs:
+      - /var/lib/mysql:size=2g
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  backup-restore-test:
+    image: chrono/mysql-backup:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    profiles: ["restore-test"]
+    depends_on:
+      mysql-restore-test:
+        condition: service_healthy
+    entrypoint: ["/opt/chrono/restore-drill.sh"]
+    environment:
+      MYSQL_HOST: mysql-restore-test
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: chrono_restore
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
+      RESTORE_MINIMUM_TABLES: "${RESTORE_MINIMUM_TABLES:-20}"
+      RESTORE_MINIMUM_PMS_TABLES: "${RESTORE_MINIMUM_PMS_TABLES:-41}"
+      RESTORE_EXPECTED_FLYWAY_VERSION: "${RESTORE_EXPECTED_FLYWAY_VERSION:-17}"
+    volumes:
+      - ./data/backups:/backups:ro
+    networks: [chrono-restore]
+    security_opt:
+      - no-new-privileges:true
+
+  offsite-backup:
+    image: restic/restic:${RESTIC_IMAGE_TAG:?RESTIC_IMAGE_TAG must be pinned}
+    profiles: ["offsite-backup"]
+    entrypoint: ["/bin/sh", "/opt/chrono/offsite-backup.sh"]
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      OFFSITE_BACKUP_INTERVAL_SECONDS: "${OFFSITE_BACKUP_INTERVAL_SECONDS:-86400}"
+      OFFSITE_BACKUP_RETENTION_DAYS: "${OFFSITE_BACKUP_RETENTION_DAYS:-90}"
+    volumes:
+      - ./data/backups:/backups:ro
+      - ./ops/backup/offsite-backup.sh:/opt/chrono/offsite-backup.sh:ro
+    networks: [chrono-data, chrono-egress]
+    security_opt:
+      - no-new-privileges:true
+
+  prometheus:
+    profiles: ["infrastructure"]
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG:?PROMETHEUS_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    networks: [chrono-monitoring]
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./prometheus_data:/prometheus
+    depends_on:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  alertmanager:
+    profiles: ["infrastructure"]
+    build:
+      context: ./ops/monitoring/alertmanager
+      args:
+        ALERTMANAGER_IMAGE_TAG: "${ALERTMANAGER_IMAGE_TAG:?ALERTMANAGER_IMAGE_TAG must be pinned}"
+    image: chrono/alertmanager:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      ALERT_EMAIL_TO: "${ALERT_EMAIL_TO:?ALERT_EMAIL_TO must be set}"
+      SPRING_MAIL_HOST: "${SPRING_MAIL_HOST:?SPRING_MAIL_HOST must be set}"
+      SPRING_MAIL_PORT: "${SPRING_MAIL_PORT:-587}"
+      SPRING_MAIL_USERNAME: "${SPRING_MAIL_USERNAME:?SPRING_MAIL_USERNAME must be set}"
+      SPRING_MAIL_PASSWORD: "${SPRING_MAIL_PASSWORD:?SPRING_MAIL_PASSWORD must be set}"
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: "${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-true}"
+    networks: [chrono-monitoring, chrono-egress]
+    ports:
+      - "127.0.0.1:9093:9093"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    profiles: ["infrastructure"]
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG:?GRAFANA_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER must be set}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    networks: [chrono-monitoring]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+      - ./ops/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    security_opt:
+      - no-new-privileges:true
+
+  llm:
+    profiles: ["infrastructure"]
+    image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks: [chrono]
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"
+    healthcheck:
+      test: ["CMD", "ollama", "ps"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  model-puller:
+    profiles: ["infrastructure"]
+    image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
+    restart: "no"
+    depends_on:
+      llm:
+        condition: service_healthy
+    networks: [chrono]
+    environment:
+      OLLAMA_HOST: "http://llm:11434"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-qwen3:8b}"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$$OLLAMA_MODEL\""]
+
+  open-webui:
+    profiles: ["infrastructure"]
+    image: ${OPEN_WEBUI_IMAGE:?OPEN_WEBUI_IMAGE must be pinned by digest}
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on:
+      llm:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./open-webui_data:/app/backend/data
+      - ./knowledge_base:/app/backend/knowledge_base
+    environment:
+      OLLAMA_BASE_URL: "http://llm:11434"
+    networks: [chrono]
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  chrono:
+    external: true
+    name: chrono_chrono
+  chrono-data:
+    internal: true
+  chrono-monitoring:
+    internal: true
+  chrono-egress:
+  chrono-restore:
+    internal: true
+
+volumes:
+  db_data:
+  ollama_data:

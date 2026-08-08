@@ -3,6 +3,7 @@ package com.chrono.chrono.entities;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -50,6 +51,15 @@ public class Company {
     @Column(name = "demo_data_last_reset")
     private LocalDate demoDataLastReset;
 
+    @Column(name = "demo", nullable = false)
+    private boolean demo = false;
+
+    @Column(name = "demo_session_id", length = 64)
+    private String demoSessionId;
+
+    @Column(name = "demo_expires_at")
+    private LocalDateTime demoExpiresAt;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "company_enabled_features", joinColumns = @JoinColumn(name = "company_id"))
     @Column(name = "feature_key")
@@ -58,6 +68,9 @@ public class Company {
     // NEU: Kantonskürzel für Feiertagsberechnung (z.B. "SG", "ZH")
     @Column(name = "canton_abbreviation", length = 2)
     private String cantonAbbreviation;
+
+    @Column(name = "custom_holiday_selection_enabled", nullable = false)
+    private boolean customHolidaySelectionEnabled = false;
 
     // Sozialversicherungsraten (konfigurierbar je Firma)
     private Double uvgBuRate;       // Unfallversicherung Betrieb (AG)
@@ -113,6 +126,9 @@ public class Company {
     public String getCantonAbbreviation() { return cantonAbbreviation; } // NEUER GETTER
     public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEUER SETTER
 
+    public boolean isCustomHolidaySelectionEnabled() { return customHolidaySelectionEnabled; }
+    public void setCustomHolidaySelectionEnabled(boolean customHolidaySelectionEnabled) { this.customHolidaySelectionEnabled = customHolidaySelectionEnabled; }
+
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }
 
@@ -167,4 +183,10 @@ public class Company {
 
     public LocalDate getDemoDataLastReset() { return demoDataLastReset; }
     public void setDemoDataLastReset(LocalDate demoDataLastReset) { this.demoDataLastReset = demoDataLastReset; }
+    public boolean isDemo() { return demo; }
+    public void setDemo(boolean demo) { this.demo = demo; }
+    public String getDemoSessionId() { return demoSessionId; }
+    public void setDemoSessionId(String demoSessionId) { this.demoSessionId = demoSessionId; }
+    public LocalDateTime getDemoExpiresAt() { return demoExpiresAt; }
+    public void setDemoExpiresAt(LocalDateTime demoExpiresAt) { this.demoExpiresAt = demoExpiresAt; }
 }

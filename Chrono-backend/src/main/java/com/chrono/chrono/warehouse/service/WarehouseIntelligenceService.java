@@ -79,7 +79,16 @@ public class WarehouseIntelligenceService {
         this.productRepository = productRepository;
         this.warehouseRepository = warehouseRepository;
         this.stockLevelRepository = stockLevelRepository;
-        seedDemoData();
+        seedSupplierProfiles();
+        if (productRepository == null || warehouseRepository == null || stockLevelRepository == null) {
+            seedDemoData();
+        }
+    }
+
+    private void seedSupplierProfiles() {
+        suppliers.putIfAbsent("SUP-001", new SupplierProfile("SUP-001", "Quantum Logistics", 0.95, 0.88, 0.72, 3));
+        suppliers.putIfAbsent("SUP-002", new SupplierProfile("SUP-002", "EcoFreight", 0.89, 0.92, 0.94, 5));
+        suppliers.putIfAbsent("SUP-003", new SupplierProfile("SUP-003", "Swiss Precision Supply", 0.91, 0.97, 0.81, 2));
     }
 
     @PostConstruct
@@ -134,10 +143,6 @@ public class WarehouseIntelligenceService {
         inventory.add(item2);
         adjustLocationOccupancy(item2.getLocationId(), item2.getQuantity());
 
-        suppliers.put("SUP-001", new SupplierProfile("SUP-001", "Quantum Logistics", 0.95, 0.88, 0.72, 3));
-        suppliers.put("SUP-002", new SupplierProfile("SUP-002", "EcoFreight", 0.89, 0.92, 0.94, 5));
-        suppliers.put("SUP-003", new SupplierProfile("SUP-003", "Swiss Precision Supply", 0.91, 0.97, 0.81, 2));
-
         returnCases.add(new ReturnCase(UUID.randomUUID().toString(), smartGlove.getId(),
                 "Customer return - faulty sensor", "inspection", Instant.now().minusSeconds(86400)));
     }
@@ -146,6 +151,10 @@ public class WarehouseIntelligenceService {
         if (productRepository == null || warehouseRepository == null || stockLevelRepository == null) {
             return;
         }
+        products.clear();
+        locations.clear();
+        inventory.clear();
+        categoryStatistics.clear();
         productRepository.findAll().forEach(this::mapProductEntity);
         warehouseRepository.findAll().forEach(this::mapWarehouseEntity);
 
@@ -307,17 +316,29 @@ public class WarehouseIntelligenceService {
     }
 
     private String resolveProductId(Product entity) {
+        String baseId;
         if (entity.getSku() != null && !entity.getSku().isBlank()) {
-            return entity.getSku().trim();
+            baseId = entity.getSku().trim();
+        } else {
+            baseId = "PRD-" + entity.getId();
         }
-        return "PRD-" + entity.getId();
+        if (entity.getCompany() != null && entity.getCompany().getId() != null) {
+            return entity.getCompany().getId() + "::" + baseId;
+        }
+        return baseId;
     }
 
     private String resolveWarehouseId(Warehouse entity) {
+        String baseId;
         if (entity.getCode() != null && !entity.getCode().isBlank()) {
-            return entity.getCode().trim();
+            baseId = entity.getCode().trim();
+        } else {
+            baseId = "WH-" + entity.getId();
         }
-        return "WH-" + entity.getId();
+        if (entity.getCompany() != null && entity.getCompany().getId() != null) {
+            return entity.getCompany().getId() + "::" + baseId;
+        }
+        return baseId;
     }
 
     private String resolveCategory(Product entity, WarehouseProduct current) {

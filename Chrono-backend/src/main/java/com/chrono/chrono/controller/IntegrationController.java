@@ -81,7 +81,9 @@ public class IntegrationController {
         config.setName(request.getName());
         config.setType(request.getType());
         config.setEndpointUrl(request.getEndpointUrl());
-        config.setAuthHeader(request.getAuthHeader());
+        if (request.getAuthHeader() != null && !"********".equals(request.getAuthHeader())) {
+            config.setAuthHeader(request.getAuthHeader());
+        }
         config.setActive(request.getActive() != null ? request.getActive() : Boolean.TRUE);
         config.setAutoSync(request.getAutoSync() != null ? request.getAutoSync() : Boolean.FALSE);
         IntegrationConfig saved = integrationConfigService.save(config);
@@ -116,7 +118,9 @@ public class IntegrationController {
             config.setType(request.getType());
         }
         config.setEndpointUrl(request.getEndpointUrl());
-        config.setAuthHeader(request.getAuthHeader());
+        if (request.getAuthHeader() != null && !"********".equals(request.getAuthHeader())) {
+            config.setAuthHeader(request.getAuthHeader());
+        }
         if (request.getActive() != null) {
             config.setActive(request.getActive());
         }

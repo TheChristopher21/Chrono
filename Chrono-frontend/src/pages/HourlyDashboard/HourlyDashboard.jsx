@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -30,6 +31,9 @@ import HourlyVacationSection from './HourlyVacationSection';
 import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from '../../components/PrintReportModal.jsx';
+import {
+    CALCULATION_STATUS,
+} from '../../components/CalculationStatusNotice.jsx';
 
 import '../../styles/HourlyDashboardScoped.css';
 
@@ -37,7 +41,7 @@ const HourlyDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     // KORREKTUR: Wir benötigen die 'punch'-Funktion aus dem AuthContext nicht.
-    const { currentUser, fetchCurrentUser } = useAuth();
+    const { currentUser } = useAuth();
     const { refreshData } = useUserData();
 
     const [userProfile, setUserProfile] = useState(null);
@@ -62,7 +66,10 @@ const HourlyDashboard = () => {
     const [correctionDate, setCorrectionDate] = useState(null);
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
     const [punchMessage, setPunchMessage] = useState('');
-    const [monthlyTotalMins, setMonthlyTotalMins] = useState(0);
+    const [weekPeriodSummary, setWeekPeriodSummary] = useState(null);
+    const [monthPeriodSummary, setMonthPeriodSummary] = useState(null);
+    const [weekPeriodStatus, setWeekPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
+    const [monthPeriodStatus, setMonthPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
 
     // KORREKTE IMPLEMENTIERUNG: Die Funktion ruft die API direkt auf.
     const handleManualPunch = async () => {
@@ -80,6 +87,7 @@ const HourlyDashboard = () => {
             setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             setTimeout(() => setPunchMessage(''), 3000);
             fetchWeeklyData(selectedMonday);
+            fetchMonthlySummary(selectedMonday);
             fetchDataForUser();
         } catch (error) {
             console.error('Punch Error:', error);
@@ -132,12 +140,14 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     const fetchDataForUser = useCallback(async () => {
         if (!currentUser?.username) return;
         try {
-            const profileResponse = await api.get(`/api/users/profile/${currentUser.username}`);
+            const [profileResponse, vacationResponse] = await Promise.all([
+                api.get(`/api/users/profile/${currentUser.username}`),
+                api.get(`/api/vacation/user/${currentUser.username}`),
+            ]);
             setUserProfile(profileResponse.data);
             if (profileResponse.data.lastCustomerId && !selectedCustomerId) {
                 setSelectedCustomerId(String(profileResponse.data.lastCustomerId));
             }
-            const vacationResponse = await api.get(`/api/vacation/user/${currentUser.username}`);
             setVacationRequests(vacationResponse.data || []);
         } catch (error) {
             console.error("Fehler beim Laden der Benutzerdaten:", error);
@@ -146,20 +156,57 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     }, [currentUser, notify, t]);
 
     const fetchWeeklyData = useCallback(async (monday) => {
-        if (!currentUser?.username) return;
+        if (!currentUser?.username) {
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.IDLE);
+            return;
+        }
+        setWeekPeriodSummary(null);
+        setWeekPeriodStatus(CALCULATION_STATUS.LOADING);
         try {
             const startDate = formatLocalDate(monday);
             const endDate = formatLocalDate(addDays(monday, 6));
-            const response = await api.get(`/api/dashboard/user/${currentUser.username}/week`, {
-                params: { startDate, endDate }
+            const response = await api.get('/api/timetracking/period-summary', {
+                params: { username: currentUser.username, startDate, endDate }
             });
-            setDailySummaries(response.data.dailySummaries || []);
+            setWeekPeriodSummary(response.data || null);
+            setWeekPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+            setDailySummaries(response.data?.dailySummaries || []);
         } catch (error) {
             console.error("Fehler beim Abrufen der wöchentlichen Daten:", error);
             notify(t('errors.fetchWeeklyData', 'Fehler beim Abrufen der wöchentlichen Daten.'), 'error');
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.ERROR);
             setDailySummaries([]);
         }
     }, [currentUser, notify, t]);
+
+    const fetchMonthlySummary = useCallback(async (referenceDate) => {
+        if (!currentUser?.username) {
+            setMonthPeriodSummary(null);
+            setMonthPeriodStatus(CALCULATION_STATUS.IDLE);
+            return;
+        }
+        const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+        const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+        setMonthPeriodSummary(null);
+        setMonthPeriodStatus(CALCULATION_STATUS.LOADING);
+        try {
+            const response = await api.get('/api/timetracking/period-summary', {
+                params: {
+                    username: currentUser.username,
+                    startDate: formatLocalDate(monthStart),
+                    endDate: formatLocalDate(monthEnd),
+                }
+            });
+            setMonthPeriodSummary(response.data || null);
+            setMonthPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+        } catch (error) {
+            console.error('Fehler beim Laden der Backend-Monatsberechnung (Hourly):', error);
+            setMonthPeriodSummary(null);
+            setMonthPeriodStatus(CALCULATION_STATUS.ERROR);
+        }
+    }, [currentUser]);
 
     const fetchCorrectionRequests = useCallback(async () => {
         if (!currentUser || !currentUser.username) return;
@@ -171,10 +218,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             notify(t('userManagement.errorLoadingCorrections'), 'error');
         }
     }, [currentUser, notify]);
-
-    useEffect(() => {
-        fetchCurrentUser();
-    }, [fetchCurrentUser]);
 
     useEffect(() => {
         const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
@@ -207,26 +250,10 @@ const assignCustomerForDay = async (isoDate, customerId) => {
         if (currentUser) {
             fetchDataForUser();
             fetchWeeklyData(selectedMonday);
+            fetchMonthlySummary(selectedMonday);
             fetchCorrectionRequests();
         }
-    }, [currentUser, selectedMonday, fetchDataForUser, fetchWeeklyData, fetchCorrectionRequests]);
-
-    useEffect(() => {
-        if (!dailySummaries || dailySummaries.length === 0) {
-            setMonthlyTotalMins(0);
-            return;
-        }
-        const currentMonth = selectedMonday.getMonth();
-        const currentYear = selectedMonday.getFullYear();
-        const monthlyMinutes = dailySummaries
-            .filter(s => {
-                const summaryDate = new Date(s.date);
-                return summaryDate.getMonth() === currentMonth && summaryDate.getFullYear() === currentYear;
-            })
-            .reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
-        setMonthlyTotalMins(monthlyMinutes);
-
-    }, [dailySummaries, selectedMonday]);
+    }, [currentUser, selectedMonday, fetchDataForUser, fetchWeeklyData, fetchMonthlySummary, fetchCorrectionRequests]);
 
     const handleOpenCorrectionModal = (date, summary) => {
         setCorrectionDate(formatLocalDate(date));
@@ -305,7 +332,8 @@ const assignCustomerForDay = async (isoDate, customerId) => {
         setPrintModalVisible(false);
     };
 
-    const weeklyTotalMins = dailySummaries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+    const weeklyTotalMins = Number.isFinite(weekPeriodSummary?.workedMinutes) ? weekPeriodSummary.workedMinutes : null;
+    const monthlyTotalMins = Number.isFinite(monthPeriodSummary?.workedMinutes) ? monthPeriodSummary.workedMinutes : null;
 
     if (!currentUser || !userProfile) {
         return <div>Wird geladen...</div>;
@@ -322,6 +350,12 @@ const assignCustomerForDay = async (isoDate, customerId) => {
 
             </header>
 
+            <AccessiblePagesPanel
+                context="user"
+                title="Deine freigegebenen Seiten"
+                subtitle="Zusätzliche freigegebene Bereiche erscheinen direkt hier im Dashboard."
+            />
+
             <HourlyWeekOverview
                 t={t}
                 dailySummaries={dailySummaries}
@@ -330,6 +364,8 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 openCorrectionModal={handleOpenCorrectionModal}
                 weeklyTotalMins={weeklyTotalMins}
                 monthlyTotalMins={monthlyTotalMins}
+                weekCalculationStatus={weekPeriodStatus}
+                monthCalculationStatus={monthPeriodStatus}
                 handleManualPunch={handleManualPunch}
                 punchMessage={punchMessage}
                 userProfile={userProfile}

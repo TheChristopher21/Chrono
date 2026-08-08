@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { useNavigate } from 'react-router-dom';
+import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess.js';
+import { getUserDisplayName } from '../../utils/userDisplay';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -13,6 +16,7 @@ import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
+import AdminDashboardOverview from './AdminDashboardOverview';
 import AdminVacationRequests from './AdminVacationRequests';
 import AdminCorrectionsList from './AdminCorrectionsList';
 
@@ -30,6 +34,7 @@ import {
 
 const INBOX_FILTER_STORAGE_KEY = 'adminDashboard_inboxFilters_v1';
 const INBOX_VIEWS_STORAGE_KEY = 'adminDashboard_savedViews_v1';
+const DASHBOARD_TAB_KEYS = ['overview', 'time', 'requests', 'calendar', 'modules'];
 
 const DEFAULT_INBOX_FILTERS = {
     status: 'pending',
@@ -41,6 +46,61 @@ const DEFAULT_INBOX_FILTERS = {
 };
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && !!window.localStorage;
+
+const getValidDashboardTab = (tabId) => (
+    DASHBOARD_TAB_KEYS.includes(tabId) ? tabId : 'overview'
+);
+
+const extractIsoDate = (value) => {
+    if (!value) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return formatLocalDateYMD(value);
+    }
+    if (typeof value === 'string') {
+        const directMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (directMatch) return directMatch[1];
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return formatLocalDateYMD(parsed);
+};
+
+const parseIsoDateAsLocal = (isoDate) => {
+    if (!isoDate || typeof isoDate !== 'string') return null;
+    const parsed = new Date(`${isoDate}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getMondayIsoForDate = (isoDate) => {
+    const parsed = parseIsoDateAsLocal(isoDate);
+    return parsed ? formatLocalDateYMD(getMondayOfWeek(parsed)) : null;
+};
+
+const getCorrectionTargetDateIso = (correctionLike) => {
+    if (!correctionLike) return null;
+    const entries = Array.isArray(correctionLike.entries) ? correctionLike.entries : [];
+    const firstEntry = entries[0] || correctionLike;
+    return extractIsoDate(firstEntry?.desiredTimestamp)
+        || extractIsoDate(correctionLike.desiredTimestamp)
+        || extractIsoDate(correctionLike.requestDate)
+        || extractIsoDate(firstEntry?.originalTimestamp)
+        || extractIsoDate(correctionLike.originalTimestamp);
+};
+
+const makeDashboardSearch = (baseParams, updates = {}, options = {}) => {
+    const params = options.preserve ? new URLSearchParams(baseParams) : new URLSearchParams();
+    Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') {
+            params.delete(key);
+        } else {
+            params.set(key, String(value));
+        }
+    });
+    if (params.get('tab') === 'overview') {
+        params.delete('tab');
+    }
+    return params.toString();
+};
 
 const loadStoredFilters = () => {
     if (!isBrowserEnvironment()) return null;
@@ -114,6 +174,18 @@ const AdminDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const canManageAdminDashboard = hasPageAccess(currentUser, 'adminDashboard', ACCESS_MANAGE);
+
+    const notifyAdminDashboardReadOnly = useCallback(() => {
+        notify(
+            t(
+                'adminDashboard.readOnlyPermissions',
+                'Nur Ansicht: Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'
+            ),
+            'warning'
+        );
+    }, [notify, t]);
 
     const [dailySummaries, setDailySummaries] = useState([]);
     const [allVacations, setAllVacations] = useState([]);
@@ -159,7 +231,7 @@ const AdminDashboard = () => {
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
-    const [, setActiveMainTab] = useState('team');
+    const [activeMainTab, setActiveMainTab] = useState(() => getValidDashboardTab(searchParams.get('tab')));
     const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
     const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
@@ -168,15 +240,54 @@ const AdminDashboard = () => {
     const correctionSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
 
-    const handleNavigateToVacations = useCallback(() => {
-        setVacationOpenSignal((prev) => prev + 1);
-        vacationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const queueScrollTo = useCallback((ref) => {
+        if (typeof window === 'undefined') return;
+        window.setTimeout(() => {
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
     }, []);
 
+    const navigateDashboard = useCallback((updates = {}, options = {}) => {
+        const search = makeDashboardSearch(searchParams, updates, { preserve: options.preserve });
+        navigate({
+            pathname: '/admin/dashboard',
+            search: search ? `?${search}` : '',
+        }, {
+            replace: !!options.replace,
+            state: options.state,
+        });
+    }, [navigate, searchParams]);
+
+    const openDashboardTab = useCallback((tabId, options = {}) => {
+        const normalizedTab = getValidDashboardTab(tabId);
+        setActiveMainTab(normalizedTab);
+        setActiveIssuePill(null);
+        navigateDashboard({
+            tab: normalizedTab,
+            week: null,
+            focusUser: null,
+            focusDate: null,
+            requestType: null,
+            requestId: null,
+        }, options);
+    }, [navigateDashboard]);
+
+    const handleNavigateToVacations = useCallback(() => {
+        openDashboardTab('requests');
+        setVacationOpenSignal((prev) => prev + 1);
+        queueScrollTo(vacationSectionRef);
+    }, [openDashboardTab, queueScrollTo]);
+
     const handleNavigateToCorrections = useCallback(() => {
+        openDashboardTab('requests');
         setCorrectionOpenSignal((prev) => prev + 1);
-        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, []);
+        queueScrollTo(correctionSectionRef);
+    }, [openDashboardTab, queueScrollTo]);
+
+    const handleOpenUserOverview = useCallback((username) => {
+        if (!username) return;
+        navigate(`/admin/dashboard/mitarbeiter/${encodeURIComponent(username)}`);
+    }, [navigate]);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
@@ -232,6 +343,7 @@ const AdminDashboard = () => {
                 flags: {
                     halfDay: !!vac.halfDay,
                     usesOvertime: !!vac.usesOvertime,
+                    companyVacation: !!vac.companyVacation,
                 },
                 isLowRisk: false,
                 raw: vac,
@@ -302,67 +414,6 @@ const AdminDashboard = () => {
         }
         return list;
     }, [inboxItems, inboxFilters, inboxSearch]);
-
-    const statusSummary = useMemo(() => {
-        const summary = { pending: 0, vacations: 0, corrections: 0 };
-        inboxItems.forEach((item) => {
-            if (item.status === 'pending') summary.pending += 1;
-            if (item.type === 'vacation' && item.status === 'pending') summary.vacations += 1;
-            if (item.type === 'correction' && item.status === 'pending') summary.corrections += 1;
-        });
-        return summary;
-    }, [inboxItems]);
-
-    const inboxSummaryItems = useMemo(() => ([
-        {
-            id: 'pending',
-            tone: 'warning',
-            label: t('adminDashboard.inboxSummary.pendingLabel', 'Offene Vorgänge'),
-            description: t('adminDashboard.inboxSummary.pendingDescription', 'Alles, was deine Entscheidung benötigt.'),
-            count: statusSummary?.pending ?? 0,
-        },
-        {
-            id: 'vacations',
-            tone: 'info',
-            label: t('adminDashboard.inboxSummary.vacationsLabel', 'Urlaubsanträge'),
-            description: t('adminDashboard.inboxSummary.vacationsDescription', 'Abwesenheiten im Blick behalten.'),
-            count: statusSummary?.vacations ?? 0,
-        },
-        {
-            id: 'corrections',
-            tone: 'accent',
-            label: t('adminDashboard.inboxSummary.correctionsLabel', 'Korrekturanträge'),
-            description: t('adminDashboard.inboxSummary.correctionsDescription', 'Zeitkorrekturen schnell abgleichen.'),
-            count: statusSummary?.corrections ?? 0,
-        },
-    ]), [statusSummary, t]);
-    const renderInboxSummary = () => (
-        <section
-            className="dashboard-summary-card"
-            aria-label={t('adminDashboard.inboxSummary.title', 'Statusübersicht Posteingang')}
-        >
-            <header className="summary-header">
-                <div className="summary-headline">
-                    <h3>{t('adminDashboard.inboxSummary.title', 'Statusübersicht')}</h3>
-                    <p>{t('adminDashboard.inboxSummary.subtitle', 'Was heute besondere Aufmerksamkeit benötigt.')}</p>
-                </div>
-                <span className="summary-total" aria-label={t('adminDashboard.inboxSummary.total', 'Offene Gesamtanzahl')}>
-                    {statusSummary?.pending ?? 0}
-                </span>
-            </header>
-            <ul className="summary-list">
-                {inboxSummaryItems.map((item) => (
-                    <li key={item.id} className={`summary-item summary-${item.tone}`}>
-                        <span className="summary-count">{item.count}</span>
-                        <div className="summary-content">
-                            <span className="summary-label">{item.label}</span>
-                            <span className="summary-description">{item.description}</span>
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        </section>
-    );
 
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [paletteQuery, setPaletteQuery] = useState('');
@@ -635,20 +686,32 @@ const AdminDashboard = () => {
     }, [handleDenyVacation, handleDenyCorrection]);
 
     const handleBulkApproveSelection = useCallback(async () => {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
         await Promise.all(candidates.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
         clearSelection();
-    }, [approveItem, clearSelection, decisionDrafts, filteredInboxItems, selectedInboxIds]);
+    }, [approveItem, canManageAdminDashboard, clearSelection, decisionDrafts, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
 
     const handleBulkDenySelection = useCallback(async () => {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
         await Promise.all(candidates.map((item) => denyItem(item, decisionDrafts[item.id] || '')));
         clearSelection();
-    }, [clearSelection, decisionDrafts, denyItem, filteredInboxItems, selectedInboxIds]);
+    }, [canManageAdminDashboard, clearSelection, decisionDrafts, denyItem, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
 
     const handleAutoApproveLowRisk = useCallback(async () => {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         const candidates = lowRiskPending.filter((item) => item.status === 'pending' && item.isLowRisk);
         if (candidates.length === 0) {
             notify(t('adminDashboard.actionStream.noLowRisk', 'Keine Low-Risk-Korrekturen gefunden.'), 'info');
@@ -664,7 +727,7 @@ const AdminDashboard = () => {
             }),
             'success',
         );
-    }, [approveItem, clearSelection, decisionDrafts, lowRiskPending, notify, t]);
+    }, [approveItem, canManageAdminDashboard, clearSelection, decisionDrafts, lowRiskPending, notify, notifyAdminDashboardReadOnly, t]);
 
     const commandList = useMemo(() => {
         const base = [
@@ -922,12 +985,14 @@ const AdminDashboard = () => {
     }, []);
 
     const handleFocusIssues = useCallback((filterKey) => {
-        setActiveMainTab('team');
+        openDashboardTab('time');
         setActiveIssuePill(filterKey);
-        if (weekSectionRef.current?.focusIssueType) {
-            weekSectionRef.current.focusIssueType(filterKey);
-        }
-    }, [setActiveMainTab]);
+        scheduleNextFrame(() => {
+            if (weekSectionRef.current?.focusIssueType) {
+                weekSectionRef.current.focusIssueType(filterKey);
+            }
+        });
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const handleResetIssueFilters = useCallback(() => {
         setActiveIssuePill(null);
@@ -939,25 +1004,28 @@ const AdminDashboard = () => {
     }, [handleFocusIssues]);
 
     const handleFocusNegativeBalances = useCallback(() => {
-        setActiveMainTab('team');
+        openDashboardTab('time');
         setActiveIssuePill(null);
-        weekSectionRef.current?.focusNegativeBalances?.();
-    }, [setActiveMainTab]);
+        scheduleNextFrame(() => {
+            weekSectionRef.current?.focusNegativeBalances?.();
+        });
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const handleFocusPositiveBalances = useCallback(() => {
-        setActiveMainTab('team');
+        openDashboardTab('time');
         setActiveIssuePill(null);
-        weekSectionRef.current?.focusPositiveBalances?.();
-    }, [setActiveMainTab]);
+        scheduleNextFrame(() => {
+            weekSectionRef.current?.focusPositiveBalances?.();
+        });
+    }, [openDashboardTab, scheduleNextFrame]);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
+        openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusUser?.(username);
         });
-        setCorrectionOpenSignal((prev) => prev + 1);
-        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     useEffect(() => {
@@ -1021,6 +1089,93 @@ const AdminDashboard = () => {
             setActiveIssuePill(null);
         }
     }, [hasIssues, activeIssuePill]);
+
+    const dashboardSearchKey = searchParams.toString();
+
+    const focusedRequest = useMemo(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        if (getValidDashboardTab(params.get('tab')) !== 'requests') {
+            return null;
+        }
+        const type = params.get('requestType');
+        const id = params.get('requestId');
+        if (!['vacation', 'correction'].includes(type) || !id) {
+            return null;
+        }
+        return { type, id };
+    }, [dashboardSearchKey]);
+
+    const timeFocusTarget = useMemo(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        if (getValidDashboardTab(params.get('tab')) !== 'time') {
+            return null;
+        }
+        const username = params.get('focusUser');
+        const dateIso = extractIsoDate(params.get('focusDate'));
+        if (!username) return null;
+        return { username, dateIso };
+    }, [dashboardSearchKey]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        const nextTab = getValidDashboardTab(params.get('tab'));
+        setActiveMainTab(prev => (prev === nextTab ? prev : nextTab));
+
+        const weekIso = extractIsoDate(params.get('week'));
+        if (weekIso) {
+            const parsedWeekDate = parseIsoDateAsLocal(weekIso);
+            if (parsedWeekDate) {
+                const nextMonday = getMondayOfWeek(parsedWeekDate);
+                setSelectedMonday(prev => (
+                    prev.getTime() === nextMonday.getTime() ? prev : nextMonday
+                ));
+            }
+        }
+    }, [dashboardSearchKey]);
+
+    useEffect(() => {
+        if (activeMainTab !== 'time' || !timeFocusTarget?.username) return undefined;
+
+        let cancelled = false;
+        const runFocus = () => {
+            if (cancelled) return;
+            weekSectionRef.current?.focusUserDate?.(
+                timeFocusTarget.username,
+                timeFocusTarget.dateIso,
+                'request_focus'
+            );
+        };
+
+        scheduleNextFrame(runFocus);
+        const timeoutId = window.setTimeout(runFocus, 120);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [
+        activeMainTab,
+        timeFocusTarget,
+        selectedMonday,
+        users.length,
+        dailySummaries.length,
+        scheduleNextFrame,
+    ]);
+
+    const dashboardTabs = useMemo(() => ([
+        { id: 'overview', label: t('adminDashboard.tabs.overview', 'Übersicht') },
+        { id: 'time', label: t('adminDashboard.tabs.timeReview', 'Zeitprüfung') },
+        { id: 'requests', label: t('adminDashboard.tabs.requests', 'Anträge'), count: inboxItems.filter(item => item.status === 'pending').length },
+        { id: 'calendar', label: t('adminDashboard.tabs.calendar', 'Kalender') },
+        { id: 'modules', label: t('adminDashboard.tabs.modules', 'Module') },
+    ]), [inboxItems, t]);
+
+    const handlePrintTimesFromHeader = useCallback(() => {
+        openDashboardTab('time');
+        scheduleNextFrame(() => {
+            weekSectionRef.current?.printOverview?.();
+        });
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -1158,27 +1313,100 @@ const AdminDashboard = () => {
         }
     }, [selectedMonday, users, currentUser, fetchHolidaysForAllRelevantCantons]);
 
+    const updateSelectedWeek = useCallback((dateForWeek) => {
+        if (!dateForWeek || Number.isNaN(dateForWeek.getTime())) return;
+        const nextMonday = getMondayOfWeek(dateForWeek);
+        setSelectedMonday(nextMonday);
+        if (activeMainTab === 'time') {
+            navigateDashboard({
+                tab: 'time',
+                week: formatLocalDateYMD(nextMonday),
+                focusDate: null,
+            }, { preserve: true, replace: true });
+        }
+    }, [activeMainTab, navigateDashboard]);
+
+    const handleOpenRequestInTimeReview = useCallback((request) => {
+        if (!request?.type || request.id === undefined || request.id === null || !request.username) {
+            return;
+        }
+
+        const requestType = request.type === 'vacation' ? 'vacation' : 'correction';
+        const requestId = String(request.id);
+        const targetDateIso = extractIsoDate(request.dateIso)
+            || (requestType === 'correction'
+                ? getCorrectionTargetDateIso(request)
+                : extractIsoDate(request.startDate));
+        const targetWeekIso = getMondayIsoForDate(targetDateIso);
+
+        if (!targetDateIso || !targetWeekIso) {
+            notify(t('adminDashboard.requestJumpMissingDate', 'FÃ¼r diesen Antrag konnte kein gÃ¼ltiges PrÃ¼fdatum gefunden werden.'), 'warning');
+            return;
+        }
+
+        navigateDashboard({
+            tab: 'requests',
+            requestType,
+            requestId,
+            week: null,
+            focusUser: null,
+            focusDate: null,
+        }, {
+            replace: true,
+            state: { focusedRequest: { type: requestType, id: requestId } },
+        });
+
+        scheduleNextFrame(() => {
+            const parsedWeekDate = parseIsoDateAsLocal(targetWeekIso);
+            if (parsedWeekDate) {
+                setSelectedMonday(parsedWeekDate);
+            }
+            setActiveMainTab('time');
+            setActiveIssuePill(null);
+            navigateDashboard({
+                tab: 'time',
+                week: targetWeekIso,
+                focusUser: request.username,
+                focusDate: targetDateIso,
+            }, {
+                state: {
+                    fromRequest: {
+                        type: requestType,
+                        id: requestId,
+                    },
+                },
+            });
+        });
+    }, [navigateDashboard, notify, scheduleNextFrame, t]);
 
     function handlePrevWeek() {
-        setSelectedMonday(prev => addDays(prev, -7));
+        updateSelectedWeek(addDays(selectedMonday, -7));
     }
     function handleNextWeek() {
-        setSelectedMonday(prev => addDays(prev, 7));
+        updateSelectedWeek(addDays(selectedMonday, 7));
     }
     function handleWeekJump(e) {
         const picked = new Date(e.target.value);
         if (!isNaN(picked.getTime())) {
-            setSelectedMonday(getMondayOfWeek(picked));
+            updateSelectedWeek(picked);
         }
     }
 
     function handleCurrentWeek() {
-        setSelectedMonday(getMondayOfWeek(new Date()));
+        updateSelectedWeek(new Date());
     }
 
-    async function handleApproveVacation(id) {
+    async function handleApproveVacation(id, adminNote = '') {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         try {
-            await api.post(`/api/vacation/approve/${id}`);
+            await api.put(`/api/vacation/${id}`, {
+                approved: true,
+                denied: false,
+                adminNote,
+            });
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
             handleDataReloadNeeded();
         } catch (err) {
@@ -1186,9 +1414,17 @@ const AdminDashboard = () => {
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
-    async function handleDenyVacation(id) {
+    async function handleDenyVacation(id, adminNote = '') {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         try {
-            await api.post(`/api/vacation/deny/${id}`);
+            await api.put(`/api/vacation/${id}`, {
+                approved: false,
+                denied: true,
+                adminNote,
+            });
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
             fetchAllVacations();
         } catch (err) {
@@ -1198,6 +1434,10 @@ const AdminDashboard = () => {
     }
 
     async function handleApproveCorrection(id, comment) {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
@@ -1209,6 +1449,10 @@ const AdminDashboard = () => {
     }
 
     async function handleDenyCorrection(id, comment) {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg')} #${id}`, "success");
@@ -1220,6 +1464,10 @@ const AdminDashboard = () => {
     }
 
     function openEditModal(targetUsername, dateObj, dailySummaryForDay) {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditDayEntries(dailySummaryForDay ? dailySummaryForDay.entries || [] : []);
@@ -1227,6 +1475,10 @@ const AdminDashboard = () => {
     }
 
     function openNewEntryModal(targetUsername, dateObj) {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditDayEntries([]);
@@ -1234,6 +1486,10 @@ const AdminDashboard = () => {
     }
 
     async function handleEditSubmit(updatedEntriesForDay) {
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            return;
+        }
         if (!editDate || !editTargetUsername) {
             notify(t('adminDashboard.noValidDateOrUser', "Kein gültiges Datum oder Benutzer ausgewählt."), 'error');
             return;
@@ -1254,9 +1510,9 @@ const AdminDashboard = () => {
 
     const focusWeekForProblem = useCallback((dateForWeek) => {
         if (dateForWeek && !isNaN(new Date(dateForWeek).getTime())) {
-            setSelectedMonday(getMondayOfWeek(new Date(dateForWeek)));
+            updateSelectedWeek(new Date(dateForWeek));
         }
-    }, []);
+    }, [updateSelectedWeek]);
 
     function openPrintUserModal(username) {
         setPrintUser(username);
@@ -1297,7 +1553,7 @@ const AdminDashboard = () => {
         );
 
         const userDetails = users.find(u => u.username === printUser);
-        const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
+        const userNameDisplay = getUserDisplayName(userDetails || printUser, users, printUser);
         const balanceRecord = filteredWeeklyBalances.find(b => b.username === printUser);
         const overtimeStr = minutesToHHMM(balanceRecord?.trackingBalance || 0);
 
@@ -1310,14 +1566,21 @@ const AdminDashboard = () => {
 
         doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
-        doc.text("Zeitenbericht", pageWidth / 2, yPos, { align: "center" });
+        doc.text(t('adminDashboard.print.reportTitle', 'Zeitenbericht'), pageWidth / 2, yPos, { align: "center" });
         yPos += 10;
 
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
-        doc.text(`für ${userNameDisplay}`, pageWidth / 2, yPos, { align: "center" });
+        doc.text(t('adminDashboard.print.forUser', 'für {{name}}', { name: userNameDisplay }), pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
-        doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate))} - ${formatDate(new Date(printUserEndDate))}`, pageWidth / 2, yPos, { align: "center" });
+        doc.text(t(
+            'adminDashboard.print.period',
+            'Zeitraum: {{start}} - {{end}}',
+            {
+                start: formatDate(new Date(printUserStartDate)),
+                end: formatDate(new Date(printUserEndDate)),
+            }
+        ), pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
         doc.text(`${t('overtimeBalance', 'Überstundensaldo')}: ${overtimeStr}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 15;
@@ -1333,8 +1596,8 @@ const AdminDashboard = () => {
 
         doc.setFontSize(10);
         doc.setTextColor(108, 117, 125);
-        doc.text("Gesamte Arbeitszeit", summaryCol1, summaryTextY - 8, { align: 'center' });
-        doc.text("Gesamte Pausenzeit", summaryCol2, summaryTextY - 8, { align: 'center' });
+        doc.text(t('adminDashboard.print.totalWork', 'Gesamte Arbeitszeit'), summaryCol1, summaryTextY - 8, { align: 'center' });
+        doc.text(t('adminDashboard.print.totalBreak', 'Gesamte Pausenzeit'), summaryCol2, summaryTextY - 8, { align: 'center' });
 
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
@@ -1376,19 +1639,19 @@ const AdminDashboard = () => {
 
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Übersicht", pageMargin + 5, leftColY);
+            doc.text(t('overview', 'Übersicht'), pageMargin + 5, leftColY);
             leftColY += 7;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Gearbeitet: ${minutesToHHMM(dayData.workedMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(t('adminDashboard.print.worked', 'Gearbeitet: {{time}}', { time: minutesToHHMM(dayData.workedMinutes) }), pageMargin + 5, leftColY);
             leftColY += 6;
-            doc.text(`Pause: ${minutesToHHMM(dayData.breakMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(t('adminDashboard.print.break', 'Pause: {{time}}', { time: minutesToHHMM(dayData.breakMinutes) }), pageMargin + 5, leftColY);
             leftColY += 10;
 
             if (dayData.note) {
                 doc.setFont("helvetica", "bold");
-                doc.text("Notiz:", pageMargin + 5, leftColY);
+                doc.text(t('noteWithColon', 'Notiz:'), pageMargin + 5, leftColY);
                 leftColY += 6;
                 doc.setFont("helvetica", "italic");
                 const noteLines = doc.splitTextToSize(dayData.note, (contentWidth / 2.5) - 10);
@@ -1398,13 +1661,13 @@ const AdminDashboard = () => {
 
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Arbeitsblöcke", rightColX, rightColY);
+            doc.text(t('adminDashboard.print.workBlocks', 'Arbeitsblöcke'), rightColX, rightColY);
             rightColY += 7;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             dayData.blocks.work.forEach(block => {
-                const text = `${block.description ? `${block.description}:` : 'Arbeit:'} ${block.start} - ${block.end} (${block.duration})`;
+                const text = `${block.description ? `${block.description}:` : t('adminDashboard.print.workLabel', 'Arbeit:')} ${block.start} - ${block.end} (${block.duration})`;
                 const textLines = doc.splitTextToSize(text, contentWidth - rightColX - 5);
                 doc.text(textLines, rightColX, rightColY);
                 rightColY += textLines.length * 5 + 2;
@@ -1424,24 +1687,200 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
-            <header className="dashboard-header">
-                <div className="header-info">
-                    <h2>{t('adminDashboard.titleWeekly')}</h2>
-                    {currentUser && (
-                        <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p>
-                    )}
-                </div>
-                <button
-                    type="button"
-                    className="command-palette-trigger button-secondary"
-                    onClick={() => setPaletteOpen(true)}
-                >
-                    {t('adminDashboard.commandPalette.buttonLabel', 'Befehle (Strg+K)')}
-                </button>
-            </header>
+            <div className="admin-dashboard-shell">
+                <header className="dashboard-header admin-command-header">
+                    <div className="header-info">
+                        <span className="header-eyebrow">{t('adminDashboard.header.eyebrow', 'Arbeitszentrale')}</span>
+                        <h2>{t('adminDashboard.title', 'Admin-Dashboard')}</h2>
+                        <p>
+                            {t('adminDashboard.header.today', 'Heute')}: {formatDateWithWeekday(new Date())} {' - '}
+                            {t('adminDashboard.header.range', 'Aktuelle Woche')}: {formatDate(selectedMonday)} - {formatDate(addDays(selectedMonday, 6))} {' - '}
+                            {t('adminDashboard.header.team', 'Alle Teams')}
+                        </p>
+                        {currentUser && (
+                            <p className="header-login-context">{t('adminDashboard.loggedInAs')} {getUserDisplayName(currentUser)}</p>
+                        )}
+                    </div>
+                    <div className="dashboard-header-actions" aria-label={t('adminDashboard.header.actions', 'Dashboard-Aktionen')}>
+                        <span className="context-chip">{t('adminDashboard.header.teamChip', 'Team: Alle')}</span>
+                        <span className="context-chip">{t('adminDashboard.header.periodChip', 'Zeitraum: Diese Woche')}</span>
+                        <button type="button" className="header-action-button ghost" onClick={handleShowIssueOverview}>
+                            {t('adminDashboard.issueFilters.onlyIssues', 'Nur Problemfälle')}
+                        </button>
+                        <button type="button" className="header-action-button" onClick={handlePrintTimesFromHeader}>
+                            {t('adminDashboard.header.printTimes', 'Zeiten drucken')}
+                        </button>
+                        <button
+                            type="button"
+                            className="command-palette-trigger"
+                            onClick={() => setPaletteOpen(true)}
+                        >
+                            {t('adminDashboard.commandPalette.buttonLabel', 'Befehle (Strg+K)')}
+                        </button>
+                    </div>
+                </header>
+
+            {!canManageAdminDashboard && (
+                <section className="admin-permission-banner" aria-live="polite">
+                    <strong>{t('adminDashboard.readOnlyLabel', 'Nur Ansicht')}</strong>
+                    <span>
+                        {t(
+                            'adminDashboard.readOnlyPermissions',
+                            'Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'
+                        )}
+                    </span>
+                </section>
+            )}
+
+                <nav className="dashboard-tab-navigation" aria-label={t('adminDashboard.tabs.label', 'Admin-Dashboard Bereiche')}>
+                    {dashboardTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            className={`dashboard-tab-button ${activeMainTab === tab.id ? 'is-active' : ''}`}
+                            onClick={() => openDashboardTab(tab.id)}
+                            aria-current={activeMainTab === tab.id ? 'page' : undefined}
+                        >
+                            <span>{tab.label}</span>
+                            {tab.count > 0 && <span className="tab-count">{tab.count}</span>}
+                        </button>
+                    ))}
+                </nav>
+
+                <main className="admin-dashboard-panels">
+                    <section className={`dashboard-tab-panel ${activeMainTab === 'overview' ? 'is-active' : ''}`}>
+                        <AdminDashboardOverview
+                            t={t}
+                            currentUser={currentUser}
+                            allVacations={allVacations}
+                            allCorrections={allCorrections}
+                            allSickLeaves={allSickLeaves}
+                            weeklyBalances={filteredWeeklyBalances}
+                            users={users}
+                            issueSummary={issueSummary}
+                            onOpenTime={() => openDashboardTab('time')}
+                            onOpenRequests={() => openDashboardTab('requests')}
+                            onOpenCalendar={() => openDashboardTab('calendar')}
+                            onOpenModules={() => openDashboardTab('modules')}
+                            onNavigateToVacations={handleNavigateToVacations}
+                            onNavigateToCorrections={handleNavigateToCorrections}
+                            onShowIssueOverview={handleShowIssueOverview}
+                            onFocusNegativeBalances={handleFocusNegativeBalances}
+                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                            onFocusEmployee={handleFocusUserFromTask}
+                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                        />
+                    </section>
+
+                    <section className={`dashboard-tab-panel ${activeMainTab === 'time' ? 'is-active' : ''}`}>
+                        <div className="team-overview-content">
+                            <section className="team-overview-main">
+                                <AdminWeekSection
+                                    ref={weekSectionRef}
+                                    t={t}
+                                    weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                                    selectedMonday={selectedMonday}
+                                    handlePrevWeek={handlePrevWeek}
+                                    handleNextWeek={handleNextWeek}
+                                    handleWeekJump={handleWeekJump}
+                                    handleCurrentWeek={handleCurrentWeek}
+                                    onFocusProblemWeek={focusWeekForProblem}
+                                    dailySummariesForWeekSection={dailySummaries}
+                                    allVacations={allVacations}
+                                    allSickLeaves={allSickLeaves}
+                                    allHolidays={holidaysByCanton}
+                                    users={users}
+                                    defaultExpectedHours={defaultExpectedHours}
+                                    openEditModal={openEditModal}
+                                    openPrintUserModal={openPrintUserModal}
+                                    rawUserTrackingBalances={filteredWeeklyBalances}
+                                    openNewEntryModal={openNewEntryModal}
+                                    onDataReloadNeeded={handleDataReloadNeeded}
+                                    onIssueSummaryChange={handleIssueSummaryUpdate}
+                                    showSmartOverview={false}
+                                    onOpenUserOverview={handleOpenUserOverview}
+                                />
+                            </section>
+                        </div>
+                    </section>
+
+                    <section className={`dashboard-tab-panel ${activeMainTab === 'requests' ? 'is-active' : ''}`}>
+                        <div className="dashboard-panel-intro">
+                            <span>{t('adminDashboard.tabs.requests', 'Anträge')}</span>
+                            <h3>{t('adminDashboard.requestsCenterTitle', 'Antragscenter')}</h3>
+                            <p>{t('adminDashboard.requestsCenterSubtitle', 'Offene Korrekturen und Urlaub zuerst prüfen, erledigte Vorgänge bleiben erreichbar.')}</p>
+                        </div>
+                        <section className="dashboard-requests-section">
+                            <div ref={vacationSectionRef}>
+                                <AdminVacationRequests
+                                    t={t}
+                                    allVacations={allVacations}
+                                    handleApproveVacation={handleApproveVacation}
+                                    handleDenyVacation={handleDenyVacation}
+                                    onReloadVacations={fetchAllVacations}
+                                    openSignal={vacationOpenSignal}
+                                    canManage={canManageAdminDashboard}
+                                    users={users}
+                                    focusedRequest={focusedRequest}
+                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
+                                />
+                            </div>
+                            <div ref={correctionSectionRef}>
+                                <AdminCorrectionsList
+                                    t={t}
+                                    allCorrections={allCorrections}
+                                    onApprove={handleApproveCorrection}
+                                    onDeny={handleDenyCorrection}
+                                    openSignal={correctionOpenSignal}
+                                    canManage={canManageAdminDashboard}
+                                    users={users}
+                                    focusedRequest={focusedRequest}
+                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
+                                />
+                            </div>
+                        </section>
+                    </section>
+
+                    <section className={`dashboard-tab-panel ${activeMainTab === 'calendar' ? 'is-active' : ''}`}>
+                        <section
+                            className="admin-calendar-section"
+                            aria-label={t('adminDashboard.vacationCalendarAria', 'Abwesenheitskalender Übersicht')}
+                        >
+                            <div className="admin-calendar-card">
+                                <div className="dashboard-panel-intro compact">
+                                    <span>{t('adminDashboard.tabs.calendar', 'Kalender')}</span>
+                                    <h3>{t('adminDashboard.vacationCalendarTitle')}</h3>
+                                    <p>{t('adminDashboard.calendarPanelSubtitle', 'Detailansicht für Urlaub, Krankheit und geplante Abwesenheiten.')}</p>
+                                </div>
+                                <VacationCalendarAdmin
+                                    vacationRequests={allVacations.filter(v => v.approved)}
+                                    onReloadVacations={handleDataReloadNeeded}
+                                    companyUsers={users}
+                                />
+                            </div>
+                        </section>
+                    </section>
+
+                    <section className={`dashboard-tab-panel ${activeMainTab === 'modules' ? 'is-active' : ''}`}>
+                        <AccessiblePagesPanel
+                            context="admin"
+                            title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
+                            subtitle={t('adminDashboard.modulesSubtitle', 'Kompakter Zugriff auf die Module, die für diesen Benutzer freigegeben sind.')}
+                        />
+                    </section>
+                </main>
+
+                {false && (
+                    <>
+
+            <AccessiblePagesPanel
+                context="admin"
+                title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
+                subtitle={t('adminDashboard.modulesSubtitleDetailed', 'Diese Kacheln richten sich direkt nach den vergebenen Benutzerrechten.')}
+            />
 
             <section
-                className="dashboard-overview-grid dashboard-summary-section"
+                className="dashboard-summary-section"
                 aria-label={t('adminDashboard.summary.ariaLabel', 'Aktueller Admin-Überblick')}
             >
                 <div className="dashboard-overview-main">
@@ -1459,9 +1898,6 @@ const AdminDashboard = () => {
                         onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
                     />
                 </div>
-                <aside className="dashboard-overview-side">
-                    {renderInboxSummary()}
-                </aside>
             </section>
 
             <div className="team-overview-content">
@@ -1489,6 +1925,7 @@ const AdminDashboard = () => {
                         onDataReloadNeeded={handleDataReloadNeeded}
                         onIssueSummaryChange={handleIssueSummaryUpdate}
                         showSmartOverview={false}
+                        onOpenUserOverview={handleOpenUserOverview}
                     />
                 </section>
 
@@ -1503,6 +1940,8 @@ const AdminDashboard = () => {
                         handleDenyVacation={handleDenyVacation}
                         onReloadVacations={fetchAllVacations}
                         openSignal={vacationOpenSignal}
+                        canManage={canManageAdminDashboard}
+                        users={users}
                     />
                 </div>
                 <div ref={correctionSectionRef}>
@@ -1512,6 +1951,8 @@ const AdminDashboard = () => {
                         onApprove={handleApproveCorrection}
                         onDeny={handleDenyCorrection}
                         openSignal={correctionOpenSignal}
+                        canManage={canManageAdminDashboard}
+                        users={users}
                     />
                 </div>
             </section>
@@ -1529,6 +1970,9 @@ const AdminDashboard = () => {
                     />
                 </div>
             </section>
+                    </>
+                )}
+            </div>
             {paletteOpen && (
                 <div className="command-palette-overlay" role="dialog" aria-modal="true">
                     <div className="command-palette">

@@ -103,7 +103,7 @@ class PayrollServiceTest {
     }
 
     @Test
-    void generatePayslip_payoutOvertimeAdjustsBalanceAndPay() {
+    void generatePayslip_payoutOvertimeStoresPayoutAndPayWithoutChangingBalance() {
         User user = new User();
         user.setId(1L);
         user.setUsername("john");
@@ -132,7 +132,29 @@ class PayrollServiceTest {
         assertEquals(18.75, ps.getGrossSalary());
         assertEquals(1.5, ps.getOvertimeHours());
         assertTrue(ps.isPayoutOvertime());
-        assertEquals(30, user.getTrackingBalanceInMinutes());
+        assertEquals(120, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void approvePayslip_deductsBookedOvertimeFromBalance() {
+        User user = new User();
+        user.setTrackingBalanceInMinutes(180);
+
+        Payslip ps = new Payslip();
+        ps.setId(42L);
+        ps.setUser(user);
+        ps.setPayoutOvertime(true);
+        ps.setOvertimeHours(2.0);
+
+        when(payslipRepository.findById(42L)).thenReturn(Optional.of(ps));
+        when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
+        when(payslipRepository.save(ps)).thenReturn(ps);
+        when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
+
+        payrollService.approvePayslip(42L, null);
+
+        assertEquals(60, user.getTrackingBalanceInMinutes());
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -168,4 +190,3 @@ class PayrollServiceTest {
         verify(payslipRepository, never()).delete(any());
     }
 }
-

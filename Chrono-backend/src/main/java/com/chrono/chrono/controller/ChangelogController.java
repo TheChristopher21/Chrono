@@ -25,7 +25,7 @@ public class ChangelogController {
      * Erstellt einen neuen Changelog-Eintrag. Nur für SUPER_ADMIN erlaubt.
      */
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<ChangelogDTO> createChangelog(@RequestBody ChangelogDTO changelogDTO) {
         ChangelogDTO createdChangelog = changelogService.createChangelog(changelogDTO);
         // Gibt den Status 201 Created mit dem neuen Objekt zurück.

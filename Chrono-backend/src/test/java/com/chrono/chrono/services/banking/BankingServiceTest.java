@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.banking.BankAccount;
 import com.chrono.chrono.entities.banking.DigitalSignatureRequest;
 import com.chrono.chrono.entities.banking.PaymentBatch;
+import com.chrono.chrono.entities.banking.PaymentInstruction;
 import com.chrono.chrono.entities.banking.PaymentStatus;
 import com.chrono.chrono.entities.banking.SecureMessage;
 import com.chrono.chrono.entities.banking.SignatureStatus;
@@ -17,10 +18,13 @@ import com.chrono.chrono.repositories.banking.SecureMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -85,31 +89,38 @@ class BankingServiceTest {
         batch.setInstructions(Collections.emptyList());
 
         when(paymentBatchRepository.findById(7L)).thenReturn(Optional.of(batch));
+        when(paymentBatchRepository.findByIdAndCompany(7L, company)).thenReturn(Optional.of(batch));
         when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentGatewayClient.transmit(any(PaymentBatch.class), any(String.class), any(String.class)))
-                .thenReturn(new PaymentGatewayClient.PaymentSubmissionResult("REF-123", "SENT", "ok"));
+                .thenReturn(new PaymentGatewayClient.PaymentSubmissionResult("REF-123", "SENT", "ok", "API", null, null));
 
-        PaymentBatch updated = bankingService.markBatchTransmitted(7L, "IDEMPOTENT-REF");
+        PaymentBatch updated = bankingService.markBatchTransmitted(company, 7L, "IDEMPOTENT-REF");
 
         assertThat(updated.getStatus()).isEqualTo(PaymentStatus.SENT);
         assertThat(updated.getTransmissionReference()).isEqualTo("REF-123");
         assertThat(updated.getProviderStatus()).isEqualTo("SENT");
+        assertThat(updated.getDeliveryChannel()).isEqualTo("API");
         verify(paymentGatewayClient).transmit(any(PaymentBatch.class), any(String.class), any(String.class));
     }
 
     @Test
     void requestSignaturePersistsProviderFields() {
+        Company company = new Company();
+        company.setId(5L);
+        company.setName("Chrono AG");
+
         when(digitalSignatureProviderClient.createSignatureRequest("PAYROLL", "/tmp/doc.pdf", "user@example.com"))
                 .thenReturn(new DigitalSignatureProviderClient.SignatureCreationResult(SignatureStatus.IN_PROGRESS,
                         "SIG-42", "https://sign.example.com/42", "created"));
         when(digitalSignatureRequestRepository.save(any(DigitalSignatureRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        DigitalSignatureRequest request = bankingService.requestSignature("PAYROLL", "/tmp/doc.pdf", "user@example.com");
+        DigitalSignatureRequest request = bankingService.requestSignature(company, "PAYROLL", "/tmp/doc.pdf", "user@example.com");
 
         assertThat(request.getProviderReference()).isEqualTo("SIG-42");
         assertThat(request.getSigningUrl()).isEqualTo("https://sign.example.com/42");
         assertThat(request.getStatus()).isEqualTo(SignatureStatus.IN_PROGRESS);
+        assertThat(request.getCompany()).isEqualTo(company);
     }
 
     @Test
@@ -126,5 +137,57 @@ class BankingServiceTest {
         assertThat(message.isDelivered()).isTrue();
         assertThat(message.getProviderReference()).isEqualTo("MSG-1");
         assertThat(message.getProviderStatus()).isEqualTo("DELIVERED");
+    }
+
+    @Test
+    void createBatchRejectsCurrencyOutsideIsoCodeShape() {
+        Company company = new Company();
+        company.setId(10L);
+        company.setName("Chrono AG");
+
+        BankAccount account = new BankAccount();
+        account.setCompany(company);
+        account.setName("Main");
+        account.setIban("CH9300762011623852957");
+
+        PaymentInstruction instruction = new PaymentInstruction();
+        instruction.setCreditorName("Vendor");
+        instruction.setCreditorIban("CH5604835012345678009");
+        instruction.setAmount(BigDecimal.TEN);
+        instruction.setCurrency("CHF\"></InstdAmt><Injected Ccy=\"CHF");
+
+        when(bankAccountRepository.findByIdAndCompany(3L, company)).thenReturn(Optional.of(account));
+        when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatThrownBy(() -> bankingService.createBatch(company, 3L, List.of(instruction)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Currency");
+    }
+
+    @Test
+    void createBatchNormalizesValidCurrency() {
+        Company company = new Company();
+        company.setId(10L);
+        company.setName("Chrono AG");
+
+        BankAccount account = new BankAccount();
+        account.setCompany(company);
+        account.setName("Main");
+        account.setIban("CH9300762011623852957");
+
+        PaymentInstruction instruction = new PaymentInstruction();
+        instruction.setCreditorName("Vendor");
+        instruction.setCreditorIban("CH5604835012345678009");
+        instruction.setAmount(BigDecimal.TEN);
+        instruction.setCurrency("eur");
+
+        when(bankAccountRepository.findByIdAndCompany(3L, company)).thenReturn(Optional.of(account));
+        when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentInstructionRepository.save(any(PaymentInstruction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaymentBatch batch = bankingService.createBatch(company, 3L, List.of(instruction));
+
+        assertThat(batch.getInstructions()).hasSize(1);
+        assertThat(batch.getInstructions().get(0).getCurrency()).isEqualTo("EUR");
     }
 }

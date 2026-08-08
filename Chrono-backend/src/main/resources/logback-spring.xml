@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true">
-    <logger name="com.chrono.chrono.services.WorkScheduleService" level="DEBUG"/>
-    <logger name="com.chrono.chrono.services.TimeTrackingService" level="DEBUG"/>
-    <logger name="com.chrono.chrono.services.VacationService" level="DEBUG"/>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <turboFilter class="ch.qos.logback.classic.turbo.DuplicateMessageFilter">
@@ -13,8 +10,6 @@
     <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
-
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="JSON"/>

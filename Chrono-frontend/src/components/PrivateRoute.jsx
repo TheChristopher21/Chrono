@@ -1,18 +1,33 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { hasFeatureAccess, hasPageAccess } from '../utils/pageAccess.js';
 
 /**
- * PrivateRoute schützt Routen.
- * - requiredRole kann String **oder Array** sein.
- * - Bei fehlender Auth → Redirect zu /login?next=<uri>
- * - Bei fehlender Berechtigung → Redirect zur Landing-Page
+ * PrivateRoute protects routes.
+ * - requiredRole can be a string or an array
+ * - Missing auth redirects to /login?next=<uri>
+ * - Missing permissions redirect to the configured fallback
  */
-const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/' }) => {
-    const { authToken, currentUser } = useAuth();
+const PrivateRoute = ({
+    children,
+    requiredRole,
+    requiredFeature,
+    requiredPagePermission,
+    requiredAccess = 'VIEW',
+    redirectTo = '/',
+}) => {
+    const { authToken, currentUser, isAuthLoading } = useAuth();
     const location = useLocation();
 
-    /* -------- nicht eingeloggt -------------------- */
+    if (authToken && isAuthLoading && !currentUser) {
+        return (
+            <div className="route-auth-loading" data-testid="route-auth-loading" aria-live="polite">
+                <div className="route-auth-loading__card">Dashboard wird geladen...</div>
+            </div>
+        );
+    }
+
     if (!authToken) {
         return (
             <Navigate
@@ -22,11 +37,19 @@ const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/
         );
     }
 
-    /* -------- Rolle prüfen (optional) ------------- */
+    if (!currentUser) {
+        return (
+            <Navigate
+                to={`/login?next=${encodeURIComponent(location.pathname)}`}
+                replace
+            />
+        );
+    }
+
     if (requiredRole) {
-        const roles = currentUser?.roles || [];
+        const roles = currentUser.roles || [];
         const allowed = Array.isArray(requiredRole)
-            ? requiredRole.some((r) => roles.includes(r))
+            ? requiredRole.some((role) => roles.includes(role))
             : roles.includes(requiredRole);
 
         if (!allowed) {
@@ -35,24 +58,27 @@ const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/
     }
 
     if (requiredFeature) {
-        const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPERADMIN');
-        if (!isSuperAdmin) {
-            const featureKeysRaw = currentUser?.companyFeatureKeys;
-            const featureList = Array.isArray(featureKeysRaw)
-                ? featureKeysRaw
-                : featureKeysRaw
-                    ? Object.values(featureKeysRaw)
-                    : [];
+        const requiredFeatures = Array.isArray(requiredFeature)
+            ? requiredFeature
+            : [requiredFeature];
 
-            const requiredFeatures = Array.isArray(requiredFeature)
-                ? requiredFeature
-                : [requiredFeature];
+        const featureAllowed = requiredFeatures.some((featureKey) => hasFeatureAccess(currentUser, featureKey));
 
-            const hasFeature = requiredFeatures.some((featureKey) => featureList.includes(featureKey));
+        if (!featureAllowed) {
+            return <Navigate to={redirectTo} replace />;
+        }
+    }
 
-            if (!hasFeature) {
-                return <Navigate to={redirectTo} replace />;
-            }
+    if (requiredPagePermission) {
+        const requiredPermissions = Array.isArray(requiredPagePermission)
+            ? requiredPagePermission
+            : [requiredPagePermission];
+        const permissionAllowed = requiredPermissions.some((pageKey) =>
+            hasPageAccess(currentUser, pageKey, requiredAccess)
+        );
+
+        if (!permissionAllowed) {
+            return <Navigate to={redirectTo} replace />;
         }
     }
 

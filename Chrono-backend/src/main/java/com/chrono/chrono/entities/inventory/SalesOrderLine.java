@@ -25,6 +25,12 @@ public class SalesOrderLine {
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity;
 
+    @Column(name = "reserved_quantity", precision = 19, scale = 4, nullable = false)
+    private BigDecimal reservedQuantity = BigDecimal.ZERO;
+
+    @Column(name = "fulfilled_quantity", precision = 19, scale = 4, nullable = false)
+    private BigDecimal fulfilledQuantity = BigDecimal.ZERO;
+
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal unitPrice;
 
@@ -58,6 +64,18 @@ public class SalesOrderLine {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public BigDecimal getReservedQuantity() { return reservedQuantity; }
+
+    public void setReservedQuantity(BigDecimal reservedQuantity) { this.reservedQuantity = reservedQuantity; }
+
+    public BigDecimal getFulfilledQuantity() { return fulfilledQuantity; }
+
+    public void setFulfilledQuantity(BigDecimal fulfilledQuantity) { this.fulfilledQuantity = fulfilledQuantity; }
+
+    public BigDecimal getOpenQuantity() {
+        return quantity.subtract(fulfilledQuantity == null ? BigDecimal.ZERO : fulfilledQuantity);
     }
 
     public BigDecimal getUnitPrice() {

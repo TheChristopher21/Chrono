@@ -1,7 +1,9 @@
 const API = (import.meta.env.VITE_API_BASE_URL || "/api") + "/nfc";
 
 export const readNfcBlock = (block) =>
-    fetch(`${API}/read/${block}`).then((r) => r.json());
+    fetch(`${API}/read/${block}`, {
+        headers: { "X-NFC-Agent-Request": "true" },
+    }).then((r) => r.json());
 
 export const writeNfcBlock = (block, hex) =>
     fetch(`${API}/write`, {

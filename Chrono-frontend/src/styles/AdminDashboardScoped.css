@@ -59,6 +59,12 @@
   font-family: "Poppins", system-ui, sans-serif;
   padding: var(--u-gap-md);
   font-size: 16px;
+  --c-primary: var(--c-pri);
+  --c-link: var(--c-pri);
+  --c-text-muted: var(--c-muted);
+  --c-border-stronger: #b9bfce;
+  --u-radius-lg: 8px;
+  --u-radius-pill: 999px;
 
   /* Statusfarben für Hintergründe (hell) */
   --stat-approved-bg: #dcfce7;
@@ -103,6 +109,9 @@
   --c-info: #60a5fa;
   --c-error: #f87171;
   --c-success: #4ade80;
+  --c-link: #9db5ff;
+  --c-text-muted: var(--c-muted);
+  --c-border-stronger: #505665;
 
   --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
   --u-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -169,6 +178,21 @@
   margin: 0;
   color: var(--c-muted);
   font-size: 0.9rem;
+}
+.admin-dashboard.scoped-dashboard .admin-permission-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: var(--u-gap);
+  padding: 0.9rem 1rem;
+  border-radius: var(--u-radius-md);
+  border: 1px solid color-mix(in srgb, var(--c-info) 28%, var(--c-border));
+  background: color-mix(in srgb, var(--c-info) 8%, var(--c-card));
+  color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .admin-permission-banner strong {
+  color: var(--c-info);
 }
 .admin-dashboard.scoped-dashboard .command-palette-trigger {
   align-self: flex-start;
@@ -1245,34 +1269,83 @@
   border-radius: var(--u-radius-md);
   padding: var(--u-gap-md);
   box-shadow: var(--u-shadow-md);
+  position: relative;
   transition:
     background var(--u-dur) var(--u-ease),
-    box-shadow var(--u-dur) var(--u-ease);
+    border-color var(--u-dur) var(--u-ease),
+    box-shadow var(--u-dur) var(--u-ease),
+    transform var(--u-dur) var(--u-ease);
 }
 .admin-dashboard.scoped-dashboard section.content-section:hover {
   box-shadow: var(--u-shadow-lg);
+}
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed {
+  display: flex;
+  align-items: center;
+  min-height: 3.9rem;
+  padding: 0.85rem 1rem;
+  border-color: color-mix(in srgb, var(--c-border) 86%, var(--c-text));
+  box-shadow: var(--u-shadow-sm);
+}
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed:hover {
+  border-color: color-mix(in srgb, var(--c-pri) 24%, var(--c-border));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard section.content-section.is-collapsed:hover {
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42);
 }
 
 .admin-dashboard.scoped-dashboard section.content-section .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   cursor: pointer;
   margin-bottom: var(--u-gap-md);
   border-bottom: 1px solid var(--c-line);
   padding-bottom: var(--u-gap-sm);
+  border-radius: var(--u-radius-sm);
+  outline: none;
+  transition:
+    background var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
 }
-.admin-dashboard.scoped-dashboard section.content-section.has-pending .section-header {
-  background-color: var(--stat-pending-bg);
-  animation: pendingGlow 2s ease-in-out infinite;
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed .section-header {
+  background: transparent;
+  align-items: center;
+  width: 100%;
+  min-height: 2.2rem;
+  margin-bottom: 0;
+  border-bottom-color: transparent;
+  padding: 0;
 }
-@keyframes pendingGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--stat-pending-bg);
-  }
-  50% {
-    box-shadow: 0 0 10px 2px var(--stat-pending-bg);
-  }
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed .section-header:hover,
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed .section-header:focus-visible {
+  background: color-mix(in srgb, var(--c-surface) 82%, var(--c-pri) 6%);
+}
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed.has-pending {
+  border-color: color-mix(in srgb, var(--c-info) 38%, var(--c-border));
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--c-info) 82%, var(--c-pri)),
+    var(--u-shadow-sm);
+}
+.admin-dashboard.scoped-dashboard section.content-section.is-collapsed.has-pending:hover {
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--c-info) 82%, var(--c-pri)),
+    0 10px 24px rgba(15, 23, 42, 0.1);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard section.content-section.is-collapsed.has-pending:hover {
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--c-info) 82%, var(--c-pri)),
+    0 12px 26px rgba(0, 0, 0, 0.42);
+}
+.admin-dashboard.scoped-dashboard section.content-section .section-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 .admin-dashboard.scoped-dashboard
   section.content-section
@@ -1286,12 +1359,69 @@
   color: var(--c-text);
 }
 .admin-dashboard.scoped-dashboard
+  section.content-section.is-collapsed
+  .section-header
+  h3.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.admin-dashboard.scoped-dashboard
   section.content-section
   .section-header
   .toggle-icon {
-  font-size: 0.9em;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--c-border) 86%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-surface) 78%, transparent);
+  font-size: 0.7rem;
+  line-height: 1;
   user-select: none;
   color: var(--c-muted);
+  transition:
+    background var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease),
+    transform var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard
+  section.content-section
+  .section-header:hover
+  .toggle-icon,
+.admin-dashboard.scoped-dashboard
+  section.content-section
+  .section-header:focus-visible
+  .toggle-icon {
+  background: color-mix(in srgb, var(--c-pri) 12%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-pri) 36%, var(--c-border));
+  color: var(--c-text);
+  transform: translateY(-1px);
+}
+.admin-dashboard.scoped-dashboard section.content-section .pending-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c-info) 34%, var(--c-border));
+  background: color-mix(in srgb, var(--c-info) 10%, var(--c-card));
+  color: color-mix(in srgb, var(--c-info) 84%, var(--c-text));
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.admin-dashboard.scoped-dashboard section.content-section .pending-dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: var(--c-info);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-info) 18%, transparent);
 }
 .admin-dashboard.scoped-dashboard section.content-section .section-content {
   /* Kein zusätzliches Padding hier, damit Kindelemente die volle Breite nutzen können */
@@ -1621,6 +1751,9 @@
   background-color: var(--c-surface);
   padding: var(--u-gap-sm);
   border-radius: var(--u-radius-sm);
+}
+.admin-dashboard.scoped-dashboard .week-navigation.table-week-navigation {
+  margin-bottom: var(--u-gap-sm);
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .week-navigation {
   background-color: var(--c-card);
@@ -2325,6 +2458,16 @@
   border-bottom-color: var(--c-border);
 }
 
+.admin-dashboard.scoped-dashboard .week-evaluation-hint {
+  margin: var(--u-gap-sm) 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--c-pri) 34%, transparent);
+  border-radius: var(--u-radius-sm);
+  background: color-mix(in srgb, var(--c-pri) 10%, transparent);
+  color: var(--c-text);
+  font-size: 0.82rem;
+}
+
 /* Tageskarten in Detailansicht */
 .admin-dashboard.scoped-dashboard .admin-days-grid {
   display: grid;
@@ -2510,6 +2653,78 @@
   font-size: 0.9rem;
   color: var(--c-text-sick);
   font-weight: 500;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card-absence-conflict {
+  border-color: color-mix(in srgb, var(--c-warn) 55%, var(--c-line));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-warn) 30%, transparent);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .absence-conflict-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .absence-conflict-note {
+  color: var(--c-muted);
+  margin: 0;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .day-card-flip-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .day-card-flip-label {
+  color: var(--c-muted);
+  font-weight: 600;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button {
+  align-self: flex-start;
+  background: var(--c-pri);
+  border: 1px solid var(--c-pri);
+  border-radius: var(--u-radius-sm);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.35rem 0.65rem;
+  transition: background-color var(--u-dur), border-color var(--u-dur), color var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button:hover {
+  background: var(--c-pri-dim);
+  border-color: var(--c-pri-dim);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button.secondary {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button.secondary:hover {
+  background: color-mix(in srgb, var(--c-pri) 10%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-pri) 35%, var(--c-border));
 }
 .admin-dashboard.scoped-dashboard
   .admin-week-display-detail
@@ -3506,6 +3721,27 @@
   border-bottom: none;
 }
 
+.admin-dashboard.scoped-dashboard .request-jump-row {
+  cursor: pointer;
+}
+
+.admin-dashboard.scoped-dashboard .request-jump-row:focus-visible {
+  outline: 2px solid var(--c-pri);
+  outline-offset: -2px;
+}
+
+.admin-dashboard.scoped-dashboard .request-jump-row.is-request-focused {
+  box-shadow: inset 0 0 0 2px var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .vacation-request-list .request-jump-row:hover {
+  filter: brightness(0.98);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.request-jump-row:hover td {
+  background-color: color-mix(in srgb, var(--c-pri) 8%, transparent);
+}
+
 .correction-request-list .correction-item.status-approved,
 .vacation-request-list .vacation-item.status-approved {
   border-left: 4px solid var(--ad-c-success);
@@ -3913,4 +4149,642 @@
 }
 .admin-dashboard.scoped-dashboard .kpi-value{
     font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight:700; color:var(--c-text);
+}
+
+.vacation-admin-note-input {
+  min-width: 180px;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-color, #d0d7de);
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .vacation-admin-note-input {
+  background-color: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+[data-theme="dark"] .vacation-admin-note-input::placeholder {
+  color: var(--c-muted);
+}
+
+/* Cockpit redesign */
+.admin-dashboard.scoped-dashboard {
+  min-height: 100vh;
+}
+
+.admin-dashboard.scoped-dashboard .admin-dashboard-shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.admin-dashboard.scoped-dashboard .admin-command-header {
+  align-items: flex-start;
+  border-radius: 8px;
+  box-shadow: var(--u-shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard.scoped-dashboard .admin-command-header .header-info {
+  gap: 0.35rem;
+  min-width: min(100%, 28rem);
+}
+
+.admin-dashboard.scoped-dashboard .header-eyebrow,
+.admin-dashboard.scoped-dashboard .cockpit-eyebrow,
+.admin-dashboard.scoped-dashboard .cockpit-section-heading span,
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro > span {
+  display: inline-flex;
+  color: var(--c-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.admin-dashboard.scoped-dashboard .admin-command-header h2 {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.admin-dashboard.scoped-dashboard .admin-command-header p {
+  color: var(--c-muted);
+  line-height: 1.45;
+}
+
+.admin-dashboard.scoped-dashboard .header-login-context {
+  font-size: 0.82rem;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  max-width: 44rem;
+}
+
+.admin-dashboard.scoped-dashboard .context-chip,
+.admin-dashboard.scoped-dashboard .header-action-button,
+.admin-dashboard.scoped-dashboard .command-palette-trigger,
+.admin-dashboard.scoped-dashboard .text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-dashboard.scoped-dashboard .context-chip {
+  padding: 0.45rem 0.75rem;
+  color: var(--c-muted);
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button,
+.admin-dashboard.scoped-dashboard .command-palette-trigger,
+.admin-dashboard.scoped-dashboard .text-button {
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: border-color var(--u-dur) var(--u-ease), background var(--u-dur) var(--u-ease), color var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button {
+  border-color: color-mix(in srgb, var(--c-pri) 42%, var(--c-border));
+  background: color-mix(in srgb, var(--c-pri) 10%, var(--c-card));
+  color: var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button.ghost,
+.admin-dashboard.scoped-dashboard .text-button {
+  border-color: var(--c-border);
+  background: transparent;
+  color: var(--c-link);
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button:hover,
+.admin-dashboard.scoped-dashboard .command-palette-trigger:hover,
+.admin-dashboard.scoped-dashboard .text-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--c-pri) 45%, var(--c-border));
+  background: color-mix(in srgb, var(--c-pri) 12%, var(--c-card));
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1.15rem;
+  padding: 0.45rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-card) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button {
+  min-height: 2.45rem;
+  border-radius: 7px;
+  background: transparent;
+  padding: 0.48rem 0.85rem;
+  gap: 0.45rem;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button.is-active {
+  background: color-mix(in srgb, var(--c-pri) 12%, var(--c-card));
+  border-color: color-mix(in srgb, var(--c-pri) 45%, var(--c-border));
+  box-shadow: none;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button .tab-count {
+  display: inline-flex;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-warn) 20%, var(--c-card));
+  color: color-mix(in srgb, var(--c-warn) 72%, var(--c-text));
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.admin-dashboard.scoped-dashboard .admin-dashboard-panels {
+  display: block;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-panel {
+  gap: 1.15rem;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-panel.is-active {
+  display: flex;
+}
+
+.admin-dashboard.scoped-dashboard .admin-cockpit-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-intro h3,
+.admin-dashboard.scoped-dashboard .cockpit-section-heading h3,
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro h3 {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-intro p,
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro p {
+  margin: 0.35rem 0 0;
+  color: var(--c-muted);
+  line-height: 1.5;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-date-card {
+  min-width: 13.5rem;
+  padding: 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-card);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-date-card span,
+.admin-dashboard.scoped-dashboard .cockpit-date-card small {
+  display: block;
+  color: var(--c-muted);
+  font-size: 0.82rem;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-date-card strong {
+  display: block;
+  margin: 0.25rem 0;
+  font-size: 1.35rem;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-section-heading,
+.admin-dashboard.scoped-dashboard .panel-action-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-dashboard.scoped-dashboard .action-center,
+.admin-dashboard.scoped-dashboard .cockpit-panel,
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro {
+  border-radius: 8px;
+}
+
+.admin-dashboard.scoped-dashboard .action-center {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.admin-dashboard.scoped-dashboard .action-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.admin-dashboard.scoped-dashboard .action-card,
+.admin-dashboard.scoped-dashboard .cockpit-panel {
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .action-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 12.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left-width: 4px;
+}
+
+.admin-dashboard.scoped-dashboard .action-card.tone-critical,
+.admin-dashboard.scoped-dashboard .critical-row.tone-critical,
+.admin-dashboard.scoped-dashboard .absence-row.tone-critical,
+.admin-dashboard.scoped-dashboard .status-chip.tone-critical {
+  --tone-color: var(--c-error);
+}
+
+.admin-dashboard.scoped-dashboard .action-card.tone-warning,
+.admin-dashboard.scoped-dashboard .critical-row.tone-warning,
+.admin-dashboard.scoped-dashboard .status-chip.tone-warning {
+  --tone-color: var(--c-warn);
+}
+
+.admin-dashboard.scoped-dashboard .action-card.tone-info,
+.admin-dashboard.scoped-dashboard .critical-row.tone-info,
+.admin-dashboard.scoped-dashboard .absence-row.tone-info,
+.admin-dashboard.scoped-dashboard .status-chip.tone-info {
+  --tone-color: var(--c-info);
+}
+
+.admin-dashboard.scoped-dashboard .action-card.tone-success,
+.admin-dashboard.scoped-dashboard .critical-row.tone-success,
+.admin-dashboard.scoped-dashboard .status-chip.tone-success {
+  --tone-color: var(--c-success);
+}
+
+.admin-dashboard.scoped-dashboard .action-card {
+  border-left-color: var(--tone-color, var(--c-pri));
+}
+
+.admin-dashboard.scoped-dashboard .action-card-eyebrow {
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-dashboard.scoped-dashboard .action-card-value {
+  margin-top: 0.45rem;
+  color: var(--c-text);
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.admin-dashboard.scoped-dashboard .action-card h4 {
+  margin: 0.45rem 0 0;
+  font-size: 1rem;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .action-card p {
+  margin: 0.3rem 0 0.9rem;
+  color: var(--c-muted);
+  line-height: 1.35;
+}
+
+.admin-dashboard.scoped-dashboard .action-card button,
+.admin-dashboard.scoped-dashboard .analytics-link-button {
+  margin-top: auto;
+  min-height: 2.35rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--tone-color, var(--c-pri)) 36%, var(--c-border));
+  background: color-mix(in srgb, var(--tone-color, var(--c-pri)) 10%, var(--c-card));
+  color: var(--c-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+  gap: 0.9rem;
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-two-column.secondary {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.72fr);
+}
+
+.admin-dashboard.scoped-dashboard .cockpit-panel {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.admin-dashboard.scoped-dashboard .critical-list,
+.admin-dashboard.scoped-dashboard .absence-list,
+.admin-dashboard.scoped-dashboard .request-preview-list,
+.admin-dashboard.scoped-dashboard .module-shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.admin-dashboard.scoped-dashboard .critical-row,
+.admin-dashboard.scoped-dashboard .absence-row,
+.admin-dashboard.scoped-dashboard .request-preview-row,
+.admin-dashboard.scoped-dashboard .module-shortcut {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-dashboard.scoped-dashboard .critical-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0.65rem 0.75rem;
+  border-left: 4px solid var(--tone-color, var(--c-border));
+  color: var(--c-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-dashboard.scoped-dashboard .critical-user,
+.admin-dashboard.scoped-dashboard .critical-balance {
+  font-weight: 750;
+}
+
+.admin-dashboard.scoped-dashboard .status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  border-radius: 999px;
+  padding: 0.22rem 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--tone-color, var(--c-border)) 38%, var(--c-border));
+  background: color-mix(in srgb, var(--tone-color, var(--c-border)) 12%, var(--c-card));
+  color: var(--c-text);
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-dashboard.scoped-dashboard .absence-row {
+  display: grid;
+  grid-template-columns: auto minmax(6rem, 1fr);
+  gap: 0.2rem 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border-left: 4px solid var(--tone-color, var(--c-info));
+}
+
+.admin-dashboard.scoped-dashboard .absence-row > span:last-child {
+  grid-column: 2;
+  color: var(--c-muted);
+  font-size: 0.82rem;
+}
+
+.admin-dashboard.scoped-dashboard .absence-type {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-dashboard.scoped-dashboard .request-preview-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.2rem 0.65rem;
+  padding: 0.75rem 0.8rem;
+  border-left: 4px solid var(--c-warn);
+}
+
+.admin-dashboard.scoped-dashboard .request-preview-row span,
+.admin-dashboard.scoped-dashboard .request-preview-row small {
+  color: var(--c-muted);
+}
+
+.admin-dashboard.scoped-dashboard .request-preview-row p {
+  grid-column: 1 / -1;
+  margin: 0.25rem 0 0;
+  color: var(--c-text);
+  line-height: 1.35;
+}
+
+.admin-dashboard.scoped-dashboard .module-shortcut {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.15rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.admin-dashboard.scoped-dashboard .module-shortcut span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  height: 2.2rem;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--c-pri) 10%, var(--c-card));
+  color: var(--c-pri);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-dashboard.scoped-dashboard .analytics-link-button {
+  --tone-color: var(--c-info);
+  width: 100%;
+  margin-top: 0.1rem;
+}
+
+.admin-dashboard.scoped-dashboard .empty-state {
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+  color: var(--c-muted);
+  background: var(--c-surface);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro {
+  padding: 1rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-panel-intro.compact {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-dashboard.scoped-dashboard .admin-calendar-section {
+  margin-top: 0;
+}
+
+.admin-dashboard.scoped-dashboard .admin-calendar-card {
+  border-radius: 8px;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-requests-section {
+  margin-top: 0;
+}
+
+.admin-dashboard.scoped-dashboard .accessible-pages-panel.card {
+  border-radius: 8px;
+  background: var(--c-card);
+  color: var(--c-text);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .accessible-pages-panel__card {
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .accessible-pages-panel__head h3,
+.admin-dashboard.scoped-dashboard .accessible-pages-panel__card strong {
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-approved:not(:hover),
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-denied:not(:hover),
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-pending:not(:hover) {
+  background-color: transparent;
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-approved {
+  box-shadow: inset 4px 0 0 var(--c-success);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-denied {
+  box-shadow: inset 4px 0 0 var(--c-error);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tr.status-pending {
+  box-shadow: inset 4px 0 0 var(--c-warn);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-approved,
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-denied,
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-pending {
+  color: #111827;
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-approved:not(:hover) {
+  background-color: #f0fdf4;
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-denied:not(:hover) {
+  background-color: #fef2f2;
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-pending:not(:hover) {
+  background-color: #fff7ed;
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-approved td,
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-denied td,
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-pending td {
+  color: inherit;
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-approved,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-denied,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-pending {
+  color: var(--c-text);
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-approved:not(:hover),
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-denied:not(:hover),
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr.status-pending:not(:hover) {
+  background-color: transparent;
+}
+
+@media (max-width: 1180px) {
+  .admin-dashboard.scoped-dashboard .action-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard.scoped-dashboard .cockpit-two-column,
+  .admin-dashboard.scoped-dashboard .cockpit-two-column.secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-dashboard.scoped-dashboard {
+    padding: 0.85rem;
+  }
+
+  .admin-dashboard.scoped-dashboard .admin-command-header,
+  .admin-dashboard.scoped-dashboard .dashboard-header-actions {
+    align-items: stretch;
+  }
+
+  .admin-dashboard.scoped-dashboard .dashboard-header-actions,
+  .admin-dashboard.scoped-dashboard .context-chip,
+  .admin-dashboard.scoped-dashboard .header-action-button,
+  .admin-dashboard.scoped-dashboard .command-palette-trigger {
+    width: 100%;
+  }
+
+  .admin-dashboard.scoped-dashboard .cockpit-intro,
+  .admin-dashboard.scoped-dashboard .action-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard.scoped-dashboard .cockpit-date-card {
+    min-width: 0;
+  }
+
+  .admin-dashboard.scoped-dashboard .critical-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .admin-dashboard.scoped-dashboard .request-preview-row {
+    grid-template-columns: 1fr;
+  }
 }

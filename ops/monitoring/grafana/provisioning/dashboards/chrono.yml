@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Chrono
+    orgId: 1
+    folder: Chrono
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards

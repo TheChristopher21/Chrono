@@ -1,0 +1,29 @@
+.calculation-status-notice {
+    width: 100%;
+    margin: 0.75rem 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #b7c2d0;
+    border-radius: 6px;
+    background: #f4f7fa;
+    color: #263443;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.calculation-status-notice.is-error {
+    border-color: #d88b8b;
+    background: #fff1f1;
+    color: #8b1f1f;
+}
+
+[data-theme="dark"] .calculation-status-notice {
+    border-color: #536274;
+    background: #202a35;
+    color: #e4ebf2;
+}
+
+[data-theme="dark"] .calculation-status-notice.is-error {
+    border-color: #a65353;
+    background: #3b2326;
+    color: #ffd6d6;
+}

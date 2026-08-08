@@ -73,12 +73,19 @@ public class SalesOrderDTO {
         private final Long id;
         private final Long productId;
         private final BigDecimal quantity;
+        private final BigDecimal reservedQuantity;
+        private final BigDecimal fulfilledQuantity;
+        private final BigDecimal openQuantity;
         private final BigDecimal unitPrice;
 
-        public SalesOrderLineDTO(Long id, Long productId, BigDecimal quantity, BigDecimal unitPrice) {
+        public SalesOrderLineDTO(Long id, Long productId, BigDecimal quantity, BigDecimal reservedQuantity,
+                                 BigDecimal fulfilledQuantity, BigDecimal openQuantity, BigDecimal unitPrice) {
             this.id = id;
             this.productId = productId;
             this.quantity = quantity;
+            this.reservedQuantity = reservedQuantity;
+            this.fulfilledQuantity = fulfilledQuantity;
+            this.openQuantity = openQuantity;
             this.unitPrice = unitPrice;
         }
 
@@ -87,6 +94,9 @@ public class SalesOrderDTO {
                     line.getId(),
                     line.getProduct() != null ? line.getProduct().getId() : null,
                     line.getQuantity(),
+                    line.getReservedQuantity(),
+                    line.getFulfilledQuantity(),
+                    line.getOpenQuantity(),
                     line.getUnitPrice());
         }
 
@@ -101,6 +111,12 @@ public class SalesOrderDTO {
         public BigDecimal getQuantity() {
             return quantity;
         }
+
+        public BigDecimal getReservedQuantity() { return reservedQuantity; }
+
+        public BigDecimal getFulfilledQuantity() { return fulfilledQuantity; }
+
+        public BigDecimal getOpenQuantity() { return openQuantity; }
 
         public BigDecimal getUnitPrice() {
             return unitPrice;

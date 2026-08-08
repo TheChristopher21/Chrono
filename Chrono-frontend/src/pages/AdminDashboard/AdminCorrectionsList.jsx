@@ -13,11 +13,12 @@
 //  • No external deps: pure React + existing CSS variables.
 // -----------------------------------------------------------------------------
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
 import "../../styles/AdminDashboardScoped.css";
+import { getUserDisplayName, getUserSearchText } from "../../utils/userDisplay";
 
 /* ⇢ Helper to derive a readable status ------------------------------------ */
 const getStatus = (req) => {
@@ -33,8 +34,36 @@ const sortEntriesChronologically = (a, b) => {
     return new Date(tsA) - new Date(tsB);
 };
 
+const extractIsoDate = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string') {
+        const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (match) return match[1];
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString().slice(0, 10);
+};
+
+const getGroupTargetDateIso = (group) => {
+    const firstEntry = Array.isArray(group?.entries) ? group.entries[0] : null;
+    return extractIsoDate(firstEntry?.desiredTimestamp)
+        || extractIsoDate(group?.requestDate)
+        || extractIsoDate(firstEntry?.originalTimestamp);
+};
+
 /* ⇢ Main component --------------------------------------------------------- */
-function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal }) {
+function AdminCorrectionsList({
+                                  t,
+                                  allCorrections,
+                                  onApprove,
+                                  onDeny,
+                                  openSignal,
+                                  canManage,
+                                  users,
+                                  focusedRequest,
+                                  onOpenInTimeReview,
+                              }) {
     /* ──────────────────────────────────── state */
     const [isExpanded, setIsExpanded] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -44,12 +73,23 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
     const [modalMode, setModalMode] = useState("approve");
     const [targetIds, setTargetIds] = useState([]);
     const [adminComment, setAdminComment] = useState("");
+    const sectionRef = useRef(null);
 
     useEffect(() => {
         if (typeof openSignal === 'number' && openSignal > 0) {
             setIsExpanded(true);
         }
     }, [openSignal]);
+
+    const focusedRequestKey = focusedRequest?.type === 'correction' && focusedRequest?.id
+        ? `correction-${focusedRequest.id}`
+        : null;
+
+    useEffect(() => {
+        if (focusedRequestKey) {
+            setIsExpanded(true);
+        }
+    }, [focusedRequestKey]);
 
     /* ──────────────────────────────────── data helpers */
     const requestSort = (key) => {
@@ -85,7 +125,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
         const groups = new Map();
 
         const filtered = allCorrections.filter((c) => {
-            const matchesUser = c.username?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesUser = getUserSearchText(c.username, users).includes(searchTerm.toLowerCase());
             const matchesDate = !searchDate || c.requestDate === searchDate;
             return matchesUser && matchesDate;
         });
@@ -137,22 +177,60 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
     }, [groupedRows, sortConfig]);
 
     /* ──────────────────────────────────── render */
+    useEffect(() => {
+        if (!focusedRequestKey || !isExpanded) return undefined;
+        const timeoutId = window.setTimeout(() => {
+            const target = sectionRef.current?.querySelector(`[data-request-anchor="${focusedRequestKey}"]`);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.focus?.({ preventScroll: true });
+        }, 80);
+        return () => window.clearTimeout(timeoutId);
+    }, [focusedRequestKey, isExpanded, sortedRows]);
+
+    const openGroupInTimeReview = (group) => {
+        if (!onOpenInTimeReview || !group) return;
+        onOpenInTimeReview({
+            type: 'correction',
+            id: group.id,
+            username: group.username,
+            dateIso: getGroupTargetDateIso(group),
+            requestDate: group.requestDate,
+            entries: group.entries,
+        });
+    };
+
     const requiresScroll = sortedRows.length >= 10;
-    const hasPending = allCorrections.some(c => !c.approved && !c.denied);
+    const pendingCount = allCorrections.filter(c => !c.approved && !c.denied).length;
+    const hasPending = pendingCount > 0;
 
     return (
-        <section className={`correction-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}>
+        <section ref={sectionRef} className={`correction-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}>
             {/* Header ----------------------------------------------------------------*/}
             <div
                 className="section-header"
                 role="button"
+                aria-expanded={isExpanded}
                 tabIndex={0}
                 onClick={() => setIsExpanded(!isExpanded)}
-                onKeyDown={(e) => e.key === "Enter" && setIsExpanded(!isExpanded)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setIsExpanded(!isExpanded);
+                    }
+                }}
             >
-                <h3 className="section-title">
-                    {t("adminDashboard.correctionRequestsTitle", "Korrekturanträge")}
-                </h3>
+                <div className="section-header-main">
+                    <h3 className="section-title">
+                        {t("adminDashboard.correctionRequestsTitle", "Korrekturanträge")}
+                    </h3>
+                    {hasPending && (
+                        <span className="pending-indicator" aria-label={`${pendingCount} ${t("adminDashboard.pendingRequestsOpen", "offen")}`}>
+                            <span className="pending-dot" aria-hidden="true" />
+                            {pendingCount} {t("adminDashboard.pendingRequestsOpen", "offen")}
+                        </span>
+                    )}
+                </div>
                 <span className="toggle-icon">{isExpanded ? "▲" : "▼"}</span>
             </div>
 
@@ -204,11 +282,25 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                                 {sortedRows.map((g) => {
                                     const statusClass = g.status.toLowerCase();
                                     const ids = g.entries.map((e) => e.id);
+                                    const requestAnchor = `correction-${g.id}`;
+                                    const isFocusedRequest = focusedRequestKey === requestAnchor;
 
                                     return (
                                         <React.Fragment key={g.id}>
-                                            <tr className={`status-${statusClass}`}>
-                                                <td>{g.username}</td>
+                                            <tr
+                                                className={`status-${statusClass} request-jump-row${isFocusedRequest ? ' is-request-focused' : ''}`}
+                                                data-request-anchor={requestAnchor}
+                                                tabIndex={0}
+                                                onClick={() => openGroupInTimeReview(g)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        openGroupInTimeReview(g);
+                                                    }
+                                                }}
+                                                title={t('adminDashboard.openRequestInTimeReview', 'In der ZeitprÃ¼fung Ã¶ffnen')}
+                                            >
+                                                <td>{getUserDisplayName(g.username, users, g.username)}</td>
                                                 <td>{formatDate(g.requestDate)}</td>
                                                 <td>
                                                     {/* 1-liner summary when collapsed */}
@@ -224,8 +316,12 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                               {t(`adminDashboard.status${g.status}`, g.status)}
                             </span>
                                                 </td>
-                                                <td className="actions-cell">
-                                                    {g.status === "PENDING" && (
+                                                <td
+                                                    className="actions-cell"
+                                                    onClick={(event) => event.stopPropagation()}
+                                                    onKeyDown={(event) => event.stopPropagation()}
+                                                >
+                                                    {canManage && g.status === "PENDING" && (
                                                         <>
                                                             <button className="button-confirm-small" title={t("approve", "Genehmigen")} onClick={() => openDecisionModal(ids, "approve")}>✓</button>
                                                             <button className="button-deny-small" title={t("deny", "Ablehnen")} onClick={() => openDecisionModal(ids, "deny")}>✕</button>
@@ -331,10 +427,21 @@ AdminCorrectionsList.propTypes = {
     onApprove: PropTypes.func.isRequired,
     onDeny: PropTypes.func.isRequired,
     openSignal: PropTypes.number,
+    canManage: PropTypes.bool,
+    users: PropTypes.arrayOf(PropTypes.object),
+    focusedRequest: PropTypes.shape({
+        type: PropTypes.string,
+        id: PropTypes.string,
+    }),
+    onOpenInTimeReview: PropTypes.func,
 };
 
 AdminCorrectionsList.defaultProps = {
     openSignal: 0,
+    canManage: true,
+    users: [],
+    focusedRequest: null,
+    onOpenInTimeReview: undefined,
 };
 
 export default AdminCorrectionsList;

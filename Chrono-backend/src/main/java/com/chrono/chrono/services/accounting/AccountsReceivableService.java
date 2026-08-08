@@ -1,6 +1,7 @@
 package com.chrono.chrono.services.accounting;
 
 import com.chrono.chrono.dto.InvoiceSummaryDTO;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.accounting.*;
 import com.chrono.chrono.repositories.accounting.CustomerInvoiceRepository;
@@ -41,6 +42,9 @@ public class AccountsReceivableService {
         invoice.setCurrency(summary.getCurrency() != null ? summary.getCurrency() : "CHF");
         invoice.setStatus(InvoiceStatus.OPEN);
         invoice.setProjectId(summary.getProjectId());
+        if (project != null && project.getCustomer() != null) {
+            invoice.setCompany(project.getCustomer().getCompany());
+        }
         CustomerInvoice saved = customerInvoiceRepository.save(invoice);
         postRevenueEntry(saved);
         return saved;
@@ -86,13 +90,29 @@ public class AccountsReceivableService {
                 pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<CustomerInvoice> findOpenInvoices(Company company, Pageable pageable) {
+        return customerInvoiceRepository.findByCompanyAndStatusIn(
+                company,
+                Set.of(InvoiceStatus.OPEN, InvoiceStatus.PARTIALLY_PAID),
+                pageable);
+    }
+
     @Transactional
     public CustomerInvoice applyPayment(Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
+        return applyPayment(null, invoiceId, amount, paymentDate, memo);
+    }
+
+    @Transactional
+    public CustomerInvoice applyPayment(Company company, Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Payment amount must be positive");
         }
-        CustomerInvoice invoice = customerInvoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new IllegalArgumentException("Invoice not found: " + invoiceId));
+        CustomerInvoice invoice = company != null
+                ? customerInvoiceRepository.findByIdAndCompany(invoiceId, company)
+                    .orElseThrow(() -> new IllegalArgumentException("Invoice not found: " + invoiceId))
+                : customerInvoiceRepository.findById(invoiceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invoice not found: " + invoiceId));
 
         Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
         Account receivable = accountingService.ensureAccount("1100", "Forderungen aus Lieferungen", AccountType.ASSET);
