@@ -7,7 +7,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn -B clean verify
 
-FROM gcr.io/distroless/java21-debian12:nonroot
+FROM gcr.io/distroless/java21-debian13:nonroot
 WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar

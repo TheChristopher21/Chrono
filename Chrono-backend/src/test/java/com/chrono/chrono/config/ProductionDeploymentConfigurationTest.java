@@ -185,13 +185,15 @@ class ProductionDeploymentConfigurationTest {
 
         assertThat(backend)
                 .contains("mvn -B clean verify")
-                .contains("distroless/java21-debian12:nonroot")
+                .contains("distroless/java21-debian13:nonroot")
                 .contains("EXPOSE 8081")
                 .doesNotContain("maven.test.skip");
         assertThat(frontend)
                 .contains("npm ci --legacy-peer-deps")
                 .contains("RUN npm test")
-                .contains("nginx-unprivileged")
+                .contains("RUN apk upgrade --no-cache")
+                .contains("apk add --no-cache nginx")
+                .contains("USER nginx")
                 .contains("EXPOSE 80");
         assertThat(frontendNginx)
                 .contains("listen 80 default_server")

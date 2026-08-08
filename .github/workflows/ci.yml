@@ -22,7 +22,7 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Backend tests and package
-        run: ./mvnw -B clean verify
+        run: mvn -B clean verify
 
   frontend:
     runs-on: ubuntu-latest
@@ -36,6 +36,10 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: Chrono-frontend/package-lock.json
+      - name: Install smart-card build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libpcsclite-dev libusb-1.0-0-dev libudev-dev pcscd
       - run: npm ci --legacy-peer-deps
       - run: npm run audit:prod
       - run: npm test
@@ -73,7 +77,7 @@ jobs:
           cache: maven
       - name: Verify fresh and legacy MySQL migrations
         run: >-
-          ./mvnw -B
+          mvn -B
           -Dchrono.test.mysql.url=jdbc:mysql://127.0.0.1:3306/chrono_migration_test?allowPublicKeyRetrieval=true\&useSSL=false
           -Dchrono.test.mysql.username=root
           -Dchrono.test.mysql.password=chrono-ci-root
@@ -161,6 +165,10 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: Chrono-frontend/package-lock.json
+      - name: Install smart-card build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libpcsclite-dev libusb-1.0-0-dev libudev-dev pcscd
       - run: npm ci --legacy-peer-deps
       - run: npx playwright install --with-deps chromium
       - name: Run PMS browser journeys

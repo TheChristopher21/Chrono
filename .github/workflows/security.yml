@@ -21,11 +21,11 @@ jobs:
         language: [java-kotlin, javascript-typescript]
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v3
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/analyze@v4
 
   dependency-review:
     if: github.event_name == 'pull_request'
@@ -56,32 +56,36 @@ jobs:
         run: docker build -t chrono-frontend:scan Chrono-frontend
       - id: backend_trivy
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: chrono-backend:scan
           format: sarif
           output: trivy-backend.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          limit-severities-for-sarif: true
           exit-code: "1"
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-backend.sarif
+          category: trivy-backend
       - id: frontend_trivy
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: chrono-frontend:scan
           format: sarif
           output: trivy-frontend.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          limit-severities-for-sarif: true
           exit-code: "1"
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
       - name: Enforce container scan gate
         if: always()
         run: |
