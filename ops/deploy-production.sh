@@ -257,6 +257,26 @@ wait_for_url() {
   fail "${label} wurde nicht rechtzeitig erreichbar."
 }
 
+wait_for_readiness() {
+  local label="$1"
+  local url="$2"
+  local attempt
+  local response
+
+  for attempt in $(seq 1 60); do
+    response="$(curl --fail --silent --max-time 5 "${url}" || true)"
+    if [[ "${response}" == *'"status":"UP"'* ]]; then
+      echo "[OK] ${label} meldet UP."
+      return 0
+    fi
+    if (( attempt == 1 || attempt % 10 == 0 )); then
+      echo "[INFO] Warte auf ${label} (${attempt}/60) ..."
+    fi
+    sleep 2
+  done
+  fail "${label} wurde nicht rechtzeitig bereit."
+}
+
 rollback_application() {
   [[ "${DEPLOY_STARTED}" -eq 1 ]] || return 0
   [[ -n "${ROLLBACK_TAG}" ]] || return 0
@@ -435,10 +455,22 @@ wait_for_url \
   "Chrono Frontend" \
   "chrono-logisch.ch" \
   "https://chrono-logisch.ch/healthz"
+
+BACKEND_MANAGEMENT_IP="$(
+  docker inspect \
+    --format '{{with index .NetworkSettings.Networks "chrono_chrono-monitoring"}}{{.IPAddress}}{{end}}' \
+    "${BACKEND_CONTAINER}"
+)"
+[[ "${BACKEND_MANAGEMENT_IP}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] ||
+  fail "Management-IP des Backend-Containers konnte nicht ermittelt werden."
+wait_for_readiness \
+  "Chrono Backend Readiness" \
+  "http://${BACKEND_MANAGEMENT_IP}:8082/actuator/health/readiness"
+
 wait_for_url \
-  "Chrono Backend" \
+  "Chrono Backend Gateway" \
   "api.chrono-logisch.ch" \
-  "https://api.chrono-logisch.ch/actuator/health"
+  "https://api.chrono-logisch.ch/api/public/registration-features"
 
 [[ "$(docker inspect --format '{{.Id}}' "${MYSQL_CONTAINER}")" == "${MYSQL_CONTAINER_ID}" ]] ||
   fail "MySQL-Container wurde unerwartet ersetzt."
