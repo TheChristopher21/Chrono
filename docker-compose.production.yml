@@ -12,6 +12,7 @@ services:
     env_file: ${CHRONO_ENV_FILE:-.env}
     environment:
       SERVER_PORT: "8081"
+      MANAGEMENT_SERVER_PORT: "8082"
       SPRING_PROFILES_ACTIVE: "live"
       APP_PRODUCTION: "true"
       APP_DEMO_LOGIN_ENABLED: "false"

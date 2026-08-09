@@ -97,7 +97,9 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
                     auth.requestMatchers("/api/auth/**").permitAll();
-                    auth.requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll();
+                    auth.requestMatchers(
+                            "/actuator/health", "/actuator/health/**",
+                            "/actuator/info", "/actuator/prometheus").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
                     auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();

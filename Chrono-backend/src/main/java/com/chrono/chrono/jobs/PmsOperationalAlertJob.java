@@ -37,7 +37,7 @@ public class PmsOperationalAlertJob {
             fixedDelayString = "${app.pms.alerts.interval-ms:300000}",
             initialDelayString = "${app.pms.alerts.initial-delay-ms:60000}")
     public void dispatchAlerts() {
-        for (HotelProperty property : propertyRepository.findAll()) {
+        for (HotelProperty property : propertyRepository.findAllWithCompany()) {
             PmsOperationalHealthResponse health =
                     healthService.health(property.getCompany(), property.getId());
             String fingerprint = health.alerts().stream()

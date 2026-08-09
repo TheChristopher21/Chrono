@@ -36,7 +36,7 @@ class PmsOperationalAlertJobTest {
         property.setCompany(company);
         property.setName("Chrono Zürich");
         property.setEmail("betrieb@example.com");
-        when(propertyRepository.findAll()).thenReturn(List.of(property));
+        when(propertyRepository.findAllWithCompany()).thenReturn(List.of(property));
         when(healthService.health(company, 5L)).thenReturn(criticalHealth());
         PmsOperationalAlertJob job = new PmsOperationalAlertJob(
                 propertyRepository, healthService, notificationService, emailService);

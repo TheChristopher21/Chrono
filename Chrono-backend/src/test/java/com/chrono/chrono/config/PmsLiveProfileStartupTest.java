@@ -3,8 +3,12 @@ package com.chrono.chrono.config;
 import com.chrono.chrono.ChronoApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,8 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("live")
 @SpringBootTest(
         classes = ChronoApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
+                "management.server.port=0",
                 "spring.datasource.url=jdbc:h2:mem:chrono_live_startup;MODE=MySQL;"
                         + "DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
                 "spring.datasource.username=sa",
@@ -49,9 +54,23 @@ class PmsLiveProfileStartupTest {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @LocalServerPort
+    private int applicationPort;
+
+    @LocalManagementPort
+    private int managementPort;
+
     @Test
     void startsTheLiveApplicationWiringAgainstAFreshMigratedDatabase() {
         assertThat(environment.getProperty("spring.jpa.open-in-view", Boolean.class))
                 .isTrue();
+        assertThat(applicationPort).isPositive();
+        assertThat(managementPort).isPositive().isNotEqualTo(applicationPort);
+        assertThat(restTemplate.getForEntity(
+                "http://127.0.0.1:" + managementPort + "/actuator/health/readiness",
+                String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }

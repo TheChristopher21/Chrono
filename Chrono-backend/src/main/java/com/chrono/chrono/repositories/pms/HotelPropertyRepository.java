@@ -2,6 +2,7 @@ package com.chrono.chrono.repositories.pms;
 
 import com.chrono.chrono.entities.pms.HotelProperty;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface HotelPropertyRepository extends JpaRepository<HotelProperty, Long> {
+    @EntityGraph(attributePaths = "company")
+    @Query("select property from HotelProperty property")
+    List<HotelProperty> findAllWithCompany();
+
     List<HotelProperty> findAllByCompany_IdOrderByNameAsc(Long companyId);
     Optional<HotelProperty> findByIdAndCompany_Id(Long id, Long companyId);
 

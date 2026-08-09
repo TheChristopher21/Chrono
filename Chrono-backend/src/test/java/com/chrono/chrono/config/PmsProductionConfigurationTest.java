@@ -31,6 +31,7 @@ class PmsProductionConfigurationTest {
                 .isEqualTo("${APP_SECURITY_ALLOWED_ORIGINS}");
         assertThat(properties.getProperty("app.demo-login.enabled"))
                 .isEqualTo("${APP_DEMO_LOGIN_ENABLED:false}");
+        assertThat(properties.getProperty("management.server.port")).isEqualTo("8082");
     }
 
     @Test

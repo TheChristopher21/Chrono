@@ -280,7 +280,8 @@ wait_for_readiness() {
 print_backend_start_diagnostics() {
   echo "[INFO] Relevante Backend-Startfehler:" >&2
   docker logs --tail 160 "${BACKEND_CONTAINER}" 2>&1 |
-    grep -E 'ERROR|Exception|Caused by|Schema-validation|Access denied|Application run failed' |
+    grep -E 'ERROR|Exception|Caused by|Schema-validation|Access denied|Application run failed|Tomcat started|Started Chrono' |
+    grep -v 'No static resource actuator/prometheus' |
     tail -n 100 >&2 || true
 }
 
