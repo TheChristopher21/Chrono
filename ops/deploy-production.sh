@@ -277,6 +277,13 @@ wait_for_readiness() {
   fail "${label} wurde nicht rechtzeitig bereit."
 }
 
+print_backend_start_diagnostics() {
+  echo "[INFO] Relevante Backend-Startfehler:" >&2
+  docker logs --tail 160 "${BACKEND_CONTAINER}" 2>&1 |
+    grep -E 'ERROR|Exception|Caused by|Schema-validation|Access denied|Application run failed' |
+    tail -n 100 >&2 || true
+}
+
 rollback_application() {
   [[ "${DEPLOY_STARTED}" -eq 1 ]] || return 0
   [[ -n "${ROLLBACK_TAG}" ]] || return 0
@@ -463,9 +470,12 @@ BACKEND_MANAGEMENT_IP="$(
 )"
 [[ "${BACKEND_MANAGEMENT_IP}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] ||
   fail "Management-IP des Backend-Containers konnte nicht ermittelt werden."
-wait_for_readiness \
-  "Chrono Backend Readiness" \
-  "http://${BACKEND_MANAGEMENT_IP}:8082/actuator/health/readiness"
+if ! wait_for_readiness \
+    "Chrono Backend Readiness" \
+    "http://${BACKEND_MANAGEMENT_IP}:8082/actuator/health/readiness"; then
+  print_backend_start_diagnostics
+  fail "Chrono Backend konnte nicht einsatzbereit gestartet werden."
+fi
 
 wait_for_url \
   "Chrono Backend Gateway" \

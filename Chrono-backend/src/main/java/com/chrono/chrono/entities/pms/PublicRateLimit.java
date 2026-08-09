@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "pms_public_rate_limits")
 public class PublicRateLimit {
     @Id
-    @Column(name = "rate_key", nullable = false, length = 64)
+    @Column(name = "rate_key", nullable = false, length = 64, columnDefinition = "char(64)")
     private String rateKey;
 
     @Column(name = "window_started_at", nullable = false)

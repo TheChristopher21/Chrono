@@ -19,7 +19,7 @@ public class PublicBookingVerification {
     @JoinColumn(name = "booking_request_id", nullable = false, unique = true)
     private PublicBookingRequest bookingRequest;
 
-    @Column(name = "token_hash", nullable = false, length = 64, unique = true)
+    @Column(name = "token_hash", nullable = false, length = 64, columnDefinition = "char(64)", unique = true)
     private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)

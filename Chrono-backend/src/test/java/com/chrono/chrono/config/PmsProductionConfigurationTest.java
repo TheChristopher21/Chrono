@@ -1,6 +1,9 @@
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.entities.pms.PmsAuditEvent;
+import com.chrono.chrono.entities.pms.PublicBookingRequest;
+import com.chrono.chrono.entities.pms.PublicBookingVerification;
+import com.chrono.chrono.entities.pms.PublicRateLimit;
 import jakarta.persistence.Column;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +54,29 @@ class PmsProductionConfigurationTest {
     void auditChainPreviousHashMatchesProductionColumnType() throws NoSuchFieldException {
         Field previousHash = PmsAuditEvent.class.getDeclaredField("previousHash");
         Column column = previousHash.getAnnotation(Column.class);
+
+        assertThat(column).isNotNull();
+        assertThat(column.columnDefinition()).isEqualTo("char(64)");
+    }
+
+    @Test
+    void publicBookingFingerprintMatchesProductionColumnType() throws NoSuchFieldException {
+        assertChar64Column(PublicBookingRequest.class, "requestFingerprint");
+    }
+
+    @Test
+    void publicRateLimitKeyMatchesProductionColumnType() throws NoSuchFieldException {
+        assertChar64Column(PublicRateLimit.class, "rateKey");
+    }
+
+    @Test
+    void publicBookingVerificationTokenMatchesProductionColumnType() throws NoSuchFieldException {
+        assertChar64Column(PublicBookingVerification.class, "tokenHash");
+    }
+
+    private void assertChar64Column(Class<?> entityType, String fieldName) throws NoSuchFieldException {
+        Field field = entityType.getDeclaredField(fieldName);
+        Column column = field.getAnnotation(Column.class);
 
         assertThat(column).isNotNull();
         assertThat(column.columnDefinition()).isEqualTo("char(64)");
