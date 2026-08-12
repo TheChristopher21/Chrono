@@ -802,6 +802,24 @@ const LandingPage = () => {
         setContact({ ...contact, [e.target.name]: e.target.value });
     };
 
+    const requestPmsPilot = () => {
+        setContact((current) => ({
+            ...current,
+            message: current.message.trim()
+                ? current.message
+                : t(
+                    "landing.pms.contactPrefill",
+                    "Ich interessiere mich für einen Pilotzugang zum Chrono Hotelmanagement (PMS) und möchte das System mit meinem Hotel testen."
+                ),
+        }));
+        setContactStarted(true);
+        trackAnalyticsSignal("landing_pms_pilot_interest", "#kontakt");
+        requestAnimationFrame(() => {
+            document.getElementById("kontakt")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+            document.querySelector("#kontakt textarea[name='message']")?.focus?.({ preventScroll: true });
+        });
+    };
+
     const submitContact = async (e) => {
         e.preventDefault();
         if (sending) return;
@@ -1172,6 +1190,7 @@ const LandingPage = () => {
                 { code: "EK", name: t("landing.features.map.modules.purchase", "Einkauf"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
                 { code: "VK", name: t("landing.features.map.modules.sales", "Verkauf"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
                 { code: "SV", name: t("landing.features.map.modules.service", "Service"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "PMS", name: t("landing.features.map.modules.pms", "Hotelmanagement (PMS)"), note: t("landing.features.map.status.finalDevelopment", "In finaler Entwicklungsphase") },
             ],
         },
         {
@@ -1215,6 +1234,7 @@ const LandingPage = () => {
         t("landing.pricing.modules.projects", "Projekte"),
         t("landing.pricing.modules.payroll", "Lohn optional"),
         t("landing.pricing.modules.crm", "CRM / Supply Chain optional"),
+        t("landing.pricing.modules.pms", "Hotelmanagement (PMS) optional"),
     ];
 
     const brandFaqs = [
@@ -1277,6 +1297,12 @@ const LandingPage = () => {
                             </button>
                         </div>
                         <p className="lp-cta-note">{t("landing.cta.requestHint", "Persönliche Freischaltung · Rückmeldung in der Regel innerhalb eines Werktags")}</p>
+                        <a className="lp-hero-pms-announcement" href="#pms">
+                            <span>{t("landing.pms.heroBadge", "PMS neu")}</span>
+                            <strong>{t("landing.pms.title", "Chrono Hotelmanagement (PMS)")}</strong>
+                            <em>{t("landing.pms.heroStatus", "In finaler Entwicklungsphase")}</em>
+                            <i aria-hidden="true">→</i>
+                        </a>
                         <div className="lp-proof-line" aria-label={t("landing.hero.proofLabel", "Kurzüberblick")}>
                             <span>{t("landing.hero.proof1", "Ab CHF 5 pro Mitarbeitendem")}</span>
                             <span>{t("landing.hero.proof2", "Keine Kreditkarte im Anfrageprozess")}</span>
@@ -1415,6 +1441,66 @@ const LandingPage = () => {
                                 {t("landing.cta.try", "Kostenlose Demo anfragen")}
                             </Link>
                         </div>
+                    </div>
+                </section>
+
+                <section className="lp-section lp-pms-section" id="pms" aria-labelledby="pms-title">
+                    <div className="lp-container lp-pms-layout">
+                        <div className="lp-pms-copy">
+                            <span className="lp-kicker">{t("landing.pms.kicker", "Neu · In finaler Entwicklungsphase")}</span>
+                            <h2 id="pms-title">{t("landing.pms.title", "Chrono Hotelmanagement (PMS)")}</h2>
+                            <p>
+                                {t(
+                                    "landing.pms.text",
+                                    "Das neue PMS bündelt Reservierungen, Zimmerbelegung, Gästedaten, Housekeeping und Abrechnung in Chrono. Die Kernfunktionen stehen – aktuell bereiten wir das System gemeinsam mit Pilotbetrieben auf den produktiven Hoteleinsatz vor."
+                                )}
+                            </p>
+                            <ul className="lp-pms-benefits" role="list">
+                                <li>{t("landing.pms.benefit1", "Reservierungen, Anreisen und Abreisen zentral steuern")}</li>
+                                <li>{t("landing.pms.benefit2", "Zimmerstatus und Housekeeping live koordinieren")}</li>
+                                <li>{t("landing.pms.benefit3", "Gäste, Leistungen und Rechnungen ohne Medienbruch verwalten")}</li>
+                                <li>{t("landing.pms.benefit4", "Persönliche Begleitung und direkter Einfluss als Pilotbetrieb")}</li>
+                            </ul>
+                            <div className="lp-pms-actions">
+                                <button
+                                    className="lp-btn lp-primary"
+                                    type="button"
+                                    onClick={requestPmsPilot}
+                                    data-analytics-id="landing_pms_pilot_interest"
+                                    data-analytics-target="#kontakt"
+                                >
+                                    {t("landing.pms.contactCta", "PMS als Pilotbetrieb testen")}
+                                </button>
+                                <Link className="lp-btn lp-secondary" to="/register">
+                                    {t("landing.pms.registerCta", "PMS-Modul konfigurieren")}
+                                </Link>
+                            </div>
+                            <small>{t("landing.pms.note", "Pilotplätze sind begrenzt und werden persönlich abgestimmt.")}</small>
+                        </div>
+                        <aside className="lp-pms-preview" aria-label={t("landing.pms.previewLabel", "Vorschau des PMS-Dashboards")}>
+                            <div className="lp-pms-preview-head">
+                                <div>
+                                    <span>{t("landing.pms.previewEyebrow", "Hotelbetrieb heute")}</span>
+                                    <strong>{t("landing.pms.previewTitle", "Front Office Übersicht")}</strong>
+                                </div>
+                                <em>{t("landing.pms.previewStatus", "Pilot")}</em>
+                            </div>
+                            <div className="lp-pms-kpis">
+                                <div><span>{t("landing.pms.arrivals", "Anreisen")}</span><strong>14</strong><small>{t("landing.pms.today", "heute")}</small></div>
+                                <div><span>{t("landing.pms.occupancy", "Auslastung")}</span><strong>82%</strong><small>41 / 50</small></div>
+                                <div><span>{t("landing.pms.housekeeping", "Reinigung")}</span><strong>7</strong><small>{t("landing.pms.open", "offen")}</small></div>
+                            </div>
+                            <div className="lp-pms-room-list">
+                                <div><strong>204</strong><span>M. Keller · 2 {t("landing.pms.nights", "Nächte")}</span><em className="is-ready">{t("landing.pms.checkedIn", "Eingecheckt")}</em></div>
+                                <div><strong>305</strong><span>{t("landing.pms.departure", "Abreise 11:00")}</span><em className="is-cleaning">{t("landing.pms.cleaning", "Reinigung")}</em></div>
+                                <div><strong>418</strong><span>{t("landing.pms.arrival", "Anreise 15:00")}</span><em>{t("landing.pms.ready", "Bereit")}</em></div>
+                            </div>
+                            <div className="lp-pms-price">
+                                <span>{t("landing.pms.priceLabel", "Einführungspreis")}</span>
+                                <strong>{t("landing.pms.price", "CHF 249")}</strong>
+                                <small>{t("landing.pms.priceUnit", "pro Hotel / Monat, exkl. MwSt.")}</small>
+                            </div>
+                        </aside>
                     </div>
                 </section>
 

@@ -62,6 +62,8 @@ describe('LandingPage conversion entry points', () => {
             .toHaveAttribute('href', '/register');
         expect(hero.getByRole('button', { name: 'Interaktive Produktdemo starten' }))
             .toBeEnabled();
+        expect(hero.getByRole('link', { name: /Chrono Hotelmanagement \(PMS\).*In finaler Entwicklungsphase/ }))
+            .toHaveAttribute('href', '#pms');
         expect(screen.queryByText('Kostenlos testen', { exact: true })).not.toBeInTheDocument();
     });
 
@@ -107,5 +109,22 @@ describe('LandingPage conversion entry points', () => {
             );
         });
         expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
+    it('presents the PMS pilot offer and prepares the contact form', async () => {
+        const user = userEvent.setup();
+        renderLandingPage();
+
+        const pmsHeading = screen.getByRole('heading', { level: 2, name: 'Chrono Hotelmanagement (PMS)' });
+        expect(pmsHeading).toBeInTheDocument();
+        expect(within(pmsHeading.closest('section')).getByText('Neu · In finaler Entwicklungsphase'))
+            .toBeInTheDocument();
+        expect(screen.getByText('CHF 249')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'PMS als Pilotbetrieb testen' }));
+
+        expect(screen.getByRole('textbox', { name: 'Nachricht' })).toHaveValue(
+            'Ich interessiere mich für einen Pilotzugang zum Chrono Hotelmanagement (PMS) und möchte das System mit meinem Hotel testen.'
+        );
     });
 });

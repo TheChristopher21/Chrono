@@ -128,6 +128,16 @@ export const FEATURE_CATALOG = [
             "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel.",
         alwaysAvailable: false,
     },
+    {
+        key: "pms",
+        name: "Hotelmanagement (PMS) (in finaler Entwicklungsphase)",
+        price: 249,
+        priceType: "flat",
+        required: false,
+        description:
+            "Reservierungen, Zimmer, Gäste, Housekeeping und Abrechnung zentral verwalten. Für den ersten Hotelbetrieb; Pilotkunden werden während der finalen Entwicklungsphase persönlich begleitet.",
+        alwaysAvailable: false,
+    },
 ];
 
 export const ALWAYS_AVAILABLE_FEATURE_KEYS = FEATURE_CATALOG.filter((feature) => feature.alwaysAvailable).map(
