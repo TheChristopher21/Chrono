@@ -571,7 +571,7 @@ const PmsAdvancedWorkspace = ({
                     </section>
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Hotelvergleich</span><h3>Betriebe</h3></div></div>
-                        <div className="pms-table-wrap">
+                        <div className="pms-table-wrap is-portfolio-table">
                             <table>
                                 <thead><tr><th>Hotel</th><th>Ort</th><th>Währung</th><th>Zimmer im Betrieb</th><th>Verkaufskapazität</th><th>Verkauft</th><th>Noch frei</th><th>Auslastung</th><th>An-/Abreisen</th></tr></thead>
                                 <tbody>{portfolio.hotels.map((hotel) => <tr key={hotel.propertyId}><td><strong>{hotel.name}</strong><small>{hotel.code}</small></td><td>{hotel.city}</td><td>{hotel.currencyCode}</td><td>{hotel.operationalRooms}</td><td>{hotel.availableRooms}</td><td>{hotel.soldRooms}</td><td>{Math.max(0, hotel.availableRooms - hotel.soldRooms)}</td><td>{Number(hotel.occupancyPercent).toFixed(2)} %</td><td>{hotel.arrivals} / {hotel.departures}</td></tr>)}</tbody>
@@ -840,10 +840,10 @@ const PmsAdvancedWorkspace = ({
                         )}
                     </section>
                     {performanceReport && (
-                        <div className="pms-operations-layout">
+                        <div className="pms-operations-layout pms-report-layout">
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Tageswerte</span><h3>{performanceReport.daily.length} Betriebstage</h3></div></div>
-                                <div className="pms-table-wrap">
+                                <div className="pms-table-wrap is-daily-table">
                                     <table>
                                         <thead><tr><th>Datum</th><th>Verkaufskapazität</th><th>Verkauft</th><th>Noch frei</th><th>Zimmerauslastung</th><th>Umsatz</th><th>ADR</th><th>RevPAR</th></tr></thead>
                                         <tbody>{performanceReport.daily.map((day) => <tr key={day.date}><td>{formatPmsDate(day.date)}</td><td>{day.availableRooms}</td><td>{day.soldRooms}</td><td>{Math.max(0, day.availableRooms - day.soldRooms)}</td><td>{Number(day.occupancyPercent).toFixed(2)} %</td><td>{money(day.roomRevenue, performanceReport.currencyCode)}</td><td>{money(day.adr, performanceReport.currencyCode)}</td><td>{money(day.revPar, performanceReport.currencyCode)}</td></tr>)}</tbody>
@@ -852,7 +852,11 @@ const PmsAdvancedWorkspace = ({
                             </section>
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Quellenmix</span><h3>Buchungskanäle</h3></div></div>
-                                <div className="pms-record-list">{performanceReport.sources.map((source) => <article className="pms-record" key={source.source}><div><span>{Number(source.sharePercent).toFixed(2)} %</span><strong>{getPmsEnumLabel(RESERVATION_SOURCE_LABELS, source.source)}</strong><small>{source.soldRoomNights} Zimmernächte · {money(source.roomRevenue, performanceReport.currencyCode)}</small></div></article>)}</div>
+                                <div className="pms-record-list">
+                                    {performanceReport.sources.length
+                                        ? performanceReport.sources.map((source) => <article className="pms-record" key={source.source}><div><span>{Number(source.sharePercent).toFixed(2)} %</span><strong>{getPmsEnumLabel(RESERVATION_SOURCE_LABELS, source.source)}</strong><small>{source.soldRoomNights} Zimmernächte · {money(source.roomRevenue, performanceReport.currencyCode)}</small></div></article>)
+                                        : <p className="pms-workspace-placeholder">Im gewählten Zeitraum wurden noch keine Zimmernächte verkauft.</p>}
+                                </div>
                             </section>
                         </div>
                     )}

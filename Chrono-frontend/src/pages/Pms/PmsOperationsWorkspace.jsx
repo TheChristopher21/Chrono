@@ -1302,7 +1302,7 @@ const PmsOperationsWorkspace = ({
                     )}
 
                     {activeSection === 'housekeeping' && (
-                        <div className="pms-operations-layout">
+                        <div className="pms-operations-layout pms-housekeeping-layout">
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Housekeeping</span><h3>Aufgaben am {formatPmsDate(businessDate)}</h3></div></div>
                                 <div className="pms-housekeeping-board">
