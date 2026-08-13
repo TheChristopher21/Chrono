@@ -24,6 +24,7 @@ class PmsFlywayMySqlIntegrationTest {
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
+            statement.execute("create table users (id bigint primary key)");
             statement.execute("""
                     create table legacy_marker (
                         id bigint primary key,
@@ -45,7 +46,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(3);
+        assertThat(result.migrationsExecuted).isEqualTo(4);
 
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
@@ -64,6 +65,16 @@ class PmsFlywayMySqlIntegrationTest {
                     """)) {
                 assertThat(pmsTables.next()).isTrue();
                 assertThat(pmsTables.getInt(1)).isEqualTo(41);
+            }
+
+            try (var workdaySwaps = statement.executeQuery("""
+                    select count(*)
+                    from information_schema.tables
+                    where table_schema = database()
+                      and table_name = 'workday_swaps'
+                    """)) {
+                assertThat(workdaySwaps.next()).isTrue();
+                assertThat(workdaySwaps.getInt(1)).isEqualTo(1);
             }
 
             try (var history = statement.executeQuery("""
@@ -99,7 +110,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(freshResult.migrationsExecuted).isEqualTo(4);
+        assertThat(freshResult.migrationsExecuted).isEqualTo(5);
 
         try (var connection = DriverManager.getConnection(
                 freshUrl,
@@ -115,6 +126,14 @@ class PmsFlywayMySqlIntegrationTest {
                      """)) {
             assertThat(pmsTables.next()).isTrue();
             assertThat(pmsTables.getInt(1)).isEqualTo(41);
+            assertThat(tableExists(connection, "workday_swaps")).isTrue();
+        }
+    }
+
+    private boolean tableExists(java.sql.Connection connection, String tableName) throws Exception {
+        try (var result = connection.getMetaData().getTables(
+                null, null, tableName, new String[]{"TABLE"})) {
+            return result.next();
         }
     }
 }

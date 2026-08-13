@@ -20,7 +20,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(4);
+        assertThat(result.migrationsExecuted).isEqualTo(5);
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
@@ -29,6 +29,7 @@ class PmsFlywayBaselineTest {
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
             assertThat(tableExists(connection, "pms_public_booking_requests")).isTrue();
             assertThat(tableExists(connection, "pms_public_rate_limits")).isTrue();
+            assertThat(tableExists(connection, "workday_swaps")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
         }
@@ -42,6 +43,7 @@ class PmsFlywayBaselineTest {
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
+            statement.execute("create table users (id bigint primary key)");
             statement.execute("create table legacy_marker (id bigint primary key, marker_value varchar(32))");
             statement.execute("insert into legacy_marker (id, marker_value) values (1, 'preserved')");
         }
@@ -54,7 +56,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(3);
+        assertThat(result.migrationsExecuted).isEqualTo(4);
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
@@ -64,6 +66,7 @@ class PmsFlywayBaselineTest {
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
             assertThat(tableExists(connection, "pms_public_booking_requests")).isTrue();
             assertThat(tableExists(connection, "pms_public_rate_limits")).isTrue();
+            assertThat(tableExists(connection, "workday_swaps")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
 
