@@ -3,6 +3,8 @@ import api from '../../utils/api.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
 import PmsExtensionsWorkspace from './PmsExtensionsWorkspace.jsx';
 import { formatPmsDate } from './pmsFormatting.js';
+import { PMS_SECTIONS } from './pmsNavigation.js';
+import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import {
     FOLIO_ITEM_TYPE_LABELS,
     FOLIO_STATUS_LABELS,
@@ -23,25 +25,20 @@ import {
     getPmsEnumOptions,
 } from './pmsTerminology.js';
 
-const sections = [
-    ['portfolio', 'Hotelportfolio'],
-    ['reservations', 'Reservierungen'],
-    ['groups', 'Gruppenreservierungen'],
-    ['events', 'Veranstaltungen & Ressourcen'],
-    ['room-plan', 'Zimmerplan'],
-    ['guests', 'Gästeprofile'],
-    ['organizations', 'Geschäftspartner'],
-    ['rates', 'Ratenpläne & Verfügbarkeit'],
-    ['housekeeping', 'Housekeeping & Reinigung'],
-    ['folios', 'Gastkonten & Zahlungen'],
-    ['invoices', 'Rechnungen'],
-    ['audit', 'Tagesabschluss'],
-    ['digital-check-in', 'Digitale Gästeanmeldung'],
-    ['communications', 'Gästekommunikation'],
-    ['reports', 'Berichte & Kennzahlen'],
-    ['commerce', 'Verkauf & lokale Integrationen'],
-    ['integrations', 'Schnittstellen & Integrationen'],
-];
+const sections = PMS_SECTIONS
+    .filter((section) => section.key !== 'overview')
+    .map((section) => [section.key, section.label]);
+
+const WorkspaceFrame = ({ embedded, onClose, children }) => {
+    if (embedded) {
+        return children;
+    }
+    return (
+        <div className="pms-workspace-backdrop" role="presentation" onMouseDown={onClose}>
+            {children}
+        </div>
+    );
+};
 
 const housekeepingPriorityLabel = (priority) => {
     const value = Number(priority ?? 0);
@@ -57,11 +54,6 @@ const tomorrowKey = () => {
     next.setDate(next.getDate() + 1);
     return next.toISOString().slice(0, 10);
 };
-
-const money = (value, currency = 'CHF') => new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency,
-}).format(Number(value ?? 0));
 
 const errorMessage = (error) => (
     error?.response?.data?.detail
@@ -132,7 +124,14 @@ const PmsOperationsWorkspace = ({
     initialAction,
     onOperationsChange,
     onClose,
+    embedded = false,
+    onSectionChange,
 }) => {
+    const locale = usePmsLocale();
+    const money = (value, currency = 'CHF') => new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+    }).format(Number(value ?? 0));
     const [activeSection, setActiveSection] = useState(section);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -718,37 +717,46 @@ const PmsOperationsWorkspace = ({
 
     if (!property) {
         return (
-            <div className="pms-workspace-backdrop">
-                <section className="pms-operations-workspace" role="dialog" aria-modal="true">
-                    <button type="button" className="pms-workspace-close" onClick={onClose}>×</button>
+            <PmsTranslationBoundary>
+            <WorkspaceFrame embedded={embedded} onClose={onClose}>
+                <section
+                    className={`pms-operations-workspace${embedded ? ' is-embedded' : ''}`}
+                    role={embedded ? undefined : 'dialog'}
+                    aria-modal={embedded ? undefined : 'true'}
+                >
+                    {!embedded && <button type="button" className="pms-workspace-close" onClick={onClose}>×</button>}
                     <div className="pms-workspace-empty">
                         <h2>Zuerst ein Hotel einrichten</h2>
                         <p>Reservierungen benötigen mindestens ein Hotel, einen Zimmertyp und ein Zimmer.</p>
                     </div>
                 </section>
-            </div>
+            </WorkspaceFrame>
+            </PmsTranslationBoundary>
         );
     }
 
+    const activeSectionLabel = sections.find(([key]) => key === activeSection)?.[1] ?? 'Hotelbetrieb';
+
     return (
-        <div className="pms-workspace-backdrop" role="presentation" onMouseDown={onClose}>
+        <PmsTranslationBoundary>
+        <WorkspaceFrame embedded={embedded} onClose={onClose}>
             <section
-                className="pms-operations-workspace"
-                role="dialog"
-                aria-modal="true"
+                className={`pms-operations-workspace${embedded ? ' is-embedded' : ''}`}
+                role={embedded ? undefined : 'dialog'}
+                aria-modal={embedded ? undefined : 'true'}
                 aria-labelledby="pms-operations-title"
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <header className="pms-workspace-header">
                     <div>
                         <span className="pms-eyebrow">Chrono Hotel-PMS · {property.name}</span>
-                        <h2 id="pms-operations-title">Hotelbetrieb</h2>
+                        <h2 id="pms-operations-title">{activeSectionLabel}</h2>
                         <p>Betriebstag {formatPmsDate(businessDate)} · Alle Änderungen werden sofort im Hotel-PMS gespeichert.</p>
                     </div>
-                    <button type="button" className="pms-workspace-close" onClick={onClose} aria-label="Arbeitsbereich schliessen">×</button>
+                    {!embedded && <button type="button" className="pms-workspace-close" onClick={onClose} aria-label="Arbeitsbereich schliessen">×</button>}
                 </header>
 
-                <nav className="pms-workspace-tabs" aria-label="PMS-Arbeitsbereiche">
+                {!embedded && <nav className="pms-workspace-tabs" aria-label="PMS-Arbeitsbereiche">
                     {sections.map(([key, label]) => (
                         <button
                             type="button"
@@ -756,6 +764,7 @@ const PmsOperationsWorkspace = ({
                             className={activeSection === key ? 'is-active' : ''}
                             onClick={() => {
                                 setActiveSection(key);
+                                onSectionChange?.(key);
                                 setError('');
                                 setNotice('');
                             }}
@@ -763,7 +772,7 @@ const PmsOperationsWorkspace = ({
                             {label}
                         </button>
                     ))}
-                </nav>
+                </nav>}
 
                 {!canManage && (
                     <div className="pms-inline-message">Du hast Lesezugriff. Änderungen sind deaktiviert.</div>
@@ -1466,7 +1475,8 @@ const PmsOperationsWorkspace = ({
 
                 </div>
             </section>
-        </div>
+        </WorkspaceFrame>
+        </PmsTranslationBoundary>
     );
 };
 

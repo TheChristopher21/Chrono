@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 
 @Service
 public class PmsBackupVerifier {
+    private static final String LATEST_BACKUP_MARKER = "latest.ok";
+
     private final boolean enabled;
     private final Path directory;
     private final Duration maxAge;
@@ -139,6 +141,30 @@ public class PmsBackupVerifier {
     }
 
     private Optional<Path> latestBackup() throws IOException {
+        Path marker = directory.resolve(LATEST_BACKUP_MARKER).normalize();
+        if (Files.isRegularFile(marker)) {
+            String markerValue;
+            try (BufferedReader reader = Files.newBufferedReader(marker)) {
+                markerValue = reader.readLine();
+            }
+            if (markerValue == null || markerValue.isBlank()) {
+                return Optional.empty();
+            }
+
+            Path markedBackup = Path.of(markerValue.trim());
+            if (!markedBackup.isAbsolute()) {
+                markedBackup = directory.resolve(markedBackup);
+            }
+            markedBackup = markedBackup.toAbsolutePath().normalize();
+            if (!markedBackup.startsWith(directory)
+                    || !markedBackup.getFileName().toString().endsWith(".sql")
+                    || !Files.isRegularFile(markedBackup)
+                    || Files.isSymbolicLink(markedBackup)) {
+                return Optional.empty();
+            }
+            return Optional.of(markedBackup);
+        }
+
         try (Stream<Path> files = Files.list(directory)) {
             return files
                     .filter(Files::isRegularFile)

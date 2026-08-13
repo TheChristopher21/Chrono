@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import { PmsTranslationBoundary } from './pmsI18n.jsx';
 import {
     ROOM_OPERATIONAL_STATUS_LABELS,
     getPmsEnumLabel,
@@ -202,6 +203,7 @@ const PmsSetupWorkspace = ({
     };
 
     return (
+        <PmsTranslationBoundary>
         <div className="pms-setup-backdrop" role="presentation" onMouseDown={onClose}>
             <section
                 className="pms-setup-workspace"
@@ -516,6 +518,7 @@ const PmsSetupWorkspace = ({
                 </div>
             </section>
         </div>
+        </PmsTranslationBoundary>
     );
 };
 

@@ -75,6 +75,33 @@ class PmsBackupVerifierTest {
     }
 
     @Test
+    void prefersBackupConfirmedByDedicatedServiceMarker() throws Exception {
+        Path confirmedBackup = directory.resolve("chrono_db_20260728T234500Z.sql");
+        String sql = """
+                CREATE TABLE pms_properties (id BIGINT);
+                CREATE TABLE pms_reservations (id BIGINT);
+                CREATE TABLE pms_audit_events (id BIGINT);
+                CREATE TABLE pms_integration_outbox (id BIGINT);
+                """;
+        Files.writeString(confirmedBackup, sql.repeat(8));
+        Files.writeString(
+                confirmedBackup.resolveSibling(confirmedBackup.getFileName() + ".sha256"),
+                sha256(Files.readAllBytes(confirmedBackup)) + "  " + confirmedBackup.getFileName());
+        Files.writeString(directory.resolve("latest.ok"), confirmedBackup.toString());
+
+        Path newerUnconfirmedExport = directory.resolve("manual-export.sql");
+        Files.writeString(newerUnconfirmedExport, "CREATE TABLE unrelated_table (id BIGINT);".repeat(10));
+        Files.setLastModifiedTime(
+                newerUnconfirmedExport,
+                java.nio.file.attribute.FileTime.from(Instant.now().plusSeconds(10)));
+
+        PmsBackupVerifier verifier =
+                new PmsBackupVerifier(true, directory.toString(), Duration.ofHours(26), 100);
+
+        assertThat(verifier.inspect().status()).isEqualTo(HealthStatus.OK);
+    }
+
+    @Test
     void reportsDisabledBackupHonestly() {
         PmsBackupVerifier verifier =
                 new PmsBackupVerifier(false, directory.toString(), Duration.ofHours(26), 100);

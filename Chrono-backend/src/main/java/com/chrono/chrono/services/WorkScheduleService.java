@@ -5,9 +5,11 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserHolidayOption; // NEU
 import com.chrono.chrono.entities.UserScheduleRule;
 import com.chrono.chrono.entities.VacationRequest;
+import com.chrono.chrono.entities.WorkdaySwap;
 import com.chrono.chrono.repositories.SickLeaveRepository; // Importiert
 import com.chrono.chrono.repositories.UserHolidayOptionRepository; // NEU
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
+import com.chrono.chrono.repositories.WorkdaySwapRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,21 +41,27 @@ public class WorkScheduleService {
     @Autowired // NEU
     private UserHolidayOptionRepository userHolidayOptionRepository;
 
+    @Autowired
+    private WorkdaySwapRepository workdaySwapRepository;
+
     private static final double BASE_FULL_TIME_WEEKLY_HOURS = 42.5;
 
     public static final class ExpectedWorkContext {
         private final List<SickLeave> sickLeaves;
         private final List<UserScheduleRule> scheduleRules;
         private final Map<LocalDate, UserHolidayOption> holidayOptions;
+        private final Map<LocalDate, WorkdaySwap> workdaySwaps;
 
         private ExpectedWorkContext(
                 List<SickLeave> sickLeaves,
                 List<UserScheduleRule> scheduleRules,
-                Map<LocalDate, UserHolidayOption> holidayOptions
+                Map<LocalDate, UserHolidayOption> holidayOptions,
+                Map<LocalDate, WorkdaySwap> workdaySwaps
         ) {
             this.sickLeaves = sickLeaves;
             this.scheduleRules = scheduleRules;
             this.holidayOptions = holidayOptions;
+            this.workdaySwaps = workdaySwaps;
         }
     }
 
@@ -61,11 +69,16 @@ public class WorkScheduleService {
         List<SickLeave> sickLeaves = sickLeaveRepository.findByUser(user);
         List<UserScheduleRule> scheduleRules = ruleRepo.findByUser(user);
         Map<LocalDate, UserHolidayOption> holidayOptions = new HashMap<>();
+        Map<LocalDate, WorkdaySwap> workdaySwaps = new HashMap<>();
         if (startDate != null && endDate != null && !startDate.isAfter(endDate)) {
             userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, startDate, endDate)
                     .forEach(option -> holidayOptions.put(option.getHolidayDate(), option));
+            workdaySwapRepository.findByUserAndDateRange(user, startDate, endDate).forEach(swap -> {
+                workdaySwaps.put(swap.getOriginalWorkDate(), swap);
+                workdaySwaps.put(swap.getReplacementWorkDate(), swap);
+            });
         }
-        return new ExpectedWorkContext(sickLeaves, scheduleRules, holidayOptions);
+        return new ExpectedWorkContext(sickLeaves, scheduleRules, holidayOptions, workdaySwaps);
     }
 
 
@@ -314,6 +327,16 @@ public class WorkScheduleService {
         ExpectedWorkContext safeContext = context != null
                 ? context
                 : loadExpectedWorkContext(user, date, date);
+        WorkdaySwap workdaySwap = safeContext.workdaySwaps.get(date);
+        if (workdaySwap != null) {
+            return computeSwappedExpectedMinutes(
+                    user,
+                    date,
+                    approvedVacationsForUser,
+                    safeContext,
+                    workdaySwap
+            );
+        }
         // Logik für prozentuale Mitarbeiter (Wochenbasis wird im TimeTrackingService gehandhabt)
         // Hier geben wir den "theoretischen" Tageswert zurück, unter Berücksichtigung von Abwesenheiten,
         // damit TimeTrackingService.computeDailyWorkDifference dies für die Saldenberechnung nutzen kann,
@@ -440,6 +463,43 @@ public class WorkScheduleService {
             logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, reguläres volles Soll -> {} Min.", user.getUsername(), date, finalSoll);
         }
         return finalSoll;
+    }
+
+    private int computeSwappedExpectedMinutes(
+            User user,
+            LocalDate date,
+            List<VacationRequest> approvedVacationsForUser,
+            ExpectedWorkContext context,
+            WorkdaySwap workdaySwap
+    ) {
+        if (date.equals(workdaySwap.getOriginalWorkDate())) {
+            return 0;
+        }
+        if (!date.equals(workdaySwap.getReplacementWorkDate())) {
+            return 0;
+        }
+
+        int replacementMinutes = Math.max(0, workdaySwap.getTransferredMinutes());
+        List<VacationRequest> safeVacations = approvedVacationsForUser != null
+                ? approvedVacationsForUser
+                : List.of();
+        for (VacationRequest vacation : safeVacations) {
+            if (!date.isBefore(vacation.getStartDate()) && !date.isAfter(vacation.getEndDate())) {
+                return vacation.isHalfDay() ? replacementMinutes / 2 : 0;
+            }
+        }
+        for (SickLeave sickLeave : context.sickLeaves) {
+            if (!date.isBefore(sickLeave.getStartDate()) && !date.isAfter(sickLeave.getEndDate())) {
+                return sickLeave.isHalfDay() ? replacementMinutes / 2 : 0;
+            }
+        }
+        if (isHolidayForUser(user, date)) {
+            return isHalfDayHolidayForUser(user, date) ? replacementMinutes / 2 : 0;
+        }
+        if (isHalfDay(user, date, context.scheduleRules)) {
+            return replacementMinutes / 2;
+        }
+        return replacementMinutes;
     }
 
     public boolean isDayOff(User user, LocalDate date) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import api from '../../utils/api.js';
+import { PmsLanguageSwitch, PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import '../../styles/PmsBookingPage.css';
 
 const dateKey = (offset = 0) => {
@@ -13,6 +14,7 @@ const errorMessage = (error) => error?.response?.data?.detail
     || error?.response?.data?.message || error?.message || 'Die Buchung konnte nicht abgeschlossen werden.';
 
 const PmsBookingPage = () => {
+    const locale = usePmsLocale();
     const { propertyCode } = useParams();
     const location = useLocation();
     const [config, setConfig] = useState(null);
@@ -99,7 +101,9 @@ const PmsBookingPage = () => {
     };
 
     return (
+        <PmsTranslationBoundary>
         <main className="pms-booking-page">
+            <PmsLanguageSwitch />
             <header className="pms-booking-hero">
                 <span>Direkt beim Hotel buchen</span>
                 <h1>{config?.hotelName || 'Onlinebuchung'}</h1>
@@ -116,10 +120,10 @@ const PmsBookingPage = () => {
                             : 'E-Mail bestätigt – Garantie ausstehend'}</span>
                     <h2>{confirmation.confirmationCode}</h2>
                     <p>{confirmation.roomTypeName} · {confirmation.rateName}</p>
-                    <strong>{new Intl.NumberFormat('de-CH', { style: 'currency', currency: confirmation.currencyCode }).format(confirmation.totalAmount)}</strong>
+                    <strong>{new Intl.NumberFormat(locale, { style: 'currency', currency: confirmation.currencyCode }).format(confirmation.totalAmount)}</strong>
                     {confirmation.verificationRequired && <p>Wir haben dir einen Bestätigungslink per E-Mail gesendet. Bis zur Bestätigung bleibt das Zimmer kurzzeitig vorgemerkt.</p>}
                     {!confirmation.verificationRequired && confirmation.status === 'TENTATIVE' && <p>Deine E-Mail ist bestätigt. Das Hotel bestätigt die Reservierung nach Eingang der erforderlichen Garantie oder Anzahlung.</p>}
-                    {confirmation.holdUntil && confirmation.status === 'TENTATIVE' && <p>Vorgemerkt bis {new Intl.DateTimeFormat('de-CH', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(confirmation.holdUntil))}.</p>}
+                    {confirmation.holdUntil && confirmation.status === 'TENTATIVE' && <p>Vorgemerkt bis {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(confirmation.holdUntil))}.</p>}
                     {confirmation.confirmationMessage && <p>{confirmation.confirmationMessage}</p>}
                     <button type="button" onClick={() => { setConfirmation(null); setGuest({ firstName: '', lastName: '', email: '', phone: '', termsAccepted: false, privacyAccepted: false }); }}>Weitere Buchung</button>
                 </section>
@@ -144,7 +148,7 @@ const PmsBookingPage = () => {
                                     <label className={`pms-booking-rate ${!rate.available ? 'is-disabled' : ''}`} key={rate.ratePlanId}>
                                         <input type="radio" name="rate" disabled={!rate.available} checked={String(selectedRateId) === String(rate.ratePlanId)} onChange={() => setSelectedRateId(rate.ratePlanId)} />
                                         <span><strong>{roomType.name}</strong><small>{rate.name}{rate.restriction ? ` · ${rate.restriction}` : ''}</small></span>
-                                        <b>{new Intl.NumberFormat('de-CH', { style: 'currency', currency: rate.currencyCode }).format(rate.totalAmount)}</b>
+                                        <b>{new Intl.NumberFormat(locale, { style: 'currency', currency: rate.currencyCode }).format(rate.totalAmount)}</b>
                                     </label>
                                 )))}
                             </div>
@@ -162,13 +166,14 @@ const PmsBookingPage = () => {
                                 <label className="pms-booking-consent"><input type="checkbox" checked={guest.termsAccepted} onChange={(e) => setGuest({ ...guest, termsAccepted: e.target.checked })} required /> Ich akzeptiere {config?.termsUrl ? <a href={config.termsUrl} target="_blank" rel="noreferrer">die AGB</a> : 'die Buchungsbedingungen'}.</label>
                                 <label className="pms-booking-consent"><input type="checkbox" checked={guest.privacyAccepted} onChange={(e) => setGuest({ ...guest, privacyAccepted: e.target.checked })} required /> Ich akzeptiere {config?.privacyUrl ? <a href={config.privacyUrl} target="_blank" rel="noreferrer">die Datenschutzhinweise</a> : 'die Datenschutzhinweise'}.</label>
                                 {config?.requireGuarantee && <p className="pms-booking-hint">Das Hotel wird sich zur Garantie oder Anzahlung mit dir in Verbindung setzen.</p>}
-                                <button className="is-primary" disabled={busy}>Kostenpflichtig buchen · {new Intl.NumberFormat('de-CH', { style: 'currency', currency: selectedRate.currencyCode }).format(selectedRate.totalAmount)}</button>
+                                <button className="is-primary" disabled={busy}>Kostenpflichtig buchen · {new Intl.NumberFormat(locale, { style: 'currency', currency: selectedRate.currencyCode }).format(selectedRate.totalAmount)}</button>
                             </form>
                         </section>
                     )}
                 </>
             )}
         </main>
+        </PmsTranslationBoundary>
     );
 };
 

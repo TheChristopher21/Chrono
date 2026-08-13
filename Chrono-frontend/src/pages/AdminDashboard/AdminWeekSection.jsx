@@ -416,6 +416,10 @@ const AdminWeekSection = forwardRef(({
     const [backendMonthPeriodSummaries, setBackendMonthPeriodSummaries] = useState([]);
     const [backendWeekStatus, setBackendWeekStatus] = useState(CALCULATION_STATUS.IDLE);
     const [backendMonthStatus, setBackendMonthStatus] = useState(CALCULATION_STATUS.IDLE);
+    const [periodSummaryRefreshKey, setPeriodSummaryRefreshKey] = useState(0);
+    const [workdaySwaps, setWorkdaySwaps] = useState([]);
+    const [workdaySwapModal, setWorkdaySwapModal] = useState(null);
+    const [workdaySwapSaving, setWorkdaySwapSaving] = useState(false);
 
     useEffect(() => {
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
@@ -799,7 +803,7 @@ const AdminWeekSection = forwardRef(({
         return () => {
             cancelled = true;
         };
-    }, [weekStartIso, weekEndIso]);
+    }, [weekStartIso, weekEndIso, periodSummaryRefreshKey]);
 
     useEffect(() => {
         if (!monthRangeIsValid || !accountingMonthStartIso || !accountingMonthEndIso) {
@@ -829,7 +833,27 @@ const AdminWeekSection = forwardRef(({
         return () => {
             cancelled = true;
         };
-    }, [monthRangeIsValid, accountingMonthStartIso, accountingMonthEndIso]);
+    }, [monthRangeIsValid, accountingMonthStartIso, accountingMonthEndIso, periodSummaryRefreshKey]);
+
+    const fetchWorkdaySwaps = useCallback(async (username = detailedUser) => {
+        if (!username || !weekStartIso || !weekEndIso) {
+            setWorkdaySwaps([]);
+            return;
+        }
+        try {
+            const response = await api.get('/api/admin/timetracking/workday-swaps', {
+                params: { username, startDate: weekStartIso, endDate: weekEndIso },
+            });
+            setWorkdaySwaps(Array.isArray(response.data) ? response.data : []);
+        } catch (error) {
+            console.error('Failed to load workday swaps', error);
+            setWorkdaySwaps([]);
+        }
+    }, [detailedUser, weekStartIso, weekEndIso]);
+
+    useEffect(() => {
+        fetchWorkdaySwaps();
+    }, [fetchWorkdaySwaps, periodSummaryRefreshKey]);
 
     const backendWeekSummaryMap = useMemo(() => {
         const map = new Map();
@@ -891,12 +915,16 @@ const AdminWeekSection = forwardRef(({
                 const cumulativeBalanceMinutes = cumulativeBalanceRecord ? cumulativeBalanceRecord.trackingBalance : (userConfig.trackingBalanceInMinutes ?? 0);
 
 
-                // Use all summaries of the user for global problem indicators
+                const problemSummaries = Array.isArray(backendWeekSummary?.dailySummaries)
+                    ? backendWeekSummary.dailySummaries
+                    : Object.values(userDayMapCurrentWeek);
                 const problemIndicators = getDetailedGlobalProblemIndicators(
-                    allUserSummariesList, // Pass all summaries for this user
+                    problemSummaries,
                     userApprovedVacations, userConfig, defaultExpectedHours,
                     userCurrentSickLeaves, holidaysForThisUserYear,
-                    allHolidayOptionsForUser // Pass relevant holiday options collected so far
+                    allHolidayOptionsForUser,
+                    weekStartIso,
+                    weekEndIso
                 );
 
                 const unusualWeeklyDelta = shouldShowWeeklyDeltaIssues
@@ -930,7 +958,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues, backendWeekSummaryMap]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues, backendWeekSummaryMap, weekStartIso, weekEndIso]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -957,7 +985,18 @@ const AdminWeekSection = forwardRef(({
             const monthlyExpectedMinutes = Number.isFinite(backendMonthSummary?.expectedMinutes) ? backendMonthSummary.expectedMinutes : null;
 
             const cumulativeBalanceMinutes = baseData?.cumulativeBalanceMinutes ?? (user.trackingBalanceInMinutes ?? 0);
-            const problemIndicators = baseData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
+            const monthlyProblemIndicators = getDetailedGlobalProblemIndicators(
+                Array.isArray(backendMonthSummary?.dailySummaries) ? backendMonthSummary.dailySummaries : [],
+                userApprovedVacations,
+                userConfig,
+                defaultExpectedHours,
+                userCurrentSickLeaves,
+                (allHolidays[userConfig.companyCantonAbbreviation || 'GENERAL'] || allHolidays.GENERAL)?.data || {},
+                Object.values(holidayOptionsByUser[user.username] || {}),
+                accountingMonthStartIso,
+                accountingMonthEndIso,
+            );
+            const problemIndicators = backendMonthSummary ? monthlyProblemIndicators : (baseData?.problemIndicators || EMPTY_PROBLEM_INDICATORS);
             const userColor = baseData?.userColor || (/^#[0-9A-F]{6}$/i.test(user.color || "") ? user.color : "#007BFF");
 
             return {
@@ -983,7 +1022,7 @@ const AdminWeekSection = forwardRef(({
                 monthlyOvertimeMinutes: Number.isFinite(backendMonthSummary?.differenceMinutes) ? backendMonthSummary.differenceMinutes : null,
             };
         });
-    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours, backendMonthSummaryMap]);
+    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours, backendMonthSummaryMap, accountingMonthStartIso, accountingMonthEndIso]);
 
 
     const issueSummary = useMemo(() => {
@@ -1178,6 +1217,71 @@ const AdminWeekSection = forwardRef(({
         setManualMonthRangeStart(DEFAULT_MONTH_RANGE_SETTINGS.manualStart);
         setManualMonthRangeEnd(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
     }, []);
+
+    const openWorkdaySwapModal = (userData, originalWorkDate) => {
+        const candidates = weekDates
+            .map(date => {
+                const dateIso = formatLocalDateYMD(date);
+                const summary = userData.userDayMap?.[dateIso];
+                return {
+                    dateIso,
+                    expectedMinutes: Number.isFinite(summary?.expectedMinutes) ? summary.expectedMinutes : null,
+                    hasEntries: Array.isArray(summary?.entries) && summary.entries.length > 0,
+                };
+            })
+            .filter(candidate => candidate.dateIso !== originalWorkDate
+                && candidate.expectedMinutes === 0
+                && !workdaySwaps.some(swap => swap.originalWorkDate === candidate.dateIso || swap.replacementWorkDate === candidate.dateIso))
+            .sort((left, right) => Number(right.hasEntries) - Number(left.hasEntries));
+
+        if (candidates.length === 0) {
+            notify(t('adminDashboard.workdaySwap.noReplacement', 'In dieser Woche ist kein freier Ersatztag verfügbar.'), 'warning');
+            return;
+        }
+        setWorkdaySwapModal({
+            username: userData.username,
+            originalWorkDate,
+            replacementWorkDate: candidates[0].dateIso,
+            note: '',
+            candidates,
+        });
+    };
+
+    const handleCreateWorkdaySwap = async () => {
+        if (!workdaySwapModal?.replacementWorkDate) return;
+        setWorkdaySwapSaving(true);
+        try {
+            await api.post('/api/admin/timetracking/workday-swaps', {
+                username: workdaySwapModal.username,
+                originalWorkDate: workdaySwapModal.originalWorkDate,
+                replacementWorkDate: workdaySwapModal.replacementWorkDate,
+                note: workdaySwapModal.note,
+            });
+            notify(t('adminDashboard.workdaySwap.created', 'Arbeitstag wurde erfolgreich getauscht.'), 'success');
+            const username = workdaySwapModal.username;
+            setWorkdaySwapModal(null);
+            setPeriodSummaryRefreshKey(value => value + 1);
+            await fetchWorkdaySwaps(username);
+            onDataReloadNeeded?.();
+        } catch (error) {
+            notify(error.response?.data?.message || t('adminDashboard.workdaySwap.createError', 'Arbeitstagtausch konnte nicht gespeichert werden.'), 'error');
+        } finally {
+            setWorkdaySwapSaving(false);
+        }
+    };
+
+    const handleDeleteWorkdaySwap = async (swap) => {
+        if (!window.confirm(t('adminDashboard.workdaySwap.deleteConfirm', 'Diesen Arbeitstagtausch wirklich entfernen?'))) return;
+        try {
+            await api.delete(`/api/admin/timetracking/workday-swaps/${swap.id}`);
+            notify(t('adminDashboard.workdaySwap.deleted', 'Arbeitstagtausch wurde entfernt.'), 'success');
+            setPeriodSummaryRefreshKey(value => value + 1);
+            await fetchWorkdaySwaps(swap.username);
+            onDataReloadNeeded?.();
+        } catch (error) {
+            notify(error.response?.data?.message || t('adminDashboard.workdaySwap.deleteError', 'Arbeitstagtausch konnte nicht entfernt werden.'), 'error');
+        }
+    };
 
     const renderProblemIndicatorsCell = (userData) => {
         const indicators = userData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
@@ -2094,6 +2198,10 @@ const AdminWeekSection = forwardRef(({
                                                                 const holidayOptionForThisDay = userData.holidayOptions?.find(option => option.holidayDate === isoDate);
                                                                 const actualMinsToday = dailySummary?.workedMinutes || 0;
                                                                 const expectedMinsToday = Number.isFinite(dailySummary?.expectedMinutes) ? dailySummary.expectedMinutes : null;
+                                                                const workdaySwapForDay = workdaySwaps.find(swap =>
+                                                                    swap.originalWorkDate === isoDate || swap.replacementWorkDate === isoDate
+                                                                );
+                                                                const isWorkdaySwapOrigin = workdaySwapForDay?.originalWorkDate === isoDate;
                                                                 const isFutureDate = isoDate > todayIsoForAccounting;
                                                                 const hasTrackedEntries = !!(dailySummary?.entries && dailySummary.entries.length > 0);
                                                                 const diffMinsToday = isFutureDate && !hasTrackedEntries && actualMinsToday === 0
@@ -2242,6 +2350,18 @@ const AdminWeekSection = forwardRef(({
                                                                                     {t('adminDashboard.newEntryButton', 'Neuer Eintrag')}
                                                                                 </button>
                                                                             )}
+                                                                            {!workdaySwapForDay
+                                                                                && expectedMinsToday > 0
+                                                                                && !userData.userConfig.isHourly
+                                                                                && !userData.userConfig.isPercentage && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="edit-day-button workday-swap-button text-xs py-0.5 px-1 mt-1"
+                                                                                    onClick={() => openWorkdaySwapModal(userData, isoDate)}
+                                                                                >
+                                                                                    {t('adminDashboard.workdaySwap.action', 'Arbeitstag tauschen')}
+                                                                                </button>
+                                                                            )}
                                                                         </>
                                                                     );
                                                                 } else {
@@ -2257,6 +2377,26 @@ const AdminWeekSection = forwardRef(({
                                                                             )}
                                                                         </div>
                                                                         <div className="admin-day-content">
+                                                                            {workdaySwapForDay && (
+                                                                                <div className="workday-swap-indicator text-xs">
+                                                                                    <strong>{isWorkdaySwapOrigin
+                                                                                        ? t('adminDashboard.workdaySwap.freeInstead', 'Getauscht: heute frei')
+                                                                                        : t('adminDashboard.workdaySwap.workingInstead', 'Getauschter Arbeitstag')}</strong>
+                                                                                    <span>
+                                                                                        {t('adminDashboard.workdaySwap.pairedWith', 'mit {{date}}', {
+                                                                                            date: formatDate(parseISO(isWorkdaySwapOrigin
+                                                                                                ? workdaySwapForDay.replacementWorkDate
+                                                                                                : workdaySwapForDay.originalWorkDate)),
+                                                                                        })}
+                                                                                    </span>
+                                                                                    {workdaySwapForDay.note && <span>{workdaySwapForDay.note}</span>}
+                                                                                    {isWorkdaySwapOrigin && (
+                                                                                        <button type="button" onClick={() => handleDeleteWorkdaySwap(workdaySwapForDay)}>
+                                                                                            {t('adminDashboard.workdaySwap.remove', 'Tausch entfernen')}
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
                                                                             {dayCardContent}
                                                                         </div>
                                                                     </div>
@@ -2329,6 +2469,73 @@ const AdminWeekSection = forwardRef(({
                 ))}
 
             </section>
+            {workdaySwapModal && (
+                <ModalOverlay visible className="bg-black bg-opacity-50">
+                    <div className="modal-content workday-swap-modal bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <h3>{t('adminDashboard.workdaySwap.title', 'Arbeitstag tauschen')}</h3>
+                        <p className="text-sm mb-4">
+                            {t(
+                                'adminDashboard.workdaySwap.description',
+                                'Die Sollzeit von {{originalDate}} wird einmalig auf einen freien Tag derselben Woche verschoben.',
+                                { originalDate: formatDate(parseISO(workdaySwapModal.originalWorkDate)) },
+                            )}
+                        </p>
+                        <div className="form-group">
+                            <label htmlFor="workday-swap-replacement">
+                                {t('adminDashboard.workdaySwap.replacementLabel', 'Ersatztag')}
+                            </label>
+                            <select
+                                id="workday-swap-replacement"
+                                value={workdaySwapModal.replacementWorkDate}
+                                onChange={event => setWorkdaySwapModal(current => ({
+                                    ...current,
+                                    replacementWorkDate: event.target.value,
+                                }))}
+                            >
+                                {workdaySwapModal.candidates.map(candidate => (
+                                    <option key={candidate.dateIso} value={candidate.dateIso}>
+                                        {parseISO(candidate.dateIso).toLocaleDateString('de-DE', {
+                                            weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+                                        })}{candidate.hasEntries ? ` – ${t('adminDashboard.workdaySwap.hasEntries', 'Zeiten vorhanden')}` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="workday-swap-note">
+                                {t('adminDashboard.workdaySwap.noteLabel', 'Notiz (optional)')}
+                            </label>
+                            <textarea
+                                id="workday-swap-note"
+                                maxLength={500}
+                                value={workdaySwapModal.note}
+                                onChange={event => setWorkdaySwapModal(current => ({ ...current, note: event.target.value }))}
+                                placeholder={t('adminDashboard.workdaySwap.notePlaceholder', 'z. B. Dienstag statt Donnerstag gearbeitet')}
+                            />
+                        </div>
+                        <div className="modal-buttons">
+                            <button
+                                type="button"
+                                className="button-primary"
+                                disabled={workdaySwapSaving}
+                                onClick={handleCreateWorkdaySwap}
+                            >
+                                {workdaySwapSaving
+                                    ? t('adminDashboard.workdaySwap.saving', 'Speichert …')
+                                    : t('adminDashboard.workdaySwap.confirm', 'Tausch speichern')}
+                            </button>
+                            <button
+                                type="button"
+                                className="button-cancel"
+                                disabled={workdaySwapSaving}
+                                onClick={() => setWorkdaySwapModal(null)}
+                            >
+                                {t('cancel', 'Abbrechen')}
+                            </button>
+                        </div>
+                    </div>
+                </ModalOverlay>
+            )}
             {/* Modal for deleting sick leave */}
             {showDeleteSickLeaveModal && sickLeaveToDelete && (
                 <ModalOverlay visible className="bg-black bg-opacity-50">

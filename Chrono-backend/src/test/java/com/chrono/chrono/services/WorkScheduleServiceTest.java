@@ -4,10 +4,12 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserHolidayOption;
 import com.chrono.chrono.entities.UserScheduleRule;
+import com.chrono.chrono.entities.WorkdaySwap;
 
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.UserHolidayOptionRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
+import com.chrono.chrono.repositories.WorkdaySwapRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -38,8 +41,47 @@ class WorkScheduleServiceTest {
     @Mock
     private UserHolidayOptionRepository userHolidayOptionRepository;
 
+    @Mock
+    private WorkdaySwapRepository workdaySwapRepository;
+
     @InjectMocks
     private WorkScheduleService workScheduleService;
+
+    @Test
+    void computeExpectedWorkMinutes_movesTargetToReplacementDay() {
+        User user = new User();
+        user.setId(42L);
+        user.setUsername("gabriela");
+        user.setIsHourly(false);
+        user.setIsPercentage(false);
+        user.setScheduleCycle(1);
+        user.setScheduleEffectiveDate(LocalDate.of(2026, 1, 1));
+        user.setWeeklySchedule(List.of(Map.of(
+                "tuesday", 0.0,
+                "thursday", 8.5
+        )));
+
+        LocalDate replacementTuesday = LocalDate.of(2026, 7, 14);
+        LocalDate originalThursday = LocalDate.of(2026, 7, 16);
+        WorkdaySwap swap = new WorkdaySwap();
+        swap.setUser(user);
+        swap.setOriginalWorkDate(originalThursday);
+        swap.setReplacementWorkDate(replacementTuesday);
+        swap.setTransferredMinutes(510);
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(ruleRepo.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, replacementTuesday, replacementTuesday))
+                .thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, originalThursday, originalThursday))
+                .thenReturn(Collections.emptyList());
+        when(workdaySwapRepository.findByUserAndDateRange(user, replacementTuesday, replacementTuesday)).thenReturn(List.of(swap));
+        when(workdaySwapRepository.findByUserAndDateRange(user, originalThursday, originalThursday)).thenReturn(List.of(swap));
+        when(holidayService.isHoliday(replacementTuesday, null)).thenReturn(false);
+
+        assertEquals(510, workScheduleService.computeExpectedWorkMinutes(user, replacementTuesday, Collections.emptyList()));
+        assertEquals(0, workScheduleService.computeExpectedWorkMinutes(user, originalThursday, Collections.emptyList()));
+    }
 
     @Test
     void getExpectedWorkHours_returnsZeroBeforeEntryDate() {

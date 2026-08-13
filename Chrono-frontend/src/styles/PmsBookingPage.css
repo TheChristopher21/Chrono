@@ -43,3 +43,34 @@
     .pms-booking-rate { grid-template-columns: auto 1fr; }
     .pms-booking-rate b { grid-column: 2; }
 }
+.pms-language-switch {
+    position: fixed;
+    z-index: 10;
+    top: 18px;
+    right: 18px;
+    display: inline-flex;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid #d8dde7;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(20, 24, 50, 0.12);
+}
+
+.pms-language-switch button {
+    min-width: 38px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #687083;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.pms-language-switch button.is-active {
+    background: #e7f4ef;
+    color: #176b55;
+}

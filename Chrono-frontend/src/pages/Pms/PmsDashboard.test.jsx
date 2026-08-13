@@ -3,6 +3,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
 const apiMock = vi.hoisted(() => ({
@@ -22,7 +23,19 @@ vi.mock('../../utils/api.js', () => ({ default: apiMock }));
 
 import PmsDashboard from './PmsDashboard.jsx';
 
-const renderDashboard = () => render(
+const HistoryProbe = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    return (
+        <div hidden>
+            <span data-testid="pms-location">{location.pathname}{location.search}</span>
+            <button data-testid="pms-back" type="button" onClick={() => navigate(-1)}>Back</button>
+        </div>
+    );
+};
+
+const renderDashboard = (initialEntries = ['/pms']) => render(
+    <MemoryRouter initialEntries={initialEntries}>
     <AuthContext.Provider
         value={{
             currentUser: {
@@ -34,7 +47,9 @@ const renderDashboard = () => render(
         }}
     >
         <PmsDashboard />
+        <HistoryProbe />
     </AuthContext.Provider>
+    </MemoryRouter>
 );
 
 describe('PmsDashboard', () => {
@@ -116,7 +131,7 @@ describe('PmsDashboard', () => {
         await waitFor(() => expect(document.body.style.overflow).toBe(''));
     });
 
-    it('closes the operations dialog with Escape', async () => {
+    it('shows operations directly on the page and returns through browser history', async () => {
         const property = {
             id: 5,
             name: 'Chrono Test Hotel',
@@ -153,13 +168,15 @@ describe('PmsDashboard', () => {
 
         await userEvent.click(screen.getByRole('button', { name: 'Reservierungen', exact: true }));
 
-        expect(screen.getByRole('dialog', { name: 'Hotelbetrieb' })).toBeInTheDocument();
-        expect(document.body).toHaveStyle({ overflow: 'hidden' });
+        expect(screen.getByRole('heading', { name: 'Reservierungen' })).toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: 'Reservierungen' })).not.toBeInTheDocument();
+        expect(screen.getByTestId('pms-location')).toHaveTextContent('/pms?section=reservations');
+        expect(document.body.style.overflow).toBe('');
 
-        fireEvent.keyDown(window, { key: 'Escape' });
+        fireEvent.click(screen.getByTestId('pms-back'));
 
-        expect(screen.queryByRole('dialog', { name: 'Hotelbetrieb' })).not.toBeInTheDocument();
-        await waitFor(() => expect(document.body.style.overflow).toBe(''));
+        expect(await screen.findByRole('heading', { name: /Guten Tag/i })).toBeInTheDocument();
+        expect(screen.getByTestId('pms-location')).toHaveTextContent('/pms');
     });
 
     it('shows database, outbox, audit and backup alarms from operational monitoring', async () => {

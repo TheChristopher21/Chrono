@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
 import { formatPmsDate, formatPmsDateTime } from './pmsFormatting.js';
+import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import {
     CHANNEL_CONNECTION_STATUS_LABELS,
     CHANNEL_ENVIRONMENT_LABELS,
@@ -87,11 +88,6 @@ const errorMessage = (error) => (
     || 'Die Aktion konnte nicht abgeschlossen werden.'
 );
 
-const money = (value, currency = 'CHF') => new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency,
-}).format(Number(value ?? 0));
-
 const addDays = (date, days) => {
     const value = new Date(`${date}T12:00:00`);
     value.setDate(value.getDate() + days);
@@ -106,6 +102,11 @@ const PmsAdvancedWorkspace = ({
     canManage,
     onOperationsChange,
 }) => {
+    const locale = usePmsLocale();
+    const money = (value, currency = 'CHF') => new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+    }).format(Number(value ?? 0));
     const [advanced, setAdvanced] = useState(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -551,6 +552,7 @@ const PmsAdvancedWorkspace = ({
     if (busy && !advanced) return <section className="pms-work-card"><p>PMS-Daten werden geladen…</p></section>;
 
     return (
+        <PmsTranslationBoundary>
         <>
             {error && <div className="pms-inline-message is-error" role="alert">{error}</div>}
             {notice && <div className="pms-inline-message is-success" role="status">{notice}</div>}
@@ -879,6 +881,7 @@ const PmsAdvancedWorkspace = ({
                 </section>
             )}
         </>
+        </PmsTranslationBoundary>
     );
 };
 

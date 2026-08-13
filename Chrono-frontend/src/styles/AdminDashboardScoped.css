@@ -2560,6 +2560,50 @@
   background: color-mix(in srgb, var(--c-success) 80%, black);
 }
 
+.admin-dashboard.scoped-dashboard .workday-swap-button {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--c-pri) 55%, var(--c-border));
+  border-radius: var(--u-radius-sm);
+  background: color-mix(in srgb, var(--c-pri) 12%, var(--c-card));
+  color: var(--c-pri);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-dashboard.scoped-dashboard .workday-swap-button:hover {
+  background: color-mix(in srgb, var(--c-pri) 20%, var(--c-card));
+}
+
+.admin-dashboard.scoped-dashboard .workday-swap-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.55rem;
+  padding: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--c-success) 45%, var(--c-border));
+  border-radius: var(--u-radius-sm);
+  background: color-mix(in srgb, var(--c-success) 10%, var(--c-card));
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .workday-swap-indicator button {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--c-danger);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.modal-content.workday-swap-modal textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
 /* Styling für die Liste der Stempelungen (NEU) */
 .admin-dashboard.scoped-dashboard
   .admin-week-display-detail

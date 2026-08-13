@@ -495,7 +495,8 @@ function hasDuplicatePunchTimes(entries = []) {
 export function getDetailedGlobalProblemIndicators(
     userDailySummaries,
     userApprovedVacations, userConfig, defaultExpectedHours, userSickLeaves,
-    holidaysForUserCanton, userAllHolidayOptions
+    holidaysForUserCanton, userAllHolidayOptions,
+    rangeStartIso = null, rangeEndIso = null
 ) {
     const indicators = { missingEntriesCount: 0, incompleteDaysCount: 0, autoCompletedUncorrectedCount: 0, holidayPendingCount: 0, problematicDays: [] };
     if (!userConfig || !userDailySummaries) return indicators;
@@ -512,7 +513,19 @@ export function getDetailedGlobalProblemIndicators(
     }
     checkStartDate.setHours(0,0,0,0);
 
-    for (let currentDateIter = new Date(checkStartDate); currentDateIter <= today; currentDateIter.setDate(currentDateIter.getDate() + 1)) {
+    if (rangeStartIso) {
+        const requestedStart = parseISO(rangeStartIso);
+        requestedStart.setHours(0,0,0,0);
+        if (requestedStart > checkStartDate) checkStartDate = requestedStart;
+    }
+    let checkEndDate = today;
+    if (rangeEndIso) {
+        const requestedEnd = parseISO(rangeEndIso);
+        requestedEnd.setHours(0,0,0,0);
+        if (requestedEnd < checkEndDate) checkEndDate = requestedEnd;
+    }
+
+    for (let currentDateIter = new Date(checkStartDate); currentDateIter <= checkEndDate; currentDateIter.setDate(currentDateIter.getDate() + 1)) {
         const isoDate = formatLocalDateYMD(currentDateIter);
         const summary = userDailySummaries.find(s => s.date === isoDate);
 
@@ -520,7 +533,10 @@ export function getDetailedGlobalProblemIndicators(
         const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
         const sickToday = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
         const holidayOptionForDay = userAllHolidayOptions?.find(opt => opt.holidayDate === isoDate);
-        let expectedHoursToday = getExpectedHoursForDay(currentDateIter, userConfig, defaultExpectedHours, holidaysForUserCanton, userApprovedVacations, userSickLeaves, holidayOptionForDay);
+        const backendExpectedMinutes = Number.isFinite(summary?.expectedMinutes) ? summary.expectedMinutes : null;
+        let expectedHoursToday = backendExpectedMinutes !== null
+            ? backendExpectedMinutes / 60
+            : getExpectedHoursForDay(currentDateIter, userConfig, defaultExpectedHours, holidaysForUserCanton, userApprovedVacations, userSickLeaves, holidayOptionForDay);
         let isPotentiallyWorkDay = expectedHoursToday > 0;
 
         if (userConfig.isPercentage === true && isHoliday && holidayOptionForDay) {

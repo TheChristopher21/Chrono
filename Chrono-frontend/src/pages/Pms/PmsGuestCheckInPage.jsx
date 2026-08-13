@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../utils/api.js';
 import { formatPmsDate } from './pmsFormatting.js';
+import { PmsLanguageSwitch, PmsTranslationBoundary } from './pmsI18n.jsx';
 import '../../styles/PmsDashboardScoped.css';
 
 const errorMessage = (error) => (
@@ -113,7 +114,9 @@ const PmsGuestCheckInPage = () => {
     );
 
     return (
+        <PmsTranslationBoundary>
         <main className="pms-dashboard">
+            <PmsLanguageSwitch />
             <section className="pms-work-card" style={{ maxWidth: 760, margin: '2rem auto' }}>
                 {error && <div className="pms-inline-message is-error" role="alert">{error}</div>}
                 {registration?.status === 'COMPLETED' ? (
@@ -151,6 +154,7 @@ const PmsGuestCheckInPage = () => {
                 )}
             </section>
         </main>
+        </PmsTranslationBoundary>
     );
 };
 

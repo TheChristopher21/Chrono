@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../utils/api.js';
@@ -7,21 +8,9 @@ import { getUserDisplayName } from '../../utils/userDisplay.js';
 import PmsSetupWorkspace from './PmsSetupWorkspace.jsx';
 import PmsOperationsWorkspace from './PmsOperationsWorkspace.jsx';
 import { getPmsEnumLabel } from './pmsTerminology.js';
+import { PMS_SECTION_KEYS, PMS_SECTIONS } from './pmsNavigation.js';
+import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import '../../styles/PmsDashboardScoped.css';
-
-const navigationItems = [
-    { key: 'overview', code: 'HQ', label: 'Übersicht' },
-    { key: 'portfolio', code: 'HP', label: 'Hotelportfolio' },
-    { key: 'reservations', code: 'RES', label: 'Reservierungen' },
-    { key: 'events', code: 'VER', label: 'Veranstaltungen & Ressourcen' },
-    { key: 'room-plan', code: 'ZIM', label: 'Zimmerplan' },
-    { key: 'guests', code: 'GAS', label: 'Gästeprofile' },
-    { key: 'rates', code: 'RAT', label: 'Ratenpläne & Verfügbarkeit' },
-    { key: 'housekeeping', code: 'HK', label: 'Housekeeping & Reinigung' },
-    { key: 'folios', code: 'CHF', label: 'Gastkonten & Zahlungen' },
-    { key: 'reports', code: 'KPI', label: 'Berichte' },
-    { key: 'integrations', code: 'SYS', label: 'Schnittstellen & Integrationen' },
-];
 
 const quickActions = [
     {
@@ -115,7 +104,7 @@ const toDateKey = (date) => [
     String(date.getDate()).padStart(2, '0'),
 ].join('-');
 
-const formatBusinessDate = (date) => new Intl.DateTimeFormat('de-CH', {
+const formatBusinessDate = (date, locale) => new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -124,9 +113,12 @@ const formatBusinessDate = (date) => new Intl.DateTimeFormat('de-CH', {
 
 const PmsDashboard = () => {
     const { currentUser } = useAuth();
+    const locale = usePmsLocale();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [businessDate, setBusinessDate] = useState(() => new Date());
     const [operationMode, setOperationMode] = useState('simple');
-    const [activeNavigation, setActiveNavigation] = useState('overview');
+    const requestedSection = searchParams.get('section') ?? 'overview';
+    const activeNavigation = PMS_SECTION_KEYS.has(requestedSection) ? requestedSection : 'overview';
     const [commandOpen, setCommandOpen] = useState(false);
     const [commandQuery, setCommandQuery] = useState('');
     const [selectedAction, setSelectedAction] = useState(null);
@@ -145,7 +137,17 @@ const PmsDashboard = () => {
     const commandTriggerRef = useRef(null);
     const commandReturnFocusRef = useRef(null);
 
-    const formattedDate = useMemo(() => formatBusinessDate(businessDate), [businessDate]);
+    const navigateToSection = useCallback((sectionKey, options = {}) => {
+        const nextParams = new URLSearchParams(searchParams);
+        if (!sectionKey || sectionKey === 'overview') {
+            nextParams.delete('section');
+        } else {
+            nextParams.set('section', sectionKey);
+        }
+        setSearchParams(nextParams, { replace: options.replace === true });
+    }, [searchParams, setSearchParams]);
+
+    const formattedDate = useMemo(() => formatBusinessDate(businessDate, locale), [businessDate, locale]);
     const displayName = getUserDisplayName(currentUser) || currentUser?.username || 'Gastgeber';
     const canManagePms = hasPageAccess(currentUser, 'pms', ACCESS_MANAGE);
     const canManageGuestPrivacy = canManagePms && isAdminUser(currentUser);
@@ -249,6 +251,12 @@ const PmsDashboard = () => {
             command.label.toLocaleLowerCase('de-CH').includes(normalizedQuery)
         );
     }, [commandQuery]);
+
+    useEffect(() => {
+        if (!PMS_SECTION_KEYS.has(requestedSection)) {
+            navigateToSection('overview', { replace: true });
+        }
+    }, [navigateToSection, requestedSection]);
 
     useEffect(() => {
         let cancelled = false;
@@ -362,14 +370,14 @@ const PmsDashboard = () => {
                 } else if (setupOpen) {
                     setSetupOpen(false);
                 } else if (activeNavigation !== 'overview') {
-                    setActiveNavigation('overview');
+                    navigateToSection('overview');
                     setInitialOperationAction(null);
                 }
             }
         };
         window.addEventListener('keydown', handleShortcut);
         return () => window.removeEventListener('keydown', handleShortcut);
-    }, [activeNavigation, commandOpen, setupOpen]);
+    }, [activeNavigation, commandOpen, navigateToSection, setupOpen]);
 
     useEffect(() => {
         if (commandOpen) {
@@ -384,7 +392,7 @@ const PmsDashboard = () => {
         }
     }, [commandOpen]);
 
-    const hasOpenDialog = commandOpen || setupOpen || activeNavigation !== 'overview';
+    const hasOpenDialog = commandOpen || setupOpen;
 
     useEffect(() => {
         if (!hasOpenDialog) return undefined;
@@ -428,18 +436,19 @@ const PmsDashboard = () => {
             'room-plan': 'room-plan',
         };
         setInitialOperationAction(actionKey);
-        setActiveNavigation(targetSections[actionKey] ?? actionKey);
+        navigateToSection(targetSections[actionKey] ?? actionKey);
         setSelectedAction(null);
         setCommandOpen(false);
     };
 
     const openNavigation = (navigationKey) => {
-        setActiveNavigation(navigationKey);
+        navigateToSection(navigationKey);
         setInitialOperationAction(null);
         setSelectedAction(null);
     };
 
     return (
+        <PmsTranslationBoundary>
         <div className="pms-page">
             <Navbar />
             <div className="pms-app-shell">
@@ -461,7 +470,7 @@ const PmsDashboard = () => {
 
                     <nav className="pms-section-nav">
                         <span className="pms-nav-label">Hotelbetrieb</span>
-                        {navigationItems.map((item) => (
+                        {PMS_SECTIONS.map((item) => (
                             <button
                                 type="button"
                                 key={item.key}
@@ -520,6 +529,8 @@ const PmsDashboard = () => {
                         </div>
                     </header>
 
+                    {activeNavigation === 'overview' ? (
+                        <>
                     <section className="pms-business-bar" aria-label="Betriebstag und Status">
                         <div className="pms-business-date">
                             <button type="button" onClick={() => moveDate(-1)} aria-label="Vorheriger Tag">←</button>
@@ -867,6 +878,29 @@ const PmsDashboard = () => {
                             ))}
                         </ol>
                     </section>
+                        </>
+                    ) : (
+                        <PmsOperationsWorkspace
+                            embedded
+                            section={activeNavigation}
+                            setup={setup}
+                            operations={operations}
+                            property={activeProperty}
+                            businessDate={toDateKey(businessDate)}
+                            canManage={canManagePms}
+                            canManageGuestPrivacy={canManageGuestPrivacy}
+                            initialAction={initialOperationAction}
+                            onSectionChange={openNavigation}
+                            onOperationsChange={(nextOperations) => {
+                                setOperations(nextOperations ?? emptyOperations);
+                                setOperationsError('');
+                            }}
+                            onClose={() => {
+                                navigateToSection('overview');
+                                setInitialOperationAction(null);
+                            }}
+                        />
+                    )}
                 </main>
             </div>
 
@@ -881,27 +915,6 @@ const PmsDashboard = () => {
                     }}
                     onPropertyChange={setActivePropertyId}
                     onClose={() => setSetupOpen(false)}
-                />
-            )}
-
-            {activeNavigation !== 'overview' && (
-                <PmsOperationsWorkspace
-                    section={activeNavigation}
-                    setup={setup}
-                    operations={operations}
-                    property={activeProperty}
-                    businessDate={toDateKey(businessDate)}
-                    canManage={canManagePms}
-                    canManageGuestPrivacy={canManageGuestPrivacy}
-                    initialAction={initialOperationAction}
-                    onOperationsChange={(nextOperations) => {
-                        setOperations(nextOperations ?? emptyOperations);
-                        setOperationsError('');
-                    }}
-                    onClose={() => {
-                        setActiveNavigation('overview');
-                        setInitialOperationAction(null);
-                    }}
                 />
             )}
 
@@ -944,6 +957,7 @@ const PmsDashboard = () => {
                 </div>
             )}
         </div>
+        </PmsTranslationBoundary>
     );
 };
 

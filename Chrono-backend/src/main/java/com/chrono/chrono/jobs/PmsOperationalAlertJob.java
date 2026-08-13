@@ -6,6 +6,7 @@ import com.chrono.chrono.repositories.pms.HotelPropertyRepository;
 import com.chrono.chrono.services.EmailService;
 import com.chrono.chrono.services.ExternalNotificationService;
 import com.chrono.chrono.services.pms.PmsOperationalHealthService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -21,16 +22,19 @@ public class PmsOperationalAlertJob {
     private final PmsOperationalHealthService healthService;
     private final ExternalNotificationService notificationService;
     private final EmailService emailService;
+    private final String alertEmail;
     private final Map<Long, String> lastFingerprints = new ConcurrentHashMap<>();
 
     public PmsOperationalAlertJob(HotelPropertyRepository propertyRepository,
                                   PmsOperationalHealthService healthService,
                                   ExternalNotificationService notificationService,
-                                  EmailService emailService) {
+                                  EmailService emailService,
+                                  @Value("${app.pms.alerts.email:}") String alertEmail) {
         this.propertyRepository = propertyRepository;
         this.healthService = healthService;
         this.notificationService = notificationService;
         this.emailService = emailService;
+        this.alertEmail = alertEmail == null ? "" : alertEmail.trim();
     }
 
     @Scheduled(
@@ -53,10 +57,12 @@ public class PmsOperationalAlertJob {
             }
             String message = formatMessage(property, health);
             notificationService.sendCompanyNotification(property.getCompany(), message);
-            emailService.sendOperationalAlert(
-                    property.getEmail(),
-                    "Chrono PMS Betriebsalarm: " + property.getName(),
-                    message);
+            if (!alertEmail.isBlank()) {
+                emailService.sendOperationalAlert(
+                        alertEmail,
+                        "Chrono PMS Betriebsalarm: " + property.getName(),
+                        message);
+            }
         }
     }
 

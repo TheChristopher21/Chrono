@@ -321,6 +321,38 @@
     backdrop-filter: blur(7px);
 }
 
+.pms-language-switch {
+    position: fixed;
+    z-index: 1500;
+    top: 18px;
+    right: 18px;
+    display: inline-flex;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid var(--pms-line, #d8dde7);
+    border-radius: 10px;
+    background: var(--pms-surface, #fff);
+    box-shadow: 0 8px 24px rgba(20, 24, 50, 0.12);
+}
+
+.pms-language-switch button {
+    min-width: 38px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--pms-muted, #687083);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.pms-language-switch button.is-active {
+    background: var(--pms-accent-soft, #e7f4ef);
+    color: var(--pms-green, #176b55);
+}
+
 .pms-operations-workspace {
     display: flex;
     flex-direction: column;
@@ -337,6 +369,20 @@
     background: var(--pms-page-background);
     box-shadow: 0 28px 80px rgba(20, 24, 50, 0.28);
     color: var(--pms-ink);
+}
+
+.pms-operations-workspace.is-embedded {
+    height: auto;
+    min-height: calc(100vh - 220px);
+    max-width: none;
+    margin: 28px 0 0;
+    overflow: visible;
+    border-radius: 16px;
+    box-shadow: var(--pms-shadow);
+}
+
+.pms-operations-workspace.is-embedded .pms-workspace-body {
+    overflow: visible;
 }
 
 .pms-workspace-header {
@@ -960,6 +1006,13 @@
     .pms-operations-workspace {
         height: 100vh;
         border-radius: 0;
+    }
+
+    .pms-operations-workspace.is-embedded {
+        height: auto;
+        min-height: 0;
+        margin-top: 18px;
+        border-radius: 12px;
     }
 
     .pms-workspace-header,

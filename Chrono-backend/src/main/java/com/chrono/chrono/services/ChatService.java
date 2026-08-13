@@ -3,6 +3,7 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.ChatActionSuggestion;
 import com.chrono.chrono.dto.ChatRequest;
 import com.chrono.chrono.dto.ChatResult;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.entities.CompanyKnowledge;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
@@ -28,6 +29,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -99,6 +101,7 @@ public class ChatService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CompanyKnowledgeService companyKnowledgeService;
     private final VacationService vacationService;
+    private final TimeTrackingService timeTrackingService;
     private final UserRepository userRepository;
     private List<KnowledgeSnippet> knowledgeBaseSnippets = List.of();
 
@@ -106,11 +109,13 @@ public class ChatService {
                        @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate,
                        CompanyKnowledgeService companyKnowledgeService,
                        VacationService vacationService,
+                       TimeTrackingService timeTrackingService,
                        UserRepository userRepository) {
         this.restTemplate = restTemplate;
         this.longTimeoutRestTemplate = longTimeoutRestTemplate;
         this.companyKnowledgeService = companyKnowledgeService;
         this.vacationService = vacationService;
+        this.timeTrackingService = timeTrackingService;
         this.userRepository = userRepository;
         loadKnowledgeBaseFromResources();
     }
@@ -259,7 +264,35 @@ public class ChatService {
             int annual = user.getAnnualVacationDays() != null ? user.getAnnualVacationDays() : 25;
             return String.format(Locale.GERMAN, "Du hast fuer %d aktuell %.1f Tage Resturlaub (von %d).", currentYear, remaining, annual);
         }
+        if (asksWorkedHoursForCurrentMonth(normalized)) {
+            LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
+            LocalDate monthStart = today.withDayOfMonth(1);
+            TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(user, monthStart, today);
+            return "Du hast diesen Monat bisher " + formatDuration(summary.getWorkedMinutes()) + " gearbeitet.";
+        }
         return null;
+    }
+
+    private boolean asksWorkedHoursForCurrentMonth(String normalized) {
+        boolean currentMonth = containsAny(
+                normalized,
+                "diesen monat",
+                "diesem monat",
+                "aktuellen monat",
+                "laufenden monat",
+                "this month",
+                "current month"
+        );
+        boolean workedTime = containsAny(
+                normalized,
+                "stunden",
+                "arbeitszeit",
+                "arbeitsstunden",
+                "gearbeitet",
+                "worked hours",
+                "hours worked"
+        );
+        return currentMonth && workedTime;
     }
 
     private String answerQuickLinkQuestion(String message) {
@@ -305,7 +338,9 @@ public class ChatService {
             body.put("system", promptBundle.systemPrompt());
             body.put("prompt", promptBundle.prompt());
             body.put("stream", false);
-            body.put("think", thinkingEnabled);
+            if (thinkingEnabled && supportsThinking(modelName)) {
+                body.put("think", true);
+            }
             body.put("options", buildGenerationOptions());
             if (keepAliveDuration.doubleValue() != 0) {
                 body.put("keep_alive", keepAliveDuration);
@@ -336,6 +371,13 @@ public class ChatService {
         options.put("num_ctx", Math.max(2048, contextWindow));
         options.put("num_predict", Math.max(256, maxOutputTokens));
         return options;
+    }
+
+    private boolean supportsThinking(String model) {
+        String normalizedModel = normalize(model);
+        return normalizedModel.startsWith("qwen3")
+                || normalizedModel.startsWith("deepseek r1")
+                || normalizedModel.startsWith("gpt oss");
     }
 
     private String buildPrompt(String message, List<ChatRequest.ChatMessage> history, User user) {
@@ -749,6 +791,17 @@ public class ChatService {
         int mins = Math.abs(minutes) % 60;
         String sign = minutes < 0 ? "-" : "";
         return String.format(Locale.ROOT, "%s%d:%02d", sign, hours, mins);
+    }
+
+    private String formatDuration(int minutesValue) {
+        int minutes = Math.max(0, minutesValue);
+        int hours = minutes / 60;
+        int mins = minutes % 60;
+        if (mins == 0) {
+            return hours + (hours == 1 ? " Stunde" : " Stunden");
+        }
+        return hours + (hours == 1 ? " Stunde und " : " Stunden und ")
+                + mins + (mins == 1 ? " Minute" : " Minuten");
     }
 
     private String normalize(String value) {

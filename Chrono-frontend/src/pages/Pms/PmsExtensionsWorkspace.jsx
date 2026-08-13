@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import { formatPmsDateTime } from './pmsFormatting.js';
 import { getFolioDisplayLabel } from './pmsTerminology.js';
 
 const errorMessage = (error) => error?.response?.data?.detail
     || error?.response?.data?.message || error?.message || 'Die Aktion konnte nicht abgeschlossen werden.';
 
-const money = (value, currency = 'CHF') => new Intl.NumberFormat('de-CH', {
-    style: 'currency', currency,
-}).format(Number(value ?? 0));
-
 const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage, onOperationsChange }) => {
+    const locale = usePmsLocale();
+    const money = (value, currency = 'CHF') => new Intl.NumberFormat(locale, {
+        style: 'currency', currency,
+    }).format(Number(value ?? 0));
     const [data, setData] = useState(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -184,6 +185,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
     };
 
     return (
+        <PmsTranslationBoundary>
         <div className="pms-operations-stack">
             {error && <div className="pms-inline-message is-error" role="alert">{error}</div>}
             {notice && <div className="pms-inline-message is-success" role="status">{notice}</div>}
@@ -273,6 +275,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
                 </section>
             </div>
         </div>
+        </PmsTranslationBoundary>
     );
 };
 
