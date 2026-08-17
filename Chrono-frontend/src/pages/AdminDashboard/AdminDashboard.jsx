@@ -28,6 +28,7 @@ import {
     formatDate,
     formatDateWithWeekday,
     formatTime,
+    isCurrentUserIncludedInTimeTracking,
     processEntriesForReport,
     selectTrackableUsers,
 } from './adminDashboardUtils';
@@ -193,6 +194,7 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [allSickLeaves, setAllSickLeaves] = useState([]);
     const [holidaysByCanton, setHolidaysByCanton] = useState({});
+    const [isAdminPunching, setIsAdminPunching] = useState(false);
 
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [editModalVisible, setEditModalVisible] = useState(false);
@@ -226,6 +228,11 @@ const AdminDashboard = () => {
                 .filter(Boolean)
         );
     }, [trackableUsers]);
+
+    const canCurrentAdminPunch = useMemo(
+        () => isCurrentUserIncludedInTimeTracking(currentUser, users),
+        [currentUser, users]
+    );
 
     const storedFilters = useMemo(() => loadStoredFilters(), []);
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
@@ -1296,6 +1303,37 @@ const AdminDashboard = () => {
         fetchUsers();
     }, [fetchAllDailySummaries, fetchAllVacations, fetchAllCorrections, fetchAllSickLeavesForAdmin, fetchTrackingBalances, fetchUsers]);
 
+    const handleAdminPunch = useCallback(async () => {
+        if (!canCurrentAdminPunch || !currentUser?.username || isAdminPunching) return;
+
+        setIsAdminPunching(true);
+        try {
+            const response = await api.post('/api/timetracking/punch', null, {
+                params: { username: currentUser.username, source: 'MANUAL_PUNCH' },
+            });
+            const newEntry = response.data;
+            const punchType = newEntry?.punchType;
+            const punchTime = newEntry?.entryTimestamp
+                ? formatTime(new Date(newEntry.entryTimestamp))
+                : null;
+            const punchDetails = [
+                punchType ? t(`punchTypes.${punchType}`, punchType) : null,
+                punchTime,
+            ].filter(Boolean).join(' @ ');
+
+            notify(
+                `${t('manualPunchMessage', 'Manuell eingestempelt')} ${currentUser.username}${punchDetails ? ` (${punchDetails})` : ''}`,
+                'success'
+            );
+            handleDataReloadNeeded();
+        } catch (error) {
+            console.error('Admin punch error:', error);
+            notify(t('manualPunchError', 'Fehler beim manuellen Einstempeln.'), 'error');
+        } finally {
+            setIsAdminPunching(false);
+        }
+    }, [canCurrentAdminPunch, currentUser?.username, handleDataReloadNeeded, isAdminPunching, notify, t]);
+
 
     useEffect(() => {
         fetchUsers();
@@ -1702,6 +1740,18 @@ const AdminDashboard = () => {
                         )}
                     </div>
                     <div className="dashboard-header-actions" aria-label={t('adminDashboard.header.actions', 'Dashboard-Aktionen')}>
+                        {canCurrentAdminPunch && (
+                            <button
+                                type="button"
+                                className="header-action-button time-punch-action"
+                                onClick={handleAdminPunch}
+                                disabled={isAdminPunching}
+                            >
+                                {isAdminPunching
+                                    ? t('adminDashboard.punching', 'Wird gestempelt …')
+                                    : t('manualPunchButton', 'Einstempeln')}
+                            </button>
+                        )}
                         <span className="context-chip">{t('adminDashboard.header.teamChip', 'Team: Alle')}</span>
                         <span className="context-chip">{t('adminDashboard.header.periodChip', 'Zeitraum: Diese Woche')}</span>
                         <button type="button" className="header-action-button ghost" onClick={handleShowIssueOverview}>

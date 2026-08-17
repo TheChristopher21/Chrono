@@ -512,17 +512,28 @@ public class AdminUserController {
 
         User updatedUser = userRepository.save(existingUser);
         EmploymentModelType updatedModel = employmentModelHistoryService.deriveCurrentModel(updatedUser);
-        if (updatedModel != previousModel) {
+        boolean explicitHistoryCorrection = userDTO.getEmploymentModelEffectiveFrom() != null;
+        boolean modelChanged = updatedModel != previousModel;
+        boolean snapshotChanged = hasSnapshotRelevantChanges(previousStateForHistory, updatedUser);
+        if (explicitHistoryCorrection) {
             LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
-            employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
-            employmentModelHistoryService.recordModelChange(updatedUser, updatedModel, effectiveSwitchDate);
-            logger.info("Employment model switch for user {}: {} -> {} (effective from {}).",
+            if (employmentModelHistoryService.needsBaselineBefore(updatedUser, baselineDate)) {
+                employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
+            }
+            employmentModelHistoryService.replaceHistoryFrom(updatedUser, effectiveSwitchDate);
+            logger.info("Employment history corrected for user {}: {} -> {} (effective from {}, later snapshots replaced).",
                     updatedUser.getUsername(),
                     previousModel,
                     updatedModel,
                     effectiveSwitchDate);
+        } else if (modelChanged) {
+            LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
+            employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
+            employmentModelHistoryService.recordModelChange(updatedUser, updatedModel, effectiveSwitchDate);
+            logger.info("Employment model switch for user {}: {} -> {} (effective from {}).",
+                    updatedUser.getUsername(), previousModel, updatedModel, effectiveSwitchDate);
         } else {
-            if (hasSnapshotRelevantChanges(previousStateForHistory, updatedUser)) {
+            if (snapshotChanged) {
                 LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
                 if (employmentModelHistoryService.needsBaselineBefore(updatedUser, baselineDate)) {
                     employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
@@ -627,6 +638,7 @@ public class AdminUserController {
 
     private UserDTO toUserDTO(User user) {
         UserDTO dto = new UserDTO(user);
+        dto.setEmploymentModelEffectiveFrom(employmentModelHistoryService.resolveLatestEffectiveFrom(user));
         dto.setPagePermissions(userPermissionService.resolvePagePermissions(user));
         return dto;
     }

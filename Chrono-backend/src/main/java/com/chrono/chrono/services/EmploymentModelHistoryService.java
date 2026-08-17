@@ -100,6 +100,16 @@ public class EmploymentModelHistoryService {
         return LocalDate.now(ZoneId.of("Europe/Berlin"));
     }
 
+    public LocalDate resolveLatestEffectiveFrom(User user) {
+        if (user == null) {
+            return null;
+        }
+        return historyRepository
+                .findFirstByUserOrderByEffectiveFromDesc(user)
+                .map(UserEmploymentModelHistory::getEffectiveFrom)
+                .orElseGet(() -> user.getEntryDate() != null ? user.getEntryDate() : currentBerlinDate());
+    }
+
     public LocalDate resolveCurrentOvertimeStreakStart(User user) {
         if (user == null) {
             return null;
@@ -181,6 +191,21 @@ public class EmploymentModelHistoryService {
                 .findFirst();
         UserEmploymentModelHistory row = exactDay.orElseGet(UserEmploymentModelHistory::new);
         fillHistoryRowFromUser(row, user, model, effective);
+        historyRepository.save(row);
+    }
+
+    /**
+     * Applies a corrected employment configuration from the supplied date onward.
+     * Later rows must be removed, otherwise an old future snapshot would silently
+     * become active again and override the correction.
+     */
+    @Transactional
+    public void replaceHistoryFrom(User user, LocalDate effectiveFrom) {
+        LocalDate effective = effectiveFrom != null ? effectiveFrom : currentBerlinDate();
+        historyRepository.deleteFromDate(user, effective);
+
+        UserEmploymentModelHistory row = new UserEmploymentModelHistory();
+        fillHistoryRowFromUser(row, user, deriveCurrentModel(user), effective);
         historyRepository.save(row);
     }
 

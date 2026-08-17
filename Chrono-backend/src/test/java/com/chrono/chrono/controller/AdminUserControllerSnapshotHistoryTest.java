@@ -125,7 +125,7 @@ class AdminUserControllerSnapshotHistoryTest {
 
         assertEquals(200, response.getStatusCode().value());
         verify(employmentModelHistoryService).ensureBaselineEntry(any(User.class), eq(EmploymentModelType.STANDARD), any(LocalDate.class), any(User.class));
-        verify(employmentModelHistoryService).recordSnapshotChange(any(User.class), eq(LocalDate.of(2026, 3, 1)));
+        verify(employmentModelHistoryService).replaceHistoryFrom(any(User.class), eq(LocalDate.of(2026, 3, 1)));
     }
 
     @Test
@@ -210,12 +210,79 @@ class AdminUserControllerSnapshotHistoryTest {
         ResponseEntity<?> response = controller.updateUser(dto, null, principal);
 
         assertEquals(200, response.getStatusCode().value());
-        verify(employmentModelHistoryService).recordModelChange(
-                any(User.class),
-                eq(EmploymentModelType.STANDARD),
-                eq(LocalDate.of(2026, 5, 4))
-        );
+        verify(employmentModelHistoryService).replaceHistoryFrom(any(User.class), eq(LocalDate.of(2026, 5, 4)));
         verify(timeTrackingService).rebuildUserBalance(existingUser);
+    }
+
+    @Test
+    void updateUser_backdatedSameHourlyModelStillReplacesLaterHistory() {
+        when(principal.getName()).thenReturn("admin");
+
+        Company company = new Company();
+        company.setId(1L);
+        User adminUser = new User();
+        adminUser.setId(100L);
+        adminUser.setUsername("admin");
+        adminUser.setCompany(company);
+        adminUser.setRoles(Set.of(new Role("ROLE_ADMIN")));
+
+        User maria = new User();
+        maria.setId(62L);
+        maria.setUsername("Wetzel");
+        maria.setCompany(company);
+        maria.setRoles(Set.of(new Role("ROLE_USER")));
+        maria.setCountry("DE");
+        maria.setTaxClass("1");
+        maria.setPersonnelNumber("62");
+        maria.setIsHourly(true);
+        maria.setIsPercentage(false);
+        maria.setDailyWorkHours(4.0);
+        maria.setEntryDate(LocalDate.of(2025, 10, 1));
+        maria.setWeeklySchedule(Collections.emptyList());
+
+        User previousHourlySnapshot = new User();
+        previousHourlySnapshot.setId(maria.getId());
+        previousHourlySnapshot.setUsername(maria.getUsername());
+        previousHourlySnapshot.setCompany(company);
+        previousHourlySnapshot.setIsHourly(true);
+        previousHourlySnapshot.setIsPercentage(false);
+        previousHourlySnapshot.setDailyWorkHours(4.0);
+        previousHourlySnapshot.setWeeklySchedule(Collections.emptyList());
+
+        UserDTO dto = new UserDTO();
+        dto.setId(maria.getId());
+        dto.setUsername(maria.getUsername());
+        dto.setFirstName("Maria");
+        dto.setLastName("Wetzel");
+        dto.setCountry("DE");
+        dto.setTaxClass("1");
+        dto.setPersonnelNumber("62");
+        dto.setEmail("maria@example.test");
+        dto.setMobilePhone("123");
+        dto.setEntryDate(LocalDate.of(2025, 10, 1));
+        dto.setIsHourly(true);
+        dto.setIsPercentage(false);
+        dto.setDailyWorkHours(4.0);
+        dto.setEmploymentModelEffectiveFrom(LocalDate.of(2025, 10, 1));
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+        when(userRepository.findById(maria.getId())).thenReturn(Optional.of(maria));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(
+                any(User.class), eq(LocalDate.of(2025, 9, 30))))
+                .thenReturn(previousHourlySnapshot);
+        when(employmentModelHistoryService.deriveCurrentModel(any(User.class)))
+                .thenReturn(EmploymentModelType.HOURLY);
+        when(employmentModelHistoryService.resolveLatestEffectiveFrom(any(User.class)))
+                .thenReturn(LocalDate.of(2025, 10, 1));
+
+        ResponseEntity<?> response = controller.updateUser(dto, null, principal);
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(employmentModelHistoryService).replaceHistoryFrom(maria, LocalDate.of(2025, 10, 1));
+        verify(employmentModelHistoryService, never()).recordModelChange(any(), any(), any());
+        UserDTO responseDto = (UserDTO) response.getBody();
+        assertEquals(LocalDate.of(2025, 10, 1), responseDto.getEmploymentModelEffectiveFrom());
     }
 
     @Test

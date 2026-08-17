@@ -13,6 +13,9 @@ const apiMock = vi.hoisted(() => ({
 }));
 
 const notifyMock = vi.hoisted(() => vi.fn());
+const translateMock = vi.hoisted(() => (key, fallback, options = {}) => String(fallback ?? key).replace(/{{\s*(\w+)\s*}}/g, (match, token) => (
+    Object.prototype.hasOwnProperty.call(options, token) ? String(options[token] ?? '') : match
+)));
 const authUserMock = vi.hoisted(() => ({
     username: 'manager',
     roles: ['ROLE_ADMIN'],
@@ -32,9 +35,7 @@ vi.mock('../../../context/NotificationContext', () => ({
 }));
 vi.mock('../../../context/LanguageContext', () => ({
     useTranslation: () => ({
-        t: (key, fallback, options = {}) => String(fallback ?? key).replace(/{{\s*(\w+)\s*}}/g, (match, token) => (
-            Object.prototype.hasOwnProperty.call(options, token) ? String(options[token] ?? '') : match
-        )),
+        t: translateMock,
     }),
 }));
 
@@ -46,14 +47,14 @@ const managedUser = {
     firstName: 'Team',
     lastName: 'Admin',
     email: 'team-admin@example.test',
-    mobilePhone: '',
-    personnelNumber: '',
+    mobilePhone: '+4912345',
+    personnelNumber: '42',
     roles: ['ROLE_ADMIN'],
     country: 'DE',
-    taxClass: '',
+    taxClass: '1',
     isHourly: false,
     isPercentage: false,
-    monthlySalary: null,
+    monthlySalary: 4500,
     hourlyRate: null,
     annualVacationDays: 25,
     breakDuration: 30,
@@ -70,6 +71,8 @@ const managedUser = {
         sunday: 0,
     }],
     scheduleEffectiveDate: '2026-05-05',
+    employmentModelEffectiveFrom: '2025-10-01',
+    entryDate: '2025-10-01',
     includeInTimeTracking: true,
     pagePermissions: { adminUsers: 'MANAGE' },
     companyFeatureKeys: [],
@@ -84,7 +87,7 @@ const superAdminUser = {
     includeInTimeTracking: true,
 };
 
-describe('AdminUserManagementPage time tracking visibility', () => {
+describe('AdminUserManagementPage complete user management', () => {
     beforeEach(() => {
         apiMock.get.mockReset();
         apiMock.post.mockReset();
@@ -92,6 +95,7 @@ describe('AdminUserManagementPage time tracking visibility', () => {
         apiMock.patch.mockReset();
         apiMock.delete.mockReset();
         notifyMock.mockClear();
+        authUserMock.pagePermissions = { adminUsers: 'MANAGE' };
 
         apiMock.get.mockResolvedValue({ data: [managedUser, superAdminUser] });
         apiMock.patch.mockResolvedValue({ data: { ...managedUser, includeInTimeTracking: false } });
@@ -155,5 +159,139 @@ describe('AdminUserManagementPage time tracking visibility', () => {
         await userEvent.click(screen.getByRole('tab', { name: 'Payroll' }));
 
         expect(screen.getByLabelText(/nderung g.ltig ab/i)).toHaveValue('2026-05-04');
+    });
+
+    it('keeps the effective date returned by the backend when reopening a user', async () => {
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        await userEvent.click(screen.getByRole('tab', { name: 'Payroll' }));
+
+        expect(screen.getByLabelText(/nderung g.ltig ab/i)).toHaveValue('2025-10-01');
+    });
+
+    it('sends a changed backdated effective date even when the work model itself is unchanged', async () => {
+        apiMock.put.mockResolvedValue({ data: managedUser });
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        await userEvent.click(screen.getByRole('tab', { name: 'Payroll' }));
+        fireEvent.change(screen.getByLabelText(/nderung g.ltig ab/i), {
+            target: { value: '2025-09-01' },
+        });
+
+        const saveButtons = screen.getAllByRole('button', { name: /Speichern|Änderungen speichern/i });
+        await userEvent.click(saveButtons[saveButtons.length - 1]);
+
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1));
+        const payload = apiMock.put.mock.calls[0][1];
+        expect(payload.employmentModelEffectiveFrom).toBe('2025-09-01');
+        expect(payload.isHourly).toBe(false);
+        expect(apiMock.patch).not.toHaveBeenCalled();
+    });
+
+    it('normalizes an hourly-model update and preserves its selected effective date', async () => {
+        apiMock.put.mockResolvedValue({ data: { ...managedUser, isHourly: true } });
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        await userEvent.click(screen.getByRole('tab', { name: 'Payroll' }));
+        await userEvent.click(screen.getByLabelText(/Stundenbasiert abrechnen/i));
+        fireEvent.change(screen.getByLabelText(/Stundenlohn \(Brutto\)/i), { target: { value: '25' } });
+        fireEvent.change(screen.getByLabelText(/nderung g.ltig ab/i), {
+            target: { value: '2025-10-01' },
+        });
+
+        const saveButtons = screen.getAllByRole('button', { name: /Speichern|Änderungen speichern/i });
+        await userEvent.click(saveButtons[saveButtons.length - 1]);
+
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1));
+        const payload = apiMock.put.mock.calls[0][1];
+        expect(payload).toMatchObject({
+            isHourly: true,
+            isPercentage: false,
+            hourlyRate: 25,
+            employmentModelEffectiveFrom: '2025-10-01',
+            scheduleCycle: null,
+            weeklySchedule: null,
+            scheduleEffectiveDate: null,
+            expectedWorkDays: null,
+        });
+    });
+
+    it('creates a complete user and sends the normalized form payload', async () => {
+        apiMock.post.mockResolvedValue({ data: { id: 99 } });
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: /Neuen Benutzer hinzuf/i }));
+        await userEvent.type(screen.getByLabelText(/Benutzername/i), 'maria');
+        await userEvent.type(screen.getByLabelText(/Passwort/i), 'secret');
+        await userEvent.type(screen.getByLabelText(/Vorname/i), 'Maria');
+        await userEvent.type(screen.getByLabelText(/Nachname/i), 'Wetzel');
+        await userEvent.type(screen.getByLabelText(/E-Mail/i), 'maria@example.test');
+        await userEvent.type(screen.getByLabelText(/Handynummer/i), '+49123');
+
+        await userEvent.click(screen.getByRole('button', { name: /^4 Payroll$/ }));
+        await userEvent.type(screen.getByLabelText(/Personalnummer/i), '62');
+        await userEvent.type(screen.getByLabelText(/Steuerklasse/i), '1');
+        fireEvent.change(screen.getByLabelText(/Monatslohn \(Brutto\)/i), { target: { value: '4000' } });
+        await userEvent.click(screen.getByRole('button', { name: /^6 Vorschau$/ }));
+        await userEvent.click(screen.getByRole('button', { name: /Benutzer erstellen/i }));
+
+        await waitFor(() => expect(apiMock.post).toHaveBeenCalledTimes(1));
+        expect(apiMock.post.mock.calls[0][0]).toBe('/api/admin/users');
+        expect(apiMock.post.mock.calls[0][1]).toMatchObject({
+            username: 'maria',
+            firstName: 'Maria',
+            lastName: 'Wetzel',
+            country: 'DE',
+            taxClass: '1',
+            personnelNumber: '62',
+            monthlySalary: 4000,
+            roles: ['ROLE_USER'],
+            isHourly: false,
+            isPercentage: false,
+        });
+    });
+
+    it('deletes a user only after confirmation and reloads the list', async () => {
+        apiMock.delete.mockResolvedValue({ data: {} });
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Loschen' }));
+        expect(screen.getByText('"team-admin"')).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: 'userManagement.deleteConfirmConfirm' }));
+
+        await waitFor(() => expect(apiMock.delete).toHaveBeenCalledWith('/api/admin/users/42'));
+        expect(apiMock.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows API loading errors through the notification system', async () => {
+        apiMock.get.mockRejectedValueOnce(new Error('network down'));
+
+        render(<AdminUserManagementPage />);
+
+        await waitFor(() => {
+            expect(notifyMock).toHaveBeenCalledWith(
+                expect.stringContaining('network down'),
+                'error'
+            );
+        });
+    });
+
+    it('enforces view-only permissions in the user list', async () => {
+        authUserMock.pagePermissions = { adminUsers: 'VIEW' };
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        expect(screen.getByText(/Nur Ansicht: Dieser Benutzer/i)).toBeInTheDocument();
+        expect(screen.getByText('Nur Ansicht')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Neuen Benutzer hinzuf/i })).not.toBeInTheDocument();
     });
 });

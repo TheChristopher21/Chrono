@@ -4,9 +4,30 @@ import {
     getDetailedGlobalProblemIndicators,
     getDatesUpToReferenceDate,
     getExpectedHoursForDay,
+    isCurrentUserIncludedInTimeTracking,
     isHourlyEmploymentModel,
     selectTrackableUsers,
 } from '../adminDashboardUtils';
+
+describe('isCurrentUserIncludedInTimeTracking', () => {
+    const currentAdmin = { username: 'admin' };
+
+    it('allows punching only when the current admin is explicitly included', () => {
+        expect(isCurrentUserIncludedInTimeTracking(currentAdmin, [
+            { username: 'admin', includeInTimeTracking: true },
+        ])).toBe(true);
+    });
+
+    it('hides punching for excluded, missing, or not-yet-loaded admins', () => {
+        expect(isCurrentUserIncludedInTimeTracking(currentAdmin, [
+            { username: 'admin', includeInTimeTracking: false },
+        ])).toBe(false);
+        expect(isCurrentUserIncludedInTimeTracking(currentAdmin, [
+            { username: 'someone-else', includeInTimeTracking: true },
+        ])).toBe(false);
+        expect(isCurrentUserIncludedInTimeTracking(currentAdmin, [])).toBe(false);
+    });
+});
 
 describe('selectTrackableUsers', () => {
     it('never returns superadmin accounts for dashboard overviews', () => {

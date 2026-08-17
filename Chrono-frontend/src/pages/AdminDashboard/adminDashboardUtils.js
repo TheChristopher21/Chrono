@@ -62,6 +62,15 @@ const collectUsernames = (collection) => new Set(
         .filter(Boolean)
 );
 
+export const isCurrentUserIncludedInTimeTracking = (currentUser, users) => {
+    if (!currentUser?.username || !Array.isArray(users)) {
+        return false;
+    }
+
+    const currentTrackingUser = users.find(user => user?.username === currentUser.username);
+    return currentTrackingUser?.includeInTimeTracking === true;
+};
+
 export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}) => {
     if (!Array.isArray(users)) {
         return {

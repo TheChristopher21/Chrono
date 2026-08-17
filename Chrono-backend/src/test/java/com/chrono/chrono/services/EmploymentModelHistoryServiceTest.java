@@ -121,6 +121,48 @@ class EmploymentModelHistoryServiceTest {
     }
 
     @Test
+    void replaceHistoryFrom_removesAllLaterSnapshotsAndStoresCorrectedState() {
+        User user = new User();
+        user.setIsHourly(true);
+        user.setIsPercentage(false);
+        user.setDailyWorkHours(4.0);
+
+        LocalDate correctedFrom = LocalDate.of(2025, 10, 1);
+        service.replaceHistoryFrom(user, correctedFrom);
+
+        verify(historyRepository).deleteFromDate(user, correctedFrom);
+        ArgumentCaptor<UserEmploymentModelHistory> captor = ArgumentCaptor.forClass(UserEmploymentModelHistory.class);
+        verify(historyRepository).save(captor.capture());
+        assertEquals(correctedFrom, captor.getValue().getEffectiveFrom());
+        assertEquals(EmploymentModelType.HOURLY, captor.getValue().getModelType());
+        assertEquals(4.0, captor.getValue().getDailyWorkHours(), 0.001);
+    }
+
+    @Test
+    void resolveLatestEffectiveFrom_returnsLatestHistoryDate() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2025, 1, 1));
+        UserEmploymentModelHistory current = new UserEmploymentModelHistory();
+        current.setEffectiveFrom(LocalDate.of(2025, 10, 1));
+        when(historyRepository.findFirstByUserOrderByEffectiveFromDesc(eq(user)))
+                .thenReturn(Optional.of(current));
+
+        LocalDate result = service.resolveLatestEffectiveFrom(user);
+
+        assertEquals(LocalDate.of(2025, 10, 1), result);
+    }
+
+    @Test
+    void resolveLatestEffectiveFrom_fallsBackToEntryDateWithoutHistory() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2025, 10, 1));
+        when(historyRepository.findFirstByUserOrderByEffectiveFromDesc(eq(user)))
+                .thenReturn(Optional.empty());
+
+        assertEquals(LocalDate.of(2025, 10, 1), service.resolveLatestEffectiveFrom(user));
+    }
+
+    @Test
     void needsBaselineBefore_returnsTrueWhenEarliestHistoryStartsTooLate() {
         User user = new User();
         UserEmploymentModelHistory first = new UserEmploymentModelHistory();

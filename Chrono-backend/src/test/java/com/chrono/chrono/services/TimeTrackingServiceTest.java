@@ -698,6 +698,56 @@ class TimeTrackingServiceTest {
         verify(userRepository).save(user);
     }
 
+    @Test
+    void rebuildUserBalance_hourlyUserIgnoresFutureOvertimePayout() {
+        user.setIsHourly(true);
+        user.setEntryDate(date.minusDays(30));
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(11, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        Payslip futurePayout = new Payslip();
+        futurePayout.setApproved(true);
+        futurePayout.setPayoutOvertime(true);
+        futurePayout.setOvertimeHours(1.0);
+        futurePayout.setPayoutDate(date.plusDays(1));
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampAsc(user)).thenReturn(List.of(start, end));
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(futurePayout));
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(date).when(spyService).getCurrentBerlinDate();
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(120, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void rebuildUserBalance_standardUserIgnoresFutureOvertimePayout() {
+        user.setTrackingBalanceInMinutes(0);
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        Payslip futurePayout = new Payslip();
+        futurePayout.setApproved(true);
+        futurePayout.setPayoutOvertime(true);
+        futurePayout.setOvertimeHours(2.0);
+        futurePayout.setPayoutDate(date.plusDays(1));
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(List.of(end, start));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenReturn(480);
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(futurePayout));
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(date).when(spyService).getCurrentBerlinDate();
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(0, user.getTrackingBalanceInMinutes());
+    }
+
 
     @Test
     void rebuildUserBalance_percentageUserUsesOnlyElapsedDaysOfCurrentWeek() {

@@ -4308,6 +4308,23 @@
   color: var(--c-pri);
 }
 
+.admin-dashboard.scoped-dashboard .header-action-button.time-punch-action {
+  border-color: var(--c-pri);
+  background: var(--c-pri);
+  color: #fff;
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button.time-punch-action:hover {
+  background: color-mix(in srgb, var(--c-pri) 88%, #000);
+  color: #fff;
+}
+
+.admin-dashboard.scoped-dashboard .header-action-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+}
+
 .admin-dashboard.scoped-dashboard .header-action-button.ghost,
 .admin-dashboard.scoped-dashboard .text-button {
   border-color: var(--c-border);

@@ -293,7 +293,9 @@ const AdminUserManagementPage = () => {
                 landlinePhone: user.landlinePhone || '',
                 isHourly: user.isHourly || false,
                 isPercentage: user.isPercentage || false,
-                employmentModelEffectiveFrom: getTodayISOString(),
+                employmentModelEffectiveFrom: user.employmentModelEffectiveFrom
+                    ? user.employmentModelEffectiveFrom.toString()
+                    : (user.entryDate ? user.entryDate.toString() : getTodayISOString()),
                 workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : (user.isPercentage ? 100 : null),
                 expectedWorkDays: user.expectedWorkDays !== null && user.expectedWorkDays !== undefined ? user.expectedWorkDays : (user.isHourly ? null : 5.0), // Default 5.0 if not hourly and not set
                 trackingBalanceInMinutes: user.trackingBalanceInMinutes !== null && user.trackingBalanceInMinutes !== undefined ? user.trackingBalanceInMinutes : 0,
@@ -550,7 +552,9 @@ const AdminUserManagementPage = () => {
                     || editingUser.scheduleCycle !== dataToSend.scheduleCycle
                     || editingUser.scheduleEffectiveDate !== dataToSend.scheduleEffectiveDate
                     || JSON.stringify(editingUser.weeklySchedule || []) !== JSON.stringify(dataToSend.weeklySchedule || []);
-                if (!modelChanged && !snapshotChanged) {
+                const effectiveFromChanged = editingUser.employmentModelEffectiveFrom
+                    !== dataToSend.employmentModelEffectiveFrom;
+                if (!modelChanged && !snapshotChanged && !effectiveFromChanged) {
                     delete payloadForUpdate.employmentModelEffectiveFrom;
                 } else if (!payloadForUpdate.employmentModelEffectiveFrom) {
                     payloadForUpdate.employmentModelEffectiveFrom = getTodayISOString();
@@ -604,7 +608,9 @@ const AdminUserManagementPage = () => {
             landlinePhone: userToEdit.landlinePhone || '',
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
             expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0),
-            employmentModelEffectiveFrom: getTodayISOString(),
+            employmentModelEffectiveFrom: userToEdit.employmentModelEffectiveFrom
+                ? userToEdit.employmentModelEffectiveFrom.toString()
+                : (userToEdit.entryDate ? userToEdit.entryDate.toString() : getTodayISOString()),
             monthlySalary: userToEdit.monthlySalary ?? null,
             pagePermissions: normalizePagePermissionsForRole(
                 userToEdit.roles?.[0] || 'ROLE_USER',
