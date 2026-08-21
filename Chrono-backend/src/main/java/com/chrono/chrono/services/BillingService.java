@@ -115,7 +115,10 @@ public class BillingService {
         complianceAuditService.recordAction(actor, "GENERATE", "BILLING", project.getId(),
                 String.format("Automatisierte Abrechnung für %s (%s - %s)",
                         project.getName(), start, end));
-        accountsReceivableService.recordProjectInvoice(project, summary);
+
+        if (summary.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
+            accountsReceivableService.recordProjectInvoice(project, summary);
+        }
         return summary;
     }
 }
