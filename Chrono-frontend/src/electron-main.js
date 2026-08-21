@@ -12,6 +12,23 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 let backendProcess;
 
+const ALLOWED_REPORT_ORIGINS = new Set([
+    'http://localhost:8080',
+    'http://127.0.0.1:8080',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081'
+]);
+
+function requireAllowedReportUrl(reportUrl) {
+    const parsed = new URL(reportUrl);
+    if (!ALLOWED_REPORT_ORIGINS.has(parsed.origin)) {
+        throw new Error('Report URL is not allowed');
+    }
+    if (!parsed.pathname.startsWith('/api/')) {
+        throw new Error('Report URL path is not allowed');
+    }
+    return parsed.toString();
+}
 
 function getBasePath() {
     return app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
@@ -73,7 +90,7 @@ function createWindow() {
             preload: path.join(getBasePath(), 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
-            webSecurity: false
+            webSecurity: true
         }
     });
 
@@ -112,13 +129,14 @@ function createWindow() {
 
 
 ipcMain.handle('openPrintReport', async (event, reportUrl) => {
+    const safeReportUrl = requireAllowedReportUrl(reportUrl);
     const printWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            webSecurity: false
+            webSecurity: true
         }
     });
 
@@ -134,8 +152,8 @@ ipcMain.handle('openPrintReport', async (event, reportUrl) => {
     });
 
     try {
-        await printWindow.loadURL(reportUrl);
-        console.log("[INFO] Report-URL geladen:", reportUrl);
+        await printWindow.loadURL(safeReportUrl);
+        console.log("[INFO] Report-URL geladen:", safeReportUrl);
     } catch (err) {
         console.error("[ERROR] Fehler beim Laden der Report-URL:", err);
     }
@@ -158,6 +176,9 @@ ipcMain.handle('openPrintReport', async (event, reportUrl) => {
 
 
 ipcMain.handle('saveAndOpenPDF', async (event, pdfBase64) => {
+    if (typeof pdfBase64 !== 'string' || pdfBase64.length > 20 * 1024 * 1024) {
+        throw new Error('Invalid PDF payload');
+    }
     const tempDir = os.tmpdir();
     const tempPath = path.join(tempDir, 'report.pdf');
     fs.writeFileSync(tempPath, Buffer.from(pdfBase64, 'base64'));

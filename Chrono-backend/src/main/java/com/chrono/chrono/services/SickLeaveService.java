@@ -89,12 +89,12 @@ public class SickLeaveService {
     public List<SickLeave> getAllSickLeavesInCompany(Long companyId, User requestingAdmin) {
         if (requestingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             if (companyId != null) { // SuperAdmin filtert nach Firma, wenn ID gegeben
-                return sickLeaveRepo.findByUser_Company_Id(companyId);
+                return filterOperationalSickLeaves(sickLeaveRepo.findByUser_Company_Id(companyId));
             }
             // Wenn ein SuperAdmin diesen Service-Endpunkt ohne companyId aufruft
             // (sollte durch Controller-Logik zu getAllSickLeavesForSuperAdmin gehen)
             // Aber zur Sicherheit:
-            return sickLeaveRepo.findAll();
+            return filterOperationalSickLeaves(sickLeaveRepo.findAll());
         }
 
         // Regulärer Admin
@@ -107,11 +107,23 @@ public class SickLeaveService {
             logger.warn("Admin {} versucht, Krankmeldungen einer fremden Firma (ID: {}) abzurufen. Zugriff verweigert.", requestingAdmin.getUsername(), companyId);
             throw new SecurityException("Keine Berechtigung zum Zugriff auf Krankmeldungen dieser Firma.");
         }
-        return sickLeaveRepo.findByUser_Company_Id(requestingAdmin.getCompany().getId());
+        return filterOperationalSickLeaves(sickLeaveRepo.findByUser_Company_Id(requestingAdmin.getCompany().getId()));
     }
 
     public List<SickLeave> getAllSickLeavesForSuperAdmin() {
-        return sickLeaveRepo.findAll();
+        return filterOperationalSickLeaves(sickLeaveRepo.findAll());
+    }
+
+    private List<SickLeave> filterOperationalSickLeaves(List<SickLeave> sickLeaves) {
+        return sickLeaves.stream()
+                .filter(sickLeave -> !isSuperAdminUser(sickLeave.getUser()))
+                .toList();
+    }
+
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
     }
 
     @Transactional

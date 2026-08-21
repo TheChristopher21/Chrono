@@ -348,7 +348,7 @@ public class CrmController {
         return ResponseEntity.ok(leads);
     }
 
-    @PatchMapping("/leads/{id}")
+    @RequestMapping(value = "/leads/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<CrmLeadDTO> updateLead(@PathVariable Long id,
                                                  @RequestBody UpdateLeadStatusRequest request,
                                                  Principal principal) {
@@ -399,7 +399,7 @@ public class CrmController {
         return ResponseEntity.ok(opportunities);
     }
 
-    @PatchMapping("/opportunities/{id}")
+    @RequestMapping(value = "/opportunities/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<OpportunityDTO> updateOpportunity(@PathVariable Long id,
                                                              @RequestBody UpdateOpportunityRequest request,
                                                              Principal principal) {
@@ -441,7 +441,7 @@ public class CrmController {
         return ResponseEntity.ok(campaigns);
     }
 
-    @PatchMapping("/campaigns/{id}")
+    @RequestMapping(value = "/campaigns/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<CampaignDTO> updateCampaign(@PathVariable Long id,
                                                       @RequestBody UpdateCampaignRequest request,
                                                       Principal principal) {

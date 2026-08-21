@@ -1,0 +1,742 @@
+.worktime-calculator-page {
+    --wt-bg: #f6f8fc;
+    --wt-bg-soft: #eef3fb;
+    --wt-card: rgba(255, 255, 255, 0.92);
+    --wt-card-solid: #ffffff;
+    --wt-card-subtle: #f8fafc;
+    --wt-input: #ffffff;
+    --wt-text: #162033;
+    --wt-muted: #647083;
+    --wt-border: #dce3ef;
+    --wt-border-strong: #c4d0e2;
+    --wt-line: #e9edf5;
+    --wt-primary: #315bdc;
+    --wt-primary-strong: #2447b8;
+    --wt-primary-soft: #e8efff;
+    --wt-success: #0f8f61;
+    --wt-success-soft: #e8f8f1;
+    --wt-warning: #b7791f;
+    --wt-warning-soft: #fff6df;
+    --wt-danger: #c2413d;
+    --wt-danger-soft: #fff0ef;
+    --wt-focus: 0 0 0 3px rgba(49, 91, 220, 0.2);
+    --wt-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --wt-shadow-md: 0 14px 34px rgba(15, 23, 42, 0.08);
+    --wt-shadow-lg: 0 24px 52px rgba(15, 23, 42, 0.11);
+    --wt-radius: 8px;
+    --wt-radius-sm: 6px;
+    --wt-transition: 180ms ease;
+
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    padding: 1.5rem 0 3rem;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0)),
+        linear-gradient(135deg, var(--wt-bg) 0%, var(--wt-bg-soft) 100%);
+    color: var(--wt-text);
+    color-scheme: light;
+    font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .worktime-calculator-page {
+    --wt-bg: #101420;
+    --wt-bg-soft: #151b2a;
+    --wt-card: rgba(27, 33, 48, 0.92);
+    --wt-card-solid: #1b2130;
+    --wt-card-subtle: #20283a;
+    --wt-input: #141a27;
+    --wt-text: #edf2ff;
+    --wt-muted: #a8b3c7;
+    --wt-border: #30394d;
+    --wt-border-strong: #43506a;
+    --wt-line: #293247;
+    --wt-primary: #74a9ff;
+    --wt-primary-strong: #9bc1ff;
+    --wt-primary-soft: rgba(116, 169, 255, 0.16);
+    --wt-success: #34d399;
+    --wt-success-soft: rgba(52, 211, 153, 0.14);
+    --wt-warning: #fbbf24;
+    --wt-warning-soft: rgba(251, 191, 36, 0.14);
+    --wt-danger: #fb7a76;
+    --wt-danger-soft: rgba(248, 113, 113, 0.14);
+    --wt-focus: 0 0 0 3px rgba(116, 169, 255, 0.28);
+    --wt-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --wt-shadow-md: 0 16px 34px rgba(0, 0, 0, 0.32);
+    --wt-shadow-lg: 0 24px 58px rgba(0, 0, 0, 0.42);
+
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+        linear-gradient(135deg, var(--wt-bg) 0%, var(--wt-bg-soft) 100%);
+    color-scheme: dark;
+}
+
+.worktime-calculator-page *,
+.worktime-calculator-page *::before,
+.worktime-calculator-page *::after {
+    box-sizing: border-box;
+}
+
+.worktime-calculator-hero,
+.worktime-layout {
+    width: min(1480px, calc(100% - 2rem));
+    margin-inline: auto;
+}
+
+.worktime-calculator-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.5rem 0 1.1rem;
+}
+
+.worktime-calculator-hero h1 {
+    margin: 0.15rem 0 0.4rem;
+    color: var(--wt-text);
+    font-size: clamp(2rem, 3vw, 3rem);
+    font-weight: 750;
+    line-height: 1.05;
+}
+
+.worktime-calculator-hero p {
+    margin: 0;
+    max-width: 55rem;
+    color: var(--wt-muted);
+}
+
+.worktime-kicker {
+    margin: 0;
+    color: var(--wt-primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.worktime-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
+}
+
+.worktime-calculator-page .button-primary,
+.worktime-calculator-page .button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.65rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--wt-radius);
+    font: inherit;
+    font-weight: 750;
+    line-height: 1.1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color var(--wt-transition),
+        border-color var(--wt-transition),
+        color var(--wt-transition),
+        box-shadow var(--wt-transition),
+        transform var(--wt-transition);
+}
+
+.worktime-calculator-page .button-primary {
+    background: var(--wt-primary);
+    border-color: var(--wt-primary);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(49, 91, 220, 0.2);
+}
+
+[data-theme="dark"] .worktime-calculator-page .button-primary {
+    color: #07111f;
+    box-shadow: 0 12px 28px rgba(116, 169, 255, 0.18);
+}
+
+.worktime-calculator-page .button-primary:hover,
+.worktime-calculator-page .button-primary:focus-visible {
+    background: var(--wt-primary-strong);
+    border-color: var(--wt-primary-strong);
+    transform: translateY(-1px);
+}
+
+.worktime-calculator-page .button-secondary {
+    background: color-mix(in srgb, var(--wt-card-solid) 88%, var(--wt-primary-soft));
+    border-color: var(--wt-border);
+    color: var(--wt-text);
+    box-shadow: var(--wt-shadow-sm);
+}
+
+.worktime-calculator-page .button-secondary:hover,
+.worktime-calculator-page .button-secondary:focus-visible {
+    background: var(--wt-primary-soft);
+    border-color: color-mix(in srgb, var(--wt-primary) 42%, var(--wt-border));
+    color: var(--wt-primary-strong);
+    transform: translateY(-1px);
+}
+
+.worktime-calculator-page .button-primary:focus-visible,
+.worktime-calculator-page .button-secondary:focus-visible,
+.worktime-link-button:focus-visible,
+.worktime-field input:focus-visible,
+.worktime-field select:focus-visible,
+.worktime-custom-holiday input:focus-visible,
+.worktime-day-row input[type="number"]:focus-visible {
+    outline: none;
+    box-shadow: var(--wt-focus);
+}
+
+.worktime-layout {
+    display: grid;
+    grid-template-columns: minmax(285px, 370px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+}
+
+.worktime-settings-panel,
+.worktime-month-section,
+.worktime-holiday-panel,
+.worktime-adjustment-panel,
+.worktime-kpi {
+    border: 1px solid var(--wt-border);
+    background: var(--wt-card);
+    box-shadow: var(--wt-shadow-md);
+    backdrop-filter: blur(14px) saturate(135%);
+    -webkit-backdrop-filter: blur(14px) saturate(135%);
+}
+
+.worktime-settings-panel {
+    position: sticky;
+    top: calc(64px + 1rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: var(--wt-radius);
+}
+
+.worktime-panel-header,
+.worktime-section-title,
+.worktime-subhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.worktime-panel-header h2,
+.worktime-section-title h2,
+.worktime-subhead h3 {
+    margin: 0;
+    color: var(--wt-text);
+}
+
+.worktime-panel-header h2,
+.worktime-section-title h2 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.worktime-subhead h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+}
+
+.worktime-panel-header span {
+    color: var(--wt-muted);
+    font-size: 0.84rem;
+}
+
+.worktime-field,
+.worktime-field-grid {
+    min-width: 0;
+}
+
+.worktime-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.worktime-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.worktime-field label,
+.worktime-switch-row label {
+    color: var(--wt-muted);
+    font-size: 0.82rem;
+    font-weight: 750;
+}
+
+.worktime-field input,
+.worktime-field select,
+.worktime-custom-holiday input,
+.worktime-day-row input[type="number"] {
+    width: 100%;
+    min-height: 2.45rem;
+    border: 1px solid var(--wt-border);
+    border-radius: var(--wt-radius);
+    background: var(--wt-input);
+    color: var(--wt-text);
+    padding: 0.52rem 0.68rem;
+    font: inherit;
+    transition:
+        border-color var(--wt-transition),
+        box-shadow var(--wt-transition),
+        background-color var(--wt-transition);
+}
+
+.worktime-field input:hover,
+.worktime-field select:hover,
+.worktime-custom-holiday input:hover,
+.worktime-day-row input[type="number"]:hover {
+    border-color: var(--wt-border-strong);
+}
+
+.worktime-field input::placeholder,
+.worktime-custom-holiday input::placeholder {
+    color: color-mix(in srgb, var(--wt-muted) 78%, transparent);
+}
+
+.worktime-day-row input:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.worktime-input-with-unit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.worktime-input-with-unit span {
+    color: var(--wt-muted);
+    font-weight: 750;
+}
+
+.worktime-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.65rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--wt-border);
+    border-radius: var(--wt-radius);
+    background: var(--wt-card-subtle);
+}
+
+.worktime-switch-row input,
+.worktime-day-row input[type="checkbox"],
+.worktime-holiday-row input[type="checkbox"] {
+    width: 1.08rem;
+    height: 1.08rem;
+    accent-color: var(--wt-primary);
+    cursor: pointer;
+}
+
+.worktime-week-pattern {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.worktime-link-button {
+    border: 0;
+    border-radius: var(--wt-radius-sm);
+    background: transparent;
+    color: var(--wt-primary);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 750;
+}
+
+.worktime-link-button:hover {
+    color: var(--wt-primary-strong);
+}
+
+.worktime-day-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 6rem;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.worktime-day-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    color: var(--wt-text);
+    font-weight: 750;
+}
+
+.worktime-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.worktime-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.worktime-kpi {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-height: 8rem;
+    overflow: hidden;
+    padding: 1rem;
+    border-radius: var(--wt-radius);
+}
+
+.worktime-kpi::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: color-mix(in srgb, var(--wt-primary) 34%, transparent);
+}
+
+.worktime-kpi.primary {
+    border-color: color-mix(in srgb, var(--wt-primary) 44%, var(--wt-border));
+    background: linear-gradient(180deg, var(--wt-primary-soft), var(--wt-card));
+    box-shadow: var(--wt-shadow-lg);
+}
+
+.worktime-kpi.primary::before {
+    background: var(--wt-primary);
+}
+
+.worktime-kpi span,
+.worktime-kpi small,
+.worktime-section-title p {
+    color: var(--wt-muted);
+}
+
+.worktime-kpi span {
+    font-weight: 750;
+}
+
+.worktime-kpi strong {
+    color: var(--wt-text);
+    font-size: clamp(1.85rem, 2.3vw, 2.6rem);
+    font-weight: 780;
+    line-height: 1;
+    overflow-wrap: anywhere;
+}
+
+.worktime-kpi small {
+    margin-top: auto;
+    line-height: 1.35;
+}
+
+.worktime-month-section,
+.worktime-holiday-panel,
+.worktime-adjustment-panel {
+    border-radius: var(--wt-radius);
+    padding: 1rem;
+}
+
+.worktime-section-title {
+    margin-bottom: 0.9rem;
+}
+
+.worktime-section-title.compact {
+    align-items: flex-start;
+}
+
+.worktime-section-title p {
+    margin: 0.25rem 0 0;
+    line-height: 1.45;
+}
+
+.worktime-month-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--wt-line);
+    border-radius: var(--wt-radius);
+}
+
+.worktime-month-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    background: var(--wt-card-solid);
+}
+
+.worktime-month-table th,
+.worktime-month-table td {
+    padding: 0.78rem 0.65rem;
+    border-bottom: 1px solid var(--wt-line);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.worktime-month-table th {
+    background: var(--wt-card-subtle);
+    color: var(--wt-muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.worktime-month-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.worktime-month-table tbody tr:hover {
+    background: color-mix(in srgb, var(--wt-primary-soft) 65%, transparent);
+}
+
+.worktime-month-table td strong {
+    color: var(--wt-text);
+}
+
+.worktime-bar {
+    display: block;
+    width: 8rem;
+    max-width: 100%;
+    height: 0.55rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--wt-primary) 14%, var(--wt-line));
+}
+
+.worktime-bar::after {
+    display: block;
+    width: var(--bar-width);
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--wt-primary), var(--wt-success));
+    content: "";
+}
+
+.worktime-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+    gap: 1rem;
+}
+
+.worktime-custom-holiday {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.worktime-holiday-list,
+.worktime-adjustment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.worktime-holiday-row,
+.worktime-adjustment-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.78rem;
+    border: 1px solid var(--wt-border);
+    border-radius: var(--wt-radius);
+    background: var(--wt-card-subtle);
+}
+
+.worktime-holiday-row label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.worktime-holiday-row strong,
+.worktime-holiday-row small {
+    display: block;
+}
+
+.worktime-holiday-row strong,
+.worktime-adjustment-row strong {
+    color: var(--wt-text);
+}
+
+.worktime-holiday-row small,
+.worktime-adjustment-row small,
+.worktime-adjustment-row span {
+    color: var(--wt-muted);
+}
+
+.worktime-holiday-impact {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    color: var(--wt-primary-strong);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.worktime-holiday-impact button {
+    border: 0;
+    border-radius: var(--wt-radius-sm);
+    background: transparent;
+    color: var(--wt-danger);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 750;
+}
+
+.worktime-holiday-impact button:hover {
+    color: color-mix(in srgb, var(--wt-danger) 82%, var(--wt-text));
+}
+
+.worktime-adjustment-row {
+    align-items: center;
+}
+
+.worktime-adjustment-row div {
+    min-width: 8rem;
+}
+
+.worktime-adjustment-row strong,
+.worktime-adjustment-row span {
+    display: block;
+}
+
+.worktime-adjustment-row p {
+    flex: 1;
+    margin: 0;
+    color: var(--wt-text);
+}
+
+.worktime-empty {
+    margin: 0;
+    padding: 1rem;
+    color: var(--wt-muted);
+    border: 1px dashed var(--wt-border-strong);
+    border-radius: var(--wt-radius);
+    background: color-mix(in srgb, var(--wt-card-subtle) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .worktime-calculator-page {
+        --wt-transition: 1ms linear;
+    }
+
+    .worktime-calculator-page .button-primary:hover,
+    .worktime-calculator-page .button-primary:focus-visible,
+    .worktime-calculator-page .button-secondary:hover,
+    .worktime-calculator-page .button-secondary:focus-visible {
+        transform: none;
+    }
+}
+
+@media (max-width: 1120px) {
+    .worktime-layout,
+    .worktime-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .worktime-settings-panel {
+        position: static;
+    }
+
+    .worktime-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .worktime-calculator-page {
+        padding: 1rem 0 2.25rem;
+    }
+
+    .worktime-calculator-hero,
+    .worktime-layout {
+        width: min(100% - 1rem, 1480px);
+    }
+
+    .worktime-calculator-hero,
+    .worktime-hero-actions,
+    .worktime-panel-header,
+    .worktime-section-title {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .worktime-hero-actions {
+        justify-content: flex-start;
+    }
+
+    .worktime-calculator-page .button-primary,
+    .worktime-calculator-page .button-secondary {
+        width: 100%;
+        white-space: normal;
+    }
+
+    .worktime-field-grid,
+    .worktime-kpi-grid,
+    .worktime-custom-holiday {
+        grid-template-columns: 1fr;
+    }
+
+    .worktime-day-row {
+        grid-template-columns: minmax(0, 1fr) 5rem;
+    }
+
+    .worktime-holiday-row,
+    .worktime-adjustment-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .worktime-holiday-impact {
+        align-items: flex-start;
+    }
+}
+
+@media print {
+    .scoped-navbar,
+    .worktime-settings-panel,
+    .worktime-hero-actions {
+        display: none !important;
+    }
+
+    .worktime-calculator-page {
+        width: 100%;
+        min-height: auto;
+        padding: 0;
+        background: #ffffff !important;
+        color: #111827 !important;
+    }
+
+    .worktime-calculator-hero,
+    .worktime-layout {
+        width: 100%;
+    }
+
+    .worktime-layout,
+    .worktime-detail-grid {
+        display: block;
+    }
+
+    .worktime-kpi,
+    .worktime-month-section,
+    .worktime-holiday-panel,
+    .worktime-adjustment-panel {
+        break-inside: avoid;
+        box-shadow: none;
+        background: #ffffff !important;
+    }
+}

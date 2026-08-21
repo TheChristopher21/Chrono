@@ -1,5 +1,7 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.services.HolidayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +21,8 @@ public class HolidayController {
 
     @Autowired
     private HolidayService holidayService;
+    @Autowired
+    private CompanyRepository companyRepository;
 
     /**
      * Endpunkt zum Abrufen von Feiertagsdetails für ein bestimmtes Jahr, einen Kanton
@@ -37,6 +41,7 @@ public class HolidayController {
     public ResponseEntity<Map<LocalDate, String>> getHolidayDetails(
             @RequestParam int year,
             @RequestParam(required = false) String cantonAbbreviation,
+            @RequestParam(required = false) Long companyId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
@@ -49,7 +54,11 @@ public class HolidayController {
         //     return ResponseEntity.badRequest().body(Map.of()); // oder eine Fehlermeldung
         // }
 
-        Map<LocalDate, String> holidayDetails = holidayService.getHolidayDetails(year, cantonAbbreviation, startDate, endDate);
+        Map<LocalDate, String> holidayDetails = companyId != null
+                ? companyRepository.findById(companyId)
+                        .map(company -> holidayService.getHolidayDetails(company, startDate, endDate))
+                        .orElseGet(() -> holidayService.getHolidayDetails(year, cantonAbbreviation, startDate, endDate))
+                : holidayService.getHolidayDetails(year, cantonAbbreviation, startDate, endDate);
         return ResponseEntity.ok(holidayDetails);
     }
 
@@ -65,8 +74,13 @@ public class HolidayController {
     @GetMapping
     public ResponseEntity<Set<LocalDate>> getHolidaysRaw(
             @RequestParam int year,
-            @RequestParam(required = false) String cantonAbbreviation) {
-        Set<LocalDate> holidays = holidayService.getHolidays(year, cantonAbbreviation);
+            @RequestParam(required = false) String cantonAbbreviation,
+            @RequestParam(required = false) Long companyId) {
+        Set<LocalDate> holidays = companyId != null
+                ? companyRepository.findById(companyId)
+                        .map(company -> holidayService.getCompanyHolidays(year, company))
+                        .orElseGet(() -> holidayService.getHolidays(year, cantonAbbreviation))
+                : holidayService.getHolidays(year, cantonAbbreviation);
         return ResponseEntity.ok(holidays);
     }
 
@@ -82,8 +96,13 @@ public class HolidayController {
     @GetMapping("/is-holiday")
     public ResponseEntity<Boolean> isHoliday(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam(required = false) String cantonAbbreviation) {
-        boolean isHoliday = holidayService.isHoliday(date, cantonAbbreviation);
+            @RequestParam(required = false) String cantonAbbreviation,
+            @RequestParam(required = false) Long companyId) {
+        boolean isHoliday = companyId != null
+                ? companyRepository.findById(companyId)
+                        .map(company -> holidayService.isCompanyHoliday(date, company))
+                        .orElseGet(() -> holidayService.isHoliday(date, cantonAbbreviation))
+                : holidayService.isHoliday(date, cantonAbbreviation);
         return ResponseEntity.ok(isHoliday);
     }
 }

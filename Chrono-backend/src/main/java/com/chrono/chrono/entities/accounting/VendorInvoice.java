@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -34,6 +35,11 @@ public class VendorInvoice {
 
     @Column(length = 3)
     private String currency = "CHF";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -125,6 +131,14 @@ public class VendorInvoice {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public InvoiceStatus getStatus() {

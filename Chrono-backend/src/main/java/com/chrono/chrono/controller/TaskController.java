@@ -38,12 +38,13 @@ public class TaskController {
                                                Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (projectId != null) {
-            Optional<Project> project = projectService.findById(projectId);
-            if (project.isEmpty() || project.get().getCustomer() == null ||
-                !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
-                return ResponseEntity.status(403).build();
-            }
+        if (projectId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<Project> project = projectService.findById(projectId);
+        if (project.isEmpty() || project.get().getCustomer() == null ||
+            !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(taskService.getTasks(projectId));
     }

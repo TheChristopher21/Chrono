@@ -16,7 +16,11 @@ import java.util.Map;
 public class ExternalNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalNotificationService.class);
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public ExternalNotificationService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public void sendVacationNotification(VacationRequest vr, String message) {
         if (vr == null || vr.getUser() == null) return;
@@ -24,6 +28,18 @@ public class ExternalNotificationService {
         if (company == null) return;
         if (Boolean.FALSE.equals(company.getNotifyVacation())) return;
 
+        if (company.getSlackWebhookUrl() != null && !company.getSlackWebhookUrl().isBlank()) {
+            sendSimpleMessage(company.getSlackWebhookUrl(), message);
+        }
+        if (company.getTeamsWebhookUrl() != null && !company.getTeamsWebhookUrl().isBlank()) {
+            sendSimpleMessage(company.getTeamsWebhookUrl(), message);
+        }
+    }
+
+    public void sendCompanyNotification(Company company, String message) {
+        if (company == null || message == null || message.isBlank()) {
+            return;
+        }
         if (company.getSlackWebhookUrl() != null && !company.getSlackWebhookUrl().isBlank()) {
             sendSimpleMessage(company.getSlackWebhookUrl(), message);
         }

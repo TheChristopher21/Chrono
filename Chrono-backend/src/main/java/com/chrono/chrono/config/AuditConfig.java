@@ -13,9 +13,13 @@ public class AuditConfig implements WebMvcConfigurer {
     @Autowired
     private DemoUserInterceptor demoInterceptor;
 
+    @Autowired
+    private ApiPagePermissionInterceptor pagePermissionInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(interceptor);
+        registry.addInterceptor(pagePermissionInterceptor);
         registry.addInterceptor(demoInterceptor);
     }
 }

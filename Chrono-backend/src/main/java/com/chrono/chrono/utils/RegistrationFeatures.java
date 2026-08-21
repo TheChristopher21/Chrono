@@ -23,7 +23,8 @@ public final class RegistrationFeatures {
             "signature",
             "chatbot",
             "premiumSupport",
-            "roster"
+            "roster",
+            "pms"
     );
 
     public static final Set<String> ALL_FEATURES;

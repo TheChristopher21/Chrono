@@ -101,6 +101,18 @@ public class EmailService {
         sendSafely(msg, "payslip-approved");
     }
 
+    public void sendOperationalAlert(String recipient, String subject, String text) {
+        if (recipient == null || recipient.isBlank() || text == null || text.isBlank()) {
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("siefertchristopher@chrono-logisch.ch");
+        message.setTo(recipient.trim());
+        message.setSubject(subject == null || subject.isBlank() ? "Chrono Betriebsalarm" : subject);
+        message.setText(text);
+        sendSafely(message, "operational-alert");
+    }
+
     private void sendSafely(SimpleMailMessage message, String context) {
         try {
             mailSender.send(message);
