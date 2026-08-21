@@ -699,7 +699,7 @@ class TimeTrackingServiceTest {
     }
 
     @Test
-    void rebuildUserBalance_hourlyUserIgnoresFutureOvertimePayout() {
+    void rebuildUserBalance_hourlyUserReservesApprovedFutureOvertimePayout() {
         user.setIsHourly(true);
         user.setEntryDate(date.minusDays(30));
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
@@ -719,7 +719,7 @@ class TimeTrackingServiceTest {
         doReturn(date).when(spyService).getCurrentBerlinDate();
         spyService.rebuildUserBalance(user);
 
-        assertEquals(120, user.getTrackingBalanceInMinutes());
+        assertEquals(60, user.getTrackingBalanceInMinutes());
     }
 
     @Test
@@ -749,7 +749,7 @@ class TimeTrackingServiceTest {
     }
 
     @Test
-    void rebuildUserBalance_standardUserIgnoresFutureOvertimePayout() {
+    void rebuildUserBalance_standardUserReservesApprovedFutureOvertimePayout() {
         user.setTrackingBalanceInMinutes(0);
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
@@ -771,7 +771,7 @@ class TimeTrackingServiceTest {
         doReturn(date).when(spyService).getCurrentBerlinDate();
         spyService.rebuildUserBalance(user);
 
-        assertEquals(0, user.getTrackingBalanceInMinutes());
+        assertEquals(-120, user.getTrackingBalanceInMinutes());
     }
 
 

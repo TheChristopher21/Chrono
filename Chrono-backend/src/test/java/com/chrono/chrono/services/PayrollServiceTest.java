@@ -215,6 +215,52 @@ class PayrollServiceTest {
     }
 
     @Test
+    void approvePayslip_isIdempotentWhenAlreadyApproved() {
+        User user = new User();
+        Payslip ps = new Payslip();
+        ps.setId(2L);
+        ps.setUser(user);
+        ps.setApproved(true);
+        when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
+
+        payrollService.approvePayslip(2L, "again");
+
+        verify(timeTrackingService).rebuildUserBalance(user);
+        verify(payslipRepository, never()).saveAndFlush(any());
+        verify(accountingService, never()).recordPayrollPosting(any());
+        verify(payslipAuditRepository, never()).save(any());
+        verify(emailService, never()).sendPayslipApprovedMail(any(), any());
+    }
+
+    @Test
+    void approveAllForUser_skipsAlreadyApprovedPayslips() {
+        User user = new User();
+        user.setId(5L);
+
+        Payslip approved = new Payslip();
+        approved.setId(10L);
+        approved.setUser(user);
+        approved.setApproved(true);
+
+        Payslip pending = new Payslip();
+        pending.setId(11L);
+        pending.setUser(user);
+
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(approved, pending));
+        when(pdfService.generatePayslipPdf(pending)).thenReturn("file.pdf");
+
+        payrollService.approveAllForUser(5L, "batch");
+
+        verify(payslipRepository).saveAllAndFlush(List.of(pending));
+        verify(accountingService).recordPayrollPosting(pending);
+        verify(accountingService, never()).recordPayrollPosting(approved);
+        verify(emailService).sendPayslipApprovedMail(user, pending);
+        verify(emailService, never()).sendPayslipApprovedMail(user, approved);
+        verify(timeTrackingService).rebuildUserBalance(user);
+    }
+
+    @Test
     void deletePayslip_throwsWhenApproved() {
         Payslip ps = new Payslip();
         ps.setId(3L);

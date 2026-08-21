@@ -113,6 +113,15 @@ public class AccountingService {
         if (payslip == null) {
             return null;
         }
+        String documentReference = payslip.getId() != null ? "PAYSLIP-" + payslip.getId() : null;
+        if (documentReference != null) {
+            JournalEntry existingEntry = journalEntryRepository
+                    .findFirstByDocumentReferenceOrderByIdAsc(documentReference)
+                    .orElse(null);
+            if (existingEntry != null) {
+                return existingEntry;
+            }
+        }
         Account wages = ensureAccount("5000", "Lohnaufwand", AccountType.EXPENSE);
         Account employer = ensureAccount("5100", "Arbeitgeberbeiträge", AccountType.EXPENSE);
         Account payrollLiability = ensureAccount("2000", "Verbindlichkeiten Personal", AccountType.LIABILITY);
@@ -132,11 +141,15 @@ public class AccountingService {
         addSignedLine(lines, payrollLiability, deductions, false, "Employee deductions");
         addSignedLine(lines, socialLiability, employerShare, false, "Employer contributions");
 
+        if (lines.isEmpty()) {
+            return null;
+        }
+
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(payslip.getPayoutDate() != null ? payslip.getPayoutDate() : LocalDate.now());
         entry.setDescription("Payroll for " + payslip.getUser().getUsername());
         entry.setSource("PAYROLL");
-        entry.setDocumentReference("PAYSLIP-" + payslip.getId());
+        entry.setDocumentReference(documentReference);
         entry.setLines(lines);
         return postEntry(entry);
     }

@@ -16,6 +16,22 @@ const emptyForm = {
 
 const hasPayrollWarning = (slip) => Number(slip?.grossSalary) < 0 || Number(slip?.netSalary) < 0;
 
+const parseHoursMinutes = (value) => {
+  const match = String(value ?? '').trim().match(/^(\d+)(?:[.:]([0-5]?\d))?$/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2] ?? 0);
+  const totalMinutes = hours * 60 + minutes;
+  return totalMinutes > 0 ? totalMinutes / 60 : null;
+};
+
+const formatHoursMinutes = (decimalHours) => {
+  const totalMinutes = Math.round(Number(decimalHours) * 60);
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return '-';
+  return `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, '0')}`;
+};
+
 const toComparableDate = (value) => {
   if (!value) return '';
   return String(value).slice(0, 10);
@@ -173,6 +189,15 @@ const AdminPayslipsPage = () => {
 
   const createPayslip = () => {
     if (!form.userId || !form.start || !form.end) return;
+    const overtimeHours = form.payoutOvertime ? parseHoursMinutes(form.overtimeHours) : null;
+    if (form.payoutOvertime && overtimeHours === null) {
+      setActionError(t(
+        'payslips.invalidOvertimeTime',
+        'Bitte die Überstunden als Stunden:Minuten eingeben, zum Beispiel 16:41.'
+      ));
+      return;
+    }
+    setActionError('');
     api.post('/api/payslips/generate', null, {
       params: {
         userId: form.userId,
@@ -180,7 +205,7 @@ const AdminPayslipsPage = () => {
         end: form.end,
         payoutDate: form.payoutDate,
         payoutOvertime: form.payoutOvertime,
-        overtimeHours: form.payoutOvertime ? form.overtimeHours : null
+        overtimeHours
       }
     }).then(() => {
       setForm(emptyForm);
@@ -203,7 +228,7 @@ const AdminPayslipsPage = () => {
     if (!slip?.payoutOvertime || !slip?.overtimeHours || slip.overtimeHours <= 0) {
       return '-';
     }
-    return `${Number(slip.overtimeHours).toFixed(2)} ${t('payslips.hoursUnit', 'Std.')}`;
+    return `${formatHoursMinutes(slip.overtimeHours)} ${t('payslips.hoursMinutesUnit', 'Std:Min.')}`;
   };
 
   const uploadLogo = () => {
@@ -811,7 +836,7 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
           <h3>{t('adminPayslips.moreDetails', 'Weitere Angaben')}</h3>
           <dl className="drawer-grid">
             <dt>{t('overtime', 'Ueberstunden')}</dt>
-            <dd>{slip.payoutOvertime ? `${Number(slip.overtimeHours || 0).toFixed(2)} Std.` : '-'}</dd>
+            <dd>{slip.payoutOvertime ? `${formatHoursMinutes(slip.overtimeHours)} Std:Min.` : '-'}</dd>
             <dt>{t('adminPayslips.allowances', 'Zulagen')}</dt>
             <dd>{formatCurrency(slip.allowances, currency)}</dd>
             <dt>Bonus</dt>
@@ -906,11 +931,12 @@ const CreatePayslipModal = ({
           </label>
           {form.payoutOvertime && (
             <label>
-              <span>{t('adminPayslips.overtimeHours', 'Ueberstunden (Std.)')}</span>
+              <span>{t('adminPayslips.overtimeHours', 'Ueberstunden (Std:Min.)')}</span>
               <input
-                type="number"
-                min="0"
-                step="0.25"
+                type="text"
+                inputMode="numeric"
+                placeholder="16:41"
+                pattern="[0-9]+([.:][0-5]?[0-9])?"
                 value={form.overtimeHours}
                 onChange={event => setForm({ ...form, overtimeHours: event.target.value })}
               />

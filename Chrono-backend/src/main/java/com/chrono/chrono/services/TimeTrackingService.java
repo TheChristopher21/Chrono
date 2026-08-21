@@ -774,10 +774,9 @@ public class TimeTrackingService {
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
                     .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
-                    .filter(payslip -> isOvertimePayoutEffectiveForBalance(
+                    .filter(payslip -> isOvertimePayoutRelevantForBalance(
                             payslip,
-                            freshUser.getEntryDate(),
-                            currentBalanceDate
+                            freshUser.getEntryDate()
                     ))
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
@@ -882,10 +881,9 @@ public class TimeTrackingService {
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
                     .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
-                    .filter(payslip -> isOvertimePayoutEffectiveForBalance(
+                    .filter(payslip -> isOvertimePayoutRelevantForBalance(
                             payslip,
-                            balancePeriodStart,
-                            currentBalanceDate
+                            balancePeriodStart
                     ))
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
@@ -912,9 +910,8 @@ public class TimeTrackingService {
         userRepository.save(freshUser);
     }
 
-    private boolean isOvertimePayoutEffectiveForBalance(Payslip payslip,
-                                                         LocalDate balanceStart,
-                                                         LocalDate balanceCutoff) {
+    private boolean isOvertimePayoutRelevantForBalance(Payslip payslip,
+                                                        LocalDate balanceStart) {
         LocalDate deductionDate = payslip.getPayoutDate() != null
                 ? payslip.getPayoutDate()
                 : payslip.getPeriodEnd();
@@ -924,7 +921,9 @@ public class TimeTrackingService {
         if (balanceStart != null && deductionDate.isBefore(balanceStart)) {
             return false;
         }
-        return balanceCutoff == null || !deductionDate.isAfter(balanceCutoff);
+        // Approval commits the hours immediately. Waiting until the payout date
+        // would leave them available for a second payroll run in the meantime.
+        return true;
     }
 
     private int getWorkedMinutesForDate(User user, LocalDate date, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {

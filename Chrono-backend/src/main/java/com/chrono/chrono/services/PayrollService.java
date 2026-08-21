@@ -179,6 +179,10 @@ public class PayrollService {
     @Transactional
     public void approvePayslip(Long id, String comment) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.isApproved()) {
+            timeTrackingService.rebuildUserBalance(ps.getUser());
+            return;
+        }
         ps.setApproved(true);
         ps.setLocked(true);
         String pdf = pdfService.generatePayslipPdf(ps);
@@ -193,7 +197,9 @@ public class PayrollService {
     @Transactional
     public void approveAllForUser(Long userId, String comment) {
         User user = userRepository.findById(userId).orElseThrow();
-        List<Payslip> slips = payslipRepository.findByUser(user);
+        List<Payslip> slips = payslipRepository.findByUser(user).stream()
+                .filter(ps -> !ps.isApproved())
+                .toList();
         for (Payslip ps : slips) {
             ps.setApproved(true);
             ps.setLocked(true);
@@ -203,13 +209,17 @@ public class PayrollService {
             audit(ps, "APPROVED", "ADMIN", comment);
             emailService.sendPayslipApprovedMail(ps.getUser(), ps);
         }
-        payslipRepository.saveAllAndFlush(slips);
+        if (!slips.isEmpty()) {
+            payslipRepository.saveAllAndFlush(slips);
+        }
         timeTrackingService.rebuildUserBalance(user);
     }
 
     @Transactional
     public void approveAll(String comment) {
-        List<Payslip> slips = payslipRepository.findAll();
+        List<Payslip> slips = payslipRepository.findAll().stream()
+                .filter(ps -> !ps.isApproved())
+                .toList();
         for (Payslip ps : slips) {
             ps.setApproved(true);
             ps.setLocked(true);
@@ -218,7 +228,9 @@ public class PayrollService {
             audit(ps, "APPROVED", "ADMIN", comment);
             emailService.sendPayslipApprovedMail(ps.getUser(), ps);
         }
-        payslipRepository.saveAllAndFlush(slips);
+        if (!slips.isEmpty()) {
+            payslipRepository.saveAllAndFlush(slips);
+        }
 
         Set<Long> rebuiltUserIds = new HashSet<>();
         slips.stream()

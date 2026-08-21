@@ -218,4 +218,50 @@ describe('AdminPayslipsPage', () => {
       });
     });
   });
+
+  it('converts overtime entered as hours and minutes before creating the payslip', async () => {
+    const user = userEvent.setup();
+    render(<AdminPayslipsPage />);
+
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
+    await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
+    await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
+    await user.click(within(dialog).getByLabelText('Ueberstunden auszahlen'));
+    await user.type(within(dialog).getByLabelText('Ueberstunden (Std:Min.)'), '16:41');
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
+      '/api/payslips/generate',
+      null,
+      expect.objectContaining({
+        params: expect.objectContaining({
+          payoutOvertime: true,
+          overtimeHours: 1001 / 60,
+        }),
+      })
+    ));
+  });
+
+  it('rejects an overtime entry whose minute part is invalid', async () => {
+    const user = userEvent.setup();
+    render(<AdminPayslipsPage />);
+
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
+    await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
+    await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
+    await user.click(within(dialog).getByLabelText('Ueberstunden auszahlen'));
+    await user.type(within(dialog).getByLabelText('Ueberstunden (Std:Min.)'), '16:75');
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Stunden:Minuten/);
+    expect(apiMock.post).not.toHaveBeenCalledWith('/api/payslips/generate', null, expect.anything());
+  });
 });
