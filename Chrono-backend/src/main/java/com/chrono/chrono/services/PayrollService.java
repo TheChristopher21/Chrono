@@ -67,6 +67,12 @@ public class PayrollService {
     @Transactional
     public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end, LocalDate payoutDate, Double overtimeHours, boolean payoutOvertime) {
         User user = userRepository.findById(userId).orElseThrow();
+        if (Boolean.TRUE.equals(user.getIsHourly())
+                && (user.getHourlyRate() == null || user.getHourlyRate() <= 0.0)) {
+            throw new IllegalStateException(
+                    "Für Stundenlohn-Mitarbeitende muss vor der Abrechnung ein positiver Stundenansatz hinterlegt sein."
+            );
+        }
         LocalDateTime startDt = start.atStartOfDay();
         LocalDateTime endDt = end.plusDays(1).atStartOfDay();
         List<TimeTrackingEntry> entries = timeTrackingEntryRepository

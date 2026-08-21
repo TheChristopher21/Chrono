@@ -207,12 +207,19 @@ const AdminPayslipsPage = () => {
         payoutOvertime: form.payoutOvertime,
         overtimeHours
       }
-    }).then(() => {
-      setForm(emptyForm);
-      setWizardPreview(false);
-      setCreateOpen(false);
-      refreshPayslips();
-    });
+    })
+      .then(() => {
+        setForm(emptyForm);
+        setWizardPreview(false);
+        setCreateOpen(false);
+        refreshPayslips();
+      })
+      .catch((error) => {
+        setActionError(
+          error?.response?.data?.message
+          || t('payslips.generateError', 'Die Abrechnung konnte nicht erstellt werden.')
+        );
+      });
   };
 
   useEffect(() => {

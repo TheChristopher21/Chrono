@@ -2385,6 +2385,7 @@ const translations = {
             hoursUnit: "Std.",
             hoursMinutesUnit: "Std:Min.",
             generate: "Erstellen",
+            generateError: "Die Abrechnung konnte nicht erstellt werden.",
             logoUploadTitle: "Logo hochladen",
             selectFile: "Datei wählen",
             myPayslips: "Meine Lohnabrechnungen"
@@ -5071,6 +5072,7 @@ const translations = {
             hoursUnit: "hrs",
             hoursMinutesUnit: "hrs:min",
             generate: "Generate",
+            generateError: "The payslip could not be created.",
             logoUploadTitle: "Upload logo",
             selectFile: "Choose file",
             myPayslips: "My Payslips"

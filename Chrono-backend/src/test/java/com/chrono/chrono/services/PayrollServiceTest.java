@@ -138,6 +138,30 @@ class PayrollServiceTest {
     }
 
     @Test
+    void generatePayslip_rejectsHourlyEmployeeWithoutHourlyRate() {
+        User user = new User();
+        user.setId(38L);
+        user.setUsername("chris");
+        user.setIsHourly(true);
+        user.setHourlyRate(null);
+
+        when(userRepository.findById(38L)).thenReturn(Optional.of(user));
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> payrollService.generatePayslip(
+                        38L,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 7, 31),
+                        LocalDate.of(2025, 8, 5)
+                )
+        );
+
+        assertTrue(error.getMessage().contains("positiver Stundenansatz"));
+        verifyNoInteractions(timeTrackingEntryRepository, taxCalculationService, payslipRepository);
+    }
+
+    @Test
     void approvePayslip_rebuildsBalanceAfterPersistingApproval() {
         User user = new User();
         user.setTrackingBalanceInMinutes(180);

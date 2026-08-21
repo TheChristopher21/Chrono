@@ -264,4 +264,27 @@ describe('AdminPayslipsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Stunden:Minuten/);
     expect(apiMock.post).not.toHaveBeenCalledWith('/api/payslips/generate', null, expect.anything());
   });
+
+  it('shows the backend validation when an hourly rate is missing', async () => {
+    const user = userEvent.setup();
+    apiMock.post.mockRejectedValueOnce({
+      response: {
+        data: {
+          message: 'Für Stundenlohn-Mitarbeitende muss ein positiver Stundenansatz hinterlegt sein.',
+        },
+      },
+    });
+    render(<AdminPayslipsPage />);
+
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
+    await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
+    await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/positiver Stundenansatz/);
+  });
 });
