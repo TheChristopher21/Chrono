@@ -60,6 +60,7 @@ const AdminPayslipsPage = () => {
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
   const { t } = useTranslation();
   const { language } = useContext(LanguageContext);
   const [printLang, setPrintLang] = useState('de');
@@ -95,9 +96,23 @@ const AdminPayslipsPage = () => {
   };
 
   const deletePayslip = (id) => {
-    if (window.confirm(t('payslips.deleteConfirm', 'Abrechnung wirklich loeschen?'))) {
-      api.delete(`/api/payslips/${id}`).then(() => refreshPayslips());
-    }
+    if (!window.confirm(t('payslips.deleteConfirm', 'Abrechnung wirklich loeschen?'))) return;
+
+    setActionError('');
+    return api.delete(`/api/payslips/${id}`)
+      .then(() => refreshPayslips())
+      .catch((error) => {
+        const message = error?.response?.status === 409
+          ? t(
+              'payslips.deleteApprovedError',
+              'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+            )
+          : error?.response?.data?.message || t(
+              'payslips.deleteError',
+              'Die Abrechnung konnte nicht geloescht werden.'
+            );
+        setActionError(message);
+      });
   };
 
   const editPayoutDate = (id, current) => {
@@ -370,16 +385,40 @@ const AdminPayslipsPage = () => {
 
   const bulkDelete = () => {
     if (!selectedSlips.length) return;
+
+    if (selectedSlips.some(slip => getSlipStatus(slip) === 'approved')) {
+      setActionError(t(
+        'payslips.deleteApprovedError',
+        'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+      ));
+      return;
+    }
+
     if (!window.confirm(t(
       'adminPayslips.bulkDeleteConfirm',
       '{{count}} Abrechnung(en) wirklich loeschen?',
       { count: selectedSlips.length }
     ))) return;
 
-    Promise.all(selectedSlips.map(slip => api.delete(`/api/payslips/${slip.id}`))).then(() => {
-      setSelectedIds([]);
-      refreshPayslips();
-    });
+    setActionError('');
+    Promise.all(selectedSlips.map(slip => api.delete(`/api/payslips/${slip.id}`)))
+      .then(() => {
+        setSelectedIds([]);
+        refreshPayslips();
+      })
+      .catch((error) => {
+        const message = error?.response?.status === 409
+          ? t(
+              'payslips.deleteApprovedError',
+              'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+            )
+          : error?.response?.data?.message || t(
+              'payslips.deleteError',
+              'Die Abrechnungen konnten nicht geloescht werden.'
+            );
+        setActionError(message);
+        refreshPayslips();
+      });
   };
 
   const wizardUser = users.find(user => String(user.id) === String(form.userId));
@@ -514,6 +553,20 @@ const AdminPayslipsPage = () => {
           <button type="button" onClick={() => setActiveTab('archive')}>{t('adminPayslips.tabs.archive', 'Archiv')}</button>
         </div>
 
+        {actionError && (
+          <div className="payroll-action-error" role="alert">
+            <span>{actionError}</span>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => setActionError('')}
+              aria-label={t('payslips.dismissError', 'Fehlermeldung schliessen')}
+            >
+              {t('close', 'Schliessen')}
+            </button>
+          </div>
+        )}
+
         {selectedIds.length > 0 && (
           <div className="bulk-action-bar">
             <strong>{t('adminPayslips.selectedCount', '{{count}} ausgewaehlt', { count: selectedIds.length })}</strong>
@@ -612,7 +665,9 @@ const AdminPayslipsPage = () => {
                           ) : (
                             <button type="button" onClick={() => { reopen(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.reopen', 'Zurueckziehen')}</button>
                           )}
-                          <button type="button" className="danger-text" onClick={() => { deletePayslip(slip.id); setMenuOpenId(null); }}>{t('delete', 'Loeschen')}</button>
+                          {status !== 'approved' && (
+                            <button type="button" className="danger-text" onClick={() => { deletePayslip(slip.id); setMenuOpenId(null); }}>{t('delete', 'Loeschen')}</button>
+                          )}
                         </div>
                       )}
                     </td>

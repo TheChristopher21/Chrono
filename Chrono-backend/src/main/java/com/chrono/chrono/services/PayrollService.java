@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PayrollService {
@@ -47,6 +49,8 @@ public class PayrollService {
 
     @Autowired
     private AccountingService accountingService;
+    @Autowired
+    private TimeTrackingService timeTrackingService;
 
     private static final double OVERTIME_BONUS = 0.25;
 
@@ -175,12 +179,12 @@ public class PayrollService {
     @Transactional
     public void approvePayslip(Long id, String comment) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
-        applyOvertimeDeductionIfNeeded(ps);
         ps.setApproved(true);
         ps.setLocked(true);
         String pdf = pdfService.generatePayslipPdf(ps);
         ps.setPdfPath(pdf);
-        payslipRepository.save(ps);
+        payslipRepository.saveAndFlush(ps);
+        timeTrackingService.rebuildUserBalance(ps.getUser());
         accountingService.recordPayrollPosting(ps);
         audit(ps, "APPROVED", "ADMIN", comment);
         emailService.sendPayslipApprovedMail(ps.getUser(), ps);
@@ -191,7 +195,6 @@ public class PayrollService {
         User user = userRepository.findById(userId).orElseThrow();
         List<Payslip> slips = payslipRepository.findByUser(user);
         for (Payslip ps : slips) {
-            applyOvertimeDeductionIfNeeded(ps);
             ps.setApproved(true);
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
@@ -200,14 +203,14 @@ public class PayrollService {
             audit(ps, "APPROVED", "ADMIN", comment);
             emailService.sendPayslipApprovedMail(ps.getUser(), ps);
         }
-        payslipRepository.saveAll(slips);
+        payslipRepository.saveAllAndFlush(slips);
+        timeTrackingService.rebuildUserBalance(user);
     }
 
     @Transactional
     public void approveAll(String comment) {
         List<Payslip> slips = payslipRepository.findAll();
         for (Payslip ps : slips) {
-            applyOvertimeDeductionIfNeeded(ps);
             ps.setApproved(true);
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
@@ -215,7 +218,13 @@ public class PayrollService {
             audit(ps, "APPROVED", "ADMIN", comment);
             emailService.sendPayslipApprovedMail(ps.getUser(), ps);
         }
-        payslipRepository.saveAll(slips);
+        payslipRepository.saveAllAndFlush(slips);
+
+        Set<Long> rebuiltUserIds = new HashSet<>();
+        slips.stream()
+                .map(Payslip::getUser)
+                .filter(user -> user != null && rebuiltUserIds.add(user.getId()))
+                .forEach(timeTrackingService::rebuildUserBalance);
     }
 
     @Transactional
@@ -231,33 +240,12 @@ public class PayrollService {
     @Transactional
     public void reopenPayslip(Long id) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
-        if (ps.isApproved() && ps.isPayoutOvertime() && ps.getOvertimeHours() != null && ps.getOvertimeHours() > 0) {
-            User user = ps.getUser();
-            int minutesToRestore = (int) Math.round(ps.getOvertimeHours() * 60);
-            int currentBalance = user.getTrackingBalanceInMinutes() != null
-                    ? user.getTrackingBalanceInMinutes()
-                    : 0;
-            user.setTrackingBalanceInMinutes(currentBalance + minutesToRestore);
-            userRepository.save(user);
-        }
         ps.setApproved(false);
         ps.setLocked(false);
         ps.setPdfPath(null);
-        payslipRepository.save(ps);
+        payslipRepository.saveAndFlush(ps);
+        timeTrackingService.rebuildUserBalance(ps.getUser());
         audit(ps, "REOPENED", "ADMIN", null);
-    }
-
-    private void applyOvertimeDeductionIfNeeded(Payslip ps) {
-        if (ps.isApproved() || !ps.isPayoutOvertime() || ps.getOvertimeHours() == null || ps.getOvertimeHours() <= 0) {
-            return;
-        }
-        User user = ps.getUser();
-        int minutesToDeduct = (int) Math.round(ps.getOvertimeHours() * 60);
-        int currentBalance = user.getTrackingBalanceInMinutes() != null
-                ? user.getTrackingBalanceInMinutes()
-                : 0;
-        user.setTrackingBalanceInMinutes(currentBalance - minutesToDeduct);
-        userRepository.save(user);
     }
 
     public List<Payslip> getAllPayslips() {

@@ -723,6 +723,32 @@ class TimeTrackingServiceTest {
     }
 
     @Test
+    void rebuildUserBalance_hourlyUserRepairsLegacyBalanceFromApprovedPayouts() {
+        user.setIsHourly(true);
+        user.setEntryDate(date.minusDays(30));
+        user.setTrackingBalanceInMinutes(9071);
+        TimeTrackingEntry start = entry(user, date.atTime(8, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(18, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        Payslip approvedPayout = new Payslip();
+        approvedPayout.setApproved(true);
+        approvedPayout.setPayoutOvertime(true);
+        approvedPayout.setOvertimeHours(7.5);
+        approvedPayout.setPayoutDate(date);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampAsc(user)).thenReturn(List.of(start, end));
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(approvedPayout));
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(date).when(spyService).getCurrentBerlinDate();
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(150, user.getTrackingBalanceInMinutes());
+        verify(userRepository).save(user);
+    }
+
+    @Test
     void rebuildUserBalance_standardUserIgnoresFutureOvertimePayout() {
         user.setTrackingBalanceInMinutes(0);
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);

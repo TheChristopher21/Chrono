@@ -64,6 +64,23 @@
   font: inherit;
 }
 
+.admin-payslips-page .payroll-action-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--pay-danger) 45%, var(--pay-border));
+  border-radius: var(--pay-radius);
+  background: var(--pay-danger-soft);
+  color: var(--pay-danger);
+  font-weight: 650;
+}
+
+.admin-payslips-page .payroll-action-error button {
+  flex: 0 0 auto;
+}
+
 .admin-payslips-page button {
   min-height: 2.35rem;
   border: 1px solid var(--pay-border);
