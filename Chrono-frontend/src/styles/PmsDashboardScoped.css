@@ -8,6 +8,7 @@
     --pms-soft: #f9fafb;
     --pms-green: #475bff;
     --pms-green-strong: #3949e6;
+    --pms-on-accent: #fff;
     --pms-accent-text: #3949e6;
     --pms-accent-soft: rgba(71, 91, 255, 0.1);
     --pms-success: #2ecc71;
@@ -84,6 +85,8 @@
     padding: 24px 16px;
     border-right: 1px solid var(--pms-line);
     background: var(--pms-surface);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .pms-property-switcher {
@@ -110,7 +113,7 @@
     height: 38px;
     border-radius: 11px;
     background: linear-gradient(145deg, var(--pms-green), var(--pms-green-strong));
-    color: #fff;
+    color: var(--pms-on-accent);
     font-size: 0.72rem;
     font-weight: 850;
     letter-spacing: 0.06em;
@@ -143,8 +146,14 @@
 .pms-section-nav {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 18px;
     margin-top: 28px;
+}
+
+.pms-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .pms-nav-label {
@@ -193,7 +202,7 @@
 
 .pms-section-nav button.is-active > span {
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-sidebar-status {
@@ -264,7 +273,7 @@
     border: 0;
     border-radius: 8px;
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
     cursor: pointer;
     font: inherit;
     font-size: 0.72rem;
@@ -468,6 +477,10 @@
     gap: 18px;
 }
 
+.pms-reception-layout {
+    grid-template-columns: minmax(560px, 1.35fr) minmax(340px, 0.65fr);
+}
+
 .pms-operations-stack {
     display: grid;
     min-width: 0;
@@ -500,6 +513,142 @@
     border-radius: 16px;
     background: var(--pms-surface);
     box-shadow: var(--pms-shadow);
+}
+
+.pms-reception-booking-flow {
+    display: grid;
+    gap: 20px;
+    border-top: 4px solid var(--pms-green);
+}
+
+.pms-reception-booking-flow > .pms-work-card-heading,
+.pms-reception-booking-flow .pms-operations-stack > .pms-work-card-heading {
+    margin-bottom: 0;
+}
+
+.pms-reception-booking-flow .pms-work-card-heading p {
+    max-width: 66ch;
+    margin: 7px 0 0;
+    color: var(--pms-muted);
+    font-size: 0.76rem;
+    line-height: 1.55;
+}
+
+.pms-reception-booking-flow > .pms-setup-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pms-reception-booking-flow > .pms-setup-list li {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-content: center;
+}
+
+.pms-reception-booking-flow > .pms-setup-list li small {
+    grid-column: 2;
+}
+
+.pms-reception-booking-flow .pms-inline-message {
+    margin: 0;
+}
+
+.pms-reception-booking-flow .pms-inline-actions {
+    justify-content: flex-start;
+}
+
+.pms-reception-booking-flow .pms-inline-actions button.is-primary {
+    border-color: var(--pms-green);
+    background: var(--pms-green);
+    color: var(--pms-on-accent);
+}
+
+.pms-reception-booking-flow label.pms-record:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.62;
+}
+
+.pms-reception-booking-flow label.pms-record:has(input:disabled):hover {
+    border-color: var(--pms-line);
+    transform: none;
+}
+
+.pms-reception-booking-flow fieldset.pms-work-card {
+    margin: 0;
+    padding: 16px;
+    border-color: var(--pms-line-soft);
+    background: var(--pms-soft);
+    box-shadow: none;
+}
+
+.pms-reception-booking-flow fieldset.pms-work-card legend {
+    padding: 0 7px;
+    color: var(--pms-ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.pms-reception-booking-flow label.pms-record {
+    cursor: pointer;
+    transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.pms-reception-booking-flow label.pms-record:hover {
+    border-color: var(--pms-green);
+    transform: translateY(-1px);
+}
+
+.pms-reception-booking-flow label.pms-record:has(input:checked) {
+    border-color: var(--pms-green);
+    border-left-color: var(--pms-green);
+    background: var(--pms-accent-soft);
+}
+
+.pms-reception-booking-flow label.pms-record > input {
+    flex: 0 0 auto;
+    accent-color: var(--pms-green);
+}
+
+.pms-reception-booking-flow label.pms-record > span {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    gap: 3px;
+}
+
+.pms-reception-booking-flow label.pms-record > span strong {
+    color: var(--pms-ink);
+    font-size: 0.8rem;
+}
+
+.pms-reception-booking-flow label.pms-record > span small {
+    color: var(--pms-muted);
+    font-size: 0.68rem;
+}
+
+.pms-reception-booking-flow .pms-record-list {
+    max-height: 390px;
+}
+
+.pms-reception-booking-flow > .pms-form-actions,
+.pms-reception-booking-flow .pms-operations-stack > .pms-form-actions {
+    padding-top: 14px;
+    border-top: 1px solid var(--pms-line-soft);
+}
+
+.pms-reception-booking-flow > .pms-workspace-empty {
+    margin: 0;
+    padding: 12px 0 4px;
+}
+
+.pms-reception-booking-flow > .pms-workspace-empty h2 {
+    margin: 0 0 8px;
+    color: var(--pms-ink);
+}
+
+.pms-reception-booking-flow > .pms-workspace-empty p {
+    margin: 0;
+    color: var(--pms-muted);
+    line-height: 1.6;
 }
 
 .pms-work-card > p {
@@ -679,7 +828,7 @@
 .pms-record-actions button.is-primary {
     border-color: var(--pms-green);
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-form-actions button:disabled,
@@ -1181,6 +1330,44 @@
 }
 
 @media (max-width: 720px) {
+    .pms-reception-booking-flow > .pms-setup-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pms-reception-booking-flow {
+        padding: 16px;
+    }
+
+    .pms-reception-booking-flow .pms-form-actions {
+        flex-wrap: wrap;
+    }
+
+    .pms-reception-booking-flow .pms-form-actions button {
+        flex: 1 1 180px;
+        min-height: 44px;
+        font-size: 0.84rem;
+    }
+
+    .pms-reception-booking-flow .pms-inline-actions button {
+        min-height: 44px;
+        font-size: 0.82rem;
+    }
+
+    .pms-reception-booking-flow .pms-form-grid input,
+    .pms-reception-booking-flow .pms-form-grid select,
+    .pms-reception-booking-flow .pms-form-grid textarea {
+        font-size: 1rem;
+    }
+
+    .pms-reception-booking-flow > .pms-setup-list li strong {
+        font-size: 0.75rem;
+    }
+
+    .pms-reception-booking-flow > .pms-setup-list li small,
+    .pms-reception-booking-flow label.pms-record > span small {
+        font-size: 0.7rem;
+    }
+
     .pms-rooming-row {
         grid-template-columns: 1fr;
     }
@@ -1324,7 +1511,7 @@
 
 .pms-mode-switch button.is-active {
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
     box-shadow: 0 4px 12px rgba(71, 91, 255, 0.22);
 }
 
@@ -1426,7 +1613,7 @@
     height: 34px;
     border-radius: 10px;
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-action-notice strong {
@@ -1484,7 +1671,7 @@
 
 .pms-quick-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -1513,7 +1700,7 @@
 .pms-quick-grid > button.is-primary {
     border-color: var(--pms-green);
     background: linear-gradient(145deg, var(--pms-green), var(--pms-green-strong));
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-quick-number {
@@ -1594,6 +1781,39 @@
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 12px;
     margin-top: 18px;
+}
+
+.pms-configurable-overview {
+    --dashboard-config-primary: var(--pms-green);
+    --dashboard-config-text: var(--pms-ink);
+    --dashboard-config-muted: var(--pms-muted);
+    --dashboard-config-card: var(--pms-surface);
+    --dashboard-config-surface: var(--pms-soft);
+    --dashboard-config-border: var(--pms-line);
+    --dashboard-config-radius: 16px;
+    --dashboard-config-gap: 12px;
+    margin-top: 30px;
+}
+
+.pms-configurable-overview .dashboard-config-toolbar {
+    margin-bottom: 18px;
+}
+
+.pms-configurable-overview .dashboard-widget-content > .pms-quick-section,
+.pms-configurable-overview .dashboard-widget-content > .pms-metrics,
+.pms-configurable-overview .dashboard-widget-content > .pms-setup-panel {
+    margin-top: 0;
+}
+
+.pms-configurable-overview .dashboard-widget-content > .pms-panel,
+.pms-configurable-overview .dashboard-widget-content > .pms-setup-panel {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pms-configurable-overview .dashboard-widget--size-m .pms-quick-grid,
+.pms-configurable-overview .dashboard-widget--size-l .pms-quick-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
 }
 
 .pms-panel {
@@ -1683,7 +1903,7 @@
     border: 0;
     border-radius: 9px;
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
     cursor: pointer;
     font-size: 0.67rem;
     font-weight: 750;
@@ -1859,7 +2079,7 @@
     border: 0;
     border-radius: 10px;
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
     cursor: pointer;
     font-size: 0.7rem;
     font-weight: 800;
@@ -1913,7 +2133,7 @@
 
 .pms-setup-list li.is-next > span {
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-setup-list li.is-done {
@@ -2051,7 +2271,7 @@
 
 .pms-setup-tabs button.is-active span {
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-setup-tabs button:disabled {
@@ -2204,7 +2424,7 @@
     padding: 0 15px;
     border-color: var(--pms-green);
     background: var(--pms-green);
-    color: #fff;
+    color: var(--pms-on-accent);
 }
 
 .pms-setup-workspace .pms-form-actions button:disabled {
@@ -2499,8 +2719,9 @@
     --pms-page-background: #15171c;
     --pms-surface: #1f2127;
     --pms-soft: #252830;
-    --pms-green: #6b7cff;
-    --pms-green-strong: #475bff;
+    --pms-green: #8290ff;
+    --pms-green-strong: #6b7cff;
+    --pms-on-accent: #10131b;
     --pms-accent-text: #aeb8ff;
     --pms-accent-soft: rgba(107, 124, 255, 0.16);
     --pms-success: #4ade80;
@@ -2587,6 +2808,10 @@
 }
 
 @media (max-width: 980px) {
+    .pms-configurable-overview .dashboard-widget--size-m {
+        grid-column: 1 / -1;
+    }
+
     .pms-app-shell {
         grid-template-columns: 78px minmax(0, 1fr);
     }
@@ -2677,6 +2902,7 @@
         z-index: 20;
         display: block;
         overflow-x: auto;
+        overflow-y: hidden;
         padding: 8px 12px;
         border-right: 0;
         border-bottom: 1px solid var(--pms-line);
@@ -2693,6 +2919,10 @@
         flex-direction: row;
         width: max-content;
         margin: 0;
+    }
+
+    .pms-nav-group {
+        flex-direction: row;
     }
 
     .pms-section-nav button {

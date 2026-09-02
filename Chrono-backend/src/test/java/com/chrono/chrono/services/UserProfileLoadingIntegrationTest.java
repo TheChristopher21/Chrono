@@ -59,7 +59,7 @@ class UserProfileLoadingIntegrationTest {
             Company company = new Company("Chrono Hotel");
             company.setCantonAbbreviation("ZH");
             company.setCustomerTrackingEnabled(true);
-            company.setEnabledFeatures(Set.of("projects"));
+            company.setEnabledFeatures(Set.of("projects", "pms"));
             company = companyRepository.save(company);
 
             Customer customer = new Customer();

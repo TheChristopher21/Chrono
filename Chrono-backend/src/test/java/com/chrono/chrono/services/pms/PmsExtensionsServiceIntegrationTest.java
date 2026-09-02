@@ -97,6 +97,10 @@ class PmsExtensionsServiceIntegrationTest {
     void exposesARealPublicBookingFlowUsingPmsAvailability() {
         service.updateBookingSettings(company, property.getId(), new PmsExtensionsRequests.BookingSettings(
                 "chrono-zuerich", true, true, "https://hotel.example/agb", "https://hotel.example/datenschutz", "Bis bald"));
+        assertThat(operationsService.getAvailability(company, property.getId(), arrival, arrival.plusDays(2))
+                .roomTypes().get(0).freeRooms()).isNotEmpty();
+        assertThat(service.publicAvailability("chrono-zuerich", arrival, arrival.plusDays(2))
+                .roomTypes().get(0).freeRooms()).isEmpty();
 
         var request = new PmsExtensionsRequests.PublicBooking(
                 arrival, arrival.plusDays(2), ratePlan.getId(), 2, 0, "Raja", "Siefert",

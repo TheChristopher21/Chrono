@@ -61,6 +61,9 @@ import PmsBookingPage from "./pages/Pms/PmsBookingPage.jsx";
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import DataRefreshQueryBridge from "./components/DataRefreshQueryBridge.jsx";
+// Absichtlich zuletzt: ausschließlich mobile Browser-Korrekturen (Desktop bleibt unberührt).
+import "./styles/mobile-browser.css";
 
 const queryClient = new QueryClient();
 
@@ -68,9 +71,16 @@ function App() {
     // NEU: Auth-Token prüfen, um zu entscheiden, ob der Chatbot angezeigt wird
     const { authToken, currentUser } = useAuth();
     const chatbotEnabled = Boolean(authToken && currentUser?.companyFeatureKeys?.includes("chatbot"));
+    const dataCacheIdentity = authToken
+        ? [
+            currentUser?.company?.id ?? currentUser?.companyId ?? 'company-pending',
+            currentUser?.id ?? currentUser?.username ?? 'user-pending',
+        ].join(':')
+        : 'signed-out';
 
     return (
         <QueryClientProvider client={queryClient}>
+            <DataRefreshQueryBridge identity={dataCacheIdentity} />
             <ErrorBoundary>
                 <div className="App">
                     <AnalyticsTracker />
@@ -95,7 +105,7 @@ function App() {
                         <Route path="/personal-data" element={<PrivateRoute requiredPagePermission="personalData"><PersonalDataPage /></PrivateRoute>} />
                         <Route path="/payslips" element={<PrivateRoute requiredPagePermission="payslips"><PayslipsPage /></PrivateRoute>} />
                         <Route path="/demo-tour" element={<PrivateRoute requiredPagePermission="demoTour"><DemoTour /></PrivateRoute>} />
-                        <Route path="/pms" element={<PrivateRoute requiredPagePermission="pms"><PmsDashboard /></PrivateRoute>} />
+                        <Route path="/pms" element={<PrivateRoute requiredFeature="pms" requiredPagePermission="pms"><PmsDashboard /></PrivateRoute>} />
                         <Route
                             path="/workspace/supply-chain"
                             element={

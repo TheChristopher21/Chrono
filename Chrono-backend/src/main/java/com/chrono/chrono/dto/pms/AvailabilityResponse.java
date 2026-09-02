@@ -1,5 +1,7 @@
 package com.chrono.chrono.dto.pms;
 
+import com.chrono.chrono.entities.pms.HousekeepingStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +19,17 @@ public record AvailabilityResponse(
             long totalRooms,
             long soldRooms,
             long availableRooms,
-            List<RateOption> rates
+            List<RateOption> rates,
+            List<AvailableRoom> freeRooms
+    ) {
+    }
+
+    public record AvailableRoom(
+            Long roomId,
+            String roomNumber,
+            String floor,
+            HousekeepingStatus housekeepingStatus,
+            boolean checkInReady
     ) {
     }
 

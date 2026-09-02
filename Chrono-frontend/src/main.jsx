@@ -9,6 +9,7 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { CustomerProvider } from "./context/CustomerContext";
 import { ProjectProvider } from "./context/ProjectContext";
 import { TaskProvider } from "./context/TaskContext";
+import { WorkspaceTabsProvider } from "./components/workspace/WorkspaceTabsContext.jsx";
 import "./styles/global.css";
 
 const structuredData = document.createElement("script");
@@ -43,17 +44,19 @@ root.render(
         {/* LanguageProvider muss die Provider umschließen, die useTranslation() verwenden */}
         <LanguageProvider>
             <AuthProvider>
-                <CustomerProvider>
-                    <ProjectProvider>
-                        <TaskProvider>
-                            <NotificationProvider>
-                                <React.StrictMode>
-                                    <App />
-                                </React.StrictMode>
-                            </NotificationProvider>
-                        </TaskProvider>
-                    </ProjectProvider>
-                </CustomerProvider>
+                <WorkspaceTabsProvider>
+                    <CustomerProvider>
+                        <ProjectProvider>
+                            <TaskProvider>
+                                <NotificationProvider>
+                                    <React.StrictMode>
+                                        <App />
+                                    </React.StrictMode>
+                                </NotificationProvider>
+                            </TaskProvider>
+                        </ProjectProvider>
+                    </CustomerProvider>
+                </WorkspaceTabsProvider>
             </AuthProvider>
         </LanguageProvider>
     </BrowserRouter>

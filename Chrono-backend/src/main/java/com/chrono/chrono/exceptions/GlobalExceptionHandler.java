@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -167,6 +168,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(UiPreferenceRevisionConflictException.class)
+    public ResponseEntity<ErrorResponse> handleUiPreferenceRevisionConflict(
+            UiPreferenceRevisionConflictException ex
+    ) {
+        logger.warn("UI preference revision conflict: {}", ex.getMessage());
+        return new ResponseEntity<>(new ErrorResponse("Preference revision conflict."), HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -174,6 +183,12 @@ public class GlobalExceptionHandler {
                 .map(error -> validationMessage(error.getField(), error.getCode()))
                 .orElse("Die Eingabe ist ungültig.");
         return new ResponseEntity<>(new ErrorResponse(message), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableRequest(HttpMessageNotReadableException ex) {
+        logger.warn("Unreadable request body: {}", ex.getMessage());
+        return new ResponseEntity<>(new ErrorResponse("Der Request-Body ist ungültig."), HttpStatus.BAD_REQUEST);
     }
 
     private String validationMessage(String field, String validationCode) {

@@ -19,6 +19,7 @@ import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
 import "../../styles/AdminDashboardScoped.css";
 import { getUserDisplayName, getUserSearchText } from "../../utils/userDisplay";
+import { formatRequestAdmin } from "../../utils/correctionActor";
 
 /* ⇢ Helper to derive a readable status ------------------------------------ */
 const getStatus = (req) => {
@@ -284,6 +285,9 @@ function AdminCorrectionsList({
                                     const ids = g.entries.map((e) => e.id);
                                     const requestAnchor = `correction-${g.id}`;
                                     const isFocusedRequest = focusedRequestKey === requestAnchor;
+                                    const processedByAdmins = [...new Set(
+                                        g.entries.map((entry) => formatRequestAdmin(entry, t)).filter(Boolean)
+                                    )].join(', ');
 
                                     return (
                                         <React.Fragment key={g.id}>
@@ -314,6 +318,7 @@ function AdminCorrectionsList({
                                                 <td>
                             <span className={`status-badge status-${statusClass}`}>
                               {t(`adminDashboard.status${g.status}`, g.status)}
+                              {processedByAdmins && ` · ${processedByAdmins}`}
                             </span>
                                                 </td>
                                                 <td

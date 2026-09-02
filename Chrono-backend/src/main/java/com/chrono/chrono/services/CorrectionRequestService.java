@@ -8,6 +8,7 @@ import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.CorrectionRequestRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.utils.UserInitials;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
@@ -178,6 +179,8 @@ public class CorrectionRequestService {
             );
             newEntry.setCorrectedByUser(true);
             newEntry.setSystemGeneratedNote("Korrektur genehmigt von " + adminUsername + ".");
+            newEntry.setCorrectionAdminUsername(adminUser.getUsername());
+            newEntry.setCorrectionAdminInitials(UserInitials.from(adminUser));
             timeTrackingEntryRepo.save(newEntry);
             logger.info("Admin {}: Neuen korrigierten TimeTrackingEntry für Benutzer {} erstellt: {} {}",
                     adminUsername, targetUser.getUsername(), newEntry.getEntryTimestamp(), newEntry.getPunchType());
@@ -187,6 +190,8 @@ public class CorrectionRequestService {
             req.setApproved(true);
             req.setDenied(false);
             req.setAdminComment(comment);
+            req.setProcessedByAdminUsername(adminUser.getUsername());
+            req.setProcessedByAdminInitials(UserInitials.from(adminUser));
             correctionRepo.save(req);
         }
 
@@ -222,8 +227,9 @@ public class CorrectionRequestService {
     public CorrectionRequest denyRequest(Long requestId, String comment, String adminUsername) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
+        User adminUser = null;
         if (adminUsername != null) {
-            User adminUser = userRepo.findByUsername(adminUsername)
+            adminUser = userRepo.findByUsername(adminUsername)
                     .orElseThrow(() -> new SecurityException("Admin not found: " + adminUsername));
             if (!accessControlService.isSuperAdmin(adminUser)) {
                 if (!accessControlService.isAdmin(adminUser)
@@ -238,6 +244,10 @@ public class CorrectionRequestService {
         req.setDenied(true);
         req.setApproved(false);
         req.setAdminComment(comment);
+        if (adminUser != null) {
+            req.setProcessedByAdminUsername(adminUser.getUsername());
+            req.setProcessedByAdminInitials(UserInitials.from(adminUser));
+        }
         return correctionRepo.save(req);
     }
 
@@ -270,6 +280,8 @@ public class CorrectionRequestService {
                 request.isApproved(),
                 request.isDenied(),
                 request.getAdminComment(),
+                request.getProcessedByAdminUsername(),
+                request.getProcessedByAdminInitials(),
                 originalTimestamp,
                 originalPunchType,
                 targetEntryId

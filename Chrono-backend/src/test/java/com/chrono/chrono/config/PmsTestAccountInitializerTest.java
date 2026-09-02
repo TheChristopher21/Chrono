@@ -60,14 +60,14 @@ class PmsTestAccountInitializerTest {
 
         initializer.run();
 
-        verify(userRepository, never()).findByUsername(any());
+        verify(userRepository, never()).findByUsernameWithPermissionContext(any());
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void createsTestUserWithPmsPermissionAndEncodedPassword() {
         ReflectionTestUtils.setField(initializer, "enabled", true);
-        when(userRepository.findByUsername("Christopher")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameWithPermissionContext("Christopher")).thenReturn(Optional.empty());
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(new Role("ROLE_USER")));
         when(companyRepository.findAll()).thenReturn(java.util.List.of());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -84,6 +84,7 @@ class PmsTestAccountInitializerTest {
                 .containsEntry(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_MANAGE);
         assertThat(savedUser.getValue().isIncludeInTimeTracking()).isFalse();
         assertThat(savedUser.getValue().getCompany()).isNotNull();
+        assertThat(savedUser.getValue().getCompany().getEnabledFeatures()).contains("pms");
     }
 
     @Test
@@ -103,7 +104,7 @@ class PmsTestAccountInitializerTest {
         existingUser.setPassword("existing-password-hash");
         existingUser.setCompany(new Company("Existing Company"));
         existingUser.getRoles().add(new Role("ROLE_ADMIN"));
-        when(userRepository.findByUsername("Christopher")).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsernameWithPermissionContext("Christopher")).thenReturn(Optional.of(existingUser));
 
         initializer.run();
 
@@ -112,5 +113,6 @@ class PmsTestAccountInitializerTest {
         assertThat(existingUser.getPassword()).isEqualTo("existing-password-hash");
         assertThat(existingUser.getPagePermissions())
                 .containsEntry(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_MANAGE);
+        assertThat(existingUser.getCompany().getEnabledFeatures()).contains("pms");
     }
 }

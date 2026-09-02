@@ -76,7 +76,7 @@ class ApiPagePermissionInterceptorTest {
 
     @Test
     void allowsPmsSetupReadWithPmsViewAccess() {
-        User user = user("reception", "ROLE_USER", Set.of(),
+        User user = user("reception", "ROLE_USER", Set.of("pms"),
                 Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
         authenticate(user);
 
@@ -89,12 +89,25 @@ class ApiPagePermissionInterceptorTest {
 
     @Test
     void deniesPmsSetupWriteWithPmsViewAccess() {
-        User user = user("reception", "ROLE_USER", Set.of(),
+        User user = user("reception", "ROLE_USER", Set.of("pms"),
                 Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
         authenticate(user);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         boolean allowed = interceptor.preHandle(request("POST", "/api/pms/properties"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void deniesPmsSetupReadWhenCompanyFeatureIsDisabledDespiteStalePagePermission() {
+        User user = user("reception", "ROLE_USER", Set.of(),
+                Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("GET", "/api/pms/setup"), response, new Object());
 
         assertFalse(allowed);
         assertEquals(403, response.getStatus());

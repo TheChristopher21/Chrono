@@ -3,6 +3,7 @@ import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
 import { useAuth } from './AuthContext';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 export const CustomerContext = createContext();
 
@@ -62,6 +63,13 @@ export const CustomerProvider = ({ children }) => {
             throw err;
         }
     }, [notify, t]);
+
+    useRefreshOnMutation(['customers'], fetchCustomers, {
+        enabled: Boolean(authToken && isCustomerTrackingEnabled),
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         if (authToken && isCustomerTrackingEnabled) {

@@ -330,7 +330,25 @@ public class PmsExtensionsService {
     public AvailabilityResponse publicAvailability(String propertyCode, LocalDate arrival, LocalDate departure) {
         HotelProperty property = requirePublicProperty(propertyCode);
         validatePublicStay(arrival, departure);
-        return operationsService.getAvailability(property.getCompany(), property.getId(), arrival, departure);
+        AvailabilityResponse internal = operationsService.getAvailability(
+                property.getCompany(), property.getId(), arrival, departure);
+        return new AvailabilityResponse(
+                internal.propertyId(),
+                internal.arrivalDate(),
+                internal.departureDate(),
+                internal.roomTypes().stream()
+                        .map(roomType -> new AvailabilityResponse.RoomTypeAvailability(
+                                roomType.roomTypeId(),
+                                roomType.code(),
+                                roomType.name(),
+                                roomType.totalRooms(),
+                                roomType.soldRooms(),
+                                roomType.availableRooms(),
+                                roomType.rates(),
+                                List.of()
+                        ))
+                        .toList()
+        );
     }
 
     @Transactional

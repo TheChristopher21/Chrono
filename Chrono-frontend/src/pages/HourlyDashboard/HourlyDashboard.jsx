@@ -9,7 +9,7 @@ import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
-import { useUserData } from '../../hooks/useUserData';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import { useCustomers } from '../../context/CustomerContext';
 import jsPDF from 'jspdf';
 import autoTable from "jspdf-autotable";
@@ -34,16 +34,23 @@ import PrintReportModal from '../../components/PrintReportModal.jsx';
 import {
     CALCULATION_STATUS,
 } from '../../components/CalculationStatusNotice.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 
 import '../../styles/HourlyDashboardScoped.css';
+
+const HOURLY_DASHBOARD_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'company',
+];
 
 const HourlyDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     // KORREKTUR: Wir benötigen die 'punch'-Funktion aus dem AuthContext nicht.
     const { currentUser } = useAuth();
-    const { refreshData } = useUserData();
-
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
     const { customers, fetchCustomers } = useCustomers();
@@ -86,9 +93,6 @@ const HourlyDashboard = () => {
             const newEntry = response.data;
             setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             setTimeout(() => setPunchMessage(''), 3000);
-            fetchWeeklyData(selectedMonday);
-            fetchMonthlySummary(selectedMonday);
-            fetchDataForUser();
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
@@ -100,8 +104,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             const params = { username: currentUser.username, date: isoDate };
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/day/customer', null, { params });
-            fetchWeeklyData(selectedMonday);
-            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer', err);
@@ -114,8 +116,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             const params = { username: currentUser.username, date: isoDate, startTime, endTime };
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/range/customer', null, { params });
-            fetchWeeklyData(selectedMonday);
-            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer range', err);
@@ -128,8 +128,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             const params = { username: currentUser.username, date: isoDate };
             if (projectId) params.projectId = projectId;
             await api.put('/api/timetracking/day/project', null, { params });
-            fetchWeeklyData(selectedMonday);
-            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving project', err);
@@ -219,6 +217,37 @@ const assignCustomerForDay = async (isoDate, customerId) => {
         }
     }, [currentUser, notify]);
 
+    const refreshHourlyDashboard = useCallback(async () => {
+        if (!currentUser?.username) return;
+
+        await Promise.all([
+            fetchDataForUser(),
+            fetchWeeklyData(selectedMonday),
+            fetchMonthlySummary(selectedMonday),
+            fetchCorrectionRequests(),
+        ]);
+    }, [currentUser?.username, fetchCorrectionRequests, fetchDataForUser, fetchMonthlySummary, fetchWeeklyData, selectedMonday]);
+
+    useRefreshOnMutation(
+        HOURLY_DASHBOARD_REFRESH_SCOPES,
+        refreshHourlyDashboard,
+        {
+            enabled: Boolean(currentUser?.username),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
+
+    const applyHourlyLocalMutation = useCallback((change) => {
+        if (change?.type !== 'dailyNote' || !change.date) return;
+        setDailySummaries((current) => current.map((summary) => (
+            summary.date === change.date
+                ? { ...summary, dailyNote: change.note }
+                : summary
+        )));
+    }, []);
+
     useEffect(() => {
         const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
         if (trackingEnabled) {
@@ -287,7 +316,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             await Promise.all(correctionPromises);
             notify(t('userDashboard.correctionSuccess'), 'success');
             setShowCorrectionModal(false);
-            fetchCorrectionRequests();
         } catch (error) {
             console.error('Fehler beim Absenden der Korrekturanträge:', error);
             const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
@@ -350,40 +378,97 @@ const assignCustomerForDay = async (isoDate, customerId) => {
 
             </header>
 
-            <AccessiblePagesPanel
-                context="user"
-                title="Deine freigegebenen Seiten"
-                subtitle="Zusätzliche freigegebene Bereiche erscheinen direkt hier im Dashboard."
-            />
-
-            <HourlyWeekOverview
-                t={t}
-                dailySummaries={dailySummaries}
-                selectedMonday={selectedMonday}
-                setSelectedMonday={setSelectedMonday}
-                openCorrectionModal={handleOpenCorrectionModal}
-                weeklyTotalMins={weeklyTotalMins}
-                monthlyTotalMins={monthlyTotalMins}
-                weekCalculationStatus={weekPeriodStatus}
-                monthCalculationStatus={monthPeriodStatus}
-                handleManualPunch={handleManualPunch}
-                punchMessage={punchMessage}
-                userProfile={userProfile}
-                customers={customers}
-                recentCustomers={recentCustomers}
-                projects={projects}
-                tasks={tasks}
-                selectedCustomerId={selectedCustomerId}
-                setSelectedCustomerId={setSelectedCustomerId}
-                selectedProjectId={selectedProjectId}
-                setSelectedProjectId={setSelectedProjectId}
-                selectedTaskId={selectedTaskId}
-                setSelectedTaskId={setSelectedTaskId}
-                assignCustomerForDay={assignCustomerForDay}
-                assignCustomerForRange={assignCustomerForRange}
-                assignProjectForDay={assignProjectForDay}
-                reloadData={() => fetchWeeklyData(selectedMonday)}
-                vacationRequests={vacationRequests}
+            <ConfigurableDashboard
+                context="USER_HOURLY"
+                permissionContext={currentUser}
+                storageIdentity={currentUser?.id || currentUser?.username}
+                registry={[
+                    {
+                        id: 'quick-links',
+                        title: t('dashboardWidgets.quickLinks', 'Freigegebene Seiten'),
+                        requiredPagePermission: 'dashboard',
+                        defaultSize: 'full',
+                        sizes: ['M', 'L', 'full'],
+                        component: (
+                            <AccessiblePagesPanel
+                                context="user"
+                                title="Deine freigegebenen Seiten"
+                                subtitle="Zusätzliche freigegebene Bereiche erscheinen direkt hier im Dashboard."
+                            />
+                        ),
+                    },
+                    {
+                        id: 'weekly-time',
+                        title: t('dashboardWidgets.weeklyTime', 'Zeiterfassung & Wochenübersicht'),
+                        requiredPagePermission: 'dashboard',
+                        defaultSize: 'full',
+                        sizes: ['L', 'full'],
+                        component: (
+                            <HourlyWeekOverview
+                                t={t}
+                                dailySummaries={dailySummaries}
+                                selectedMonday={selectedMonday}
+                                setSelectedMonday={setSelectedMonday}
+                                openCorrectionModal={handleOpenCorrectionModal}
+                                weeklyTotalMins={weeklyTotalMins}
+                                monthlyTotalMins={monthlyTotalMins}
+                                weekCalculationStatus={weekPeriodStatus}
+                                monthCalculationStatus={monthPeriodStatus}
+                                handleManualPunch={handleManualPunch}
+                                punchMessage={punchMessage}
+                                userProfile={userProfile}
+                                customers={customers}
+                                recentCustomers={recentCustomers}
+                                projects={projects}
+                                tasks={tasks}
+                                selectedCustomerId={selectedCustomerId}
+                                setSelectedCustomerId={setSelectedCustomerId}
+                                selectedProjectId={selectedProjectId}
+                                setSelectedProjectId={setSelectedProjectId}
+                                selectedTaskId={selectedTaskId}
+                                setSelectedTaskId={setSelectedTaskId}
+                                assignCustomerForDay={assignCustomerForDay}
+                                assignCustomerForRange={assignCustomerForRange}
+                                assignProjectForDay={assignProjectForDay}
+                                reloadData={applyHourlyLocalMutation}
+                                vacationRequests={vacationRequests}
+                            />
+                        ),
+                    },
+                    {
+                        id: 'vacation',
+                        title: t('dashboardWidgets.vacation', 'Urlaub & Abwesenheiten'),
+                        requiredPagePermission: 'dashboard',
+                        defaultSize: 'full',
+                        sizes: ['M', 'L', 'full'],
+                        component: (
+                            <HourlyVacationSection
+                                t={t}
+                                userProfile={userProfile}
+                                vacationRequests={vacationRequests}
+                            />
+                        ),
+                    },
+                    {
+                        id: 'corrections',
+                        title: t('dashboardWidgets.corrections', 'Korrekturanträge'),
+                        requiredPagePermission: 'dashboard',
+                        defaultSize: 'full',
+                        sizes: ['M', 'L', 'full'],
+                        component: (
+                            <HourlyCorrectionsPanel
+                                t={t}
+                                correctionRequests={correctionRequests}
+                                selectedCorrectionMonday={selectedCorrectionMonday}
+                                setSelectedCorrectionMonday={setSelectedCorrectionMonday}
+                                showCorrectionsPanel={showCorrectionsPanel}
+                                setShowCorrectionsPanel={setShowCorrectionsPanel}
+                                showAllCorrections={showAllCorrections}
+                                setShowAllCorrections={setShowAllCorrections}
+                            />
+                        ),
+                    },
+                ]}
             />
 
             <PrintReportModal
@@ -396,24 +481,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 onConfirm={handlePrintReport}
                 onClose={() => setPrintModalVisible(false)}
                 cssScope="hourly"
-            />
-
-            <HourlyVacationSection
-                t={t}
-                userProfile={userProfile}
-                vacationRequests={vacationRequests}
-                onRefreshVacations={fetchDataForUser}
-            />
-
-            <HourlyCorrectionsPanel
-                t={t}
-                correctionRequests={correctionRequests}
-                selectedCorrectionMonday={selectedCorrectionMonday}
-                setSelectedCorrectionMonday={setSelectedCorrectionMonday}
-                showCorrectionsPanel={showCorrectionsPanel}
-                setShowCorrectionsPanel={setShowCorrectionsPanel}
-                showAllCorrections={showAllCorrections}
-                setShowAllCorrections={setShowAllCorrections}
             />
 
             <CorrectionModal

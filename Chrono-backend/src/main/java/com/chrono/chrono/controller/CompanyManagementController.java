@@ -101,7 +101,11 @@ public class CompanyManagementController {
         company.setNotifyVacation(body.getNotifyVacation());
         company.setNotifyOvertime(body.getNotifyOvertime());
         company.setCustomerTrackingEnabled(body.getCustomerTrackingEnabled());
-        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures()));
+        LinkedHashSet<String> enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures());
+        if (Boolean.TRUE.equals(body.getAdminPmsAccess())) {
+            enabledFeatures.add("pms");
+        }
+        company.setEnabledFeatures(enabledFeatures);
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);

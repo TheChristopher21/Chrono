@@ -360,7 +360,7 @@ AdminVacationRequests.propTypes = {
     ).isRequired,
     handleApproveVacation: PropTypes.func.isRequired,
     handleDenyVacation: PropTypes.func.isRequired,
-    onReloadVacations: PropTypes.func.isRequired, // Wichtig für die Aktualisierung der Liste
+    onReloadVacations: PropTypes.func,
     openSignal: PropTypes.number,
     canManage: PropTypes.bool,
     users: PropTypes.arrayOf(PropTypes.object),

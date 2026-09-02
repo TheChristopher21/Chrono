@@ -3,6 +3,7 @@ import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
 import { useAuth } from './AuthContext';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 export const ProjectContext = createContext();
 
@@ -122,6 +123,13 @@ export const ProjectProvider = ({ children }) => {
   }, [fetchProjects, pushNotification, translate]);
 
   const customerTrackingEnabled = currentUser?.customerTrackingEnabled;
+
+  useRefreshOnMutation(['projects', 'customers'], fetchProjects, {
+    enabled: Boolean(authToken && customerTrackingEnabled),
+    refreshOnLocalMutation: false,
+    refreshOnFocus: true,
+    focusThrottleMs: 30_000,
+  });
 
   useEffect(() => {
     if (!authToken) {

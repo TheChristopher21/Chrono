@@ -1,22 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation.js';
 import api from '../../utils/api.js';
 import { ACCESS_MANAGE, hasPageAccess, isAdminUser } from '../../utils/pageAccess.js';
 import { getUserDisplayName } from '../../utils/userDisplay.js';
 import PmsSetupWorkspace from './PmsSetupWorkspace.jsx';
 import PmsOperationsWorkspace from './PmsOperationsWorkspace.jsx';
 import { getPmsEnumLabel } from './pmsTerminology.js';
-import { PMS_SECTION_KEYS, PMS_SECTIONS } from './pmsNavigation.js';
+import { PMS_NAVIGATION_GROUPS, PMS_SECTION_KEYS } from './pmsNavigation.js';
 import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import '../../styles/PmsDashboardScoped.css';
 
 const quickActions = [
     {
+        key: 'walk-in',
+        label: 'Gast vor Ort aufnehmen',
+        description: 'Gastdaten, Meldeschein, Zimmer und Check-in in einem Ablauf',
+        shortcut: 'Alt W',
+    },
+    {
         key: 'reservation',
-        label: 'Neue Reservierung',
-        description: 'Einzelreservierung oder Walk-in erfassen',
+        label: 'Reservierung anlegen',
+        description: 'Telefon-, E-Mail- oder Direktbuchung erfassen',
         shortcut: 'Ctrl N',
     },
     {
@@ -47,12 +55,35 @@ const quickActions = [
 
 const commandItems = [
     { key: 'setup', label: 'Hotel und Zimmer einrichten', hint: 'Ctrl E' },
-    { key: 'reservation', label: 'Neue Reservierung anlegen', hint: 'Ctrl N' },
+    { key: 'walk-in', label: 'Gast vor Ort aufnehmen und einchecken', hint: 'Alt W' },
+    { key: 'reservation', label: 'Direktreservierung anlegen', hint: 'Ctrl N' },
     { key: 'guest-search', label: 'Gast oder Reservierung suchen', hint: 'Ctrl G' },
     { key: 'check-in', label: 'Gast einchecken', hint: 'Ctrl I' },
     { key: 'check-out', label: 'Gast auschecken', hint: 'Ctrl O' },
     { key: 'payment', label: 'Zahlung erfassen', hint: 'Ctrl P' },
     { key: 'room-plan', label: 'Zimmerplan öffnen', hint: 'Ctrl R' },
+];
+
+const SIMPLE_PMS_SECTION_KEYS = new Set([
+    'overview',
+    'reservations',
+    'room-plan',
+    'guests',
+    'folios',
+    'digital-check-in',
+    'housekeeping',
+]);
+
+const PMS_DASHBOARD_DEFAULT_LAYOUT = [
+    { id: 'quick-actions', visible: true, order: 0, size: 'full' },
+    { id: 'metrics', visible: true, order: 1, size: 'full' },
+    { id: 'arrivals', visible: true, order: 2, size: 'M' },
+    { id: 'room-status', visible: true, order: 3, size: 'M' },
+    { id: 'departures-folios', visible: true, order: 4, size: 'M' },
+    { id: 'housekeeping', visible: true, order: 5, size: 'M' },
+    { id: 'systems', visible: true, order: 6, size: 'M' },
+    { id: 'checks', visible: true, order: 7, size: 'M' },
+    { id: 'setup', visible: true, order: 8, size: 'full' },
 ];
 
 const emptySetup = {
@@ -119,6 +150,15 @@ const PmsDashboard = () => {
     const [operationMode, setOperationMode] = useState('simple');
     const requestedSection = searchParams.get('section') ?? 'overview';
     const activeNavigation = PMS_SECTION_KEYS.has(requestedSection) ? requestedSection : 'overview';
+    const navigationGroups = useMemo(() => {
+        if (operationMode === 'pro') return PMS_NAVIGATION_GROUPS;
+        return PMS_NAVIGATION_GROUPS
+            .map((group) => ({
+                ...group,
+                items: group.items.filter((item) => SIMPLE_PMS_SECTION_KEYS.has(item.key)),
+            }))
+            .filter((group) => group.items.length > 0);
+    }, [operationMode]);
     const [commandOpen, setCommandOpen] = useState(false);
     const [commandQuery, setCommandQuery] = useState('');
     const [selectedAction, setSelectedAction] = useState(null);
@@ -136,6 +176,9 @@ const PmsDashboard = () => {
     const commandInputRef = useRef(null);
     const commandTriggerRef = useRef(null);
     const commandReturnFocusRef = useRef(null);
+    const setupRequestRef = useRef(null);
+    const operationsRequestRef = useRef(null);
+    const healthRequestRef = useRef(null);
 
     const navigateToSection = useCallback((sectionKey, options = {}) => {
         const nextParams = new URLSearchParams(searchParams);
@@ -258,126 +301,139 @@ const PmsDashboard = () => {
         }
     }, [navigateToSection, requestedSection]);
 
-    useEffect(() => {
-        let cancelled = false;
-        const loadSetup = async () => {
-            setSetupLoading(true);
-            setSetupError('');
-            try {
-                const response = await api.get('/api/pms/setup');
-                if (cancelled) return;
-                setSetup(response.data ?? emptySetup);
-                const firstPropertyId = response.data?.properties?.[0]?.id ?? null;
-                setActivePropertyId((current) => current ?? firstPropertyId);
-            } catch (error) {
-                if (cancelled) return;
-                setSetupError(
-                    error?.response?.data?.detail
-                    || error?.response?.data?.message
-                    || 'Die PMS-Stammdaten konnten nicht geladen werden.'
-                );
-            } finally {
-                if (!cancelled) setSetupLoading(false);
+    const loadSetup = useCallback(async ({ background = false } = {}) => {
+        setupRequestRef.current?.abort();
+        const controller = new AbortController();
+        setupRequestRef.current = controller;
+        if (!background) setSetupLoading(true);
+        setSetupError('');
+        try {
+            const response = await api.get('/api/pms/setup', { signal: controller.signal });
+            if (controller.signal.aborted || setupRequestRef.current !== controller) return;
+            setSetup(response.data ?? emptySetup);
+            const firstPropertyId = response.data?.properties?.[0]?.id ?? null;
+            setActivePropertyId((current) => {
+                const propertyStillExists = response.data?.properties?.some((property) => property.id === current);
+                return propertyStillExists ? current : firstPropertyId;
+            });
+        } catch (error) {
+            if (controller.signal.aborted || setupRequestRef.current !== controller) return;
+            setSetupError(
+                error?.response?.data?.detail
+                || error?.response?.data?.message
+                || 'Die PMS-Stammdaten konnten nicht geladen werden.'
+            );
+        } finally {
+            if (setupRequestRef.current === controller) {
+                setupRequestRef.current = null;
+                setSetupLoading(false);
             }
-        };
-        loadSetup();
-        return () => {
-            cancelled = true;
-        };
+        }
     }, []);
 
-    useEffect(() => {
+    const loadOperations = useCallback(async ({ background = false } = {}) => {
+        operationsRequestRef.current?.abort();
         if (!activeProperty?.id) {
+            operationsRequestRef.current = null;
             setOperations(emptyOperations);
-            setOperationalHealth(emptyHealth);
-            return undefined;
-        }
-        let cancelled = false;
-        const loadOperations = async () => {
-            setOperationsLoading(true);
             setOperationsError('');
-            try {
-                const response = await api.get('/api/pms/operations', {
-                    params: {
-                        propertyId: activeProperty.id,
-                        businessDate: toDateKey(businessDate),
-                    },
-                });
-                if (!cancelled) setOperations(response.data ?? emptyOperations);
-            } catch (error) {
-                if (!cancelled) setOperationsError(
-                    error?.response?.data?.detail
-                    || error?.response?.data?.message
-                    || 'Die operativen PMS-Daten konnten nicht geladen werden.'
-                );
-            } finally {
-                if (!cancelled) setOperationsLoading(false);
+            if (!background) setOperationsLoading(false);
+            return;
+        }
+        const controller = new AbortController();
+        operationsRequestRef.current = controller;
+        if (!background) setOperationsLoading(true);
+        setOperationsError('');
+        try {
+            const response = await api.get('/api/pms/operations', {
+                params: {
+                    propertyId: activeProperty.id,
+                    businessDate: toDateKey(businessDate),
+                },
+                signal: controller.signal,
+            });
+            if (controller.signal.aborted || operationsRequestRef.current !== controller) return;
+            setOperations(response.data ?? emptyOperations);
+        } catch (error) {
+            if (controller.signal.aborted || operationsRequestRef.current !== controller) return;
+            setOperationsError(
+                error?.response?.data?.detail
+                || error?.response?.data?.message
+                || 'Die operativen PMS-Daten konnten nicht geladen werden.'
+            );
+        } finally {
+            if (operationsRequestRef.current === controller) {
+                operationsRequestRef.current = null;
+                setOperationsLoading(false);
             }
-        };
-        loadOperations();
-        return () => {
-            cancelled = true;
-        };
+        }
     }, [activeProperty?.id, businessDate]);
 
-    useEffect(() => {
+    const loadHealth = useCallback(async () => {
+        healthRequestRef.current?.abort();
         if (!activeProperty?.id) {
+            healthRequestRef.current = null;
             setOperationalHealth(emptyHealth);
             setHealthError('');
-            return undefined;
+            return;
         }
-        let cancelled = false;
-        const loadHealth = async () => {
-            try {
-                const response = await api.get('/api/pms/health', {
-                    params: { propertyId: activeProperty.id },
-                });
-                if (!cancelled) {
-                    setOperationalHealth(response.data ?? emptyHealth);
-                    setHealthError('');
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    setOperationalHealth(emptyHealth);
-                    setHealthError(
-                        error?.response?.data?.detail
-                        || error?.response?.data?.message
-                        || 'Der PMS-Betriebsstatus konnte nicht geprüft werden.'
-                    );
-                }
-            }
-        };
-        loadHealth();
-        return () => {
-            cancelled = true;
-        };
+        const controller = new AbortController();
+        healthRequestRef.current = controller;
+        try {
+            const response = await api.get('/api/pms/health', {
+                params: { propertyId: activeProperty.id },
+                signal: controller.signal,
+            });
+            if (controller.signal.aborted || healthRequestRef.current !== controller) return;
+            setOperationalHealth(response.data ?? emptyHealth);
+            setHealthError('');
+        } catch (error) {
+            if (controller.signal.aborted || healthRequestRef.current !== controller) return;
+            setOperationalHealth(emptyHealth);
+            setHealthError(
+                error?.response?.data?.detail
+                || error?.response?.data?.message
+                || 'Der PMS-Betriebsstatus konnte nicht geprüft werden.'
+            );
+        } finally {
+            if (healthRequestRef.current === controller) healthRequestRef.current = null;
+        }
     }, [activeProperty?.id]);
 
+    const refreshPms = useCallback(async () => {
+        await Promise.all([
+            loadSetup({ background: true }),
+            loadOperations({ background: true }),
+            loadHealth(),
+        ]);
+    }, [loadHealth, loadOperations, loadSetup]);
+
+    useRefreshOnMutation(['pms'], refreshPms, {
+        debounceMs: 120,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
+
     useEffect(() => {
-        const handleShortcut = (event) => {
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-                event.preventDefault();
-                setCommandOpen(true);
-            }
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
-                event.preventDefault();
-                setCommandOpen(false);
-                setSetupOpen(true);
-            }
-            if (event.key === 'Escape') {
-                if (commandOpen) {
-                    setCommandOpen(false);
-                } else if (setupOpen) {
-                    setSetupOpen(false);
-                } else if (activeNavigation !== 'overview') {
-                    navigateToSection('overview');
-                    setInitialOperationAction(null);
-                }
-            }
+        loadSetup();
+        return () => {
+            setupRequestRef.current?.abort();
         };
-        window.addEventListener('keydown', handleShortcut);
-        return () => window.removeEventListener('keydown', handleShortcut);
-    }, [activeNavigation, commandOpen, navigateToSection, setupOpen]);
+    }, [loadSetup]);
+
+    useEffect(() => {
+        loadOperations();
+        return () => {
+            operationsRequestRef.current?.abort();
+        };
+    }, [loadOperations]);
+
+    useEffect(() => {
+        loadHealth();
+        return () => {
+            healthRequestRef.current?.abort();
+        };
+    }, [loadHealth]);
 
     useEffect(() => {
         if (commandOpen) {
@@ -427,7 +483,14 @@ const PmsDashboard = () => {
             setCommandOpen(false);
             return;
         }
+        if (actionKey === 'walk-in') {
+            // A personal arrival is always handled on the actual local hotel day.
+            // Keeping the dashboard on a previously selected planning day would mix
+            // two business dates in the same reception workflow.
+            setBusinessDate(new Date());
+        }
         const targetSections = {
+            'walk-in': 'reservations',
             reservation: 'reservations',
             'check-in': 'reservations',
             'check-out': 'reservations',
@@ -446,6 +509,418 @@ const PmsDashboard = () => {
         setInitialOperationAction(null);
         setSelectedAction(null);
     };
+
+    useEffect(() => {
+        const handleShortcut = (event) => {
+            const key = event.key.toLowerCase();
+            const primaryModifier = event.ctrlKey || event.metaKey;
+
+            if (primaryModifier && key === 'k') {
+                event.preventDefault();
+                setCommandOpen(true);
+                return;
+            }
+            if (primaryModifier && key === 'e') {
+                event.preventDefault();
+                selectAction('setup');
+                return;
+            }
+            if (event.altKey && key === 'w') {
+                event.preventDefault();
+                selectAction('walk-in');
+                return;
+            }
+            const actionByKey = {
+                n: 'reservation',
+                i: 'check-in',
+                o: 'check-out',
+                g: 'guest-search',
+                p: 'payment',
+                r: 'room-plan',
+            };
+            if (primaryModifier && actionByKey[key]) {
+                event.preventDefault();
+                selectAction(actionByKey[key]);
+                return;
+            }
+            if (event.key === 'Escape') {
+                if (commandOpen) {
+                    setCommandOpen(false);
+                } else if (setupOpen) {
+                    setSetupOpen(false);
+                } else if (activeNavigation !== 'overview') {
+                    navigateToSection('overview');
+                    setInitialOperationAction(null);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleShortcut);
+        return () => window.removeEventListener('keydown', handleShortcut);
+    }, [activeNavigation, commandOpen, navigateToSection, setupOpen]);
+
+    const pmsDashboardRegistry = [
+        {
+            id: 'quick-actions',
+            title: 'Schnellaktionen',
+            description: 'Die häufigsten Rezeptionsvorgänge direkt starten.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'full',
+            sizes: ['L', 'full'],
+            component: (
+                <section className="pms-quick-section" aria-labelledby="pms-quick-heading">
+                    <div className="pms-section-heading">
+                        <div>
+                            <span className="pms-eyebrow">Rezeption</span>
+                            <h2 id="pms-quick-heading">Schnellaktionen</h2>
+                        </div>
+                        <p>
+                            {operationMode === 'simple'
+                                ? 'Die häufigsten Vorgänge mit einem Klick starten.'
+                                : 'Für schnelle Bedienung werden die Tastaturkürzel eingeblendet.'}
+                        </p>
+                    </div>
+                    <div className="pms-quick-grid">
+                        {quickActions.map((action, index) => (
+                            <button
+                                type="button"
+                                key={action.key}
+                                className={index === 0 ? 'is-primary' : ''}
+                                onClick={() => selectAction(action.key)}
+                            >
+                                <span className="pms-quick-number" aria-hidden="true">
+                                    {String(index + 1).padStart(2, '0')}
+                                </span>
+                                <span className="pms-quick-copy">
+                                    <strong>{action.label}</strong>
+                                    <small>{action.description}</small>
+                                </span>
+                                {operationMode === 'pro' && <kbd>{action.shortcut}</kbd>}
+                                <span className="pms-quick-arrow" aria-hidden="true">→</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            ),
+        },
+        {
+            id: 'metrics',
+            title: 'Kennzahlen',
+            description: 'Auslastung, Gäste, An- und Abreisen sowie offene Gastkonten.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'full',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-metrics" aria-label="Kennzahlen des Betriebstags">
+                    {metrics.map((metric) => (
+                        <article key={metric.key}>
+                            <span>{metric.label}</span>
+                            <strong>{metric.value}</strong>
+                            <small>{metric.meta}</small>
+                        </article>
+                    ))}
+                </section>
+            ),
+        },
+        {
+            id: 'arrivals',
+            title: 'Anreisen',
+            description: 'Die nächsten Anreisen des aktuellen Betriebstags.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-arrivals-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Rezeption</span>
+                            <h2>Anreisen heute</h2>
+                        </div>
+                        <button type="button" onClick={() => openNavigation('reservations')}>Alle anzeigen</button>
+                    </div>
+                    <div className="pms-table-head" aria-hidden="true">
+                        <span>Gast</span>
+                        <span>Zeit</span>
+                        <span>Zimmer</span>
+                        <span>Status</span>
+                    </div>
+                    {operations.arrivals?.length ? operations.arrivals.slice(0, 5).map((arrival) => (
+                        <div className="pms-arrival-row" key={arrival.id}>
+                            <div>
+                                <strong>{arrival.guestName}</strong>
+                                <small>{arrival.confirmationCode}</small>
+                            </div>
+                            <span>{activeProperty?.checkInTime?.slice(0, 5) ?? '15:00'}</span>
+                            <span>{arrival.roomNumber ?? arrival.roomTypeName}</span>
+                            {arrival.status === 'CONFIRMED' ? (
+                                <button type="button" onClick={() => selectAction('check-in')}>
+                                    Einchecken
+                                </button>
+                            ) : (
+                                <span className="pms-arrival-status">
+                                    {getPmsEnumLabel('ReservationStatus', arrival.status)}
+                                </span>
+                            )}
+                        </div>
+                    )) : (
+                        <div className="pms-empty-row">
+                            <span className="pms-empty-symbol" aria-hidden="true">A</span>
+                            <div>
+                                <strong>Keine Anreisen vorhanden</strong>
+                                <p>Sobald Reservierungen erfasst sind, erscheinen die heutigen Anreisen hier.</p>
+                            </div>
+                            <button type="button" onClick={() => selectAction('reservation')}>Reservierung anlegen</button>
+                        </div>
+                    )}
+                </section>
+            ),
+        },
+        {
+            id: 'room-status',
+            title: 'Zimmerstatus',
+            description: 'Reinigungs-, Belegungs- und Verkaufsstatus der Zimmer.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-room-state-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Zimmerstatus</span>
+                            <h2>Zimmerstatus</h2>
+                        </div>
+                        <button type="button" onClick={() => openNavigation('room-plan')}>Zimmerplan</button>
+                    </div>
+                    <div className="pms-room-state-empty">
+                        <div className="pms-room-ring" aria-label={`${roomStatusSummary.total} Zimmer eingerichtet`}>
+                            <strong>{roomStatusSummary.total}</strong>
+                            <span>Zimmer</span>
+                        </div>
+                        <div className="pms-room-legend">
+                            <span><i className="is-ready" /> Sauber & frei <strong>{roomStatusSummary.cleanAndFree}</strong></span>
+                            <span><i className="is-dirty" /> Zu reinigen <strong>{roomStatusSummary.dirty}</strong></span>
+                            <span><i className="is-dirty" /> Reinigung läuft <strong>{roomStatusSummary.cleaning}</strong></span>
+                            <span><i className="is-ready" /> Zu kontrollieren <strong>{roomStatusSummary.inspection}</strong></span>
+                            <span><i className="is-occupied" /> Belegt <strong>{operations.metrics?.occupiedRooms ?? 0}</strong></span>
+                            <span><i className="is-limited" /> Eingeschränkter Betrieb (OOS) <strong>{roomStatusSummary.limitedService}</strong></span>
+                            <span><i className="is-blocked" /> Nicht verkaufbar <strong>{roomStatusSummary.unavailable}</strong></span>
+                        </div>
+                    </div>
+                </section>
+            ),
+        },
+        {
+            id: 'departures-folios',
+            title: 'Abreisen & Gastkonten',
+            description: 'Anstehende Abreisen und offene Beträge im Blick behalten.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-departures-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Rezeption</span>
+                            <h2>Abreisen & offene Gastkonten</h2>
+                        </div>
+                        <button type="button" onClick={() => openNavigation('folios')}>Gastkonten öffnen</button>
+                    </div>
+                    {operations.departures?.length || Number(operations.metrics?.openBalance ?? 0) > 0 ? (
+                        <div className="pms-operational-summary">
+                            <div><span>Abreisen</span><strong>{operations.departures?.length ?? 0}</strong></div>
+                            <div><span>Offener Betrag</span><strong>{activeProperty?.currencyCode ?? 'CHF'} {Number(operations.metrics?.openBalance ?? 0).toFixed(2)}</strong></div>
+                            <button type="button" onClick={() => openNavigation('folios')}>Gastkonten bearbeiten</button>
+                        </div>
+                    ) : (
+                        <div className="pms-empty-compact">
+                            <span className="pms-empty-symbol" aria-hidden="true">CHF</span>
+                            <div>
+                                <strong>Keine Abreisen oder offenen Beträge</strong>
+                                <p>Check-outs und Zahlungsbedarf werden hier priorisiert.</p>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            ),
+        },
+        {
+            id: 'housekeeping',
+            title: 'Housekeeping',
+            description: 'Arbeitslast und offene Reinigungsaufgaben.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-housekeeping-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Housekeeping</span>
+                            <h2>Arbeitslast</h2>
+                        </div>
+                        <button type="button" onClick={() => openNavigation('housekeeping')}>Aufgaben öffnen</button>
+                    </div>
+                    <div className="pms-capacity-row">
+                        <div>
+                            <small>Benötigt</small>
+                            <strong>{((operations.housekeepingTasks ?? []).reduce((sum, task) => sum + task.estimatedMinutes, 0) / 60).toFixed(1)} h</strong>
+                        </div>
+                        <span aria-hidden="true">→</span>
+                        <div>
+                            <small>Eingeplant</small>
+                            <strong>0 h</strong>
+                        </div>
+                        <span className="pms-capacity-state">{operations.housekeepingTasks?.length ?? 0} Aufgaben</span>
+                    </div>
+                    <p className="pms-panel-note">
+                        Abreisen erzeugen automatisch priorisierte Reinigungsaufgaben. Sauberstatus und
+                        Check-in-Bereitschaft bleiben dadurch synchron.
+                    </p>
+                </section>
+            ),
+        },
+        {
+            id: 'systems',
+            title: 'Systeme',
+            description: 'Status der PMS-Schnittstellen und Betriebsüberwachung.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-system-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Schnittstellenstatus</span>
+                            <h2>Systeme</h2>
+                        </div>
+                        <button type="button" onClick={() => openNavigation('integrations')}>Details</button>
+                    </div>
+                    <div className="pms-system-list">
+                        {operationalHealth.components?.length ? operationalHealth.components.map((component) => (
+                            <div key={component.key}>
+                                <span><i className={
+                                    component.status === 'OK'
+                                        ? 'is-online'
+                                        : component.status === 'CRITICAL'
+                                            ? 'is-error'
+                                            : 'is-warning'
+                                } /> {component.label}</span>
+                                <strong>{component.summary}</strong>
+                            </div>
+                        )) : (
+                            <div>
+                                <span><i className="is-neutral" /> Betriebsüberwachung</span>
+                                <strong>Noch nicht geprüft</strong>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            ),
+        },
+        {
+            id: 'checks',
+            title: 'Prüfungen',
+            description: 'Nachvollziehbare Betriebsalarme und empfohlene Maßnahmen.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'M',
+            sizes: ['M', 'L', 'full'],
+            component: (
+                <section className="pms-panel pms-ai-panel">
+                    <div className="pms-panel-header">
+                        <div>
+                            <span className="pms-eyebrow">Betriebsprüfungen</span>
+                            <h2>Prüfungen</h2>
+                        </div>
+                        <span className="pms-local-badge">Nachvollziehbar geprüft</span>
+                    </div>
+                    {operationalHealth.alerts?.length ? (
+                        <div className="pms-record-list">
+                            {operationalHealth.alerts.map((alert) => (
+                                <article className="pms-record" key={alert.code}>
+                                    <div>
+                                        <span>{getPmsEnumLabel('OperationalHealthStatus', alert.severity)}</span>
+                                        <strong>{alert.title}</strong>
+                                        <small>{alert.details} · {alert.recommendedAction}</small>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="pms-empty-compact">
+                            <span className="pms-empty-symbol" aria-hidden="true">✓</span>
+                            <div>
+                                <strong>Keine aktiven Betriebsalarme</strong>
+                                <p>Datenbank, Übertragungen, Änderungsprotokoll und Sicherungen werden nachvollziehbar geprüft.</p>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            ),
+        },
+        {
+            id: 'setup',
+            title: 'Ersteinrichtung',
+            description: 'Fortschritt der Hotel-, Zimmer- und Tarifkonfiguration.',
+            allowedContexts: ['PMS'],
+            requiredPagePermission: 'pms',
+            featureKey: 'pms',
+            defaultSize: 'full',
+            sizes: ['L', 'full'],
+            component: (
+                <section className="pms-setup-panel">
+                    <div className="pms-setup-copy">
+                        <span className="pms-eyebrow">Ersteinrichtung</span>
+                        <h2>Hoteleinrichtung abschliessen</h2>
+                        <p>
+                            {setup.foundationComplete
+                                ? `${setup.totalProperties} Hotel, ${setup.totalRoomTypes} Zimmertypen und ${setup.totalRooms} Zimmer sind eingerichtet.`
+                                : 'Lege Hotelstruktur, Zimmertypen und konkrete Zimmer an. Diese Stammdaten bilden die Grundlage für Verfügbarkeit, Reservierungen und Aufenthalte.'}
+                        </p>
+                        <button type="button" onClick={() => setSetupOpen(true)}>
+                            {setup.foundationComplete ? 'Einrichtung verwalten' : 'Einrichtung beginnen'}
+                        </button>
+                    </div>
+                    <ol className="pms-setup-list">
+                        {setupSteps.map((step, index) => (
+                            <li
+                                key={step.key}
+                                className={`${step.state === 'next' ? 'is-next' : ''} ${step.state === 'done' ? 'is-done' : ''}`}
+                            >
+                                <span>{index + 1}</span>
+                                <strong>{step.label}</strong>
+                                <small>
+                                    {step.state === 'done'
+                                        ? 'Abgeschlossen'
+                                        : step.state === 'next'
+                                            ? 'Als Nächstes'
+                                            : 'Wartet auf Grundlage'}
+                                </small>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+            ),
+        },
+    ];
+
+    const dashboardStorageIdentity = [
+        currentUser?.company?.id ?? currentUser?.companyId ?? 'tenant',
+        currentUser?.id ?? 'user',
+    ].join(':');
 
     return (
         <PmsTranslationBoundary>
@@ -468,18 +943,24 @@ const PmsDashboard = () => {
                         <span className="pms-sidebar-chevron" aria-hidden="true">⌄</span>
                     </button>
 
-                    <nav className="pms-section-nav">
-                        <span className="pms-nav-label">Hotelbetrieb</span>
-                        {PMS_SECTIONS.map((item) => (
-                            <button
-                                type="button"
-                                key={item.key}
-                                className={activeNavigation === item.key ? 'is-active' : ''}
-                                onClick={() => openNavigation(item.key)}
-                            >
-                                <span aria-hidden="true">{item.code}</span>
-                                {item.label}
-                            </button>
+                    <nav className="pms-section-nav" aria-label="PMS-Arbeitsbereiche">
+                        {navigationGroups.map((group) => (
+                            <div className="pms-nav-group" key={group.key}>
+                                <span className="pms-nav-label">{group.label}</span>
+                                {group.items.map((item) => (
+                                    <button
+                                        type="button"
+                                        key={item.key}
+                                        className={activeNavigation === item.key ? 'is-active' : ''}
+                                        aria-current={activeNavigation === item.key ? 'page' : undefined}
+                                        title={item.description}
+                                        onClick={() => openNavigation(item.key)}
+                                    >
+                                        <span aria-hidden="true">{item.code}</span>
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
                         ))}
                     </nav>
 
@@ -514,7 +995,12 @@ const PmsDashboard = () => {
                                 <button
                                     type="button"
                                     className={operationMode === 'simple' ? 'is-active' : ''}
-                                    onClick={() => setOperationMode('simple')}
+                                    onClick={() => {
+                                        setOperationMode('simple');
+                                        if (!SIMPLE_PMS_SECTION_KEYS.has(activeNavigation)) {
+                                            navigateToSection('overview');
+                                        }
+                                    }}
                                 >
                                     Einfach
                                 </button>
@@ -620,264 +1106,23 @@ const PmsDashboard = () => {
                         </section>
                     )}
 
-                    <section className="pms-quick-section" aria-labelledby="pms-quick-heading">
-                        <div className="pms-section-heading">
-                            <div>
-                                <span className="pms-eyebrow">Rezeption</span>
-                                <h2 id="pms-quick-heading">Schnellaktionen</h2>
-                            </div>
-                            <p>
-                                {operationMode === 'simple'
-                                    ? 'Die häufigsten Vorgänge mit einem Klick starten.'
-                                    : 'Für schnelle Bedienung werden die Tastaturkürzel eingeblendet.'}
-                            </p>
-                        </div>
-                        <div className="pms-quick-grid">
-                            {quickActions.map((action, index) => (
-                                <button
-                                    type="button"
-                                    key={action.key}
-                                    className={index === 0 ? 'is-primary' : ''}
-                                    onClick={() => selectAction(action.key)}
-                                >
-                                    <span className="pms-quick-number" aria-hidden="true">
-                                        {String(index + 1).padStart(2, '0')}
-                                    </span>
-                                    <span className="pms-quick-copy">
-                                        <strong>{action.label}</strong>
-                                        <small>{action.description}</small>
-                                    </span>
-                                    {operationMode === 'pro' && <kbd>{action.shortcut}</kbd>}
-                                    <span className="pms-quick-arrow" aria-hidden="true">→</span>
-                                </button>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section className="pms-metrics" aria-label="Kennzahlen des Betriebstags">
-                        {metrics.map((metric) => (
-                            <article key={metric.key}>
-                                <span>{metric.label}</span>
-                                <strong>{metric.value}</strong>
-                                <small>{metric.meta}</small>
-                            </article>
-                        ))}
-                    </section>
-
-                    <div className="pms-dashboard-grid">
-                        <section className="pms-panel pms-arrivals-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Rezeption</span>
-                                    <h2>Anreisen heute</h2>
-                                </div>
-                                <button type="button" onClick={() => openNavigation('reservations')}>Alle anzeigen</button>
-                            </div>
-                            <div className="pms-table-head" aria-hidden="true">
-                                <span>Gast</span>
-                                <span>Zeit</span>
-                                <span>Zimmer</span>
-                                <span>Status</span>
-                            </div>
-                            {operations.arrivals?.length ? operations.arrivals.slice(0, 5).map((arrival) => (
-                                <div className="pms-arrival-row" key={arrival.id}>
-                                    <div>
-                                        <strong>{arrival.guestName}</strong>
-                                        <small>{arrival.confirmationCode}</small>
-                                    </div>
-                                    <span>{activeProperty?.checkInTime?.slice(0, 5) ?? '15:00'}</span>
-                                    <span>{arrival.roomNumber ?? arrival.roomTypeName}</span>
-                                    {arrival.status === 'CONFIRMED' ? (
-                                        <button type="button" onClick={() => selectAction('check-in')}>
-                                            Einchecken
-                                        </button>
-                                    ) : (
-                                        <span className="pms-arrival-status">
-                                            {getPmsEnumLabel('ReservationStatus', arrival.status)}
-                                        </span>
-                                    )}
-                                </div>
-                            )) : (
-                                <div className="pms-empty-row">
-                                    <span className="pms-empty-symbol" aria-hidden="true">A</span>
-                                    <div>
-                                        <strong>Keine Anreisen vorhanden</strong>
-                                        <p>Sobald Reservierungen erfasst sind, erscheinen die heutigen Anreisen hier.</p>
-                                    </div>
-                                    <button type="button" onClick={() => selectAction('reservation')}>Reservierung anlegen</button>
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="pms-panel pms-room-state-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Zimmerstatus</span>
-                                    <h2>Zimmerstatus</h2>
-                                </div>
-                                <button type="button" onClick={() => openNavigation('room-plan')}>Zimmerplan</button>
-                            </div>
-                            <div className="pms-room-state-empty">
-                                <div className="pms-room-ring" aria-label={`${roomStatusSummary.total} Zimmer eingerichtet`}>
-                                    <strong>{roomStatusSummary.total}</strong>
-                                    <span>Zimmer</span>
-                                </div>
-                                <div className="pms-room-legend">
-                                    <span><i className="is-ready" /> Sauber & frei <strong>{roomStatusSummary.cleanAndFree}</strong></span>
-                                    <span><i className="is-dirty" /> Zu reinigen <strong>{roomStatusSummary.dirty}</strong></span>
-                                    <span><i className="is-dirty" /> Reinigung läuft <strong>{roomStatusSummary.cleaning}</strong></span>
-                                    <span><i className="is-ready" /> Zu kontrollieren <strong>{roomStatusSummary.inspection}</strong></span>
-                                    <span><i className="is-occupied" /> Belegt <strong>{operations.metrics?.occupiedRooms ?? 0}</strong></span>
-                                    <span><i className="is-limited" /> Eingeschränkter Betrieb (OOS) <strong>{roomStatusSummary.limitedService}</strong></span>
-                                    <span><i className="is-blocked" /> Nicht verkaufbar <strong>{roomStatusSummary.unavailable}</strong></span>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="pms-panel pms-departures-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Rezeption</span>
-                                    <h2>Abreisen & offene Gastkonten</h2>
-                                </div>
-                                <button type="button" onClick={() => openNavigation('folios')}>Gastkonten öffnen</button>
-                            </div>
-                            {operations.departures?.length || Number(operations.metrics?.openBalance ?? 0) > 0 ? (
-                                <div className="pms-operational-summary">
-                                    <div><span>Abreisen</span><strong>{operations.departures?.length ?? 0}</strong></div>
-                                    <div><span>Offener Betrag</span><strong>{activeProperty?.currencyCode ?? 'CHF'} {Number(operations.metrics?.openBalance ?? 0).toFixed(2)}</strong></div>
-                                    <button type="button" onClick={() => openNavigation('folios')}>Gastkonten bearbeiten</button>
-                                </div>
-                            ) : (
-                                <div className="pms-empty-compact">
-                                    <span className="pms-empty-symbol" aria-hidden="true">CHF</span>
-                                    <div>
-                                        <strong>Keine Abreisen oder offenen Beträge</strong>
-                                        <p>Check-outs und Zahlungsbedarf werden hier priorisiert.</p>
-                                    </div>
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="pms-panel pms-housekeeping-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Housekeeping</span>
-                                    <h2>Arbeitslast</h2>
-                                </div>
-                                <button type="button" onClick={() => openNavigation('housekeeping')}>Aufgaben öffnen</button>
-                            </div>
-                            <div className="pms-capacity-row">
-                                <div>
-                                    <small>Benötigt</small>
-                                    <strong>{((operations.housekeepingTasks ?? []).reduce((sum, task) => sum + task.estimatedMinutes, 0) / 60).toFixed(1)} h</strong>
-                                </div>
-                                <span aria-hidden="true">→</span>
-                                <div>
-                                    <small>Eingeplant</small>
-                                    <strong>0 h</strong>
-                                </div>
-                                <span className="pms-capacity-state">{operations.housekeepingTasks?.length ?? 0} Aufgaben</span>
-                            </div>
-                            <p className="pms-panel-note">
-                                Abreisen erzeugen automatisch priorisierte Reinigungsaufgaben. Sauberstatus und
-                                Check-in-Bereitschaft bleiben dadurch synchron.
-                            </p>
-                        </section>
-
-                        <section className="pms-panel pms-system-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Schnittstellenstatus</span>
-                                    <h2>Systeme</h2>
-                                </div>
-                                <button type="button" onClick={() => openNavigation('integrations')}>Details</button>
-                            </div>
-                            <div className="pms-system-list">
-                                {operationalHealth.components?.length ? operationalHealth.components.map((component) => (
-                                    <div key={component.key}>
-                                        <span><i className={
-                                            component.status === 'OK'
-                                                ? 'is-online'
-                                                : component.status === 'CRITICAL'
-                                                    ? 'is-error'
-                                                    : 'is-warning'
-                                        } /> {component.label}</span>
-                                        <strong>{component.summary}</strong>
-                                    </div>
-                                )) : (
-                                    <div>
-                                        <span><i className="is-neutral" /> Betriebsüberwachung</span>
-                                        <strong>Noch nicht geprüft</strong>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="pms-panel pms-ai-panel">
-                            <div className="pms-panel-header">
-                                <div>
-                                    <span className="pms-eyebrow">Betriebsprüfungen</span>
-                                    <h2>Prüfungen</h2>
-                                </div>
-                                <span className="pms-local-badge">Nachvollziehbar geprüft</span>
-                            </div>
-                            {operationalHealth.alerts?.length ? (
-                                <div className="pms-record-list">
-                                    {operationalHealth.alerts.map((alert) => (
-                                        <article className="pms-record" key={alert.code}>
-                                            <div>
-                                                <span>{getPmsEnumLabel('OperationalHealthStatus', alert.severity)}</span>
-                                                <strong>{alert.title}</strong>
-                                                <small>{alert.details} · {alert.recommendedAction}</small>
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="pms-empty-compact">
-                                    <span className="pms-empty-symbol" aria-hidden="true">✓</span>
-                                    <div>
-                                        <strong>Keine aktiven Betriebsalarme</strong>
-                                        <p>Datenbank, Übertragungen, Änderungsprotokoll und Sicherungen werden nachvollziehbar geprüft.</p>
-                                    </div>
-                                </div>
-                            )}
-                        </section>
-                    </div>
-
-                    <section className="pms-setup-panel">
-                        <div className="pms-setup-copy">
-                            <span className="pms-eyebrow">Ersteinrichtung</span>
-                            <h2>Hoteleinrichtung abschliessen</h2>
-                            <p>
-                                {setup.foundationComplete
-                                    ? `${setup.totalProperties} Hotel, ${setup.totalRoomTypes} Zimmertypen und ${setup.totalRooms} Zimmer sind eingerichtet.`
-                                    : 'Lege Hotelstruktur, Zimmertypen und konkrete Zimmer an. Diese Stammdaten bilden die Grundlage für Verfügbarkeit, Reservierungen und Aufenthalte.'}
-                            </p>
-                            <button type="button" onClick={() => setSetupOpen(true)}>
-                                {setup.foundationComplete ? 'Einrichtung verwalten' : 'Einrichtung beginnen'}
-                            </button>
-                        </div>
-                        <ol className="pms-setup-list">
-                            {setupSteps.map((step, index) => (
-                                <li
-                                    key={step.key}
-                                    className={`${step.state === 'next' ? 'is-next' : ''} ${step.state === 'done' ? 'is-done' : ''}`}
-                                >
-                                    <span>{index + 1}</span>
-                                    <strong>{step.label}</strong>
-                                    <small>
-                                        {step.state === 'done'
-                                            ? 'Abgeschlossen'
-                                            : step.state === 'next'
-                                                ? 'Als Nächstes'
-                                                : 'Wartet auf Grundlage'}
-                                    </small>
-                                </li>
-                            ))}
-                        </ol>
-                    </section>
+                    <ConfigurableDashboard
+                        context="PMS"
+                        scope={activeProperty?.id != null ? `property:${activeProperty.id}` : 'default'}
+                        registry={pmsDashboardRegistry}
+                        defaultLayout={PMS_DASHBOARD_DEFAULT_LAYOUT}
+                        permissionContext={currentUser}
+                        storageIdentity={dashboardStorageIdentity}
+                        preferenceParams={activeProperty?.id != null ? { propertyId: activeProperty.id } : undefined}
+                        remoteEnabled={activeProperty?.id != null}
+                        className="pms-configurable-overview"
+                        labels={{
+                            customize: 'Übersicht anpassen',
+                            configurationTitle: 'PMS-Übersicht',
+                            configurationHint: 'Bereiche ein- oder ausblenden, verschieben und in der passenden Größe darstellen.',
+                            empty: 'Für diese PMS-Übersicht sind keine Bereiche verfügbar.',
+                        }}
+                    />
                         </>
                     ) : (
                         <PmsOperationsWorkspace

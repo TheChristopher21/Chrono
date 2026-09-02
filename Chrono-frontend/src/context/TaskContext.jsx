@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
 import { useAuth } from './AuthContext';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 export const TaskContext = createContext();
 
@@ -11,8 +12,10 @@ export const TaskProvider = ({ children }) => {
   const { notify } = useNotification();
   const { t } = useTranslation();
   const { authToken, currentUser } = useAuth();
+  const activeProjectIdRef = useRef(null);
 
   const fetchTasks = useCallback(async (projectId) => {
+    activeProjectIdRef.current = projectId || null;
     if (!projectId) {
       setTasks([]);
       return;
@@ -25,6 +28,18 @@ export const TaskProvider = ({ children }) => {
       notify(t('task.loadError', 'Fehler beim Laden der Aufgaben'), 'error');
     }
   }, [notify, t]);
+
+  const refreshActiveTasks = useCallback(() => {
+    if (!activeProjectIdRef.current) return Promise.resolve();
+    return fetchTasks(activeProjectIdRef.current);
+  }, [fetchTasks]);
+
+  useRefreshOnMutation(['tasks', 'projects'], refreshActiveTasks, {
+    enabled: Boolean(authToken && currentUser?.customerTrackingEnabled && activeProjectIdRef.current),
+    refreshOnLocalMutation: false,
+    refreshOnFocus: true,
+    focusThrottleMs: 30_000,
+  });
 
   const createTask = useCallback(async (projectId, name, budgetMinutes, billable) => {
     try {
@@ -72,6 +87,7 @@ export const TaskProvider = ({ children }) => {
 
   useEffect(() => {
     if (!(authToken && currentUser?.customerTrackingEnabled)) {
+      activeProjectIdRef.current = null;
       setTasks([]);
     }
   }, [authToken, currentUser]);

@@ -25,6 +25,8 @@ class PmsFlywayMySqlIntegrationTest {
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
             statement.execute("create table users (id bigint primary key)");
+            statement.execute("create table time_tracking_entries (id bigint primary key)");
+            statement.execute("create table correction_requests (id bigint primary key)");
             statement.execute("""
                     create table legacy_marker (
                         id bigint primary key,
@@ -46,7 +48,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(4);
+        assertThat(result.migrationsExecuted).isEqualTo(7);
 
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
@@ -64,7 +66,7 @@ class PmsFlywayMySqlIntegrationTest {
                       and left(table_name, 4) = 'pms_'
                     """)) {
                 assertThat(pmsTables.next()).isTrue();
-                assertThat(pmsTables.getInt(1)).isEqualTo(41);
+                assertThat(pmsTables.getInt(1)).isEqualTo(42);
             }
 
             try (var workdaySwaps = statement.executeQuery("""
@@ -76,6 +78,9 @@ class PmsFlywayMySqlIntegrationTest {
                 assertThat(workdaySwaps.next()).isTrue();
                 assertThat(workdaySwaps.getInt(1)).isEqualTo(1);
             }
+
+            assertThat(tableExists(connection, "user_ui_preferences")).isTrue();
+            assertThat(tableExists(connection, "pms_front_desk_booking_requests")).isTrue();
 
             try (var history = statement.executeQuery("""
                     select version, success
@@ -110,7 +115,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(freshResult.migrationsExecuted).isEqualTo(5);
+        assertThat(freshResult.migrationsExecuted).isEqualTo(8);
 
         try (var connection = DriverManager.getConnection(
                 freshUrl,
@@ -125,8 +130,10 @@ class PmsFlywayMySqlIntegrationTest {
                        and left(table_name, 4) = 'pms_'
                      """)) {
             assertThat(pmsTables.next()).isTrue();
-            assertThat(pmsTables.getInt(1)).isEqualTo(41);
+            assertThat(pmsTables.getInt(1)).isEqualTo(42);
             assertThat(tableExists(connection, "workday_swaps")).isTrue();
+            assertThat(tableExists(connection, "user_ui_preferences")).isTrue();
+            assertThat(tableExists(connection, "pms_front_desk_booking_requests")).isTrue();
         }
     }
 

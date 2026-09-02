@@ -56,6 +56,12 @@ public class TimeTrackingEntry {
     @Column(name = "system_generated_note", length = 255)
     private String systemGeneratedNote; // z.B. "Automatischer Arbeitsende-Stempel"
 
+    @Column(name = "correction_admin_username", length = 255)
+    private String correctionAdminUsername;
+
+    @Column(name = "correction_admin_initials", length = 10)
+    private String correctionAdminInitials;
+
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
@@ -133,6 +139,10 @@ public class TimeTrackingEntry {
     public void setCorrectedByUser(boolean correctedByUser) { this.correctedByUser = correctedByUser; }
     public String getSystemGeneratedNote() { return systemGeneratedNote; }
     public void setSystemGeneratedNote(String systemGeneratedNote) { this.systemGeneratedNote = systemGeneratedNote; }
+    public String getCorrectionAdminUsername() { return correctionAdminUsername; }
+    public void setCorrectionAdminUsername(String correctionAdminUsername) { this.correctionAdminUsername = correctionAdminUsername; }
+    public String getCorrectionAdminInitials() { return correctionAdminInitials; }
+    public void setCorrectionAdminInitials(String correctionAdminInitials) { this.correctionAdminInitials = correctionAdminInitials; }
     public Integer getDurationMinutes() { return durationMinutes; }
     public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
     public String getDescription() { return description; }

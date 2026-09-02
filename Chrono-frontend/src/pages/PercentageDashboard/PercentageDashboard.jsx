@@ -10,7 +10,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useCustomers } from '../../context/CustomerContext';
 import jsPDF from 'jspdf';
 import { parseISO } from 'date-fns';
-import { useUserData } from '../../hooks/useUserData';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import autoTable from "jspdf-autotable";
 
 import {
@@ -32,18 +32,25 @@ import PrintReportModal from "../../components/PrintReportModal.jsx";
 import {
     CALCULATION_STATUS,
 } from '../../components/CalculationStatusNotice.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 
 // Einheitliche Styles importieren
 import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
 
+const PERCENTAGE_DASHBOARD_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'holidays',
+    'company',
+];
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     const { currentUser, fetchCurrentUser } = useAuth();
     const navigate = useNavigate();
-    const { refreshData } = useUserData();
-
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
     const { customers, fetchCustomers } = useCustomers();
@@ -187,9 +194,9 @@ const PercentageDashboard = () => {
         }
     }, [selectedMonday, userProfile?.username]);
 
-    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation, force = false) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
-        if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+        if (!force && holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
             return;
         }
         try {
@@ -202,6 +209,31 @@ const PercentageDashboard = () => {
         }
     }, [t, holidaysForUserCanton]);
 
+    const refreshPercentageDashboard = useCallback(async () => {
+        const cantonAbbr = userProfile?.company?.cantonAbbreviation
+            || userProfile?.companyCantonAbbreviation
+            || '';
+        await Promise.all([
+            loadProfileAndInitialData(),
+            fetchDataForUser(),
+            fetchWeekPeriodSummary(),
+            userProfile
+                ? fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr, true)
+                : Promise.resolve(),
+        ]);
+    }, [fetchDataForUser, fetchHolidaysForUser, fetchWeekPeriodSummary, loadProfileAndInitialData, selectedMonday, userProfile]);
+
+    useRefreshOnMutation(
+        PERCENTAGE_DASHBOARD_REFRESH_SCOPES,
+        refreshPercentageDashboard,
+        {
+            enabled: Boolean(currentUser),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
+
     useEffect(() => {
         if (userProfile) {
             fetchDataForUser();
@@ -211,12 +243,12 @@ const PercentageDashboard = () => {
         }
     }, [userProfile, fetchDataForUser, fetchWeekPeriodSummary, fetchHolidaysForUser, selectedMonday]);
 
-    useEffect(() => {
-        const interval = setInterval(doNfcCheck, 2000);
-        return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const showPunchMessage = useCallback((message) => {
+        setPunchMessage(message);
+        setTimeout(() => setPunchMessage(''), 3000);
+    }, []);
 
-    async function doNfcCheck() {
+    const doNfcCheck = useCallback(async () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
                 headers: { 'X-NFC-Agent-Request': 'true' },
@@ -230,19 +262,15 @@ const PercentageDashboard = () => {
             lastPunchTimeRef.current = Date.now();
             showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
             await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
-            if (currentUser && cardUser === currentUser.username) {
-                fetchDataForUser();
-                loadProfileAndInitialData();
-            }
         } catch (err) {
             console.error('NFC error', err);
         }
-    }
+    }, [showPunchMessage, t]);
 
-    function showPunchMessage(msg) {
-        setPunchMessage(msg);
-        setTimeout(() => setPunchMessage(''), 3000);
-    }
+    useEffect(() => {
+        const interval = setInterval(doNfcCheck, 2000);
+        return () => clearInterval(interval);
+    }, [doNfcCheck]);
 
     async function handleManualPunch() {
         if (!userProfile) return;
@@ -254,8 +282,6 @@ const PercentageDashboard = () => {
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
-            fetchDataForUser();
-            fetchWeekPeriodSummary();
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
@@ -269,7 +295,6 @@ const PercentageDashboard = () => {
                 params: { username: userProfile.username, date: isoDate }
             });
             notify(t("dailyNoteSaved", "Notiz gespeichert!"), 'success');
-            fetchDataForUser();
         } catch (err) {
             console.error('Fehler beim Speichern der Tagesnotiz:', err);
             notify(t("dailyNoteError", "Notiz konnte nicht gespeichert werden."), 'error');
@@ -304,7 +329,6 @@ const PercentageDashboard = () => {
             await Promise.all(correctionPromises);
             notify(t('userDashboard.correctionSuccess'), 'success');
             setShowCorrectionModal(false);
-            fetchDataForUser();
         } catch (error) {
             console.error('Fehler beim Absenden der Korrekturanträge:', error);
             const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
@@ -398,65 +422,104 @@ const PercentageDashboard = () => {
                     </div>
                 </header>
 
-                <AccessiblePagesPanel
-                    context="user"
-                    title="Deine freigegebenen Seiten"
-                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
-                />
-
-                {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-                <PercentageWeekOverview
-                    t={t}
-                    dailySummaries={dailySummaries}
-                    monday={selectedMonday}
-                    setMonday={setSelectedMonday}
-                    weeklyWorked={weeklyWorked}
-                    weeklyExpected={weeklyExpected}
-                    weeklyDiff={weeklyDiff}
-                    calculationStatus={weekPeriodStatus}
-                    handleManualPunch={handleManualPunch}
-                    openCorrectionModal={openCorrectionModalForDay}
-                    userProfile={userProfile}
-                    customers={customers}
-                    recentCustomers={recentCustomers}
-                    projects={projects}
-                    tasks={tasks}
-                    selectedCustomerId={selectedCustomerId}
-                    setSelectedCustomerId={setSelectedCustomerId}
-                    selectedProjectId={selectedProjectId}
-                    selectedTaskId={selectedTaskId}
-                    setSelectedTaskId={setSelectedTaskId}
-                    vacationRequests={vacationRequests}
-                    sickLeaves={sickLeaves}
-                    holidaysForUserCanton={holidaysForUserCanton?.data}
-                    reloadData={fetchDataForUser}
-                    editingNote={editingNote}
-                    setEditingNote={setEditingNote}
-                    noteContent={noteContent}
-                    setNoteContent={setNoteContent}
-                    handleNoteSave={handleNoteSave}
-                />
-
-                <section className="vacation-section content-section">
-                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
-                    <PercentageVacationSection
-                        t={t}
-                        userProfile={userProfile}
-                        vacationRequests={vacationRequests}
-                        onRefreshVacations={fetchDataForUser}
-                    />
-                </section>
-
-                <PercentageCorrectionsPanel
-                    t={t}
-                    correctionRequests={correctionRequests}
-                    selectedCorrectionMonday={selectedCorrectionMonday}
-                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
-                    showCorrectionsPanel={showCorrectionsPanel}
-                    setShowCorrectionsPanel={setShowCorrectionsPanel}
-                    showAllCorrections={showAllCorrections}
-                    setShowAllCorrections={setShowAllCorrections}
+                <ConfigurableDashboard
+                    context="USER_PERCENTAGE"
+                    permissionContext={currentUser}
+                    storageIdentity={currentUser?.id || currentUser?.username}
+                    registry={[
+                        {
+                            id: 'quick-links',
+                            title: t('dashboardWidgets.quickLinks', 'Freigegebene Seiten'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <AccessiblePagesPanel
+                                    context="user"
+                                    title="Deine freigegebenen Seiten"
+                                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
+                                />
+                            ),
+                        },
+                        {
+                            id: 'weekly-time',
+                            title: t('dashboardWidgets.weeklyTime', 'Zeiterfassung & Wochenübersicht'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['L', 'full'],
+                            component: (
+                                <>
+                                    {punchMessage && <div className="punch-message">{punchMessage}</div>}
+                                    <PercentageWeekOverview
+                                        t={t}
+                                        dailySummaries={dailySummaries}
+                                        monday={selectedMonday}
+                                        setMonday={setSelectedMonday}
+                                        weeklyWorked={weeklyWorked}
+                                        weeklyExpected={weeklyExpected}
+                                        weeklyDiff={weeklyDiff}
+                                        calculationStatus={weekPeriodStatus}
+                                        handleManualPunch={handleManualPunch}
+                                        openCorrectionModal={openCorrectionModalForDay}
+                                        userProfile={userProfile}
+                                        customers={customers}
+                                        recentCustomers={recentCustomers}
+                                        projects={projects}
+                                        tasks={tasks}
+                                        selectedCustomerId={selectedCustomerId}
+                                        setSelectedCustomerId={setSelectedCustomerId}
+                                        selectedProjectId={selectedProjectId}
+                                        selectedTaskId={selectedTaskId}
+                                        setSelectedTaskId={setSelectedTaskId}
+                                        vacationRequests={vacationRequests}
+                                        sickLeaves={sickLeaves}
+                                        holidaysForUserCanton={holidaysForUserCanton?.data}
+                                        editingNote={editingNote}
+                                        setEditingNote={setEditingNote}
+                                        noteContent={noteContent}
+                                        setNoteContent={setNoteContent}
+                                        handleNoteSave={handleNoteSave}
+                                    />
+                                </>
+                            ),
+                        },
+                        {
+                            id: 'vacation',
+                            title: t('dashboardWidgets.vacation', 'Urlaub & Abwesenheiten'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <section className="vacation-section content-section">
+                                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
+                                    <PercentageVacationSection
+                                        t={t}
+                                        userProfile={userProfile}
+                                        vacationRequests={vacationRequests}
+                                    />
+                                </section>
+                            ),
+                        },
+                        {
+                            id: 'corrections',
+                            title: t('dashboardWidgets.corrections', 'Korrekturanträge'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <PercentageCorrectionsPanel
+                                    t={t}
+                                    correctionRequests={correctionRequests}
+                                    selectedCorrectionMonday={selectedCorrectionMonday}
+                                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
+                                    showCorrectionsPanel={showCorrectionsPanel}
+                                    setShowCorrectionsPanel={setShowCorrectionsPanel}
+                                    showAllCorrections={showAllCorrections}
+                                    setShowAllCorrections={setShowAllCorrections}
+                                />
+                            ),
+                        },
+                    ]}
                 />
 
                 <PrintReportModal

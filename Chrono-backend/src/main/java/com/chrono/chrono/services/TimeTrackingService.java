@@ -7,6 +7,7 @@ import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.utils.UserInitials;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.VacationRequest;
@@ -1134,12 +1135,13 @@ public class TimeTrackingService {
         List<TimeTrackingEntry> existingEntries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(targetUser, date);
         timeTrackingEntryRepository.deleteAll(existingEntries); // Alte Einträge für diesen Tag löschen
 
-        updatedEntriesDTO.sort(Comparator.comparing(TimeTrackingEntryDTO::getEntryTimestamp));
+        List<TimeTrackingEntryDTO> sortedEntries = new ArrayList<>(updatedEntriesDTO);
+        sortedEntries.sort(Comparator.comparing(TimeTrackingEntryDTO::getEntryTimestamp));
 
         LocalDateTime previousTimestamp = null;
         TimeTrackingEntry.PunchType previousPunchType = null;
 
-        for (TimeTrackingEntryDTO dto : updatedEntriesDTO) {
+        for (TimeTrackingEntryDTO dto : sortedEntries) {
             if (dto.getEntryTimestamp() == null || dto.getPunchType() == null) {
                 throw new IllegalArgumentException("Ungültiger Eintrag im DTO für User " + targetUsername + " am " + date + ": Zeitstempel oder Typ fehlt.");
             }
@@ -1156,6 +1158,8 @@ public class TimeTrackingService {
                     TimeTrackingEntry.PunchSource.ADMIN_CORRECTION); // Quelle ist Admin-Korrektur
             newEntry.setCorrectedByUser(true);
             newEntry.setSystemGeneratedNote(dto.getSystemGeneratedNote()); // Falls eine Notiz mitkommt
+            newEntry.setCorrectionAdminUsername(performingAdmin.getUsername());
+            newEntry.setCorrectionAdminInitials(UserInitials.from(performingAdmin));
             timeTrackingEntryRepository.save(newEntry);
             previousTimestamp = dto.getEntryTimestamp();
             previousPunchType = dto.getPunchType();

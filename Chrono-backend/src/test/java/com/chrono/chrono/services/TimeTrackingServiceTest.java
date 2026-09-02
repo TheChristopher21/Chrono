@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -46,6 +47,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -917,6 +919,48 @@ class TimeTrackingServiceTest {
         int diff = timeTrackingService.getWeeklyBalance(user, monday);
 
         assertEquals(-1440, diff);
+    }
+
+    @Test
+    void updateDayTimeEntriesStoresActingAdminInitials() {
+        Company company = new Company("Chrono AG");
+        company.setId(7L);
+        user.setCompany(company);
+
+        User admin = new User();
+        admin.setId(2L);
+        admin.setUsername("anna.berger");
+        admin.setFirstName("Anna");
+        admin.setLastName("Berger");
+        admin.setCompany(company);
+
+        TimeTrackingEntryDTO start = new TimeTrackingEntryDTO(
+                null, user.getUsername(), null, null, null, null, null, null,
+                null, null, false, date.atTime(8, 0), TimeTrackingEntry.PunchType.START,
+                TimeTrackingEntry.PunchSource.ADMIN_CORRECTION, true, null
+        );
+        TimeTrackingEntryDTO end = new TimeTrackingEntryDTO(
+                null, user.getUsername(), null, null, null, null, null, null,
+                null, null, false, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE,
+                TimeTrackingEntry.PunchSource.ADMIN_CORRECTION, true, null
+        );
+
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(admin.getUsername())).thenReturn(Optional.of(admin));
+        when(timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date))
+                .thenReturn(List.of());
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doNothing().when(spyService).rebuildUserBalance(user);
+
+        spyService.updateDayTimeEntries(user.getUsername(), date.toString(), List.of(start, end), admin.getUsername());
+
+        ArgumentCaptor<TimeTrackingEntry> captor = ArgumentCaptor.forClass(TimeTrackingEntry.class);
+        verify(timeTrackingEntryRepository, times(2)).save(captor.capture());
+        for (TimeTrackingEntry savedEntry : captor.getAllValues()) {
+            assertEquals("anna.berger", savedEntry.getCorrectionAdminUsername());
+            assertEquals("AB", savedEntry.getCorrectionAdminInitials());
+        }
     }
 
     private void invokeClearVacationOnPunchDay(User user, LocalDate punchDay) throws Exception {

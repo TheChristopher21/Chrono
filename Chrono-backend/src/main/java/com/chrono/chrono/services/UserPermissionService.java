@@ -99,6 +99,7 @@ public class UserPermissionService {
 
     private static final Map<String, String> FEATURE_PAGE_MAPPING = Map.ofEntries(
             Map.entry(PAGE_SUPPLY_CHAIN, "supplyChain"),
+            Map.entry(PAGE_PMS, "pms"),
             Map.entry(PAGE_ADMIN_CUSTOMERS, "projects"),
             Map.entry(PAGE_ADMIN_PROJECTS, "projects"),
             Map.entry(PAGE_ADMIN_TASKS, "projects"),
@@ -191,6 +192,10 @@ public class UserPermissionService {
 
         String grantedLevel = resolvePagePermissions(user).getOrDefault(pageKey, ACCESS_NONE);
         return accessRank(grantedLevel) >= accessRank(requiredLevel);
+    }
+
+    public boolean isKnownPageKey(String pageKey) {
+        return pageKey != null && PAGE_ORDER.contains(pageKey);
     }
 
     public void assertPageAccess(User user, String pageKey, String requiredLevel, String message) {

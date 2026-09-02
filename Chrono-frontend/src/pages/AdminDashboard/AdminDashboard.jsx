@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Navbar from '../../components/Navbar';
 import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess.js';
 import { getUserDisplayName } from '../../utils/userDisplay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -36,6 +38,14 @@ import {
 const INBOX_FILTER_STORAGE_KEY = 'adminDashboard_inboxFilters_v1';
 const INBOX_VIEWS_STORAGE_KEY = 'adminDashboard_savedViews_v1';
 const DASHBOARD_TAB_KEYS = ['overview', 'time', 'requests', 'calendar', 'modules'];
+const ADMIN_DASHBOARD_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'holidays',
+    'company',
+];
 
 const DEFAULT_INBOX_FILTERS = {
     status: 'pending',
@@ -664,12 +674,12 @@ const AdminDashboard = () => {
         setDecisionDrafts((prev) => ({ ...prev, [itemId]: value }));
     }, []);
 
-    const approveItem = useCallback(async (item, comment = '') => {
+    const approveItem = useCallback(async (item, comment = '', options = {}) => {
         if (!item) return;
         if (item.type === 'vacation') {
-            await handleApproveVacation(item.entityId);
+            await handleApproveVacation(item.entityId, comment, options);
         } else {
-            await handleApproveCorrection(item.entityId, comment);
+            await handleApproveCorrection(item.entityId, comment, options);
         }
         setDecisionDrafts((prev) => {
             const next = { ...prev };
@@ -678,12 +688,12 @@ const AdminDashboard = () => {
         });
     }, [handleApproveVacation, handleApproveCorrection]);
 
-    const denyItem = useCallback(async (item, comment = '') => {
+    const denyItem = useCallback(async (item, comment = '', options = {}) => {
         if (!item) return;
         if (item.type === 'vacation') {
-            await handleDenyVacation(item.entityId);
+            await handleDenyVacation(item.entityId, comment, options);
         } else {
-            await handleDenyCorrection(item.entityId, comment);
+            await handleDenyCorrection(item.entityId, comment, options);
         }
         setDecisionDrafts((prev) => {
             const next = { ...prev };
@@ -699,7 +709,11 @@ const AdminDashboard = () => {
         }
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
-        await Promise.all(candidates.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
+        await Promise.all(candidates.map((item) => approveItem(
+            item,
+            decisionDrafts[item.id] || '',
+            { reload: false },
+        )));
         clearSelection();
     }, [approveItem, canManageAdminDashboard, clearSelection, decisionDrafts, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
 
@@ -710,7 +724,11 @@ const AdminDashboard = () => {
         }
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
-        await Promise.all(candidates.map((item) => denyItem(item, decisionDrafts[item.id] || '')));
+        await Promise.all(candidates.map((item) => denyItem(
+            item,
+            decisionDrafts[item.id] || '',
+            { reload: false },
+        )));
         clearSelection();
     }, [canManageAdminDashboard, clearSelection, decisionDrafts, denyItem, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
 
@@ -724,7 +742,11 @@ const AdminDashboard = () => {
             notify(t('adminDashboard.actionStream.noLowRisk', 'Keine Low-Risk-Korrekturen gefunden.'), 'info');
             return;
         }
-        await Promise.all(candidates.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
+        await Promise.all(candidates.map((item) => approveItem(
+            item,
+            decisionDrafts[item.id] || '',
+            { reload: false },
+        )));
         clearSelection();
         notify(
             t('adminDashboard.bulkDone', {
@@ -1294,14 +1316,30 @@ const AdminDashboard = () => {
         }
     }, [selectedMonday, currentUser, users, t, holidaysByCanton]);
 
-    const handleDataReloadNeeded = useCallback(() => {
-        fetchAllDailySummaries();
-        fetchAllVacations();
-        fetchAllCorrections();
-        fetchAllSickLeavesForAdmin();
-        fetchTrackingBalances();
-        fetchUsers();
+    const handleDataReloadNeeded = useCallback(async () => {
+        // Feiertage werden pro Jahr/Kanton gecacht. Bei fachlichen Änderungen und
+        // Fokus-Revalidierungen muss auch dieser Cache bewusst neu aufgebaut werden.
+        setHolidaysByCanton({});
+        await Promise.all([
+            fetchAllDailySummaries(),
+            fetchAllVacations(),
+            fetchAllCorrections(),
+            fetchAllSickLeavesForAdmin(),
+            fetchTrackingBalances(),
+            fetchUsers(),
+        ]);
     }, [fetchAllDailySummaries, fetchAllVacations, fetchAllCorrections, fetchAllSickLeavesForAdmin, fetchTrackingBalances, fetchUsers]);
+
+    useRefreshOnMutation(
+        ADMIN_DASHBOARD_REFRESH_SCOPES,
+        handleDataReloadNeeded,
+        {
+            enabled: Boolean(currentUser),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
 
     const handleAdminPunch = useCallback(async () => {
         if (!canCurrentAdminPunch || !currentUser?.username || isAdminPunching) return;
@@ -1325,19 +1363,14 @@ const AdminDashboard = () => {
                 `${t('manualPunchMessage', 'Manuell eingestempelt')} ${currentUser.username}${punchDetails ? ` (${punchDetails})` : ''}`,
                 'success'
             );
-            handleDataReloadNeeded();
         } catch (error) {
             console.error('Admin punch error:', error);
             notify(t('manualPunchError', 'Fehler beim manuellen Einstempeln.'), 'error');
         } finally {
             setIsAdminPunching(false);
         }
-    }, [canCurrentAdminPunch, currentUser?.username, handleDataReloadNeeded, isAdminPunching, notify, t]);
+    }, [canCurrentAdminPunch, currentUser?.username, isAdminPunching, notify, t]);
 
-
-    useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
 
     useEffect(() => {
         if (currentUser) {
@@ -1434,7 +1467,7 @@ const AdminDashboard = () => {
         updateSelectedWeek(new Date());
     }
 
-    async function handleApproveVacation(id, adminNote = '') {
+    async function handleApproveVacation(id, adminNote = '', { reload = false } = {}) {
         if (!canManageAdminDashboard) {
             notifyAdminDashboardReadOnly();
             return;
@@ -1446,13 +1479,15 @@ const AdminDashboard = () => {
                 adminNote,
             });
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
-            handleDataReloadNeeded();
+            if (reload) {
+                await handleDataReloadNeeded();
+            }
         } catch (err) {
             console.error('Error approving vacation', err);
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
-    async function handleDenyVacation(id, adminNote = '') {
+    async function handleDenyVacation(id, adminNote = '', { reload = false } = {}) {
         if (!canManageAdminDashboard) {
             notifyAdminDashboardReadOnly();
             return;
@@ -1464,14 +1499,16 @@ const AdminDashboard = () => {
                 adminNote,
             });
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
-            fetchAllVacations();
+            if (reload) {
+                await handleDataReloadNeeded();
+            }
         } catch (err) {
             console.error('Error denying vacation', err);
             notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
 
-    async function handleApproveCorrection(id, comment) {
+    async function handleApproveCorrection(id, comment, { reload = false } = {}) {
         if (!canManageAdminDashboard) {
             notifyAdminDashboardReadOnly();
             return;
@@ -1479,14 +1516,16 @@ const AdminDashboard = () => {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
-            handleDataReloadNeeded();
+            if (reload) {
+                await handleDataReloadNeeded();
+            }
         } catch (error) {
             console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
         }
     }
 
-    async function handleDenyCorrection(id, comment) {
+    async function handleDenyCorrection(id, comment, { reload = false } = {}) {
         if (!canManageAdminDashboard) {
             notifyAdminDashboardReadOnly();
             return;
@@ -1494,7 +1533,9 @@ const AdminDashboard = () => {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg')} #${id}`, "success");
-            handleDataReloadNeeded();
+            if (reload) {
+                await handleDataReloadNeeded();
+            }
         } catch (error) {
             console.error(`Fehler beim Ablehnen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
@@ -1538,7 +1579,6 @@ const AdminDashboard = () => {
             await api.put(`/api/admin/timetracking/editDay/${editTargetUsername}/${formattedDate}`, updatedEntriesForDay);
             setEditModalVisible(false);
             notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
-            handleDataReloadNeeded();
         } catch (err) {
             console.error('Edit failed', err);
             const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
@@ -1722,6 +1762,28 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
+    const adminOverviewProps = {
+        t,
+        currentUser,
+        allVacations,
+        allCorrections,
+        allSickLeaves,
+        weeklyBalances: filteredWeeklyBalances,
+        users,
+        issueSummary,
+        onOpenTime: () => openDashboardTab('time'),
+        onOpenRequests: () => openDashboardTab('requests'),
+        onOpenCalendar: () => openDashboardTab('calendar'),
+        onOpenModules: () => openDashboardTab('modules'),
+        onNavigateToVacations: handleNavigateToVacations,
+        onNavigateToCorrections: handleNavigateToCorrections,
+        onShowIssueOverview: handleShowIssueOverview,
+        onFocusNegativeBalances: handleFocusNegativeBalances,
+        onFocusOvertimeLeaders: handleFocusPositiveBalances,
+        onFocusEmployee: handleFocusUserFromTask,
+        onOpenAnalytics: hasFeature('analytics') ? handleOpenAnalytics : null,
+    };
+
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
@@ -1799,59 +1861,110 @@ const AdminDashboard = () => {
 
                 <main className="admin-dashboard-panels">
                     <section className={`dashboard-tab-panel ${activeMainTab === 'overview' ? 'is-active' : ''}`}>
-                        <AdminDashboardOverview
-                            t={t}
-                            currentUser={currentUser}
-                            allVacations={allVacations}
-                            allCorrections={allCorrections}
-                            allSickLeaves={allSickLeaves}
-                            weeklyBalances={filteredWeeklyBalances}
-                            users={users}
-                            issueSummary={issueSummary}
-                            onOpenTime={() => openDashboardTab('time')}
-                            onOpenRequests={() => openDashboardTab('requests')}
-                            onOpenCalendar={() => openDashboardTab('calendar')}
-                            onOpenModules={() => openDashboardTab('modules')}
-                            onNavigateToVacations={handleNavigateToVacations}
-                            onNavigateToCorrections={handleNavigateToCorrections}
-                            onShowIssueOverview={handleShowIssueOverview}
-                            onFocusNegativeBalances={handleFocusNegativeBalances}
-                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                            onFocusEmployee={handleFocusUserFromTask}
-                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                        <ConfigurableDashboard
+                            context="ADMIN"
+                            scope="overview"
+                            permissionContext={currentUser}
+                            storageIdentity={currentUser?.id || currentUser?.username}
+                            registry={[
+                                {
+                                    id: 'admin-intro',
+                                    title: t('dashboardWidgets.adminIntro', 'Begrüßung & Zeitraum'),
+                                    description: t('dashboardWidgets.adminIntroDescription', 'Persönliche Wochenzusammenfassung und aktueller Zeitraum.'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'full',
+                                    sizes: ['full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="intro" />,
+                                },
+                                {
+                                    id: 'admin-action-center',
+                                    title: t('dashboardWidgets.adminActionCenter', 'Action Center'),
+                                    description: t('dashboardWidgets.adminActionCenterDescription', 'Offene Aufgaben, Zeitprobleme und Team-Salden.'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'full',
+                                    sizes: ['L', 'full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="actionCenter" />,
+                                },
+                                {
+                                    id: 'admin-critical-employees',
+                                    title: t('dashboardWidgets.adminCriticalEmployees', 'Kritische Mitarbeitende'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'M',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="criticalEmployees" />,
+                                },
+                                {
+                                    id: 'admin-absences',
+                                    title: t('dashboardWidgets.adminAbsences', 'Abwesenheiten im Team'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'M',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="absences" />,
+                                },
+                                {
+                                    id: 'admin-open-requests',
+                                    title: t('dashboardWidgets.adminOpenRequests', 'Offene Anträge'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'M',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="requests" />,
+                                },
+                                {
+                                    id: 'admin-module-shortcuts',
+                                    title: t('dashboardWidgets.adminModuleShortcuts', 'Admin-Module'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'M',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: <AdminDashboardOverview {...adminOverviewProps} section="shortcuts" />,
+                                },
+                            ]}
                         />
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'time' ? 'is-active' : ''}`}>
-                        <div className="team-overview-content">
-                            <section className="team-overview-main">
-                                <AdminWeekSection
-                                    ref={weekSectionRef}
-                                    t={t}
-                                    weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                                    selectedMonday={selectedMonday}
-                                    handlePrevWeek={handlePrevWeek}
-                                    handleNextWeek={handleNextWeek}
-                                    handleWeekJump={handleWeekJump}
-                                    handleCurrentWeek={handleCurrentWeek}
-                                    onFocusProblemWeek={focusWeekForProblem}
-                                    dailySummariesForWeekSection={dailySummaries}
-                                    allVacations={allVacations}
-                                    allSickLeaves={allSickLeaves}
-                                    allHolidays={holidaysByCanton}
-                                    users={users}
-                                    defaultExpectedHours={defaultExpectedHours}
-                                    openEditModal={openEditModal}
-                                    openPrintUserModal={openPrintUserModal}
-                                    rawUserTrackingBalances={filteredWeeklyBalances}
-                                    openNewEntryModal={openNewEntryModal}
-                                    onDataReloadNeeded={handleDataReloadNeeded}
-                                    onIssueSummaryChange={handleIssueSummaryUpdate}
-                                    showSmartOverview={false}
-                                    onOpenUserOverview={handleOpenUserOverview}
-                                />
-                            </section>
-                        </div>
+                        <ConfigurableDashboard
+                            context="ADMIN"
+                            scope="time"
+                            permissionContext={currentUser}
+                            storageIdentity={currentUser?.id || currentUser?.username}
+                            registry={[{
+                                id: 'team-time-review',
+                                title: t('dashboardWidgets.teamTime', 'Team-Zeitprüfung'),
+                                requiredPagePermission: 'adminDashboard',
+                                defaultSize: 'full',
+                                sizes: ['full'],
+                                component: (
+                                    <div className="team-overview-content">
+                                        <section className="team-overview-main">
+                                            <AdminWeekSection
+                                                ref={weekSectionRef}
+                                                t={t}
+                                                weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                                                selectedMonday={selectedMonday}
+                                                handlePrevWeek={handlePrevWeek}
+                                                handleNextWeek={handleNextWeek}
+                                                handleWeekJump={handleWeekJump}
+                                                handleCurrentWeek={handleCurrentWeek}
+                                                onFocusProblemWeek={focusWeekForProblem}
+                                                dailySummariesForWeekSection={dailySummaries}
+                                                allVacations={allVacations}
+                                                allSickLeaves={allSickLeaves}
+                                                allHolidays={holidaysByCanton}
+                                                users={users}
+                                                defaultExpectedHours={defaultExpectedHours}
+                                                openEditModal={openEditModal}
+                                                openPrintUserModal={openPrintUserModal}
+                                                rawUserTrackingBalances={filteredWeeklyBalances}
+                                                openNewEntryModal={openNewEntryModal}
+                                                onIssueSummaryChange={handleIssueSummaryUpdate}
+                                                showSmartOverview={false}
+                                                onOpenUserOverview={handleOpenUserOverview}
+                                            />
+                                        </section>
+                                    </div>
+                                ),
+                            }]}
+                        />
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'requests' ? 'is-active' : ''}`}>
@@ -1860,168 +1973,118 @@ const AdminDashboard = () => {
                             <h3>{t('adminDashboard.requestsCenterTitle', 'Antragscenter')}</h3>
                             <p>{t('adminDashboard.requestsCenterSubtitle', 'Offene Korrekturen und Urlaub zuerst prüfen, erledigte Vorgänge bleiben erreichbar.')}</p>
                         </div>
-                        <section className="dashboard-requests-section">
-                            <div ref={vacationSectionRef}>
-                                <AdminVacationRequests
-                                    t={t}
-                                    allVacations={allVacations}
-                                    handleApproveVacation={handleApproveVacation}
-                                    handleDenyVacation={handleDenyVacation}
-                                    onReloadVacations={fetchAllVacations}
-                                    openSignal={vacationOpenSignal}
-                                    canManage={canManageAdminDashboard}
-                                    users={users}
-                                    focusedRequest={focusedRequest}
-                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
-                                />
-                            </div>
-                            <div ref={correctionSectionRef}>
-                                <AdminCorrectionsList
-                                    t={t}
-                                    allCorrections={allCorrections}
-                                    onApprove={handleApproveCorrection}
-                                    onDeny={handleDenyCorrection}
-                                    openSignal={correctionOpenSignal}
-                                    canManage={canManageAdminDashboard}
-                                    users={users}
-                                    focusedRequest={focusedRequest}
-                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
-                                />
-                            </div>
-                        </section>
+                        <ConfigurableDashboard
+                            context="ADMIN"
+                            scope="requests"
+                            permissionContext={currentUser}
+                            storageIdentity={currentUser?.id || currentUser?.username}
+                            registry={[
+                                {
+                                    id: 'vacation-requests',
+                                    title: t('dashboardWidgets.vacationRequests', 'Urlaubsanträge'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'full',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: (
+                                        <div ref={vacationSectionRef}>
+                                            <AdminVacationRequests
+                                                t={t}
+                                                allVacations={allVacations}
+                                                handleApproveVacation={handleApproveVacation}
+                                                handleDenyVacation={handleDenyVacation}
+                                                openSignal={vacationOpenSignal}
+                                                canManage={canManageAdminDashboard}
+                                                users={users}
+                                                focusedRequest={focusedRequest}
+                                                onOpenInTimeReview={handleOpenRequestInTimeReview}
+                                            />
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    id: 'correction-requests',
+                                    title: t('dashboardWidgets.correctionRequests', 'Korrekturanträge'),
+                                    requiredPagePermission: 'adminDashboard',
+                                    defaultSize: 'full',
+                                    sizes: ['M', 'L', 'full'],
+                                    component: (
+                                        <div ref={correctionSectionRef}>
+                                            <AdminCorrectionsList
+                                                t={t}
+                                                allCorrections={allCorrections}
+                                                onApprove={handleApproveCorrection}
+                                                onDeny={handleDenyCorrection}
+                                                openSignal={correctionOpenSignal}
+                                                canManage={canManageAdminDashboard}
+                                                users={users}
+                                                focusedRequest={focusedRequest}
+                                                onOpenInTimeReview={handleOpenRequestInTimeReview}
+                                            />
+                                        </div>
+                                    ),
+                                },
+                            ]}
+                        />
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'calendar' ? 'is-active' : ''}`}>
-                        <section
-                            className="admin-calendar-section"
-                            aria-label={t('adminDashboard.vacationCalendarAria', 'Abwesenheitskalender Übersicht')}
-                        >
-                            <div className="admin-calendar-card">
-                                <div className="dashboard-panel-intro compact">
-                                    <span>{t('adminDashboard.tabs.calendar', 'Kalender')}</span>
-                                    <h3>{t('adminDashboard.vacationCalendarTitle')}</h3>
-                                    <p>{t('adminDashboard.calendarPanelSubtitle', 'Detailansicht für Urlaub, Krankheit und geplante Abwesenheiten.')}</p>
-                                </div>
-                                <VacationCalendarAdmin
-                                    vacationRequests={allVacations.filter(v => v.approved)}
-                                    onReloadVacations={handleDataReloadNeeded}
-                                    companyUsers={users}
-                                />
-                            </div>
-                        </section>
+                        <ConfigurableDashboard
+                            context="ADMIN"
+                            scope="calendar"
+                            permissionContext={currentUser}
+                            storageIdentity={currentUser?.id || currentUser?.username}
+                            registry={[{
+                                id: 'absence-calendar',
+                                title: t('adminDashboard.vacationCalendarTitle', 'Abwesenheitskalender'),
+                                requiredPagePermission: 'adminDashboard',
+                                defaultSize: 'full',
+                                sizes: ['full'],
+                                component: (
+                                    <section
+                                        className="admin-calendar-section"
+                                        aria-label={t('adminDashboard.vacationCalendarAria', 'Abwesenheitskalender Übersicht')}
+                                    >
+                                        <div className="admin-calendar-card">
+                                            <div className="dashboard-panel-intro compact">
+                                                <span>{t('adminDashboard.tabs.calendar', 'Kalender')}</span>
+                                                <h3>{t('adminDashboard.vacationCalendarTitle')}</h3>
+                                                <p>{t('adminDashboard.calendarPanelSubtitle', 'Detailansicht für Urlaub, Krankheit und geplante Abwesenheiten.')}</p>
+                                            </div>
+                                            <VacationCalendarAdmin
+                                                vacationRequests={allVacations.filter(v => v.approved)}
+                                                companyUsers={users}
+                                            />
+                                        </div>
+                                    </section>
+                                ),
+                            }]}
+                        />
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'modules' ? 'is-active' : ''}`}>
-                        <AccessiblePagesPanel
-                            context="admin"
-                            title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
-                            subtitle={t('adminDashboard.modulesSubtitle', 'Kompakter Zugriff auf die Module, die für diesen Benutzer freigegeben sind.')}
+                        <ConfigurableDashboard
+                            context="ADMIN"
+                            scope="modules"
+                            permissionContext={currentUser}
+                            storageIdentity={currentUser?.id || currentUser?.username}
+                            registry={[{
+                                id: 'admin-modules',
+                                title: t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten'),
+                                requiredPagePermission: 'adminDashboard',
+                                defaultSize: 'full',
+                                sizes: ['M', 'L', 'full'],
+                                component: (
+                                    <AccessiblePagesPanel
+                                        context="admin"
+                                        title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
+                                        subtitle={t('adminDashboard.modulesSubtitle', 'Kompakter Zugriff auf die Module, die für diesen Benutzer freigegeben sind.')}
+                                    />
+                                ),
+                            }]}
                         />
                     </section>
                 </main>
 
-                {false && (
-                    <>
-
-            <AccessiblePagesPanel
-                context="admin"
-                title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
-                subtitle={t('adminDashboard.modulesSubtitleDetailed', 'Diese Kacheln richten sich direkt nach den vergebenen Benutzerrechten.')}
-            />
-
-            <section
-                className="dashboard-summary-section"
-                aria-label={t('adminDashboard.summary.ariaLabel', 'Aktueller Admin-Überblick')}
-            >
-                <div className="dashboard-overview-main">
-                    <AdminDashboardKpis
-                        t={t}
-                        allVacations={allVacations}
-                        allCorrections={allCorrections}
-                        weeklyBalances={filteredWeeklyBalances}
-                        users={users}
-                        onNavigateToVacations={handleNavigateToVacations}
-                        onNavigateToCorrections={handleNavigateToCorrections}
-                        onShowIssueOverview={handleShowIssueOverview}
-                        onFocusNegativeBalances={handleFocusNegativeBalances}
-                        onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                        onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-                    />
-                </div>
-            </section>
-
-            <div className="team-overview-content">
-                <section className="team-overview-main">
-                    <AdminWeekSection
-                        ref={weekSectionRef}
-                        t={t}
-                        weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                        selectedMonday={selectedMonday}
-                        handlePrevWeek={handlePrevWeek}
-                        handleNextWeek={handleNextWeek}
-                        handleWeekJump={handleWeekJump}
-                        handleCurrentWeek={handleCurrentWeek}
-                        onFocusProblemWeek={focusWeekForProblem}
-                        dailySummariesForWeekSection={dailySummaries}
-                        allVacations={allVacations}
-                        allSickLeaves={allSickLeaves}
-                        allHolidays={holidaysByCanton}
-                        users={users}
-                        defaultExpectedHours={defaultExpectedHours}
-                        openEditModal={openEditModal}
-                        openPrintUserModal={openPrintUserModal}
-                        rawUserTrackingBalances={filteredWeeklyBalances}
-                        openNewEntryModal={openNewEntryModal}
-                        onDataReloadNeeded={handleDataReloadNeeded}
-                        onIssueSummaryChange={handleIssueSummaryUpdate}
-                        showSmartOverview={false}
-                        onOpenUserOverview={handleOpenUserOverview}
-                    />
-                </section>
-
-            </div>
-
-            <section className="dashboard-requests-section">
-                <div ref={vacationSectionRef}>
-                    <AdminVacationRequests
-                        t={t}
-                        allVacations={allVacations}
-                        handleApproveVacation={handleApproveVacation}
-                        handleDenyVacation={handleDenyVacation}
-                        onReloadVacations={fetchAllVacations}
-                        openSignal={vacationOpenSignal}
-                        canManage={canManageAdminDashboard}
-                        users={users}
-                    />
-                </div>
-                <div ref={correctionSectionRef}>
-                    <AdminCorrectionsList
-                        t={t}
-                        allCorrections={allCorrections}
-                        onApprove={handleApproveCorrection}
-                        onDeny={handleDenyCorrection}
-                        openSignal={correctionOpenSignal}
-                        canManage={canManageAdminDashboard}
-                        users={users}
-                    />
-                </div>
-            </section>
-
-            <section
-                className="admin-calendar-section"
-                aria-label={t('adminDashboard.vacationCalendarAria', 'Abwesenheitskalender Übersicht')}
-            >
-                <div className="admin-calendar-card">
-                    <h3>{t('adminDashboard.vacationCalendarTitle')}</h3>
-                    <VacationCalendarAdmin
-                        vacationRequests={allVacations.filter(v => v.approved)}
-                        onReloadVacations={handleDataReloadNeeded}
-                        users={users}
-                    />
-                </div>
-            </section>
-                    </>
-                )}
             </div>
             {paletteOpen && (
                 <div className="command-palette-overlay" role="dialog" aria-modal="true">

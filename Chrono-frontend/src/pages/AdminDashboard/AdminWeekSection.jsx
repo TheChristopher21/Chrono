@@ -30,6 +30,7 @@ import {
 import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
+import { formatEntrySourceIndicator } from '../../utils/correctionActor';
 import CalculationStatusNotice, {
     CALCULATION_STATUS,
     formatCalculatedMinutes,
@@ -2236,16 +2237,7 @@ const AdminWeekSection = forwardRef(({
                                                                                     typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
                                                                                 } catch (e) { /* Fallback */ }
 
-                                                                                let sourceIndicator = '';
-                                                                                if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-                                                                                } else if (entry.source === 'ADMIN_CORRECTION') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-                                                                                } else if (entry.source === 'USER_CORRECTION') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-                                                                                } else if (entry.source === 'MANUAL_IMPORT') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-                                                                                }
+                                                                                const sourceIndicator = formatEntrySourceIndicator(entry, t);
 
                                                                                 return (
                                                                                     <li key={entry.id || entry.key} className="py-0.5">
@@ -2586,6 +2578,8 @@ AdminWeekSection.propTypes = {
                     source: PropTypes.string, // e.g., 'NFC_SCAN', 'MANUAL_PUNCH', 'SYSTEM_AUTO_END', 'ADMIN_CORRECTION'
                     correctedByUser: PropTypes.bool, // Indicates if an admin or system correction was then user-corrected
                     systemGeneratedNote: PropTypes.string,
+                    correctionAdminUsername: PropTypes.string,
+                    correctionAdminInitials: PropTypes.string,
                     key: PropTypes.string // Client-side key for React lists, optional
                 })
             ).isRequired,
@@ -2648,7 +2642,7 @@ AdminWeekSection.propTypes = {
         trackingBalance: PropTypes.number.isRequired, // Assuming this structure
     })),
     openNewEntryModal: PropTypes.func.isRequired,
-    onDataReloadNeeded: PropTypes.func.isRequired,
+    onDataReloadNeeded: PropTypes.func,
     onIssueSummaryChange: PropTypes.func,
     showSmartOverview: PropTypes.bool,
     onOpenUserOverview: PropTypes.func,

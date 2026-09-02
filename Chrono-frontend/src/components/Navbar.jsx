@@ -16,6 +16,7 @@ import {
     isSuperAdminUser,
 } from '../utils/pageAccess.js';
 import ChangelogModal from './ChangelogModal';
+import WorkspaceTabStrip from './workspace/WorkspaceTabStrip.jsx';
 
 const IconChevronDown = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -86,9 +87,10 @@ const Navbar = () => {
     const publicRoutes = !authToken ? ['/', '/login', '/register'] : ['/login', '/register'];
     const isPublicPage = publicRoutes.includes(location.pathname);
 
-    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+    const [theme, setTheme] = useState(() => (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'));
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
         localStorage.setItem('theme', theme);
     }, [theme]);
     const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -350,9 +352,10 @@ const Navbar = () => {
             )}
         </div>
     ) : null;
+    const showWorkspaceTabs = Boolean(authToken && !isPublicPage && currentUser);
 
     return (
-        <div className={styles['scoped-navbar']}>
+        <div className={`${styles['scoped-navbar']} chrono-navbar-shell ${showWorkspaceTabs ? 'has-workspace-tabs' : ''}`}>
             <nav className={styles.navbar} aria-label="Hauptnavigation">
                 <div className={styles['navbar-brand']}>
                     <Link to="/" className={styles['navbar-logo']}>
@@ -564,6 +567,8 @@ const Navbar = () => {
                     </div>
                 )}
             </nav>
+
+            {showWorkspaceTabs && <WorkspaceTabStrip />}
 
             {showChangelogModal && (
                 <ChangelogModal

@@ -104,31 +104,18 @@ const renderWorkspace = (overrides = {}) => {
 describe('PmsOperationsWorkspace', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        apiMock.get.mockResolvedValue({ data: { roomTypes: [] } });
         apiMock.post.mockResolvedValue({ data: operations });
         apiMock.put.mockResolvedValue({ data: operations });
     });
 
-    it('creates a complete reservation with guest, rate and optional room assignment', async () => {
-        const { onOperationsChange } = renderWorkspace();
+    it('integrates the guided reception flow into the reservation workspace', async () => {
+        renderWorkspace();
 
-        await userEvent.selectOptions(screen.getByLabelText('Gast'), '7');
-        await waitFor(() => expect(screen.getByLabelText('Ratenplan')).toHaveValue('20'));
-        await userEvent.selectOptions(screen.getByLabelText('Zimmer (optional)'), '30');
-        await userEvent.click(screen.getByRole('button', { name: 'Reservierung anlegen' }));
-
-        expect(apiMock.post).toHaveBeenCalledWith(
-            '/api/pms/reservations?businessDate=2026-07-28',
-            expect.objectContaining({
-                propertyId: 5,
-                guestId: 7,
-                roomTypeId: 10,
-                roomId: 30,
-                ratePlanId: 20,
-                status: 'CONFIRMED',
-            }),
-        );
-        expect(onOperationsChange).toHaveBeenCalledWith(operations);
-        expect(await screen.findByText('Reservierung angelegt.')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Reservierung anlegen' })).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: 'Fortschritt der Rezeptionsbuchung' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Weiter zur Verfügbarkeit' })).toBeEnabled();
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     });
 
     it('checks availability through the company-scoped hotel endpoint', async () => {
@@ -145,14 +132,65 @@ describe('PmsOperationsWorkspace', () => {
         });
         renderWorkspace();
 
-        await userEvent.click(screen.getByRole('button', { name: 'Verfügbarkeit prüfen' }));
-
-        expect(apiMock.get).toHaveBeenCalledWith('/api/pms/properties/5/availability', {
-            params: expect.objectContaining({
-                arrival: '2026-07-28',
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(
+            '/api/pms/properties/5/availability',
+            expect.objectContaining({
+                params: expect.objectContaining({ arrival: '2026-07-28' }),
+                signal: expect.any(AbortSignal),
             }),
+        ));
+        await userEvent.click(screen.getByRole('button', { name: 'Weiter zur Verfügbarkeit' }));
+        expect(await screen.findByText('1 Zimmer verfügbar')).toBeInTheDocument();
+    });
+
+    it('opens the completed booking folio already selected for payment', async () => {
+        apiMock.get.mockResolvedValue({
+            data: {
+                roomTypes: [{
+                    roomTypeId: 10,
+                    name: 'Doppelzimmer',
+                    totalRooms: 1,
+                    availableRooms: 1,
+                    rates: [{
+                        ratePlanId: 20,
+                        name: 'Beste Rate',
+                        currencyCode: 'CHF',
+                        totalAmount: 120,
+                        available: true,
+                    }],
+                }],
+            },
         });
-        expect(await screen.findByText('1 von 1 verfügbar')).toBeInTheDocument();
+        apiMock.post.mockResolvedValue({
+            data: {
+                guestId: 7,
+                reservationId: 60,
+                folioId: 50,
+                confirmationCode: 'CHR-TEST',
+                totalAmount: 120,
+                balance: 120,
+                registrationStatus: 'PENDING',
+                reservationStatus: 'CONFIRMED',
+                checkInReady: false,
+                checkInBlockers: [],
+                operations,
+            },
+        });
+        const onSectionChange = vi.fn();
+        renderWorkspace({ onSectionChange });
+
+        await userEvent.click(screen.getByRole('button', { name: 'Weiter zur Verfügbarkeit' }));
+        await userEvent.click(await screen.findByRole('radio', { name: /Doppelzimmer · Beste Rate/ }));
+        await userEvent.click(screen.getByRole('button', { name: 'Weiter zum Gast' }));
+        await userEvent.click(screen.getByRole('radio', { name: /Gabriela Tschopp/ }));
+        await userEvent.click(screen.getByRole('button', { name: 'Weiter zur Prüfung' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Reservierung verbindlich anlegen' }));
+        await userEvent.click(await screen.findByRole('button', { name: 'Gastkonto öffnen' }));
+
+        expect(onSectionChange).toHaveBeenCalledWith('folios');
+        expect(screen.getByRole('combobox', { name: 'Gastkonto (Folio)' })).toHaveValue('50');
+        expect(screen.getByRole('spinbutton', { name: 'Betrag' })).toHaveValue(120);
+        expect(screen.getByRole('status')).toHaveTextContent('CHR-TEST ist für die weitere Abrechnung ausgewählt.');
     });
 
     it('updates housekeeping state with the complete task payload', async () => {
@@ -351,11 +389,12 @@ describe('PmsOperationsWorkspace', () => {
         );
     });
 
-    it('prevents all operational writes for a view-only user', () => {
+    it('prevents all operational writes for a view-only user', async () => {
         renderWorkspace({ canManage: false });
 
-        expect(screen.getByText(/Du hast Lesezugriff/)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Reservierung anlegen' })).toBeDisabled();
+        expect(screen.getByText(/Eine Rezeptionsbuchung kann nicht gespeichert werden/)).toBeInTheDocument();
+        expect(apiMock.post).not.toHaveBeenCalled();
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     });
 
     it('exports guest privacy data only from the administrator workspace', async () => {

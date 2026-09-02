@@ -263,7 +263,7 @@ export default function ChatWidget() {
                                 </span>
                             )}
                         </div>
-                        <button className="close-btn" onClick={toggle}>×</button>
+                        <button type="button" className="close-btn" onClick={toggle} aria-label="Chat schließen">×</button>
                     </div>
                     <div className="chat-window" ref={chatWindowRef}>
                         {messages.map((m, i) => (
@@ -294,7 +294,7 @@ export default function ChatWidget() {
                             placeholder="Stelle eine Frage..."
                             disabled={loading}
                         />
-                        <button onClick={send} disabled={loading} className="send-btn">
+                        <button type="button" onClick={send} disabled={loading} className="send-btn" aria-label="Nachricht senden">
                             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
                                 <path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/>
                             </svg>

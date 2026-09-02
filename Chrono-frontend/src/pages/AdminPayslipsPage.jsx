@@ -4,6 +4,7 @@ import api from '../utils/api';
 import '../styles/AdminPayslipsPageScoped.css';
 import { useTranslation, LanguageContext } from '../context/LanguageContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 const emptyForm = {
   userId: '',
@@ -101,9 +102,15 @@ const AdminPayslipsPage = () => {
 
   const refreshPayslips = () => {
     setLoading(true);
-    Promise.all([fetchPending(), fetchApproved()])
+    return Promise.all([fetchPending(), fetchApproved()])
       .finally(() => setLoading(false));
   };
+
+  useRefreshOnMutation(['payroll', 'people'], refreshPayslips, {
+    refreshOnLocalMutation: false,
+    refreshOnFocus: true,
+    focusThrottleMs: 30_000,
+  });
 
   const approve = (id, comment) => {
     return api.post(`/api/payslips/approve/${id}`, null, { params: { comment } }).then(() => {

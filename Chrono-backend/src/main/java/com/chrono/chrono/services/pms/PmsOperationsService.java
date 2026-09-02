@@ -293,6 +293,27 @@ public class PmsOperationsService {
                     long total = inventory.total();
                     long sold = inventory.maximumSold();
                     long available = inventory.minimumAvailable();
+                    List<AvailabilityResponse.AvailableRoom> freeRooms = rooms.stream()
+                            .filter(Room::isActive)
+                            .filter(room -> room.getOperationalStatus() == RoomOperationalStatus.IN_SERVICE)
+                            .filter(room -> room.getRoomType().getId().equals(roomType.getId()))
+                            .filter(room -> overlappingReservations.stream().noneMatch(reservation ->
+                                    reservation.getRoom() != null
+                                            && reservation.getRoom().getId().equals(room.getId())
+                                            && !NON_INVENTORY_STATUSES.contains(reservation.getStatus())))
+                            .filter(room -> overlappingBlocks.stream().noneMatch(block ->
+                                    block.getRoom().getId().equals(room.getId())
+                                            && block.getStatus() == RoomBlockStatus.ACTIVE
+                                            && INVENTORY_BLOCKING_ROOM_BLOCK_TYPES.contains(block.getType())))
+                            .map(room -> new AvailabilityResponse.AvailableRoom(
+                                    room.getId(),
+                                    room.getNumber(),
+                                    room.getFloor(),
+                                    room.getHousekeepingStatus(),
+                                    arrival.equals(today(property))
+                                            && room.getHousekeepingStatus() == HousekeepingStatus.CLEAN
+                            ))
+                            .toList();
                     List<AvailabilityResponse.RateOption> rates = ratePlans.stream()
                             .filter(RatePlan::isActive)
                             .filter(ratePlan -> ratePlan.getRoomType().getId().equals(roomType.getId()))
@@ -318,7 +339,8 @@ public class PmsOperationsService {
                             total,
                             sold,
                             available,
-                            rates
+                            rates,
+                            freeRooms
                     );
                 })
                 .toList();
@@ -331,12 +353,18 @@ public class PmsOperationsService {
                                              Long propertyId,
                                              UpsertGuestRequest request,
                                              LocalDate businessDate) {
+        createGuestRecord(company, propertyId, request);
+        return getOperations(company, propertyId, businessDate, null, null);
+    }
+
+    GuestProfile createGuestRecord(Company company,
+                                   Long propertyId,
+                                   UpsertGuestRequest request) {
         requireProperty(company, propertyId);
         GuestProfile guest = new GuestProfile();
         guest.setCompany(company);
         applyGuest(guest, request);
-        guestRepository.save(guest);
-        return getOperations(company, propertyId, businessDate, null, null);
+        return guestRepository.save(guest);
     }
 
     @Transactional
@@ -516,18 +544,37 @@ public class PmsOperationsService {
                                          LocalDate businessDate) {
         Reservation reservation = requireReservation(company, reservationId);
         HotelProperty property = lockProperty(company, reservation.getProperty().getId());
-        LocalDate now = today(property);
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw conflict("Nur bestätigte Reservierungen können eingecheckt werden.");
+        List<String> blockers = checkInBlockers(reservation);
+        if (!blockers.isEmpty()) {
+            throw conflict(blockers.get(0));
         }
+        transition(reservation, ReservationStatus.CHECKED_IN, username, "Check-in");
+        reservation.setCheckedInAt(LocalDateTime.now());
+        reservationRepository.save(reservation);
+        emit(reservation, "reservation.checked_in");
+        return getOperations(company, property.getId(), businessDate, null, null);
+    }
+
+    List<String> checkInBlockers(Reservation reservation) {
+        List<String> blockers = new ArrayList<>();
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            blockers.add("Nur bestätigte Reservierungen können eingecheckt werden.");
+        }
+        LocalDate now = today(reservation.getProperty());
         if (now.isBefore(reservation.getArrivalDate()) || !now.isBefore(reservation.getDepartureDate())) {
-            throw conflict("Der Check-in liegt ausserhalb des gebuchten Aufenthalts.");
+            blockers.add("Der Check-in liegt ausserhalb des gebuchten Aufenthalts.");
         }
         Room room = reservation.getRoom();
         if (room == null) {
-            throw conflict("Vor dem Check-in muss ein Zimmer zugewiesen werden.");
+            blockers.add("Vor dem Check-in muss ein Zimmer zugewiesen werden.");
+            return blockers;
         }
-        ensureRoomReady(room);
+        if (!room.isActive() || room.getOperationalStatus() != RoomOperationalStatus.IN_SERVICE) {
+            blockers.add("Das Zimmer ist nicht in Betrieb.");
+        }
+        if (room.getHousekeepingStatus() != HousekeepingStatus.CLEAN) {
+            blockers.add("Das Zimmer muss vor dem Check-in als sauber markiert sein.");
+        }
         if (reservationRepository.countOverlappingByRoom(
                 room.getId(),
                 reservation.getArrivalDate(),
@@ -535,13 +582,9 @@ public class PmsOperationsService {
                 NON_INVENTORY_STATUSES,
                 reservation.getId()
         ) > 0) {
-            throw conflict("Das zugewiesene Zimmer ist bereits belegt.");
+            blockers.add("Das zugewiesene Zimmer ist bereits belegt.");
         }
-        transition(reservation, ReservationStatus.CHECKED_IN, username, "Check-in");
-        reservation.setCheckedInAt(LocalDateTime.now());
-        reservationRepository.save(reservation);
-        emit(reservation, "reservation.checked_in");
-        return getOperations(company, property.getId(), businessDate, null, null);
+        return blockers;
     }
 
     public PmsOperationsResponse checkIn(Company company,

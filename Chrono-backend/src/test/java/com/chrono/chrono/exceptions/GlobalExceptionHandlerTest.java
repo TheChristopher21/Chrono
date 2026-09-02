@@ -81,4 +81,19 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertEquals("Keine Berechtigung für diese Aktion.", response.getBody().getMessage());
     }
+
+    @Test
+    void handleUiPreferenceRevisionConflict_returnsHttp409WithoutTechnicalDetails() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        ResponseEntity<ErrorResponse> response = handler.handleUiPreferenceRevisionConflict(
+                new UiPreferenceRevisionConflictException(
+                        "internal stale revision detail",
+                        new RuntimeException("database detail")
+                )
+        );
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("Preference revision conflict.", response.getBody().getMessage());
+    }
 }

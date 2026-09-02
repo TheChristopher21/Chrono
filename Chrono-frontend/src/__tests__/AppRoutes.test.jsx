@@ -137,7 +137,7 @@ describe('App PMS routing', () => {
                 currentUser: {
                     username: 'Christopher',
                     roles: ['ROLE_USER'],
-                    companyFeatureKeys: [],
+                    companyFeatureKeys: ['pms'],
                     pagePermissions: { pms: 'MANAGE' },
                 },
                 isAuthLoading: false,
@@ -157,6 +157,25 @@ describe('App PMS routing', () => {
                     roles: ['ROLE_USER'],
                     companyFeatureKeys: [],
                     pagePermissions: { pms: 'NONE' },
+                },
+                isAuthLoading: false,
+            },
+            '/pms'
+        );
+
+        expect(screen.getByText('Landing page')).toBeInTheDocument();
+        expect(screen.queryByText('Hotelverwaltung (PMS)')).not.toBeInTheDocument();
+    });
+
+    it('blocks a stale PMS page grant when the company feature is disabled', () => {
+        renderApp(
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'alice',
+                    roles: ['ROLE_USER'],
+                    companyFeatureKeys: [],
+                    pagePermissions: { pms: 'MANAGE' },
                 },
                 isAuthLoading: false,
             },

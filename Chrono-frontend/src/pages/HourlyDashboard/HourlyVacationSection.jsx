@@ -51,7 +51,7 @@ HourlyVacationSection.propTypes = {
             // Weitere Felder des VacationRequest-Objekts
         })
     ).isRequired,
-    onRefreshVacations: PropTypes.func.isRequired
+    onRefreshVacations: PropTypes.func
 };
 
 export default HourlyVacationSection;

@@ -191,6 +191,21 @@ const translations = {
         mobileTabBar: {
             ariaLabel: "Mobile Navigation",
         },
+        workspaceTabs: {
+            workspace: "Chrono Arbeitsbereiche",
+            ariaLabel: "Offene Arbeitsbereiche",
+            limitReached: "Maximal 12 Tabs. Löse oder schließe zuerst einen angehefteten Tab.",
+            unpin: "Tab lösen",
+            pin: "Tab anheften",
+            close: "Tab schließen",
+            open: "Arbeitsbereich öffnen",
+            more: "Tab-Aktionen",
+            search: "Bereich suchen …",
+            noResults: "Kein passender Bereich gefunden.",
+            closeOthers: "Andere Tabs schließen",
+            closeRight: "Tabs rechts schließen",
+            restore: "Geschlossenen Tab wiederherstellen",
+        },
         aboutChrono: {
             values: {
                 directSupport: "Direkte Betreuung statt anonymer Supportwege",
@@ -1755,6 +1770,8 @@ const translations = {
             needsCorrectionTooltip: "Automatisch beendet und unkorrigiert",
             entrySource: {
                 autoSuffix: " (Auto)",
+                adminLabel: "AdmK",
+                userLabel: "UsrK",
                 adminSuffix: " (AdmK)",
                 userSuffix: " (UsrK)",
                 importSuffix: " (Imp)",
@@ -2889,6 +2906,21 @@ const translations = {
         },
         mobileTabBar: {
             ariaLabel: "Mobile navigation",
+        },
+        workspaceTabs: {
+            workspace: "Chrono workspaces",
+            ariaLabel: "Open workspaces",
+            limitReached: "You can open up to 12 tabs. Unpin or close a pinned tab first.",
+            unpin: "Unpin tab",
+            pin: "Pin tab",
+            close: "Close tab",
+            open: "Open workspace",
+            more: "Tab actions",
+            search: "Search workspaces …",
+            noResults: "No matching workspace found.",
+            closeOthers: "Close other tabs",
+            closeRight: "Close tabs to the right",
+            restore: "Reopen closed tab",
         },
         aboutChrono: {
             values: {
@@ -4453,6 +4485,8 @@ const translations = {
             needsCorrectionTooltip: "Automatically ended and uncorrected",
             entrySource: {
                 autoSuffix: " (Auto)",
+                adminLabel: "AdmC",
+                userLabel: "UsrC",
                 adminSuffix: " (AdmC)",
                 userSuffix: " (UsrC)",
                 importSuffix: " (Imp)",

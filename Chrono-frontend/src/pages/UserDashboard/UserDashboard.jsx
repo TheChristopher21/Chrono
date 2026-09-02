@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import { parseISO } from 'date-fns';
 
 import '../../styles/global.css';
@@ -42,10 +43,20 @@ import CalculationStatusNotice, {
     CALCULATION_STATUS,
     formatCalculatedMinutes,
 } from '../../components/CalculationStatusNotice.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 
 // HINWEIS: HourlyDashboard und PercentageDashboard Imports bleiben für die Routing-Logik bestehen.
 import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx';
 import PercentageDashboard from '../../pages/PercentageDashboard/PercentageDashboard.jsx';
+
+const USER_DASHBOARD_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'holidays',
+    'company',
+];
 
 function UserDashboard() {
     const { currentUser, fetchCurrentUser } = useAuth();
@@ -210,9 +221,9 @@ function UserDashboard() {
         }
     }, [selectedProjectId]);
 
-    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation, force = false) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
-        if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+        if (!force && holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
             return;
         }
         try {
@@ -224,6 +235,32 @@ function UserDashboard() {
             setHolidaysForUserCanton({ data: {}, year, canton: cantonKey });
         }
     }, [t, holidaysForUserCanton]);
+
+    const refreshUserDashboard = useCallback(async () => {
+        if (delegatedDashboard) return;
+
+        const cantonAbbr = userProfile?.company?.cantonAbbreviation
+            || userProfile?.companyCantonAbbreviation
+            || '';
+        await Promise.all([
+            loadProfileAndInitialData(),
+            fetchDataForUser(),
+            userProfile
+                ? fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr, true)
+                : Promise.resolve(),
+        ]);
+    }, [delegatedDashboard, fetchDataForUser, fetchHolidaysForUser, loadProfileAndInitialData, selectedMonday, userProfile]);
+
+    useRefreshOnMutation(
+        USER_DASHBOARD_REFRESH_SCOPES,
+        refreshUserDashboard,
+        {
+            enabled: !delegatedDashboard && Boolean(currentUser),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
 
 
     useEffect(() => {
@@ -267,10 +304,6 @@ function UserDashboard() {
             lastPunchTimeRef.current = Date.now();
             showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
             await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
-            if (currentUser && cardUser === currentUser.username) {
-                fetchDataForUser();
-                loadProfileAndInitialData();
-            }
         } catch (err) {
             console.error('NFC error', err);
         }
@@ -291,8 +324,6 @@ function UserDashboard() {
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
-            fetchDataForUser();
-            loadProfileAndInitialData();
         } catch (err) {
             console.error('Punch-Fehler:', err);
             notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
@@ -307,7 +338,6 @@ function UserDashboard() {
                 params: { username: userProfile.username, date: isoDate }
             });
             notify(t("dailyNoteSaved", "Notiz gespeichert!"), 'success');
-            fetchDataForUser(); // Daten neu laden, um die Notiz anzuzeigen
         } catch (err) {
             console.error('Fehler beim Speichern der Tagesnotiz:', err);
             notify(t("dailyNoteError", "Notiz konnte nicht gespeichert werden."), 'error');
@@ -396,17 +426,6 @@ function UserDashboard() {
     }
 
     // Logik für Korrektur-Einreichung und PDF-Druck
-    const fetchCorrectionRequests = useCallback(async () => {
-        if (!userProfile || !userProfile.username) return;
-        try {
-            const response = await api.get(`/api/correction/user/${userProfile.username}`);
-            setCorrectionRequests(response.data || []);
-        } catch (error) {
-            console.error('Fehler beim Abrufen der Korrekturanträge:', error);
-            notify(t('userManagement.errorLoadingCorrections'), 'error');
-        }
-    }, [userProfile, notify, t]);
-
     const handleCorrectionSubmit = async (entries, reason) => {
         if (!correctionDate || !entries || entries.length === 0) {
             notify(t('hourlyDashboard.addEntryFirst'), 'error');
@@ -433,7 +452,6 @@ function UserDashboard() {
             await Promise.all(correctionPromises);
             notify(t('userDashboard.correctionSuccess'), 'success');
             setShowCorrectionModal(false);
-            fetchCorrectionRequests();
         } catch (error) {
             console.error('Fehler beim Absenden der Korrekturanträge:', error);
             const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
@@ -552,15 +570,40 @@ function UserDashboard() {
                     </button>
                 </header>
 
-                <AccessiblePagesPanel
-                    context="user"
-                    title="Deine freigegebenen Seiten"
-                    subtitle="Hier erscheinen genau die Bereiche, die für diesen Benutzer freigeschaltet wurden."
-                />
+                <ConfigurableDashboard
+                    context="USER_STANDARD"
+                    permissionContext={currentUser}
+                    storageIdentity={currentUser?.id || currentUser?.username}
+                    registry={[
+                        {
+                            id: 'quick-links',
+                            title: t('dashboardWidgets.quickLinks', 'Freigegebene Seiten'),
+                            description: t('dashboardWidgets.quickLinksDescription', 'Direktzugriff auf weitere freigeschaltete Bereiche.'),
+                            requiredPagePermission: 'dashboard',
+                            allowedContexts: ['USER_STANDARD'],
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <AccessiblePagesPanel
+                                    context="user"
+                                    title="Deine freigegebenen Seiten"
+                                    subtitle="Hier erscheinen genau die Bereiche, die für diesen Benutzer freigeschaltet wurden."
+                                />
+                            ),
+                        },
+                        {
+                            id: 'weekly-time',
+                            title: t('dashboardWidgets.weeklyTime', 'Zeiterfassung & Wochenübersicht'),
+                            description: t('dashboardWidgets.weeklyTimeDescription', 'Stempeln, Wochenwerte, Tagesdetails und Notizen.'),
+                            requiredPagePermission: 'dashboard',
+                            allowedContexts: ['USER_STANDARD'],
+                            defaultSize: 'full',
+                            sizes: ['L', 'full'],
+                            component: (
+                                <>
+                                    {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
-                {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-                <section className="weekly-overview content-section">
+                                    <section className="weekly-overview content-section">
                     <h3 className="section-title">{t("weeklyOverview")}</h3>
 
                     <div className="punch-section">
@@ -783,27 +826,51 @@ function UserDashboard() {
                             );
                         })}
                     </div>
-                </section>
-
-                <section className="vacation-section content-section">
-                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
-                    <VacationCalendar
-                        vacationRequests={vacationRequests}
-                        userProfile={userProfile}
-                        onRefreshVacations={fetchDataForUser}
-                    />
-                    <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
-                </section>
-
-                <UserCorrectionsPanel
-                    t={t}
-                    showCorrectionsPanel={showCorrectionsPanel}
-                    setShowCorrectionsPanel={setShowCorrectionsPanel}
-                    selectedCorrectionMonday={selectedCorrectionMonday}
-                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
-                    showAllCorrections={showAllCorrections}
-                    setShowAllCorrections={setShowAllCorrections}
-                    sortedCorrections={sortedCorrections}
+                                    </section>
+                                </>
+                            ),
+                        },
+                        {
+                            id: 'vacation',
+                            title: t('dashboardWidgets.vacation', 'Urlaub & Abwesenheiten'),
+                            description: t('dashboardWidgets.vacationDescription', 'Kalender und persönliche Urlaubsanträge.'),
+                            requiredPagePermission: 'dashboard',
+                            allowedContexts: ['USER_STANDARD'],
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <section className="vacation-section content-section">
+                                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
+                                    <VacationCalendar
+                                        vacationRequests={vacationRequests}
+                                        userProfile={userProfile}
+                                    />
+                                    <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
+                                </section>
+                            ),
+                        },
+                        {
+                            id: 'corrections',
+                            title: t('dashboardWidgets.corrections', 'Korrekturanträge'),
+                            description: t('dashboardWidgets.correctionsDescription', 'Eigene Korrekturen prüfen und filtern.'),
+                            requiredPagePermission: 'dashboard',
+                            allowedContexts: ['USER_STANDARD'],
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <UserCorrectionsPanel
+                                    t={t}
+                                    showCorrectionsPanel={showCorrectionsPanel}
+                                    setShowCorrectionsPanel={setShowCorrectionsPanel}
+                                    selectedCorrectionMonday={selectedCorrectionMonday}
+                                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
+                                    showAllCorrections={showAllCorrections}
+                                    setShowAllCorrections={setShowAllCorrections}
+                                    sortedCorrections={sortedCorrections}
+                                />
+                            ),
+                        },
+                    ]}
                 />
 
                 {modalInfo.isVisible && (
@@ -815,7 +882,6 @@ function UserDashboard() {
                         projects={projects}
                         onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
                         onSave={() => {
-                            fetchDataForUser();
                             setModalInfo({ isVisible: false, day: null, summary: null });
                         }}
                     />

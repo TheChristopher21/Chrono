@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 /**
@@ -63,7 +64,7 @@ public class PmsTestAccountInitializer implements CommandLineRunner {
             return;
         }
 
-        var existingUser = userRepository.findByUsername(username.trim());
+        var existingUser = userRepository.findByUsernameWithPermissionContext(username.trim());
         if (existingUser.isEmpty() && (password == null || password.isBlank())) {
             System.out.println("[PmsTestAccountInitializer] Benutzer '" + username.trim()
                     + "' existiert nicht und kann ohne konfiguriertes Passwort nicht angelegt werden.");
@@ -78,6 +79,12 @@ public class PmsTestAccountInitializer implements CommandLineRunner {
                     .orElseGet(() -> companyRepository.save(new Company("Chrono PMS Test")));
             user.setCompany(testCompany);
             changed = true;
+        }
+        if (!user.getCompany().getEnabledFeatures().contains("pms")) {
+            LinkedHashSet<String> enabledFeatures = new LinkedHashSet<>(user.getCompany().getEnabledFeatures());
+            enabledFeatures.add("pms");
+            user.getCompany().setEnabledFeatures(enabledFeatures);
+            companyRepository.save(user.getCompany());
         }
         if (password != null && !password.isBlank()
                 && (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword()))) {

@@ -104,6 +104,7 @@ const HourlyWeekOverview = ({
                     date: isoDate
                 }
             });
+            await reloadData?.({ type: 'dailyNote', date: isoDate, note: content });
             // Benachrichtigung anzeigen (müsste als Prop kommen)
             // notify(t("dailyNoteSaved"));
             // Daten neu laden, um die Ansicht zu aktualisieren (müsste als Prop kommen)
@@ -343,7 +344,6 @@ const HourlyWeekOverview = ({
                     projects={projects}
                     onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
                     onSave={() => {
-                        if (reloadData) reloadData();
                         setModalInfo({ isVisible: false, day: null, summary: null });
                     }}
                 />

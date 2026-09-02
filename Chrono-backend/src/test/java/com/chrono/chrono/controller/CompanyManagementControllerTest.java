@@ -108,6 +108,7 @@ class CompanyManagementControllerTest {
         assertEquals(today, savedAdmin.getEntryDate());
         assertNotNull(savedAdmin.getCompany());
         assertEquals(41L, savedAdmin.getCompany().getId());
+        assertTrue(savedAdmin.getCompany().getEnabledFeatures().contains("pms"));
         assertTrue(savedAdmin.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleName())));
         assertFalse(savedAdmin.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName())));
 

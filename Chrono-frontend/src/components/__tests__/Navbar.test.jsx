@@ -122,6 +122,7 @@ describe('Navbar', () => {
                 currentUser: {
                     username: 'Christopher',
                     roles: ['ROLE_USER'],
+                    companyFeatureKeys: ['pms'],
                     pagePermissions: { dashboard: 'VIEW', pms: 'MANAGE' },
                 },
                 logout: vi.fn(),

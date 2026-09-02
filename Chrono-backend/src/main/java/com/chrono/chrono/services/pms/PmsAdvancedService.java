@@ -931,8 +931,18 @@ public class PmsAdvancedService {
             String username,
             LocalDate businessDate) {
         HotelProperty property = requireProperty(company, propertyId);
+        completeGuestRegistrationRecord(company, property, reservationId, request, username);
+        return response(company, property, effectiveDate(property, businessDate));
+    }
+
+    GuestRegistration completeGuestRegistrationRecord(
+            Company company,
+            HotelProperty property,
+            Long reservationId,
+            CompleteGuestRegistrationRequest request,
+            String username) {
         Reservation reservation = requireReservation(company, reservationId);
-        if (!reservation.getProperty().getId().equals(propertyId)) {
+        if (!reservation.getProperty().getId().equals(property.getId())) {
             throw notFound("Reservierung nicht gefunden.");
         }
         String documentNumber = required(request.documentNumber());
@@ -944,7 +954,7 @@ public class PmsAdvancedService {
         guestRegistrationRepository.save(registration);
         emit(property, "guest.registration_completed", "guest_registration",
                 registration.getId().toString(), "{\"reservationId\":" + reservationId + "}");
-        return response(company, property, effectiveDate(property, businessDate));
+        return registration;
     }
 
     @Transactional

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation.js';
 
 import '../../styles/AdminUserManagementPageScoped.css';
 
@@ -312,6 +313,13 @@ const AdminUserManagementPage = () => {
             notify(t("userManagement.errorLoadingUsers", "Fehler beim Laden der Benutzer.") + `: ${err.message || ''}`, "error");
         }
     }, [baseFeatureKeys, t, notify]);
+
+    useRefreshOnMutation(['people', 'company'], fetchUsers, {
+        enabled: Boolean(currentUser),
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         fetchUsers();

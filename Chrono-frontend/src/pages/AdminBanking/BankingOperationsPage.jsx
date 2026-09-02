@@ -3,6 +3,7 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
 import "../../styles/BankingOperationsPageScoped.css";
 
 const initialAccount = {
@@ -185,6 +186,13 @@ const BankingOperationsPage = () => {
 
     const [loading, setLoading] = useState(true);
     const [refreshTick, setRefreshTick] = useState(0);
+    useRefreshOnMutation(['banking', 'accounting'], () => {
+        setRefreshTick((value) => value + 1);
+    }, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
     const [activeTab, setActiveTab] = useState("overview");
 
     const [accounts, setAccounts] = useState([]);

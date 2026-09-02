@@ -59,6 +59,7 @@ const AdminDashboardOverview = ({
     onFocusOvertimeLeaders,
     onFocusEmployee,
     onOpenAnalytics,
+    section,
 }) => {
     const today = new Date();
     const todayIso = formatLocalDateYMD(today);
@@ -217,8 +218,8 @@ const AdminDashboardOverview = ({
         },
     ];
 
-    return (
-        <div className="admin-cockpit-overview">
+    const sections = {
+        intro: (
             <section className="cockpit-intro" aria-label={t('adminDashboard.overview.introLabel', 'Admin Übersicht')}>
                 <div>
                     <span className="cockpit-eyebrow">{t('adminDashboard.overview.eyebrow', 'Übersicht')}</span>
@@ -236,7 +237,8 @@ const AdminDashboardOverview = ({
                     <small>{formatDate(today)} - {formatDate(weekEnd)}</small>
                 </div>
             </section>
-
+        ),
+        actionCenter: (
             <section className="action-center" aria-label={t('adminDashboard.overview.actionCenter', 'Action Center')}>
                 <div className="cockpit-section-heading">
                     <div>
@@ -261,9 +263,9 @@ const AdminDashboardOverview = ({
                     ))}
                 </div>
             </section>
-
-            <div className="cockpit-two-column">
-                <section className="cockpit-panel critical-panel">
+        ),
+        criticalEmployees: (
+            <section className="cockpit-panel critical-panel">
                     <div className="cockpit-section-heading">
                         <div>
                             <span>{t('adminDashboard.overview.criticalEyebrow', 'Zeitprüfung')}</span>
@@ -294,9 +296,10 @@ const AdminDashboardOverview = ({
                             );
                         })}
                     </div>
-                </section>
-
-                <section className="cockpit-panel today-panel">
+            </section>
+        ),
+        absences: (
+            <section className="cockpit-panel today-panel">
                     <div className="cockpit-section-heading">
                         <div>
                             <span>{t('adminDashboard.overview.todayEyebrow', 'Heute und 7 Tage')}</span>
@@ -317,11 +320,10 @@ const AdminDashboardOverview = ({
                             </div>
                         ))}
                     </div>
-                </section>
-            </div>
-
-            <div className="cockpit-two-column secondary">
-                <section className="cockpit-panel requests-panel">
+            </section>
+        ),
+        requests: (
+            <section className="cockpit-panel requests-panel">
                     <div className="cockpit-section-heading">
                         <div>
                             <span>{t('adminDashboard.overview.requestsEyebrow', 'Antragscenter')}</span>
@@ -348,9 +350,10 @@ const AdminDashboardOverview = ({
                             </div>
                         ))}
                     </div>
-                </section>
-
-                <section className="cockpit-panel shortcuts-panel">
+            </section>
+        ),
+        shortcuts: (
+            <section className="cockpit-panel shortcuts-panel">
                     <div className="cockpit-section-heading">
                         <div>
                             <span>{t('adminDashboard.overview.shortcutsEyebrow', 'Schnellzugriff')}</span>
@@ -375,7 +378,29 @@ const AdminDashboardOverview = ({
                             {t('adminDashboard.overview.openAnalytics', 'Analytics direkt öffnen')}
                         </button>
                     )}
-                </section>
+            </section>
+        ),
+    };
+
+    if (section) {
+        return (
+            <div className="admin-cockpit-overview admin-cockpit-widget">
+                {sections[section] ?? null}
+            </div>
+        );
+    }
+
+    return (
+        <div className="admin-cockpit-overview">
+            {sections.intro}
+            {sections.actionCenter}
+            <div className="cockpit-two-column">
+                {sections.criticalEmployees}
+                {sections.absences}
+            </div>
+            <div className="cockpit-two-column secondary">
+                {sections.requests}
+                {sections.shortcuts}
             </div>
         </div>
     );
@@ -408,6 +433,14 @@ AdminDashboardOverview.propTypes = {
     onFocusOvertimeLeaders: PropTypes.func.isRequired,
     onFocusEmployee: PropTypes.func.isRequired,
     onOpenAnalytics: PropTypes.func,
+    section: PropTypes.oneOf([
+        'intro',
+        'actionCenter',
+        'criticalEmployees',
+        'absences',
+        'requests',
+        'shortcuts',
+    ]),
 };
 
 AdminDashboardOverview.defaultProps = {
@@ -426,6 +459,7 @@ AdminDashboardOverview.defaultProps = {
         totalWithIssue: 0,
     },
     onOpenAnalytics: undefined,
+    section: undefined,
 };
 
 export default AdminDashboardOverview;

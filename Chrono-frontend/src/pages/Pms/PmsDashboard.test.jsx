@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -16,12 +16,42 @@ const apiMock = vi.hoisted(() => ({
             foundationComplete: false,
         },
     })),
+    put: vi.fn((_url, body) => Promise.resolve({
+        data: {
+            schemaVersion: 1,
+            revision: Number(body?.revision ?? 0) + 1,
+            payload: body?.payload ?? {},
+        },
+    })),
 }));
+const refreshHookMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../components/Navbar.jsx', () => ({ default: () => <nav>Chrono navigation</nav> }));
 vi.mock('../../utils/api.js', () => ({ default: apiMock }));
+vi.mock('../../hooks/useRefreshOnMutation.js', () => ({ useRefreshOnMutation: refreshHookMock }));
 
 import PmsDashboard from './PmsDashboard.jsx';
+
+const emptyOperationsForTest = {
+    metrics: {},
+    reservations: [],
+    arrivals: [],
+    departures: [],
+    guests: [],
+    ratePlans: [],
+    rateOverrides: [],
+    rooms: [],
+    housekeepingTasks: [],
+    folios: [],
+    roomBlocks: [],
+    maintenanceWorkOrders: [],
+};
+
+const localDateKey = (value) => [
+    value.getFullYear(),
+    String(value.getMonth() + 1).padStart(2, '0'),
+    String(value.getDate()).padStart(2, '0'),
+].join('-');
 
 const HistoryProbe = () => {
     const location = useLocation();
@@ -39,9 +69,12 @@ const renderDashboard = (initialEntries = ['/pms']) => render(
     <AuthContext.Provider
         value={{
             currentUser: {
+                id: 7,
+                companyId: 23,
                 username: 'Christopher',
                 firstName: 'Raja',
                 lastName: 'Siefert',
+                companyFeatureKeys: ['pms'],
                 pagePermissions: { pms: 'MANAGE' },
             },
         }}
@@ -54,6 +87,7 @@ const renderDashboard = (initialEntries = ['/pms']) => render(
 
 describe('PmsDashboard', () => {
     beforeEach(() => {
+        window.localStorage.clear();
         apiMock.get.mockImplementation(() => Promise.resolve({
             data: {
                 properties: [],
@@ -63,6 +97,62 @@ describe('PmsDashboard', () => {
                 foundationComplete: false,
             },
         }));
+        apiMock.put.mockClear();
+        refreshHookMock.mockClear();
+    });
+
+    it('keeps no-property personalization local without sending an invalid PMS preference request', async () => {
+        renderDashboard();
+        await screen.findByText('Hotel einrichten');
+
+        await userEvent.click(screen.getByRole('button', { name: 'Übersicht anpassen' }));
+        const editor = screen.getByRole('complementary', { name: 'PMS-Übersicht' });
+
+        await userEvent.click(within(editor).getByRole('checkbox', { name: /Anreisen/ }));
+
+        expect(screen.queryByText('Keine Anreisen vorhanden')).not.toBeInTheDocument();
+        expect(screen.getByText('Betriebstag')).toBeInTheDocument();
+        expect(screen.getByText('Lokal auf diesem Gerät gespeichert')).toBeInTheDocument();
+        expect(apiMock.put).not.toHaveBeenCalled();
+        expect(apiMock.get.mock.calls.some(([url]) => url === '/api/ui/preferences/PMS_DASHBOARD')).toBe(false);
+    });
+
+    it('scopes dashboard preferences to the active property', async () => {
+        const property = {
+            id: 5,
+            name: 'Chrono Test Hotel',
+            currencyCode: 'CHF',
+            roomTypes: [],
+            rooms: [],
+        };
+        apiMock.get.mockImplementation((url) => {
+            if (url === '/api/pms/setup') {
+                return Promise.resolve({ data: {
+                    properties: [property],
+                    totalProperties: 1,
+                    totalRoomTypes: 0,
+                    totalRooms: 0,
+                    foundationComplete: false,
+                } });
+            }
+            if (url === '/api/pms/health') {
+                return Promise.resolve({ data: { status: 'OK', components: [], alerts: [] } });
+            }
+            if (url === '/api/ui/preferences/PMS_DASHBOARD') {
+                return Promise.resolve({ data: { schemaVersion: 1, revision: 0, payload: {} } });
+            }
+            return Promise.resolve({ data: emptyOperationsForTest });
+        });
+
+        renderDashboard();
+        await screen.findAllByText('Chrono Test Hotel');
+
+        const dashboard = document.querySelector('[data-dashboard-context="PMS"]');
+        expect(dashboard).toHaveAttribute('data-dashboard-scope', 'property:5');
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(
+            '/api/ui/preferences/PMS_DASHBOARD',
+            { params: { propertyId: 5 } },
+        ));
     });
 
     it('renders an honest operational dashboard without invented hotel data', async () => {
@@ -79,11 +169,90 @@ describe('PmsDashboard', () => {
         renderDashboard();
         await screen.findByText('Hotel einrichten');
 
+        expect(screen.queryByRole('button', { name: 'Hotelportfolio' })).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: 'Profi' }));
 
         expect(screen.getByText('Ctrl N')).toBeInTheDocument();
         expect(screen.getByText('Ctrl I')).toBeInTheDocument();
         expect(screen.getByText('Ctrl O')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Hotelportfolio' })).toBeInTheDocument();
+        expect(screen.getByText('Verkauf & Partner')).toBeInTheDocument();
+    });
+
+    it('offers a dedicated walk-in flow and opens it with the advertised shortcut', async () => {
+        renderDashboard();
+        await screen.findByText('Hotel einrichten');
+
+        const quickActions = screen.getByRole('heading', { name: 'Schnellaktionen' }).closest('section');
+        expect(within(quickActions).getByRole('button', { name: /Gast vor Ort aufnehmen/i })).toBeInTheDocument();
+        expect(within(quickActions).getByRole('button', { name: /Reservierung anlegen/i })).toBeInTheDocument();
+
+        fireEvent.keyDown(window, { key: 'w', altKey: true });
+
+        await waitFor(() => expect(screen.getByTestId('pms-location'))
+            .toHaveTextContent('/pms?section=reservations'));
+        expect(screen.getByText('Zuerst ein Hotel einrichten')).toBeInTheDocument();
+    });
+
+    it('returns a walk-in from a planning date to the actual local hotel day', async () => {
+        const property = {
+            id: 5,
+            name: 'Chrono Test Hotel',
+            currencyCode: 'CHF',
+            roomTypes: [],
+            rooms: [],
+        };
+        apiMock.get.mockImplementation((url) => {
+            if (url === '/api/pms/setup') {
+                return Promise.resolve({ data: {
+                    properties: [property],
+                    totalProperties: 1,
+                    totalRoomTypes: 0,
+                    totalRooms: 0,
+                    foundationComplete: false,
+                } });
+            }
+            if (url === '/api/pms/health') {
+                return Promise.resolve({ data: { status: 'OK', components: [], alerts: [] } });
+            }
+            if (url === '/api/ui/preferences/PMS_DASHBOARD') {
+                return Promise.resolve({ data: { schemaVersion: 1, revision: 0, payload: {} } });
+            }
+            return Promise.resolve({ data: emptyOperationsForTest });
+        });
+        renderDashboard();
+        await screen.findAllByText('Chrono Test Hotel');
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        await userEvent.click(screen.getByRole('button', { name: 'Nächster Tag' }));
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(
+            '/api/pms/operations',
+            expect.objectContaining({
+                params: { propertyId: 5, businessDate: localDateKey(tomorrow) },
+            }),
+        ));
+
+        apiMock.get.mockClear();
+        fireEvent.keyDown(window, { key: 'w', altKey: true });
+
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(
+            '/api/pms/operations',
+            expect.objectContaining({
+                params: { propertyId: 5, businessDate: localDateKey(new Date()) },
+            }),
+        ));
+        expect(await screen.findByRole('heading', { name: 'Walk-in vollständig aufnehmen' })).toBeInTheDocument();
+    });
+
+    it('executes the displayed reception shortcuts instead of only showing labels', async () => {
+        renderDashboard();
+        await screen.findByText('Hotel einrichten');
+
+        fireEvent.keyDown(window, { key: 'g', ctrlKey: true });
+
+        await waitFor(() => expect(screen.getByTestId('pms-location'))
+            .toHaveTextContent('/pms?section=guests'));
     });
 
     it('opens the command palette with Ctrl+K and filters commands', async () => {
@@ -231,7 +400,89 @@ describe('PmsDashboard', () => {
         expect(screen.getByText('Integrationsereignisse endgültig fehlgeschlagen')).toBeInTheDocument();
         expect(screen.getByText('Kritisch')).toBeInTheDocument();
         expect(screen.queryByText('CRITICAL')).not.toBeInTheDocument();
-        expect(apiMock.get).toHaveBeenCalledWith('/api/pms/health', { params: { propertyId: 5 } });
+        expect(apiMock.get).toHaveBeenCalledWith('/api/pms/health', expect.objectContaining({
+            params: { propertyId: 5 },
+        }));
+    });
+
+    it('revalidates setup, operations and health after a PMS mutation', async () => {
+        const property = {
+            id: 5,
+            name: 'Chrono Test Hotel',
+            currencyCode: 'CHF',
+            roomTypes: [{ id: 10, name: 'Doppelzimmer', active: true }],
+            rooms: [],
+        };
+        let setupResponse = {
+            properties: [property],
+            totalProperties: 1,
+            totalRoomTypes: 1,
+            totalRooms: 0,
+            foundationComplete: false,
+        };
+        let operationsResponse = emptyOperationsForTest;
+        let healthResponse = { status: 'OK', components: [], alerts: [] };
+        apiMock.get.mockImplementation((url) => {
+            if (url === '/api/pms/setup') return Promise.resolve({ data: setupResponse });
+            if (url === '/api/pms/operations') return Promise.resolve({ data: operationsResponse });
+            if (url === '/api/pms/health') return Promise.resolve({ data: healthResponse });
+            if (url === '/api/ui/preferences/PMS_DASHBOARD') {
+                return Promise.resolve({ data: { schemaVersion: 1, revision: 0, payload: {} } });
+            }
+            return Promise.resolve({ data: {} });
+        });
+
+        renderDashboard();
+        await screen.findAllByText('Chrono Test Hotel');
+        await waitFor(() => expect(apiMock.get.mock.calls.some(([url]) => url === '/api/pms/operations')).toBe(true));
+
+        const refreshedRoom = {
+            id: 31,
+            roomTypeId: 10,
+            number: '101',
+            operationalStatus: 'IN_SERVICE',
+            housekeepingStatus: 'CLEAN',
+            currentReservation: null,
+        };
+        setupResponse = {
+            ...setupResponse,
+            properties: [{ ...property, rooms: [refreshedRoom] }],
+            totalRooms: 1,
+            foundationComplete: true,
+        };
+        operationsResponse = {
+            ...emptyOperationsForTest,
+            rooms: [refreshedRoom],
+            metrics: { totalRooms: 1 },
+        };
+        healthResponse = {
+            status: 'WARNING',
+            components: [],
+            alerts: [{
+                code: 'PMS_REFRESHED',
+                severity: 'WARNING',
+                title: 'Neu geprüft',
+                details: 'Aktualisierte Betriebsdaten.',
+                recommendedAction: 'Keine Aktion erforderlich.',
+            }],
+        };
+
+        const refreshLoader = refreshHookMock.mock.calls.at(-1)?.[1];
+        expect(refreshHookMock).toHaveBeenLastCalledWith(
+            ['pms'],
+            expect.any(Function),
+            {
+                debounceMs: 120,
+                refreshOnFocus: true,
+                focusThrottleMs: 30_000,
+            },
+        );
+        await act(async () => {
+            await refreshLoader();
+        });
+
+        expect(await screen.findByLabelText('1 Zimmer eingerichtet')).toBeInTheDocument();
+        expect(screen.getByText('Neu geprüft')).toBeInTheDocument();
     });
 
     it('keeps cleaning, occupancy and sellability separate in the room status summary', async () => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
 import PmsExtensionsWorkspace from './PmsExtensionsWorkspace.jsx';
+import PmsReceptionBookingFlow from './PmsReceptionBookingFlow.jsx';
 import { formatPmsDate } from './pmsFormatting.js';
 import { PMS_SECTIONS } from './pmsNavigation.js';
 import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
@@ -151,6 +152,7 @@ const PmsOperationsWorkspace = ({
         lastName: '',
         email: '',
         phone: '',
+        dateOfBirth: '',
         nationalityCode: 'CH',
         languageCode: 'de',
         notes: '',
@@ -735,7 +737,8 @@ const PmsOperationsWorkspace = ({
         );
     }
 
-    const activeSectionLabel = sections.find(([key]) => key === activeSection)?.[1] ?? 'Hotelbetrieb';
+    const activeSectionMeta = PMS_SECTIONS.find((item) => item.key === activeSection);
+    const activeSectionLabel = activeSectionMeta?.label ?? 'Hotelbetrieb';
 
     return (
         <PmsTranslationBoundary>
@@ -751,7 +754,10 @@ const PmsOperationsWorkspace = ({
                     <div>
                         <span className="pms-eyebrow">Chrono Hotel-PMS · {property.name}</span>
                         <h2 id="pms-operations-title">{activeSectionLabel}</h2>
-                        <p>Betriebstag {formatPmsDate(businessDate)} · Alle Änderungen werden sofort im Hotel-PMS gespeichert.</p>
+                        <p>
+                            {activeSectionMeta?.description ?? 'Alle Änderungen werden sofort im Hotel-PMS gespeichert.'}
+                            {' · '}Betriebstag {formatPmsDate(businessDate)}
+                        </p>
                     </div>
                     {!embedded && <button type="button" className="pms-workspace-close" onClick={onClose} aria-label="Arbeitsbereich schliessen">×</button>}
                 </header>
@@ -801,7 +807,8 @@ const PmsOperationsWorkspace = ({
                         />
                     )}
                     {activeSection === 'reservations' && (
-                        <div className="pms-operations-layout">
+                        <div className="pms-operations-layout pms-reception-layout">
+                            {editingReservationId ? (
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading">
                                     <div>
@@ -951,6 +958,36 @@ const PmsOperationsWorkspace = ({
                                     </div>
                                 )}
                             </section>
+                            ) : (
+                                <PmsReceptionBookingFlow
+                                    key={`${property?.id ?? 'property'}-${initialAction === 'walk-in' ? 'walk-in' : 'reservation'}`}
+                                    property={property}
+                                    operations={operations}
+                                    businessDate={businessDate}
+                                    canManage={canManage}
+                                    mode={initialAction === 'walk-in' ? 'walk-in' : 'reservation'}
+                                    onOperationsChange={onOperationsChange}
+                                    onComplete={({ action, folioId, confirmationCode }) => {
+                                        if (action !== 'folio') return;
+                                        const selectedFolio = folios.find((folio) => (
+                                            String(folio.id) === String(folioId)
+                                        ));
+                                        const selectedFolioId = folioId == null ? '' : String(folioId);
+                                        setPaymentForm((current) => ({
+                                            ...current,
+                                            folioId: selectedFolioId,
+                                            amount: selectedFolio?.balance ?? '',
+                                        }));
+                                        setChargeForm((current) => ({
+                                            ...current,
+                                            folioId: selectedFolioId,
+                                        }));
+                                        setNotice(`${confirmationCode || 'Das neue Gastkonto'} ist für die weitere Abrechnung ausgewählt.`);
+                                        setActiveSection('folios');
+                                        onSectionChange?.('folios');
+                                    }}
+                                />
+                            )}
 
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading">
@@ -1087,6 +1124,7 @@ const PmsOperationsWorkspace = ({
                                     <label>Nachname<input value={guestForm.lastName} onChange={(event) => setGuestForm({ ...guestForm, lastName: event.target.value })} required /></label>
                                     <label>E-Mail<input type="email" value={guestForm.email} onChange={(event) => setGuestForm({ ...guestForm, email: event.target.value })} /></label>
                                     <label>Telefon<input value={guestForm.phone} onChange={(event) => setGuestForm({ ...guestForm, phone: event.target.value })} /></label>
+                                    <label>Geburtsdatum<input type="date" value={guestForm.dateOfBirth} onChange={(event) => setGuestForm({ ...guestForm, dateOfBirth: event.target.value })} /></label>
                                     <label>Nationalität (ISO-Ländercode, z. B. CH)<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={guestForm.nationalityCode} onChange={(event) => setGuestForm({ ...guestForm, nationalityCode: event.target.value.toUpperCase() })} /></label>
                                     <label>Sprache (Sprachcode, z. B. de)<input maxLength="8" value={guestForm.languageCode} onChange={(event) => setGuestForm({ ...guestForm, languageCode: event.target.value })} /></label>
                                     <label className="is-wide">Notizen<textarea value={guestForm.notes} onChange={(event) => setGuestForm({ ...guestForm, notes: event.target.value })} /></label>
@@ -1115,6 +1153,7 @@ const PmsOperationsWorkspace = ({
                                                         lastName: guest.lastName,
                                                         email: guest.email ?? '',
                                                         phone: guest.phone ?? '',
+                                                        dateOfBirth: guest.dateOfBirth ?? '',
                                                         nationalityCode: guest.nationalityCode ?? '',
                                                         languageCode: guest.languageCode ?? 'de',
                                                         notes: guest.notes ?? '',

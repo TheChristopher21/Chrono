@@ -460,7 +460,11 @@ const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingA
    =========================== */
 const UserList = ({ canManageSchedule }) => {
     const { t } = useTranslation();
-    const { data: users = [], isLoading: isLoadingUsers } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
+    const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+        queryKey: ['users'],
+        queryFn: fetchUsers,
+        meta: { refreshScopes: ['people', 'schedule'] },
+    });
     const dragUser = usePlannerStore(state => state.dragUser);
     const setDragUser = usePlannerStore(state => state.setDragUser);
     const clearDrag = usePlannerStore(state => state.clearDrag);
@@ -520,8 +524,16 @@ const UserList = ({ canManageSchedule }) => {
    Schedule table
    =========================== */
 const ScheduleTable = ({ schedule, holidays, vacationMap, canManageSchedule }) => {
-    const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
-    const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
+    const { data: users = [] } = useQuery({
+        queryKey: ['users'],
+        queryFn: fetchUsers,
+        meta: { refreshScopes: ['people', 'schedule'] },
+    });
+    const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({
+        queryKey: ['scheduleRules'],
+        queryFn: fetchScheduleRules,
+        meta: { refreshScopes: ['schedule'] },
+    });
 
     const weekStart = usePlannerStore(state => state.weekStart);
     const showWeekends = usePlannerStore(state => state.showWeekends);
@@ -802,10 +814,19 @@ const AdminSchedulePlannerPage = () => {
         queryKey: ['schedule', weekKey],
         queryFn: () => fetchSchedule(weekStart),
         initialData: {},
+        meta: { refreshScopes: ['schedule'] },
     });
 
-    const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
-    const { data: shifts = [] } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
+    const { data: users = [] } = useQuery({
+        queryKey: ['users'],
+        queryFn: fetchUsers,
+        meta: { refreshScopes: ['people', 'schedule'] },
+    });
+    const { data: shifts = [] } = useQuery({
+        queryKey: ['scheduleRules'],
+        queryFn: fetchScheduleRules,
+        meta: { refreshScopes: ['schedule'] },
+    });
     const {
         data: scheduleLogs = [],
         isLoading: isLoadingScheduleLogs,
@@ -816,6 +837,7 @@ const AdminSchedulePlannerPage = () => {
         queryFn: () => fetchScheduleLogs(weekStart),
         enabled: canViewScheduleLog && showChangeLog,
         initialData: [],
+        meta: { refreshScopes: ['schedule'] },
     });
     const disabledUserIds = usePlannerStore(state => state.disabledUserIds);
     const availableUsers = React.useMemo(
@@ -836,9 +858,14 @@ const AdminSchedulePlannerPage = () => {
             return data || {};
         },
         enabled: !!currentUser,
+        meta: { refreshScopes: ['holidays'] },
     });
 
-    const { data: vacations = [] } = useQuery({ queryKey: ['vacations'], queryFn: fetchVacations });
+    const { data: vacations = [] } = useQuery({
+        queryKey: ['vacations'],
+        queryFn: fetchVacations,
+        meta: { refreshScopes: ['absence'] },
+    });
 
     const vacationMap = React.useMemo(() => {
         const map = {};

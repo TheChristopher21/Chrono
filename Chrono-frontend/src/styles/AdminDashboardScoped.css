@@ -4401,6 +4401,12 @@
   gap: 1.15rem;
 }
 
+.admin-dashboard.scoped-dashboard .admin-cockpit-widget,
+.admin-dashboard.scoped-dashboard .admin-cockpit-widget > .cockpit-panel,
+.admin-dashboard.scoped-dashboard .admin-cockpit-widget > .action-center {
+  height: 100%;
+}
+
 .admin-dashboard.scoped-dashboard .cockpit-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

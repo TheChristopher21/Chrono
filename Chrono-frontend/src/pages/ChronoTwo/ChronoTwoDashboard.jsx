@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { Line, OrbitControls } from "@react-three/drei";
 import api from "../../utils/api.js";
 import { LanguageContext } from "../../context/LanguageContext.jsx";
+import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
 import "../../styles/ChronoTwoDashboard.css";
 
 const prettifyMetricKey = (metric) =>
@@ -60,6 +61,15 @@ const ChronoTwoDashboard = () => {
     const [formState, setFormState] = useState(initialForms);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [refreshTick, setRefreshTick] = useState(0);
+
+    useRefreshOnMutation(['chrono2'], () => {
+        setRefreshTick((value) => value + 1);
+    }, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         const load = async () => {
@@ -89,7 +99,7 @@ const ChronoTwoDashboard = () => {
             }
         };
         load();
-    }, [l]);
+    }, [l, refreshTick]);
 
     const occupancyByLocation = useMemo(() => {
         const map = new Map();

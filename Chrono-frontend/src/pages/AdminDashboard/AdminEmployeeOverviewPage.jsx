@@ -6,6 +6,7 @@ import EditTimeModal from './EditTimeModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import api from '../../utils/api';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import { getUserDisplayName } from '../../utils/userDisplay';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import {
@@ -24,6 +25,15 @@ import CalculationStatusNotice, {
     formatCalculatedMinutes,
 } from '../../components/CalculationStatusNotice.jsx';
 import '../../styles/AdminEmployeeOverviewScoped.css';
+
+const ADMIN_EMPLOYEE_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'holidays',
+    'company',
+];
 
 const isWorkDay = (dateObj) => {
     const day = dateObj.getDay();
@@ -245,6 +255,17 @@ const AdminEmployeeOverviewPage = () => {
             setLoading(false);
         }
     }, [notify, t]);
+
+    useRefreshOnMutation(
+        ADMIN_EMPLOYEE_REFRESH_SCOPES,
+        fetchAllData,
+        {
+            enabled: Boolean(username),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
 
     useEffect(() => {
         fetchAllData();
@@ -723,7 +744,6 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.put(`/api/vacation/${id}`, { approved: true, denied: false, adminNote });
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
-            fetchAllData();
         } catch (err) {
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
@@ -733,7 +753,6 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.put(`/api/vacation/${id}`, { approved: false, denied: true, adminNote });
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
-            fetchAllData();
         } catch (err) {
             notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
@@ -743,7 +762,6 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg', 'Korrektur genehmigt')} #${id}`, 'success');
-            fetchAllData();
         } catch (err) {
             notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
         }
@@ -753,7 +771,6 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg', 'Korrektur abgelehnt')} #${id}`, 'success');
-            fetchAllData();
         } catch (err) {
             notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
         }
@@ -772,7 +789,6 @@ const AdminEmployeeOverviewPage = () => {
             });
             notify(t('adminVacation.createdSuccess', 'Urlaub erfolgreich erstellt und direkt genehmigt'), 'success');
             setQuickAction(null);
-            fetchAllData();
         } catch (err) {
             notify(t('adminVacation.createError', 'Fehler beim Anlegen des Urlaubs') + ': ' + (err.response?.data?.message || err.message), 'error');
         }
@@ -792,7 +808,6 @@ const AdminEmployeeOverviewPage = () => {
             });
             notify(t('adminSickLeave.reportSuccess', 'Krankmeldung erfolgreich für Benutzer eingetragen.'), 'success');
             setQuickAction(null);
-            fetchAllData();
         } catch (err) {
             notify(t('adminSickLeave.reportError', 'Fehler beim Eintragen der Krankmeldung:') + ' ' + (err.response?.data?.message || err.message), 'error');
         }
@@ -940,7 +955,6 @@ const AdminEmployeeOverviewPage = () => {
             await api.put(`/api/admin/timetracking/editDay/${username}/${formattedDate}`, updatedEntriesForDay);
             notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
             setEditModalVisible(false);
-            fetchAllData();
         } catch (err) {
             notify(t('adminDashboard.editFailed', 'Fehler beim Bearbeiten') + ': ' + (err.response?.data?.message || err.message), 'error');
         }
@@ -1261,7 +1275,6 @@ const AdminEmployeeOverviewPage = () => {
                                         <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
                                         <VacationCalendarAdmin
                                             vacationRequests={employeeVacations}
-                                            onReloadVacations={fetchAllData}
                                             companyUsers={users}
                                             focusUsername={username}
                                         />

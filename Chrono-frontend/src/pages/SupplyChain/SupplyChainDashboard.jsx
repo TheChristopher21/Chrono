@@ -9,6 +9,7 @@ import ProcessWorkspace from "./components/ProcessWorkspace.jsx";
 import CycleCountDrawerActions from "./components/CycleCountDrawerActions.jsx";
 import OutboundOrderDrawerActions from "./components/OutboundOrderDrawerActions.jsx";
 import { ACCESS_MANAGE, hasPageAccess } from "../../utils/pageAccess.js";
+import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
 import {
     buildExceptionRows,
     buildInventoryBucketRows,
@@ -517,6 +518,12 @@ const SupplyChainDashboard = () => {
 
         return !requiredFailures;
     }, [l, notify]);
+
+    useRefreshOnMutation(['supplyChain'], loadData, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         let mounted = true;

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { publishMutationRefresh } from "./dataRefresh.js";
 
 /**
  * Basis‐URL aus den Vite-Env-Variablen.
@@ -17,6 +18,12 @@ api.interceptors.request.use((cfg) => {
     const t = localStorage.getItem("token");
     if (t) cfg.headers.Authorization = `Bearer ${t}`;
     return cfg;
+});
+
+/* Erfolgreiche fachliche Änderungen zentral an aktive Datenansichten melden. */
+api.interceptors.response.use((response) => {
+    publishMutationRefresh(response);
+    return response;
 });
 
 export default api;
