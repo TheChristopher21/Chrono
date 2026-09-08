@@ -11,14 +11,17 @@ import java.util.Optional;
 
 public interface GuestProfileRepository extends JpaRepository<GuestProfile, Long> {
     List<GuestProfile> findAllByCompany_IdOrderByLastNameAscFirstNameAsc(Long companyId);
+    List<GuestProfile> findAllByOrganization_Id(Long organizationId);
     Optional<GuestProfile> findByIdAndCompany_Id(Long id, Long companyId);
 
     @Query("""
             select guest from GuestProfile guest
             where guest.company.id = :companyId
+              and guest.active = true
               and (:pattern = '%%'
                    or lower(guest.firstName) like :pattern
                    or lower(guest.lastName) like :pattern
+                   or lower(coalesce(guest.referenceCode, '')) like :pattern
                    or lower(coalesce(guest.email, '')) like :pattern
                    or lower(coalesce(guest.phone, '')) like :pattern)
             order by guest.updatedAt desc, guest.id desc

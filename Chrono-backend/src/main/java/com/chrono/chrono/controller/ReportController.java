@@ -8,6 +8,7 @@ import com.chrono.chrono.repositories.ProjectRepository;
 import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.ReportService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -48,7 +49,7 @@ public class ReportController {
     private boolean publicIcsFeedWithoutToken;
 
     private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
     }
 
     private void requireTimesheetAccess(String username, Principal principal) {

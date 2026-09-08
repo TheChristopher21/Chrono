@@ -21,6 +21,16 @@ public record UpsertOrganizationRequest(
         @Email @Size(max = 190) String billingEmail,
         @Min(0) @Max(365) int paymentTermsDays,
         @Size(max = 1000) String notes,
-        boolean active
+        boolean active,
+        Boolean masterRecord,
+        Long parentOrganizationId
 ) {
+    public UpsertOrganizationRequest(
+            OrganizationType type, String name, String vatNumber, String addressLine1, String postalCode,
+            String city, String countryCode, String email, String phone, String billingEmail,
+            int paymentTermsDays, String notes, boolean active
+    ) {
+        this(type, name, vatNumber, addressLine1, postalCode, city, countryCode, email, phone,
+                billingEmail, paymentTermsDays, notes, active, false, null);
+    }
 }

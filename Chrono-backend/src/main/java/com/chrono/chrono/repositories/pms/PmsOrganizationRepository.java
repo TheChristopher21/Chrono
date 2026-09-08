@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface PmsOrganizationRepository extends JpaRepository<PmsOrganization, Long> {
     List<PmsOrganization> findAllByCompany_IdOrderByNameAsc(Long companyId);
+    List<PmsOrganization> findAllByParentOrganization_Id(Long parentOrganizationId);
     Optional<PmsOrganization> findByIdAndCompany_Id(Long id, Long companyId);
 }

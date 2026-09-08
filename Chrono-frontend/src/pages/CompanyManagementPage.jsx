@@ -19,7 +19,6 @@ const FEATURE_LABEL_MAP = FEATURE_CATALOG.reduce((acc, feature) => {
 const MODULE_ICON_MAP = {
     notifyVacation: '🌴',
     notifyOvertime: '⏱️',
-    customerTrackingEnabled: '👥',
     payroll: '💼',
     projects: '📁',
     accounting: '💰',
@@ -41,7 +40,6 @@ const MODULE_CATEGORIES = [
         items: [
             { type: 'boolean', key: 'notifyVacation', label: 'Urlaub' },
             { type: 'boolean', key: 'notifyOvertime', label: 'Überstunden' },
-            { type: 'boolean', key: 'customerTrackingEnabled', label: 'Kunden-Zeiterfassung' },
         ],
     },
     {
@@ -161,6 +159,30 @@ const normalizeFeatureSelection = (keys = []) => {
     return OPTIONAL_FEATURES.filter((feature) => keyArray.includes(feature.key)).map((feature) => feature.key);
 };
 
+const normalizeCompanyFeatureAliases = (company = {}) => {
+    const requestedFeatures = toFeatureKeyArray(company.enabledFeatures);
+    const enabledFeatures = normalizeFeatureSelection(
+        company.customerTrackingEnabled === true && !requestedFeatures.includes('projects')
+            ? [...requestedFeatures, 'projects']
+            : requestedFeatures
+    );
+
+    return {
+        ...company,
+        enabledFeatures,
+        customerTrackingEnabled: enabledFeatures.includes('projects'),
+    };
+};
+
+const withSynchronizedProjectAlias = (state, nextFeatures) => {
+    const enabledFeatures = normalizeFeatureSelection(nextFeatures);
+    return {
+        ...state,
+        enabledFeatures,
+        customerTrackingEnabled: enabledFeatures.includes('projects'),
+    };
+};
+
 const ModulePicker = ({
     title = 'Module freischalten',
     hint,
@@ -273,7 +295,6 @@ const CompanyManagementPage = () => {
     const [newTeamsWebhook, setNewTeamsWebhook] = useState('');
     const [newNotifyVacation, setNewNotifyVacation] = useState(false);
     const [newNotifyOvertime, setNewNotifyOvertime] = useState(false);
-    const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
     const [newEnabledFeatures, setNewEnabledFeatures] = useState([]);
 
     const [createWithAdmin, setCreateWithAdmin] = useState(createWithAdminInitialState);
@@ -371,10 +392,7 @@ const CompanyManagementPage = () => {
         try {
             const res = await api.get('/api/superadmin/companies');
             const payload = Array.isArray(res.data)
-                ? res.data.map((company) => ({
-                      ...company,
-                      enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
-                  }))
+                ? res.data.map(normalizeCompanyFeatureAliases)
                 : [];
             if (companyPageMountedRef.current) {
                 setCompanies(payload);
@@ -407,7 +425,6 @@ const CompanyManagementPage = () => {
         const setters = {
             notifyVacation: setNewNotifyVacation,
             notifyOvertime: setNewNotifyOvertime,
-            customerTrackingEnabled: setNewCustomerTrackingEnabled,
         };
         setters[key]?.(value);
     };
@@ -418,7 +435,7 @@ const CompanyManagementPage = () => {
             const next = current.includes(featureKey)
                 ? current.filter((key) => key !== featureKey)
                 : [...current, featureKey];
-            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+            return withSynchronizedProjectAlias(prev, next);
         });
     };
 
@@ -433,7 +450,7 @@ const CompanyManagementPage = () => {
             const next = current.includes(featureKey)
                 ? current.filter((key) => key !== featureKey)
                 : [...current, featureKey];
-            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+            return withSynchronizedProjectAlias(prev, next);
         });
     };
 
@@ -457,7 +474,7 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: newTeamsWebhook || null,
                 notifyVacation: newNotifyVacation,
                 notifyOvertime: newNotifyOvertime,
-                customerTrackingEnabled: newCustomerTrackingEnabled,
+                customerTrackingEnabled: newEnabledFeatures.includes('projects'),
                 enabledFeatures: newEnabledFeatures,
             };
             await api.post('/api/superadmin/companies', payload);
@@ -471,7 +488,6 @@ const CompanyManagementPage = () => {
             setNewTeamsWebhook('');
             setNewNotifyVacation(false);
             setNewNotifyOvertime(false);
-            setNewCustomerTrackingEnabled(false);
             setNewEnabledFeatures([]);
             setShowQuickAdvanced(false);
             fetchCompanies();
@@ -539,7 +555,7 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
                 notifyVacation: createWithAdmin.notifyVacation,
                 notifyOvertime: createWithAdmin.notifyOvertime,
-                customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
+                customerTrackingEnabled: createWithAdmin.enabledFeatures.includes('projects'),
                 enabledFeatures: createWithAdmin.enabledFeatures,
             };
 
@@ -597,8 +613,9 @@ const CompanyManagementPage = () => {
     };
 
     function startEdit(company) {
+        const normalizedCompany = normalizeCompanyFeatureAliases(company);
         setEditingCompany({
-            ...company,
+            ...normalizedCompany,
             cantonAbbreviation: company.cantonAbbreviation || '',
             addressLine1: company.addressLine1 || '',
             addressLine2: company.addressLine2 || '',
@@ -608,8 +625,6 @@ const CompanyManagementPage = () => {
             teamsWebhookUrl: company.teamsWebhookUrl || '',
             notifyVacation: company.notifyVacation || false,
             notifyOvertime: company.notifyOvertime || false,
-            customerTrackingEnabled: company.customerTrackingEnabled || false,
-            enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
         });
     }
 
@@ -630,7 +645,7 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: editingCompany.teamsWebhookUrl,
                 notifyVacation: editingCompany.notifyVacation,
                 notifyOvertime: editingCompany.notifyOvertime,
-                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
+                customerTrackingEnabled: editingCompany.enabledFeatures.includes('projects'),
                 enabledFeatures: editingCompany.enabledFeatures || [],
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
@@ -1136,7 +1151,6 @@ const CompanyManagementPage = () => {
                                             toggles={{
                                                 notifyVacation: newNotifyVacation,
                                                 notifyOvertime: newNotifyOvertime,
-                                                customerTrackingEnabled: newCustomerTrackingEnabled,
                                             }}
                                             onToggleBoolean={handleQuickBooleanToggle}
                                             t={t}
@@ -1284,7 +1298,6 @@ const CompanyManagementPage = () => {
                                         toggles={{
                                             notifyVacation: createWithAdmin.notifyVacation,
                                             notifyOvertime: createWithAdmin.notifyOvertime,
-                                            customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
                                         }}
                                         onToggleBoolean={handleCreateWithAdminBooleanToggle}
                                         t={t}
@@ -1513,7 +1526,7 @@ const CompanyManagementPage = () => {
                                         const inactiveFeatures = OPTIONAL_FEATURES.map((feature) => feature.key).filter(
                                             (key) => !activeFeatures.includes(key)
                                         );
-                                        const activeBooleanKeys = ['notifyVacation', 'notifyOvertime', 'customerTrackingEnabled'].filter(
+                                        const activeBooleanKeys = ['notifyVacation', 'notifyOvertime'].filter(
                                             (key) => Boolean(co[key])
                                         );
                                         const activeModules = [
@@ -1661,7 +1674,6 @@ const CompanyManagementPage = () => {
                                                             toggles={{
                                                                 notifyVacation: editingCompany.notifyVacation,
                                                                 notifyOvertime: editingCompany.notifyOvertime,
-                                                                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
                                                             }}
                                                             onToggleBoolean={handleEditingBooleanToggle}
                                                             t={t}

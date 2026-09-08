@@ -48,7 +48,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(7);
+        assertThat(result.migrationsExecuted).isEqualTo(8);
 
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
@@ -81,6 +81,9 @@ class PmsFlywayMySqlIntegrationTest {
 
             assertThat(tableExists(connection, "user_ui_preferences")).isTrue();
             assertThat(tableExists(connection, "pms_front_desk_booking_requests")).isTrue();
+            assertThat(columnExists(connection, "pms_guests", "reference_code")).isTrue();
+            assertThat(columnExists(connection, "pms_organizations", "master_record")).isTrue();
+            assertThat(columnExists(connection, "pms_reservations", "child_ages")).isTrue();
 
             try (var history = statement.executeQuery("""
                     select version, success
@@ -115,7 +118,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(freshResult.migrationsExecuted).isEqualTo(8);
+        assertThat(freshResult.migrationsExecuted).isEqualTo(9);
 
         try (var connection = DriverManager.getConnection(
                 freshUrl,
@@ -140,6 +143,13 @@ class PmsFlywayMySqlIntegrationTest {
     private boolean tableExists(java.sql.Connection connection, String tableName) throws Exception {
         try (var result = connection.getMetaData().getTables(
                 null, null, tableName, new String[]{"TABLE"})) {
+            return result.next();
+        }
+    }
+
+    private boolean columnExists(java.sql.Connection connection, String tableName, String columnName)
+            throws Exception {
+        try (var result = connection.getMetaData().getColumns(null, null, tableName, columnName)) {
             return result.next();
         }
     }

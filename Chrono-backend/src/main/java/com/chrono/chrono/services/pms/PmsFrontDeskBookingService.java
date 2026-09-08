@@ -124,7 +124,8 @@ public class PmsFrontDeskBookingService {
                         request.source(),
                         request.notes(),
                         request.guaranteeStatus(),
-                        null
+                        null,
+                        request.childAges()
                 ),
                 actor(username)
         );
@@ -252,6 +253,13 @@ public class PmsFrontDeskBookingService {
                 add(digest, request.newGuest().languageCode());
                 add(digest, request.newGuest().notes());
                 add(digest, request.newGuest().vip());
+                add(digest, request.newGuest().addressLine1());
+                add(digest, request.newGuest().postalCode());
+                add(digest, request.newGuest().city());
+                add(digest, request.newGuest().countryCode());
+                add(digest, request.newGuest().vehiclePlate());
+                add(digest, request.newGuest().roomPreferences());
+                add(digest, request.newGuest().organizationId());
             }
             add(digest, request.roomTypeId());
             add(digest, request.roomId());
@@ -260,6 +268,7 @@ public class PmsFrontDeskBookingService {
             add(digest, request.departureDate());
             add(digest, request.adults());
             add(digest, request.children());
+            add(digest, request.childAges());
             add(digest, request.source());
             add(digest, request.guaranteeStatus());
             add(digest, request.notes());

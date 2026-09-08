@@ -16,6 +16,20 @@ public record UpsertGuestRequest(
         @Pattern(regexp = "^[A-Za-z]{2}$") String nationalityCode,
         @Pattern(regexp = "^[A-Za-z]{2,8}$") String languageCode,
         @Size(max = 1000) String notes,
-        Boolean vip
+        Boolean vip,
+        @Size(max = 180) String addressLine1,
+        @Size(max = 20) String postalCode,
+        @Size(max = 120) String city,
+        @Pattern(regexp = "^[A-Za-z]{2}$") String countryCode,
+        @Size(max = 40) String vehiclePlate,
+        @Size(max = 1000) String roomPreferences,
+        Long organizationId
 ) {
+    public UpsertGuestRequest(
+            String firstName, String lastName, String email, String phone, LocalDate dateOfBirth,
+            String nationalityCode, String languageCode, String notes, Boolean vip
+    ) {
+        this(firstName, lastName, email, phone, dateOfBirth, nationalityCode, languageCode, notes, vip,
+                null, null, null, null, null, null, null);
+    }
 }

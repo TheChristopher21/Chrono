@@ -125,6 +125,18 @@ public class PmsAdvancedController {
                 context.company(), propertyId, organizationId, request, businessDate));
     }
 
+    @PostMapping("/properties/{propertyId}/organizations/{sourceOrganizationId}/merge")
+    public ResponseEntity<PmsAdvancedResponse> mergeOrganization(
+            @PathVariable Long propertyId,
+            @PathVariable Long sourceOrganizationId,
+            @RequestParam(required = false) LocalDate businessDate,
+            @Valid @RequestBody MergeOrganizationsRequest request,
+            Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(advancedService.mergeOrganization(
+                context.company(), propertyId, sourceOrganizationId, request, businessDate));
+    }
+
     @PostMapping("/groups")
     public ResponseEntity<PmsAdvancedResponse> createGroup(
             @RequestParam(required = false) LocalDate businessDate,

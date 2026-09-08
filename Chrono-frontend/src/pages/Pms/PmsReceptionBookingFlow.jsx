@@ -52,6 +52,7 @@ const initialStay = (businessDate, walkIn) => {
         departureDate: addDays(arrivalDate, 1),
         adults: 1,
         children: 0,
+        childAges: [],
         source: walkIn ? 'WALK_IN' : 'DIRECT',
     };
 };
@@ -64,6 +65,13 @@ const emptyGuest = () => ({
     dateOfBirth: '',
     nationalityCode: 'CH',
     languageCode: 'de',
+    addressLine1: '',
+    postalCode: '',
+    city: '',
+    countryCode: 'CH',
+    vehiclePlate: '',
+    roomPreferences: '',
+    organizationId: '',
     notes: '',
     vip: false,
 });
@@ -201,6 +209,7 @@ const PmsReceptionBookingFlow = ({
     const registrationEnabled = walkIn || collectRegistration;
     const checkInNow = walkIn;
     const operationGuests = operations?.guests ?? EMPTY_LIST;
+    const organizations = operations?.organizations ?? EMPTY_LIST;
 
     useEffect(() => {
         if (!didMountRef.current) {
@@ -362,6 +371,11 @@ const PmsReceptionBookingFlow = ({
         setExistingGuestId(String(guest.id));
         setRegistration((current) => ({
             ...current,
+            addressLine: current.addressLine || guest.addressLine1 || '',
+            postalCode: current.postalCode || guest.postalCode || '',
+            city: current.city || guest.city || '',
+            countryCode: upperCountry(guest.countryCode) || current.countryCode || 'CH',
+            vehiclePlate: current.vehiclePlate || guest.vehiclePlate || '',
             nationalityCode: upperCountry(guest.nationalityCode) || current.nationalityCode || 'CH',
             signatureName: current.signatureName
                 || [guest.firstName, guest.lastName].filter(Boolean).join(' '),
@@ -393,6 +407,10 @@ const PmsReceptionBookingFlow = ({
             if (Number(stay.adults) < 1 || Number(stay.adults) > 20
                 || Number(stay.children) < 0 || Number(stay.children) > 20) {
                 return 'Bitte prüfe die Anzahl der Erwachsenen und Kinder.';
+            }
+            if (Number(stay.children) > 0 && (stay.childAges?.length !== Number(stay.children)
+                || stay.childAges.some((age) => age === '' || Number(age) < 0 || Number(age) > 17))) {
+                return 'Bitte erfasse für jedes Kind ein Alter zwischen 0 und 17 Jahren.';
             }
             const allowedSources = walkIn
                 ? ['WALK_IN']
@@ -473,6 +491,13 @@ const PmsReceptionBookingFlow = ({
             dateOfBirth: optional(newGuest.dateOfBirth),
             nationalityCode: optional(upperCountry(newGuest.nationalityCode)),
             languageCode: optional(newGuest.languageCode),
+            addressLine1: optional(newGuest.addressLine1 || (registrationEnabled ? registration.addressLine : '')),
+            postalCode: optional(newGuest.postalCode || (registrationEnabled ? registration.postalCode : '')),
+            city: optional(newGuest.city || (registrationEnabled ? registration.city : '')),
+            countryCode: optional(upperCountry(newGuest.countryCode || (registrationEnabled ? registration.countryCode : ''))),
+            vehiclePlate: optional(newGuest.vehiclePlate || (registrationEnabled ? registration.vehiclePlate : '')),
+            roomPreferences: optional(newGuest.roomPreferences),
+            organizationId: newGuest.organizationId ? Number(newGuest.organizationId) : null,
             notes: optional(newGuest.notes),
             vip: Boolean(newGuest.vip),
         } : null,
@@ -483,6 +508,7 @@ const PmsReceptionBookingFlow = ({
         departureDate: stay.departureDate,
         adults: Number(stay.adults),
         children: Number(stay.children),
+        childAges: (stay.childAges ?? []).map(Number),
         source: walkIn ? 'WALK_IN' : stay.source,
         guaranteeStatus,
         notes: optional(reservationNotes),
@@ -735,8 +761,24 @@ const PmsReceptionBookingFlow = ({
                         </label>
                         <label>
                             Kinder
-                            <input type="number" min="0" max="20" value={stay.children} onChange={(event) => setStay((current) => ({ ...current, children: event.target.value }))} required />
+                            <input type="number" min="0" max="20" value={stay.children} onChange={(event) => {
+                                const children = Number(event.target.value);
+                                setStay((current) => ({
+                                    ...current,
+                                    children,
+                                    childAges: Array.from({ length: Math.max(0, children) }, (_, index) => current.childAges?.[index] ?? ''),
+                                }));
+                            }} required />
                         </label>
+                        {(stay.childAges ?? []).map((age, index) => (
+                            <label key={`child-age-${index}`}>
+                                Alter Kind {index + 1}
+                                <input type="number" min="0" max="17" value={age} onChange={(event) => setStay((current) => ({
+                                    ...current,
+                                    childAges: current.childAges.map((value, ageIndex) => ageIndex === index ? event.target.value : value),
+                                }))} required />
+                            </label>
+                        ))}
                         <label className="is-wide">
                             Buchungsquelle
                             <select
@@ -821,6 +863,7 @@ const PmsReceptionBookingFlow = ({
                                                     <strong>Zimmer {room.number}</strong>
                                                     <small>{room.roomTypeName || selectedRate.roomTypeName}
                                                         {room.housekeepingStatus ? ` · ${room.housekeepingStatus === 'CLEAN' ? 'Sauber' : room.housekeepingStatus}` : ''}</small>
+                                                    {room.features && <small>Ausstattung: {room.features}</small>}
                                                 </span>
                                             </label>
                                         ))}
@@ -868,8 +911,10 @@ const PmsReceptionBookingFlow = ({
                                         />
                                         <span>
                                             <strong>{guest.firstName} {guest.lastName}</strong>
-                                            <small>{guest.email || 'Keine E-Mail'} · {guest.phone || 'Kein Telefon'}
+                                            <small>{guest.referenceCode ? `${guest.referenceCode} · ` : ''}{guest.email || 'Keine E-Mail'} · {guest.phone || 'Kein Telefon'}
                                                 {guest.dateOfBirth ? ` · Geboren ${guest.dateOfBirth}` : ''}</small>
+                                            {guest.organizationName && <small>Firma: {guest.organizationName}</small>}
+                                            {guest.roomPreferences && <small>Zimmerwunsch: {guest.roomPreferences}</small>}
                                         </span>
                                     </label>
                                 ))}
@@ -887,6 +932,13 @@ const PmsReceptionBookingFlow = ({
                                 <label>E-Mail<input type="email" autoComplete="email" value={newGuest.email} onChange={(event) => setNewGuest((current) => ({ ...current, email: event.target.value }))} /></label>
                                 <label>Telefon<input type="tel" inputMode="tel" autoComplete="tel" value={newGuest.phone} onChange={(event) => setNewGuest((current) => ({ ...current, phone: event.target.value }))} /></label>
                                 <label>Sprache<input maxLength="8" value={newGuest.languageCode} onChange={(event) => setNewGuest((current) => ({ ...current, languageCode: event.target.value }))} /></label>
+                                <label>Firma<select value={newGuest.organizationId} onChange={(event) => setNewGuest((current) => ({ ...current, organizationId: event.target.value }))}><option value="">Privat</option>{organizations.filter((entry) => entry.active).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode ? `${entry.referenceCode} · ` : ''}{entry.name}</option>)}</select></label>
+                                <label className="is-wide">Privatadresse<input autoComplete="street-address" value={newGuest.addressLine1} onChange={(event) => setNewGuest((current) => ({ ...current, addressLine1: event.target.value }))} /></label>
+                                <label>PLZ<input autoComplete="postal-code" value={newGuest.postalCode} onChange={(event) => setNewGuest((current) => ({ ...current, postalCode: event.target.value }))} /></label>
+                                <label>Ort<input autoComplete="address-level2" value={newGuest.city} onChange={(event) => setNewGuest((current) => ({ ...current, city: event.target.value }))} /></label>
+                                <label>Wohnsitzland<input maxLength="2" value={newGuest.countryCode} onChange={(event) => setNewGuest((current) => ({ ...current, countryCode: event.target.value.toUpperCase() }))} /></label>
+                                <label>Kennzeichen<input value={newGuest.vehiclePlate} onChange={(event) => setNewGuest((current) => ({ ...current, vehiclePlate: event.target.value.toUpperCase() }))} /></label>
+                                <label className="is-wide">Zimmerwünsche<textarea placeholder="z. B. ruhig, hohe Etage, Badewanne, Parkett, King-Bett" value={newGuest.roomPreferences} onChange={(event) => setNewGuest((current) => ({ ...current, roomPreferences: event.target.value }))} /></label>
                                 <label className="pms-checkbox"><input type="checkbox" checked={newGuest.vip} onChange={(event) => setNewGuest((current) => ({ ...current, vip: event.target.checked }))} /> VIP-Gast</label>
                                 <label className="is-wide">Gastnotizen<textarea value={newGuest.notes} onChange={(event) => setNewGuest((current) => ({ ...current, notes: event.target.value }))} /></label>
                             </div>
@@ -925,9 +977,9 @@ const PmsReceptionBookingFlow = ({
                 <form className="pms-operations-stack" onSubmit={submitBooking}>
                     <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Schritt 4</span><h3 ref={stepHeadingRef} tabIndex={-1}>Angaben prüfen und atomar abschliessen</h3></div></div>
                     <div className="pms-record-list" aria-label="Prüfübersicht">
-                        <article className="pms-record"><div><span>Aufenthalt</span><strong>{stay.arrivalDate} bis {stay.departureDate}</strong><small>{stay.adults} Erwachsene · {stay.children} Kinder · {RESERVATION_SOURCES.find(([value]) => value === (walkIn ? 'WALK_IN' : stay.source))?.[1]}</small></div></article>
+                        <article className="pms-record"><div><span>Aufenthalt</span><strong>{stay.arrivalDate} bis {stay.departureDate}</strong><small>{stay.adults} Erwachsene · {stay.children} Kinder{stay.childAges?.length ? ` (${stay.childAges.join(', ')} Jahre)` : ''} · {RESERVATION_SOURCES.find(([value]) => value === (walkIn ? 'WALK_IN' : stay.source))?.[1]}</small></div></article>
                         <article className="pms-record"><div><span>Zimmer & Rate</span><strong>{selectedRate?.roomTypeName} · {selectedRate?.name}</strong><small>{roomId ? `Zimmer ${suitableRooms.find((room) => String(room.id) === String(roomId))?.number}` : 'Zimmer wird später zugewiesen'} · {formatMoney(selectedRate?.totalAmount, selectedRate?.currencyCode || property?.currencyCode)}</small></div></article>
-                        <article className="pms-record"><div><span>Hauptgast</span><strong>{guestMode === 'existing' ? `${selectedGuest?.firstName ?? ''} ${selectedGuest?.lastName ?? ''}` : `${newGuest.firstName} ${newGuest.lastName}`}</strong><small>{registrationEnabled ? 'Meldedaten vollständig erfasst' : 'Meldedaten werden später erfasst'}{checkInNow ? ' · Direkter Check-in' : ''}</small></div></article>
+                        <article className="pms-record"><div><span>Hauptgast</span><strong>{guestMode === 'existing' ? `${selectedGuest?.firstName ?? ''} ${selectedGuest?.lastName ?? ''}` : `${newGuest.firstName} ${newGuest.lastName}`}</strong><small>{registrationEnabled ? 'Meldedaten vollständig erfasst' : 'Meldedaten werden später erfasst'}{checkInNow ? ' · Direkter Check-in' : ''}</small>{(guestMode === 'existing' ? selectedGuest?.roomPreferences : newGuest.roomPreferences) && <small>Zimmerwunsch beachten: {guestMode === 'existing' ? selectedGuest.roomPreferences : newGuest.roomPreferences}</small>}</div></article>
                     </div>
                     <div className="pms-form-grid">
                         <label>Garantieart<select value={guaranteeStatus} onChange={(event) => setGuaranteeStatus(event.target.value)}>{GUARANTEE_OPTIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>

@@ -8,7 +8,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -348,9 +347,7 @@ public class UserPermissionService {
             return false;
         }
 
-        Set<String> features = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
-        features.addAll(RegistrationFeatures.sanitizeOptionalFeatures(company.getEnabledFeatures()));
-        return features.contains(featureKey);
+        return RegistrationFeatures.isCompanyFeatureEnabled(company, featureKey);
     }
 
     private LinkedHashMap<String, String> emptyPermissions() {

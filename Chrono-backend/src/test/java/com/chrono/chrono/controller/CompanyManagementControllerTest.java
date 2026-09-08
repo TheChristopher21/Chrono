@@ -10,6 +10,7 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.StripeService;
 import com.chrono.chrono.services.UserPermissionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +24,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -84,6 +87,8 @@ class CompanyManagementControllerTest {
 
         CompanyManagementController.CreateCompanyWithAdminDTO dto = validDto();
         dto.setAdminPmsAccess(true);
+        dto.setCustomerTrackingEnabled(false);
+        dto.setEnabledFeatures(Set.of("projects"));
 
         ResponseEntity<?> response = controller.createCompanyWithAdmin(dto);
 
@@ -109,6 +114,8 @@ class CompanyManagementControllerTest {
         assertNotNull(savedAdmin.getCompany());
         assertEquals(41L, savedAdmin.getCompany().getId());
         assertTrue(savedAdmin.getCompany().getEnabledFeatures().contains("pms"));
+        assertTrue(savedAdmin.getCompany().getEnabledFeatures().contains("projects"));
+        assertTrue(savedAdmin.getCompany().getCustomerTrackingEnabled());
         assertTrue(savedAdmin.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleName())));
         assertFalse(savedAdmin.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName())));
 
@@ -133,6 +140,120 @@ class CompanyManagementControllerTest {
         assertEquals(400, response.getStatusCode().value());
         verify(companyRepository, never()).save(any(Company.class));
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void getCompany_returnsSafeEffectiveDtoInsteadOfSerializingUsers() throws Exception {
+        Company company = company(41L, true, Set.of());
+        User user = new User();
+        user.setUsername("sensitive-admin");
+        user.setPassword("password-hash");
+        user.setAdminPassword("admin-password-hash");
+        user.setBankAccount("CH9300762011623852957");
+        user.setSocialSecurityNumber("756.1234.5678.97");
+        company.getUsers().add(user);
+        when(companyRepository.findById(41L)).thenReturn(Optional.of(company));
+
+        ResponseEntity<?> response = controller.getCompany(41L);
+
+        assertEquals(200, response.getStatusCode().value());
+        CompanyManagementController.CompanyDTO body = assertInstanceOf(
+                CompanyManagementController.CompanyDTO.class,
+                response.getBody()
+        );
+        assertTrue(body.getCustomerTrackingEnabled());
+        assertTrue(body.getEnabledFeatures().contains("projects"));
+
+        String json = new ObjectMapper().writeValueAsString(body);
+        assertFalse(json.contains("users"));
+        assertFalse(json.contains("password-hash"));
+        assertFalse(json.contains("admin-password-hash"));
+        assertFalse(json.contains("CH9300762011623852957"));
+        assertFalse(json.contains("756.1234.5678.97"));
+    }
+
+    @Test
+    void createCompany_defaultsToActiveWhenActiveIsOmitted() {
+        CompanyManagementController.CompanyDTO dto = new CompanyManagementController.CompanyDTO();
+        dto.setName("Default Active AG");
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ResponseEntity<?> response = controller.createCompany(dto);
+
+        assertEquals(201, response.getStatusCode().value());
+        ArgumentCaptor<Company> captor = ArgumentCaptor.forClass(Company.class);
+        verify(companyRepository).save(captor.capture());
+        assertTrue(captor.getValue().isActive());
+    }
+
+    @Test
+    void updateCompany_partialRequestPreservesActiveAndSynchronizesCurrentAlias() {
+        Company company = company(51L, true, Set.of());
+        company.setActive(true);
+        CompanyManagementController.CompanyDTO dto = new CompanyManagementController.CompanyDTO();
+        dto.setCity("Zürich");
+
+        ResponseEntity<?> response = updateCompany(company, dto);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(company.isActive());
+        assertTrue(company.getCustomerTrackingEnabled());
+        assertTrue(company.getEnabledFeatures().contains("projects"));
+    }
+
+    @Test
+    void updateCompany_legacyOnlyDisableRemovesModernProjectAlias() {
+        Company company = company(52L, true, Set.of("projects", "crm"));
+        CompanyManagementController.CompanyDTO dto = new CompanyManagementController.CompanyDTO();
+        dto.setCustomerTrackingEnabled(false);
+
+        ResponseEntity<?> response = updateCompany(company, dto);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertFalse(company.getCustomerTrackingEnabled());
+        assertFalse(company.getEnabledFeatures().contains("projects"));
+        assertTrue(company.getEnabledFeatures().contains("crm"));
+    }
+
+    @Test
+    void updateCompany_featuresOnlyDisableClearsLegacyProjectAlias() {
+        Company company = company(53L, true, Set.of("projects", "crm"));
+        CompanyManagementController.CompanyDTO dto = new CompanyManagementController.CompanyDTO();
+        dto.setEnabledFeatures(Set.of("crm"));
+
+        ResponseEntity<?> response = updateCompany(company, dto);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertFalse(company.getCustomerTrackingEnabled());
+        assertFalse(company.getEnabledFeatures().contains("projects"));
+        assertTrue(company.getEnabledFeatures().contains("crm"));
+    }
+
+    @Test
+    void updateCompany_conflictingExplicitAliasesResolveToEnabled() {
+        Company company = company(54L, false, Set.of());
+        CompanyManagementController.CompanyDTO dto = new CompanyManagementController.CompanyDTO();
+        dto.setCustomerTrackingEnabled(false);
+        dto.setEnabledFeatures(Set.of("projects"));
+
+        ResponseEntity<?> response = updateCompany(company, dto);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(company.getCustomerTrackingEnabled());
+        assertTrue(company.getEnabledFeatures().contains("projects"));
+    }
+
+    private ResponseEntity<?> updateCompany(Company company, CompanyManagementController.CompanyDTO dto) {
+        when(companyRepository.findById(company.getId())).thenReturn(Optional.of(company));
+        return controller.updateCompany(company.getId(), dto);
+    }
+
+    private static Company company(Long id, boolean legacyProjectsEnabled, Set<String> enabledFeatures) {
+        Company company = new Company("Example AG");
+        company.setId(id);
+        company.setCustomerTrackingEnabled(legacyProjectsEnabled);
+        company.setEnabledFeatures(enabledFeatures);
+        return company;
     }
 
     private static CompanyManagementController.CreateCompanyWithAdminDTO validDto() {

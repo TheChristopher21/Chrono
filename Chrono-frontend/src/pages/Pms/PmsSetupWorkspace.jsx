@@ -39,9 +39,11 @@ const roomTypeDefaults = {
 const roomDefaults = {
     roomTypeId: '',
     number: '',
+    quantity: 1,
     name: '',
     floor: '',
     housekeepingSection: '',
+    features: '',
     operationalStatus: 'IN_SERVICE',
     active: true,
 };
@@ -176,13 +178,25 @@ const PmsSetupWorkspace = ({
     const saveRoom = async (event) => {
         event.preventDefault();
         if (!canManage || !selectedProperty) return;
+        const { quantity: requestedQuantity, ...roomValues } = roomForm;
         const payload = {
-            ...roomForm,
+            ...roomValues,
             roomTypeId: Number(roomForm.roomTypeId),
         };
-        const response = await submit(() =>
-            api.post(`/api/pms/properties/${selectedProperty.id}/rooms`, payload)
-        );
+        const quantity = Number(requestedQuantity || 1);
+        const response = await submit(() => quantity > 1
+            ? api.post(`/api/pms/properties/${selectedProperty.id}/rooms/bulk`, {
+                roomTypeId: payload.roomTypeId,
+                startNumber: roomForm.number,
+                count: quantity,
+                namePrefix: roomForm.name || null,
+                floor: roomForm.floor || null,
+                housekeepingSection: roomForm.housekeepingSection || null,
+                features: roomForm.features || null,
+                operationalStatus: roomForm.operationalStatus,
+                active: roomForm.active,
+            })
+            : api.post(`/api/pms/properties/${selectedProperty.id}/rooms`, payload));
         if (!response) return;
 
         setRoomForm((current) => ({
@@ -191,7 +205,9 @@ const PmsSetupWorkspace = ({
             floor: current.floor,
             housekeepingSection: current.housekeepingSection,
         }));
-        setMessage('Das Zimmer wurde angelegt und steht dem PMS jetzt als Bestand zur Verfügung.');
+        setMessage(quantity > 1
+            ? `${quantity} Zimmer wurden fortlaufend angelegt und stehen dem PMS als Bestand zur Verfügung.`
+            : 'Das Zimmer wurde angelegt und steht dem PMS jetzt als Bestand zur Verfügung.');
     };
 
     const chooseProperty = (event) => {
@@ -456,8 +472,12 @@ const PmsSetupWorkspace = ({
                                                 </select>
                                             </label>
                                             <label>
-                                                Zimmernummer
+                                                Start-Zimmernummer
                                                 <input name="number" required maxLength="40" value={roomForm.number} onChange={updateForm(setRoomForm)} />
+                                            </label>
+                                            <label>
+                                                Anzahl
+                                                <input type="number" name="quantity" min="1" max="200" value={roomForm.quantity} onChange={updateForm(setRoomForm)} required />
                                             </label>
                                             <label className="is-wide">
                                                 Zimmername (optional)
@@ -470,6 +490,10 @@ const PmsSetupWorkspace = ({
                                             <label className="is-wide">
                                                 Reinigungsbereich
                                                 <input name="housekeepingSection" maxLength="80" value={roomForm.housekeepingSection} onChange={updateForm(setRoomForm)} />
+                                            </label>
+                                            <label className="is-wide">
+                                                Zimmermerkmale
+                                                <textarea name="features" maxLength="1000" placeholder="z. B. Badewanne, Parkett, King-Bett, Eckzimmer, hohe Etage, ruhig" value={roomForm.features} onChange={updateForm(setRoomForm)} />
                                             </label>
                                             <label className="is-wide">
                                                 Betriebs-/Verkaufsstatus
@@ -503,7 +527,7 @@ const PmsSetupWorkspace = ({
                                                 <span>{room.number}</span>
                                                 <div>
                                                     <strong>{room.name || room.roomTypeName}</strong>
-                                                    <small>{room.roomTypeCode}{room.floor ? ` · Etage ${room.floor}` : ''}</small>
+                                                    <small>{room.roomTypeCode}{room.floor ? ` · Etage ${room.floor}` : ''}{room.features ? ` · ${room.features}` : ''}</small>
                                                 </div>
                                                 <i className={`is-${room.operationalStatus.toLowerCase().replaceAll('_', '-')}`}>
                                                     {getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus)}

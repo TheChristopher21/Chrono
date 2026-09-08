@@ -133,10 +133,12 @@ public class UserDTO {
         this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
         this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
         this.lastCustomerName = user.getLastCustomer() != null ? user.getLastCustomer().getName() : null;
-        this.customerTrackingEnabled = (user.getCompany() != null) ? user.getCompany().getCustomerTrackingEnabled() : null; // Kept
+        this.customerTrackingEnabled = (user.getCompany() != null)
+                ? RegistrationFeatures.isProjectsEnabled(user.getCompany())
+                : null; // Kept for older clients; mirrors the effective projects feature.
         this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
         if (user.getCompany() != null) {
-            this.companyFeatureKeys.addAll(RegistrationFeatures.sanitizeOptionalFeatures(user.getCompany().getEnabledFeatures()));
+            this.companyFeatureKeys.addAll(RegistrationFeatures.effectiveOptionalFeatures(user.getCompany()));
         }
         this.pagePermissions = user.getPagePermissions() != null ? new LinkedHashMap<>(user.getPagePermissions()) : new LinkedHashMap<>();
     }

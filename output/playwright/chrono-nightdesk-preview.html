@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Chrono Nightdesk</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Chrono Nightdesk" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Chrono Nightdesk&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;chrono-nightdesk&quot; aria-label=&quot;Chrono Nightdesk – Admin Dashboard Mockup&quot;&gt;
+  &lt;style&gt;
+    #chrono-nightdesk{--nd-bg:#0c1018;--nd-surface:#121925;--nd-raised:#182332;--nd-line:#293544;--nd-text:#edf4fa;--nd-muted:#a1afbf;--nd-accent:#66d9e8;--nd-warm:#f2ba72;--nd-good:#8ad8b1;--nd-row:17px;background:var(--nd-bg);color:var(--nd-text);font-family:Inter,&quot;Segoe UI&quot;,sans-serif;font-size:13px;line-height:1.5;border-radius:14px;overflow:clip;color-scheme:dark}
+    #chrono-nightdesk *{box-sizing:border-box}#chrono-nightdesk button,#chrono-nightdesk input,#chrono-nightdesk select,#chrono-nightdesk textarea{font:inherit}#chrono-nightdesk button{cursor:pointer;color:inherit}#chrono-nightdesk button:disabled{opacity:.45;cursor:default}#chrono-nightdesk button:focus-visible,#chrono-nightdesk input:focus-visible,#chrono-nightdesk select:focus-visible,#chrono-nightdesk textarea:focus-visible{outline:2px solid var(--nd-accent);outline-offset:3px}#chrono-nightdesk button{font-weight:500}#chrono-nightdesk h1,#chrono-nightdesk h2,#chrono-nightdesk h3,#chrono-nightdesk p{margin:0}#chrono-nightdesk h1{font-size:25px;line-height:1.2;font-weight:500;letter-spacing:-.8px}#chrono-nightdesk h2{font-size:23px;line-height:1.25;font-weight:500;letter-spacing:-.65px}#chrono-nightdesk h3{font-size:14px;line-height:1.4;font-weight:500}#chrono-nightdesk svg{width:16px;height:16px;flex-shrink:0}#chrono-nightdesk [hidden]{display:none!important}#chrono-nightdesk .nd-muted{color:var(--nd-muted)}#chrono-nightdesk .nd-small{font-size:11px}#chrono-nightdesk .nd-mono{font-variant-numeric:tabular-nums;font-family:&quot;SFMono-Regular&quot;,Consolas,monospace}#chrono-nightdesk .nd-eyebrow{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--nd-muted)}
+    #chrono-nightdesk .nd-chrome{display:flex;align-items:center;gap:24px;padding:18px 26px;border-bottom:1px solid var(--nd-line)}#chrono-nightdesk .nd-brand{display:flex;gap:9px;align-items:center;font-size:20px;letter-spacing:-.7px;font-weight:500}#chrono-nightdesk .nd-brandmark{display:grid;place-items:center;width:25px;height:25px;color:var(--nd-bg);background:var(--nd-accent);border-radius:7px}#chrono-nightdesk .nd-brandmark svg{width:18px;height:18px}#chrono-nightdesk .nd-nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}#chrono-nightdesk .nd-nav button{border:0;background:transparent;padding:8px 11px;border-radius:6px;color:var(--nd-muted);font-size:12px}#chrono-nightdesk .nd-nav button[aria-pressed=&quot;true&quot;]{color:var(--nd-text);background:var(--nd-raised)}#chrono-nightdesk .nd-nav button:hover{color:var(--nd-accent)}#chrono-nightdesk .nd-account{border:1px solid var(--nd-line);border-radius:50%;width:32px;height:32px;background:var(--nd-raised);font-size:11px}#chrono-nightdesk .nd-demo{display:flex;align-items:center;gap:7px;color:var(--nd-muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase}#chrono-nightdesk .nd-dot{width:5px;height:5px;border-radius:50%;background:var(--nd-accent)}
+    #chrono-nightdesk .nd-head{padding:27px 28px 23px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}#chrono-nightdesk .nd-head h1{margin-top:7px}#chrono-nightdesk .nd-head-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}#chrono-nightdesk .nd-action{display:inline-flex;justify-content:center;align-items:center;gap:7px;padding:9px 12px;border-radius:6px;background:var(--nd-raised);border:1px solid var(--nd-line);font-size:12px;white-space:normal}#chrono-nightdesk .nd-action:hover{border-color:var(--nd-muted)}#chrono-nightdesk .nd-action.nd-primary{background:var(--nd-accent);border-color:var(--nd-accent);color:#10242d}#chrono-nightdesk .nd-action.nd-quiet{background:transparent}#chrono-nightdesk .nd-action.nd-danger{color:#f2b0ad}#chrono-nightdesk .nd-metrics{display:grid;grid-template-columns:repeat(4,1fr);margin:0 28px 26px;border-top:1px solid var(--nd-line);border-bottom:1px solid var(--nd-line)}#chrono-nightdesk .nd-metric{display:flex;gap:12px;align-items:center;padding:16px 16px;background:transparent;border:0;border-right:1px solid var(--nd-line);text-align:left}#chrono-nightdesk .nd-metric:first-child{padding-left:0}#chrono-nightdesk .nd-metric:last-child{border-right:0}#chrono-nightdesk .nd-metric:hover{background:var(--nd-surface)}#chrono-nightdesk .nd-metric strong{font-size:25px;font-weight:400;line-height:1;letter-spacing:-1px}#chrono-nightdesk .nd-metric span{font-size:11px;line-height:1.45;color:var(--nd-muted)}#chrono-nightdesk .nd-metric .nd-alert{color:var(--nd-warm)}#chrono-nightdesk .nd-metric .nd-accent-text{color:var(--nd-accent)}
+    #chrono-nightdesk .nd-workspace{margin:0 28px 28px;display:grid;grid-template-columns:300px minmax(0,1fr);border:1px solid var(--nd-line);border-radius:9px;overflow:hidden;background:var(--nd-surface)}#chrono-nightdesk .nd-queue{border-right:1px solid var(--nd-line);background:#101722;min-width:0}#chrono-nightdesk .nd-queue-head{padding:20px 18px 15px;display:flex;justify-content:space-between;align-items:center;gap:8px}#chrono-nightdesk .nd-count{color:var(--nd-muted);font-family:Consolas,monospace;font-size:12px}#chrono-nightdesk .nd-queue-tabs{display:flex;gap:5px;padding:0 18px 15px;flex-wrap:wrap}#chrono-nightdesk .nd-chip{padding:5px 8px;border:1px solid transparent;background:transparent;border-radius:5px;font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-chip[aria-pressed=&quot;true&quot;]{background:var(--nd-raised);border-color:var(--nd-line);color:var(--nd-text)}#chrono-nightdesk .nd-queue-tool{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--nd-line);border-bottom:1px solid var(--nd-line);font-size:11px;color:var(--nd-muted);gap:8px}#chrono-nightdesk .nd-check{display:flex;gap:7px;align-items:center;cursor:pointer}#chrono-nightdesk input[type=&quot;checkbox&quot;]{accent-color:var(--nd-accent);width:14px;height:14px;margin:0;flex-shrink:0}#chrono-nightdesk .nd-sort{border:0;background:transparent;color:var(--nd-muted);max-width:120px;font-size:11px}#chrono-nightdesk .nd-queue-row{display:flex;gap:10px;padding:var(--nd-row) 16px;border-bottom:1px solid #202c3a;position:relative;align-items:flex-start}#chrono-nightdesk .nd-queue-row:last-child{border-bottom:0}#chrono-nightdesk .nd-queue-row[data-active=&quot;true&quot;]{background:#1b2c3a;box-shadow:inset 3px 0 0 var(--nd-accent)}#chrono-nightdesk .nd-queue-row&gt;input{margin-top:5px}#chrono-nightdesk .nd-item{display:block;flex:1;padding:0;text-align:left;background:transparent;border:0;min-width:0}#chrono-nightdesk .nd-item-top{display:flex;align-items:center;justify-content:space-between;gap:10px}#chrono-nightdesk .nd-item-name{font-size:12px;font-weight:500}#chrono-nightdesk .nd-item-meta{display:block;color:var(--nd-muted);font-size:11px;margin-top:3px}#chrono-nightdesk .nd-item-bottom{display:flex;gap:6px;align-items:center;margin-top:7px;font-size:10px;color:var(--nd-muted)}#chrono-nightdesk .nd-mini-label{color:var(--nd-accent);font-size:10px;white-space:nowrap}#chrono-nightdesk .nd-mini-label.nd-urgent{color:var(--nd-warm)}#chrono-nightdesk .nd-batch{padding:13px 16px;background:var(--nd-raised);display:flex;gap:7px;flex-wrap:wrap}#chrono-nightdesk .nd-batch .nd-action{padding:6px 8px;font-size:11px}#chrono-nightdesk .nd-detail{min-width:0;padding:24px 28px;display:flex;flex-direction:column}#chrono-nightdesk .nd-detail-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:25px}#chrono-nightdesk .nd-detail-reference{font-size:11px;color:var(--nd-muted);font-family:Consolas,monospace}#chrono-nightdesk .nd-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--nd-line);border-radius:4px;font-size:10px;color:var(--nd-accent)}#chrono-nightdesk .nd-tag.nd-pending{color:var(--nd-warm)}#chrono-nightdesk .nd-detail-person{display:flex;align-items:center;gap:10px;margin:18px 0 24px}#chrono-nightdesk .nd-avatar{width:35px;height:35px;border:1px solid #41536a;border-radius:9px;background:#233449;display:grid;place-items:center;color:#c6d9ee;font-size:12px}#chrono-nightdesk .nd-detail-person strong{font-weight:500;display:block;font-size:12px}#chrono-nightdesk .nd-detail-person span{font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-note{padding:15px 17px;border-left:2px solid #3f5368;background:#17212f;color:#c5d0db;font-size:12px;line-height:1.7;margin-bottom:24px}#chrono-nightdesk .nd-comparison{display:grid;grid-template-columns:1fr 22px 1fr;align-items:center;padding:19px 0;border-top:1px solid var(--nd-line);border-bottom:1px solid var(--nd-line);gap:13px}#chrono-nightdesk .nd-comparison span{display:block;color:var(--nd-muted);font-size:11px}#chrono-nightdesk .nd-comparison strong{display:block;font-size:22px;letter-spacing:-.6px;font-weight:400;margin-top:8px;font-family:Consolas,monospace}#chrono-nightdesk .nd-comparison small{display:block;color:var(--nd-muted);font-size:10px;margin-top:3px}#chrono-nightdesk .nd-comparison .nd-new{color:var(--nd-accent)}#chrono-nightdesk .nd-context{margin:23px 0 0}#chrono-nightdesk .nd-context-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}#chrono-nightdesk .nd-context h3{font-size:12px}#chrono-nightdesk .nd-link{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:0;color:var(--nd-accent);font-size:11px}#chrono-nightdesk .nd-track{display:flex;gap:4px;margin-bottom:10px}#chrono-nightdesk .nd-track span{height:26px;flex:1;border-radius:3px;background:#253a44;color:#a9d9db;display:grid;place-items:center;font-size:10px}#chrono-nightdesk .nd-track span.nd-track-empty{background:#29313c;color:var(--nd-muted)}#chrono-nightdesk .nd-context-line{display:flex;align-items:center;justify-content:space-between;gap:9px;color:var(--nd-muted);font-size:11px}#chrono-nightdesk .nd-checklist{display:flex;flex-direction:column;gap:10px;padding:22px 0;color:var(--nd-muted);font-size:11px}#chrono-nightdesk .nd-checklist div{display:flex;align-items:flex-start;gap:8px}#chrono-nightdesk .nd-checklist svg{width:14px;height:14px;color:var(--nd-good);margin-top:1px}#chrono-nightdesk .nd-decision{border-top:1px solid var(--nd-line);padding-top:20px;margin-top:auto;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}#chrono-nightdesk .nd-decision .nd-action{padding:10px 15px}#chrono-nightdesk .nd-decision-note{font-size:10px;color:var(--nd-muted);margin-top:13px}#chrono-nightdesk .nd-empty{padding:34px 20px;color:var(--nd-muted);text-align:center}
+    #chrono-nightdesk .nd-secondary{margin:0 28px 28px;min-width:0}#chrono-nightdesk .nd-section-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:20px;flex-wrap:wrap}#chrono-nightdesk .nd-section-heading h2{font-size:20px}#chrono-nightdesk .nd-section-heading p{margin-top:5px;font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}#chrono-nightdesk .nd-input{border:1px solid var(--nd-line);border-radius:6px;background:var(--nd-surface);color:var(--nd-text);padding:9px 10px;max-width:100%;min-width:0}#chrono-nightdesk .nd-search{flex:1;min-width:150px}#chrono-nightdesk .nd-field{display:flex;flex-direction:column;gap:6px;color:var(--nd-muted);font-size:11px}#chrono-nightdesk .nd-toolbar&gt;.nd-check{font-size:11px;color:var(--nd-muted);padding:8px 4px}#chrono-nightdesk .nd-period{display:flex;align-items:center;gap:11px;flex-wrap:wrap}#chrono-nightdesk .nd-period .nd-action{padding:8px}#chrono-nightdesk .nd-period strong{font-size:12px;font-weight:500}#chrono-nightdesk .nd-table-wrap{overflow-x:auto;border-top:1px solid var(--nd-line)}#chrono-nightdesk table{border-collapse:collapse;width:100%;text-align:left;font-size:12px}#chrono-nightdesk th{color:var(--nd-muted);font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 10px;border-bottom:1px solid var(--nd-line);white-space:nowrap}#chrono-nightdesk td{padding:15px 10px;border-bottom:1px solid #222e3b;white-space:nowrap}#chrono-nightdesk td small{font-size:10px;color:var(--nd-muted);display:block;margin-top:3px}#chrono-nightdesk .nd-number{text-align:right;font-family:Consolas,monospace;font-variant-numeric:tabular-nums}#chrono-nightdesk .nd-negative{color:var(--nd-warm)}#chrono-nightdesk .nd-row-button{display:flex;align-items:center;gap:10px;background:transparent;border:0;padding:0;text-align:left}#chrono-nightdesk .nd-row-button .nd-avatar{width:29px;height:29px;font-size:10px;border-radius:7px}#chrono-nightdesk .nd-expanded td{background:var(--nd-surface);padding:17px 15px;white-space:normal}#chrono-nightdesk .nd-stamps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}#chrono-nightdesk .nd-stamp{display:flex;flex-direction:column;gap:7px;border-left:1px solid var(--nd-line);padding-left:12px;font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-stamp strong{font-weight:500;color:var(--nd-text);font-size:11px}#chrono-nightdesk .nd-stamp .nd-action{font-size:10px;padding:5px 6px}#chrono-nightdesk .nd-table-foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:15px;font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-summary-strip{display:flex;flex-wrap:wrap;gap:22px;margin-top:20px;padding:16px 0;border-top:1px solid var(--nd-line);font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-summary-strip strong{font-weight:400;color:var(--nd-text);margin-left:7px}
+    #chrono-nightdesk .nd-calendar-layout{display:grid;grid-template-columns:minmax(0,1fr) 215px;gap:22px}#chrono-nightdesk .nd-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}#chrono-nightdesk .nd-weekday{text-align:center;font-size:10px;color:var(--nd-muted);padding:6px}#chrono-nightdesk .nd-day{min-width:0;min-height:66px;border:1px solid transparent;background:var(--nd-surface);text-align:left;padding:7px 7px;border-radius:3px;display:flex;flex-direction:column;gap:6px;font-size:11px}#chrono-nightdesk .nd-day[aria-pressed=&quot;true&quot;]{border-color:var(--nd-accent);background:#192b38}#chrono-nightdesk .nd-day:disabled{background:transparent;opacity:.2}#chrono-nightdesk .nd-day-label{display:flex;gap:3px;flex-wrap:wrap}#chrono-nightdesk .nd-day-mark{height:4px;flex:1;min-width:8px;border-radius:1px;background:var(--nd-accent)}#chrono-nightdesk .nd-day-mark[data-kind=&quot;Krank&quot;]{background:var(--nd-warm)}#chrono-nightdesk .nd-day-mark[data-kind=&quot;Feiertag&quot;]{background:#b8a3df}#chrono-nightdesk .nd-agenda{padding:17px;background:var(--nd-surface);border-radius:6px}#chrono-nightdesk .nd-agenda h3{font-size:12px;margin-bottom:17px}#chrono-nightdesk .nd-agenda-entry{margin-top:17px;border-top:1px solid var(--nd-line);padding-top:14px;font-size:12px}#chrono-nightdesk .nd-agenda-entry span{display:block;color:var(--nd-muted);font-size:10px;margin-top:4px}#chrono-nightdesk .nd-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:15px;font-size:10px;color:var(--nd-muted)}#chrono-nightdesk .nd-legend label{display:flex;gap:5px;align-items:center}
+    #chrono-nightdesk .nd-module-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 30px}#chrono-nightdesk .nd-module-group h3{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--nd-muted);padding-bottom:11px;border-bottom:1px solid var(--nd-line)}#chrono-nightdesk .nd-module{display:flex;align-items:center;gap:10px;width:100%;border:0;border-bottom:1px solid #222e3b;background:transparent;text-align:left;padding:12px 0}#chrono-nightdesk .nd-module:hover{color:var(--nd-accent)}#chrono-nightdesk .nd-module&gt;span{flex:1}#chrono-nightdesk .nd-module small{display:block;font-size:10px;color:var(--nd-muted);margin-top:2px}#chrono-nightdesk .nd-module .nd-module-icon{color:var(--nd-muted);width:27px;flex:0 0 27px}#chrono-nightdesk .nd-module-footer{margin-top:24px;padding-top:18px;border-top:1px solid var(--nd-line);font-size:11px;color:var(--nd-muted)}#chrono-nightdesk .nd-drawer{margin:0 28px 24px;background:var(--nd-raised);border:1px solid #42566c;border-radius:8px;padding:20px 22px}#chrono-nightdesk .nd-drawer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}#chrono-nightdesk .nd-drawer-head h2{font-size:18px}#chrono-nightdesk .nd-drawer-content{color:var(--nd-muted);font-size:12px}#chrono-nightdesk .nd-drawer-content p{margin-bottom:14px}#chrono-nightdesk .nd-drawer-content .nd-field{margin-bottom:13px}#chrono-nightdesk .nd-drawer-content textarea{width:100%;resize:vertical;min-height:78px}#chrono-nightdesk .nd-options{display:flex;flex-wrap:wrap;gap:15px;margin-bottom:18px}#chrono-nightdesk .nd-options label{display:flex;align-items:center;gap:7px;font-size:12px}#chrono-nightdesk .nd-preview{background:var(--nd-bg);border:1px solid var(--nd-line);border-radius:5px;padding:14px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:11px/1.8 Consolas,monospace;color:var(--nd-text);margin-bottom:14px}#chrono-nightdesk .nd-record-list{display:flex;flex-direction:column;gap:0;margin:15px 0}#chrono-nightdesk .nd-record{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--nd-line);padding:13px 0;color:var(--nd-text)}#chrono-nightdesk .nd-record small{display:block;font-size:10px;color:var(--nd-muted);margin-top:3px}#chrono-nightdesk .nd-toast{margin:0 28px 20px;border-left:2px solid var(--nd-accent);padding:10px 13px;background:#172b35;color:#ccebf1;font-size:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}#chrono-nightdesk .nd-toast button{padding:0;border:0;background:transparent;color:var(--nd-accent);font-size:11px}#chrono-nightdesk .nd-footer{border-top:1px solid var(--nd-line);display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;padding:13px 28px;font-size:10px;color:var(--nd-muted)}
+    @media(max-width:820px){#chrono-nightdesk .nd-chrome{padding:16px 20px;gap:16px;flex-wrap:wrap}#chrono-nightdesk .nd-chrome&gt;.nd-demo{display:none}#chrono-nightdesk .nd-nav{order:3;flex-basis:100%}#chrono-nightdesk .nd-account{margin-left:auto}#chrono-nightdesk .nd-head{padding:24px 20px 20px}#chrono-nightdesk .nd-metrics{margin:0 20px 22px}#chrono-nightdesk .nd-metric{padding:15px 10px;gap:8px}#chrono-nightdesk .nd-metric strong{font-size:22px}#chrono-nightdesk .nd-workspace{margin:0 20px 24px;grid-template-columns:255px minmax(0,1fr)}#chrono-nightdesk .nd-detail{padding:22px 20px}#chrono-nightdesk .nd-queue-row{padding-left:13px;padding-right:13px}#chrono-nightdesk .nd-secondary,#chrono-nightdesk .nd-drawer{margin-left:20px;margin-right:20px}#chrono-nightdesk .nd-comparison{gap:7px}#chrono-nightdesk .nd-comparison strong{font-size:19px}#chrono-nightdesk .nd-calendar-layout{grid-template-columns:minmax(0,1fr)}#chrono-nightdesk .nd-agenda{display:block}#chrono-nightdesk .nd-agenda-entry{display:inline-block;margin:0 20px 10px 0;vertical-align:top}#chrono-nightdesk .nd-head-actions .nd-action span{display:none}}
+    @media(max-width:620px){#chrono-nightdesk{border-radius:10px}#chrono-nightdesk .nd-head{align-items:flex-start;gap:12px}#chrono-nightdesk h1{font-size:22px}#chrono-nightdesk .nd-metrics{grid-template-columns:repeat(2,1fr)}#chrono-nightdesk .nd-metric{padding:13px 10px!important}#chrono-nightdesk .nd-metric:nth-child(2){border-right:0}#chrono-nightdesk .nd-metric:nth-child(-n+2){border-bottom:1px solid var(--nd-line)}#chrono-nightdesk .nd-workspace{grid-template-columns:minmax(0,1fr)}#chrono-nightdesk .nd-queue{border-right:0;border-bottom:1px solid var(--nd-line)}#chrono-nightdesk .nd-queue-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#chrono-nightdesk .nd-queue-row{padding:13px 11px;border-right:1px solid #202c3a}#chrono-nightdesk .nd-queue-row:nth-child(even){border-right:0}#chrono-nightdesk .nd-item-name{font-size:11px}#chrono-nightdesk .nd-item-top{flex-wrap:wrap;gap:3px}#chrono-nightdesk .nd-item-meta{font-size:10px}#chrono-nightdesk .nd-queue-row&gt;input{width:13px;height:13px}#chrono-nightdesk .nd-item-bottom{font-size:10px;flex-wrap:wrap}#chrono-nightdesk .nd-detail{padding:22px 19px}#chrono-nightdesk .nd-detail-top{margin-bottom:18px}#chrono-nightdesk .nd-module-groups{grid-template-columns:minmax(0,1fr);gap:24px}#chrono-nightdesk .nd-stamps{grid-template-columns:repeat(2,minmax(0,1fr))}#chrono-nightdesk .nd-calendar{gap:2px}#chrono-nightdesk .nd-day{padding:6px;min-height:52px}#chrono-nightdesk .nd-drawer{padding:18px 16px}#chrono-nightdesk .nd-record{align-items:flex-start;flex-wrap:wrap}#chrono-nightdesk .nd-footer{padding:13px 20px}#chrono-nightdesk .nd-input{font-size:16px}#chrono-nightdesk .nd-period strong{font-size:11px}#chrono-nightdesk .nd-section-heading h2{font-size:18px}#chrono-nightdesk .nd-nav button{padding:8px 9px;font-size:11px}#chrono-nightdesk .nd-head-actions{flex-wrap:nowrap}#chrono-nightdesk .nd-head-actions .nd-action{padding:9px}#chrono-nightdesk .nd-search{flex-basis:100%}#chrono-nightdesk .nd-toolbar select{flex:1}#chrono-nightdesk .nd-secondary{margin-left:16px;margin-right:16px}#chrono-nightdesk .nd-day-label{gap:2px}#chrono-nightdesk .nd-toast{margin-left:20px;margin-right:20px}}
+    @media(pointer:coarse){#chrono-nightdesk .nd-nav button,#chrono-nightdesk .nd-action,#chrono-nightdesk .nd-chip,#chrono-nightdesk .nd-check,#chrono-nightdesk .nd-link,#chrono-nightdesk .nd-account{min-height:44px}#chrono-nightdesk .nd-item{min-height:60px}}
+  &lt;/style&gt;
+  &lt;header class=&quot;nd-chrome&quot;&gt;
+    &lt;div class=&quot;nd-brand&quot;&gt;&lt;span class=&quot;nd-brandmark&quot;&gt;&lt;i data-lucide=&quot;command&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;chrono&lt;span class=&quot;nd-muted nd-small&quot;&gt;/ admin&lt;/span&gt;&lt;/div&gt;
+    &lt;nav class=&quot;nd-nav&quot; aria-label=&quot;Hauptnavigation&quot;&gt;&lt;button type=&quot;button&quot; data-view=&quot;work&quot; aria-pressed=&quot;true&quot;&gt;Arbeitsplatz&lt;/button&gt;&lt;button type=&quot;button&quot; data-view=&quot;time&quot; aria-pressed=&quot;false&quot;&gt;Zeitprüfung&lt;/button&gt;&lt;button type=&quot;button&quot; data-view=&quot;calendar&quot; aria-pressed=&quot;false&quot;&gt;Kalender&lt;/button&gt;&lt;button type=&quot;button&quot; data-view=&quot;modules&quot; aria-pressed=&quot;false&quot;&gt;Alle Module&lt;/button&gt;&lt;/nav&gt;
+    &lt;span class=&quot;nd-demo&quot;&gt;&lt;span class=&quot;nd-dot&quot;&gt;&lt;/span&gt;Konzept 02 · Demodaten&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-account&quot; data-action=&quot;account&quot; aria-label=&quot;Administrationsprofil öffnen&quot;&gt;JS&lt;/button&gt;
+  &lt;/header&gt;
+  &lt;div class=&quot;nd-head&quot;&gt;&lt;div&gt;&lt;p class=&quot;nd-eyebrow&quot;&gt;Dienstag, 8. September 2026&lt;/p&gt;&lt;h1&gt;Ein klarer Kopf für dein Team.&lt;/h1&gt;&lt;/div&gt;&lt;div class=&quot;nd-head-actions&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;configure&quot; aria-label=&quot;Übersicht konfigurieren&quot;&gt;&lt;i data-lucide=&quot;sliders-horizontal&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Ansicht&lt;/span&gt;&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;export&quot;&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Export&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;
+  &lt;section class=&quot;nd-drawer&quot; id=&quot;nd-drawer&quot; aria-label=&quot;Detailvorschau&quot; hidden&gt;&lt;div class=&quot;nd-drawer-head&quot;&gt;&lt;h2 id=&quot;nd-drawer-title&quot;&gt;Detail&lt;/h2&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;close-drawer&quot; aria-label=&quot;Detail schliessen&quot;&gt;&lt;i data-lucide=&quot;x&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;div id=&quot;nd-drawer-content&quot; class=&quot;nd-drawer-content&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;div class=&quot;nd-toast&quot; id=&quot;nd-toast&quot; role=&quot;status&quot; aria-live=&quot;polite&quot; hidden&gt;&lt;span&gt;&lt;/span&gt;&lt;button type=&quot;button&quot; data-action=&quot;dismiss-toast&quot; aria-label=&quot;Meldung schliessen&quot;&gt;Schliessen&lt;/button&gt;&lt;/div&gt;
+  &lt;div class=&quot;nd-metrics&quot; aria-label=&quot;Teamüberblick&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-metric&quot; data-metric=&quot;holiday&quot;&gt;&lt;strong id=&quot;nd-kpi-holiday&quot;&gt;03&lt;/strong&gt;&lt;span&gt;Offene&lt;br&gt;Ferienanträge&lt;/span&gt;&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-metric&quot; data-metric=&quot;correction&quot;&gt;&lt;strong id=&quot;nd-kpi-correction&quot;&gt;02&lt;/strong&gt;&lt;span&gt;Zeitkorrekturen&lt;br&gt;zur Freigabe&lt;/span&gt;&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-metric&quot; data-metric=&quot;issue&quot;&gt;&lt;strong id=&quot;nd-kpi-issue&quot; class=&quot;nd-alert&quot;&gt;02&lt;/strong&gt;&lt;span&gt;Zeitprobleme&lt;br&gt;zu klären&lt;/span&gt;&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-metric&quot; data-metric=&quot;balance&quot;&gt;&lt;strong class=&quot;nd-accent-text nd-mono&quot;&gt;+27:00&lt;/strong&gt;&lt;span&gt;Team-Saldo&lt;br&gt;3 im Minus&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+  &lt;section id=&quot;nd-work-view&quot; class=&quot;nd-workspace&quot; aria-label=&quot;Arbeitsplatz&quot;&gt;
+    &lt;aside class=&quot;nd-queue&quot; aria-label=&quot;Arbeitswarteschlange&quot;&gt;&lt;div class=&quot;nd-queue-head&quot;&gt;&lt;h3&gt;Deine Warteschlange&lt;/h3&gt;&lt;span class=&quot;nd-count&quot; id=&quot;nd-queue-count&quot;&gt;08 offen&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;nd-queue-tabs&quot; aria-label=&quot;Warteschlange filtern&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-chip&quot; data-queue=&quot;all&quot; aria-pressed=&quot;true&quot;&gt;Alle&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-chip&quot; data-queue=&quot;requests&quot; aria-pressed=&quot;false&quot;&gt;Anträge&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-chip&quot; data-queue=&quot;issue&quot; aria-pressed=&quot;false&quot;&gt;Zeitprobleme&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-chip&quot; data-queue=&quot;history&quot; aria-pressed=&quot;false&quot;&gt;Verlauf&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-queue-tool&quot;&gt;&lt;label class=&quot;nd-check&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;nd-select-all&quot;&gt;Alle auswählen&lt;/label&gt;&lt;select id=&quot;nd-queue-sort&quot; class=&quot;nd-sort&quot; aria-label=&quot;Warteschlange sortieren&quot;&gt;&lt;option value=&quot;priority&quot;&gt;Priorität zuerst&lt;/option&gt;&lt;option value=&quot;name&quot;&gt;Nach Name&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;&lt;div class=&quot;nd-batch&quot; id=&quot;nd-batch&quot; hidden&gt;&lt;span id=&quot;nd-selected-count&quot;&gt;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;batch-approve&quot;&gt;Freigeben&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action&quot; data-action=&quot;batch-reject&quot;&gt;Ablehnen&lt;/button&gt;&lt;/div&gt;&lt;div id=&quot;nd-queue-list&quot; class=&quot;nd-queue-list&quot;&gt;
+      &lt;div class=&quot;nd-queue-row&quot; data-active=&quot;true&quot;&gt;&lt;input type=&quot;checkbox&quot; aria-label=&quot;Sara Meier auswählen&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;sara-correction&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;Sara Meier&lt;/span&gt;&lt;span class=&quot;nd-mini-label&quot;&gt;Korrektur&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;Montag, 7. Sept. · Ausstempeln&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;Vor 24 Min. &lt;span&gt;·&lt;/span&gt; +00:30 h&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;nd-queue-row&quot;&gt;&lt;input type=&quot;checkbox&quot; aria-label=&quot;Luca Weber auswählen&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;luca-holiday&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;Luca Weber&lt;/span&gt;&lt;span class=&quot;nd-mini-label&quot;&gt;Ferien&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;14.–18. September · 5 Tage&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;Vor 1 Std. · Teamkapazität prüfen&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;nd-queue-row&quot;&gt;&lt;input type=&quot;checkbox&quot; aria-label=&quot;Jonas Keller auswählen&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;jonas-issue&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;Jonas Keller&lt;/span&gt;&lt;span class=&quot;nd-mini-label nd-urgent&quot;&gt;Unvollständig&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;Freitag, 4. Sept. · Ende fehlt&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;Seit 3 Tagen · Zeitprüfung&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;nd-queue-row&quot;&gt;&lt;input type=&quot;checkbox&quot; aria-label=&quot;Amira Roth auswählen&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;amira-holiday&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;Amira Roth&lt;/span&gt;&lt;span class=&quot;nd-mini-label&quot;&gt;Ferien&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;21.–23. September · 3 Tage&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;Vor 2 Std. · Ohne Konflikte&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;nd-queue-row&quot;&gt;&lt;input type=&quot;checkbox&quot; aria-label=&quot;Lea Fischer auswählen&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;lea-swap&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;Lea Fischer&lt;/span&gt;&lt;span class=&quot;nd-mini-label&quot;&gt;Tagtausch&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;10. ↔ 11. September&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;Vor 3 Std. · Mit Marco Baumann&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;
+    &lt;/div&gt;&lt;/aside&gt;
+    &lt;article id=&quot;nd-detail&quot; class=&quot;nd-detail&quot; aria-live=&quot;polite&quot;&gt;&lt;div class=&quot;nd-detail-top&quot;&gt;&lt;span class=&quot;nd-detail-reference&quot;&gt;ANTRAG / ZK-2048&lt;/span&gt;&lt;span class=&quot;nd-tag nd-pending&quot;&gt;&lt;span class=&quot;nd-dot&quot;&gt;&lt;/span&gt;Offen&lt;/span&gt;&lt;/div&gt;&lt;p class=&quot;nd-eyebrow&quot;&gt;Zeitkorrektur · 7. September&lt;/p&gt;&lt;h2 style=&quot;margin-top:9px&quot;&gt;Ein halbe Stunde nachtragen.&lt;/h2&gt;&lt;div class=&quot;nd-detail-person&quot;&gt;&lt;div class=&quot;nd-avatar&quot;&gt;SM&lt;/div&gt;&lt;div&gt;&lt;strong&gt;Sara Meier&lt;/strong&gt;&lt;span&gt;Produkt &amp; Design · Vollzeit&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-note&quot;&gt;«Ich habe nach dem Kundengespräch vergessen, auszustempeln. Mein Arbeitstag endete um 17:30 Uhr.»&lt;/div&gt;&lt;div class=&quot;nd-comparison&quot;&gt;&lt;div&gt;&lt;span&gt;Bisher erfasst&lt;/span&gt;&lt;strong&gt;17:00&lt;/strong&gt;&lt;small&gt;Arbeitszeit 08:00 h&lt;/small&gt;&lt;/div&gt;&lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;div&gt;&lt;span&gt;Beantragte Änderung&lt;/span&gt;&lt;strong class=&quot;nd-new&quot;&gt;17:30&lt;/strong&gt;&lt;small&gt;Arbeitszeit 08:30 h · +00:30 h&lt;/small&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-context&quot;&gt;&lt;div class=&quot;nd-context-head&quot;&gt;&lt;h3&gt;Kontext für deine Entscheidung&lt;/h3&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;show-time&quot;&gt;Zeitkonto öffnen &lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-context-line&quot;&gt;&lt;span&gt;Aktueller Saldo&lt;/span&gt;&lt;span class=&quot;nd-mono&quot;&gt;+04:30 h&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-checklist&quot;&gt;&lt;div&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Keine überlappende Buchung am 7. September&lt;/div&gt;&lt;div&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;45 Minuten Pause bereits berücksichtigt&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-decision&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet nd-danger&quot; data-action=&quot;reject&quot;&gt;Ablehnen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;approve&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Korrektur genehmigen&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;nd-decision-note&quot;&gt;Lokale Demo · Entscheidungen erscheinen im Verlauf.&lt;/p&gt;&lt;/article&gt;
+  &lt;/section&gt;
+  &lt;section id=&quot;nd-time-view&quot; class=&quot;nd-secondary&quot; aria-label=&quot;Wochen-Zeitprüfung&quot; hidden&gt;&lt;div class=&quot;nd-section-heading&quot;&gt;&lt;div&gt;&lt;h2&gt;Eine Woche. Jede Buchung.&lt;/h2&gt;&lt;p&gt;Ist, Soll und Abweichungen direkt beim Teammitglied.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;nd-period&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-week=&quot;-1&quot; aria-label=&quot;Vorherige Woche&quot;&gt;&lt;i data-lucide=&quot;chevron-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;strong id=&quot;nd-week-label&quot;&gt;KW 36 · 31. Aug.–6. Sept.&lt;/strong&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-week=&quot;1&quot; aria-label=&quot;Nächste Woche&quot;&gt;&lt;i data-lucide=&quot;chevron-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-toolbar&quot;&gt;&lt;input type=&quot;search&quot; id=&quot;nd-employee-search&quot; class=&quot;nd-input nd-search&quot; aria-label=&quot;Mitarbeitende suchen&quot; placeholder=&quot;Mitarbeitende suchen …&quot;&gt;&lt;select id=&quot;nd-model-filter&quot; class=&quot;nd-input&quot; aria-label=&quot;Arbeitsmodell filtern&quot;&gt;&lt;option value=&quot;all&quot;&gt;Alle Arbeitsmodelle&lt;/option&gt;&lt;option value=&quot;100&quot;&gt;Vollzeit · 100 %&lt;/option&gt;&lt;option value=&quot;80&quot;&gt;Teilzeit · 80 %&lt;/option&gt;&lt;/select&gt;&lt;label class=&quot;nd-check&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;nd-problem-filter&quot;&gt;Nur Problemfälle&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;export-time&quot;&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Export&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Mitarbeitende / Modell&lt;/th&gt;&lt;th class=&quot;nd-number&quot;&gt;Ist&lt;/th&gt;&lt;th class=&quot;nd-number&quot;&gt;Soll&lt;/th&gt;&lt;th class=&quot;nd-number&quot;&gt;Wochen-Saldo&lt;/th&gt;&lt;th class=&quot;nd-number&quot;&gt;Gesamt&lt;/th&gt;&lt;th&gt;Prüfstatus&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody id=&quot;nd-time-body&quot;&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;div class=&quot;nd-table-foot&quot;&gt;&lt;span id=&quot;nd-time-count&quot;&gt;8 Mitarbeitende&lt;/span&gt;&lt;span&gt;Zeile öffnen für Stempelzeiten und Tagesdetails&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;nd-summary-strip&quot;&gt;&lt;span&gt;Team-Saldo&lt;strong&gt;+27:00 h&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;Negative Salden&lt;strong&gt;3 Mitarbeitende&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;Höchster Saldo&lt;strong&gt;Nora Frei · +12:40 h&lt;/strong&gt;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;negative&quot;&gt;Negative anzeigen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;top-balance&quot;&gt;Top-Salden anzeigen&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;section id=&quot;nd-calendar-view&quot; class=&quot;nd-secondary&quot; aria-label=&quot;Abwesenheitskalender&quot; hidden&gt;&lt;div class=&quot;nd-section-heading&quot;&gt;&lt;div&gt;&lt;h2&gt;Planbar. Für alle.&lt;/h2&gt;&lt;p&gt;Ferien, Krankheit und regionale Feiertage an einem Ort.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;nd-period&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-month=&quot;-1&quot; aria-label=&quot;Vorheriger Monat&quot;&gt;&lt;i data-lucide=&quot;chevron-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;strong id=&quot;nd-month-label&quot;&gt;September 2026&lt;/strong&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-month=&quot;1&quot; aria-label=&quot;Nächster Monat&quot;&gt;&lt;i data-lucide=&quot;chevron-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-toolbar&quot;&gt;&lt;select class=&quot;nd-input&quot; id=&quot;nd-calendar-person&quot; aria-label=&quot;Kalender nach Mitarbeitenden filtern&quot;&gt;&lt;option value=&quot;all&quot;&gt;Ganzes Team&lt;/option&gt;&lt;option&gt;Sara Meier&lt;/option&gt;&lt;option&gt;Luca Weber&lt;/option&gt;&lt;option&gt;Amira Roth&lt;/option&gt;&lt;option&gt;Nora Frei&lt;/option&gt;&lt;option&gt;Jonas Keller&lt;/option&gt;&lt;/select&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;calendar-today&quot;&gt;Heute&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;open-schedule&quot;&gt;&lt;i data-lucide=&quot;calendar-range&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Dienstplan&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-calendar-layout&quot;&gt;&lt;div&gt;&lt;div id=&quot;nd-calendar-grid&quot; class=&quot;nd-calendar&quot;&gt;&lt;/div&gt;&lt;div class=&quot;nd-legend&quot;&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-calendar-kind=&quot;Ferien&quot; checked&gt;Ferien&lt;/label&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-calendar-kind=&quot;Krank&quot; checked&gt;Krankheit&lt;/label&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-calendar-kind=&quot;Feiertag&quot; checked&gt;Feiertage&lt;/label&gt;&lt;/div&gt;&lt;/div&gt;&lt;aside id=&quot;nd-calendar-agenda&quot; class=&quot;nd-agenda&quot; aria-live=&quot;polite&quot;&gt;&lt;/aside&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;section id=&quot;nd-modules-view&quot; class=&quot;nd-secondary&quot; aria-label=&quot;Alle Administrationsmodule&quot; hidden&gt;&lt;div class=&quot;nd-section-heading&quot;&gt;&lt;div&gt;&lt;h2&gt;Dein Betrieb. Sinnvoll sortiert.&lt;/h2&gt;&lt;p&gt;Vier Bereiche, ein gemeinsamer Arbeitsplatz.&lt;/p&gt;&lt;/div&gt;&lt;input type=&quot;search&quot; class=&quot;nd-input&quot; id=&quot;nd-module-search&quot; placeholder=&quot;Modul suchen …&quot; aria-label=&quot;Module suchen&quot;&gt;&lt;/div&gt;&lt;div class=&quot;nd-module-groups&quot; id=&quot;nd-module-groups&quot;&gt;&lt;/div&gt;&lt;div class=&quot;nd-module-footer&quot;&gt;Alle Bereiche sind im Mockup als lokale Detailvorschau erreichbar.&lt;/div&gt;&lt;/section&gt;
+  &lt;footer class=&quot;nd-footer&quot;&gt;&lt;span&gt;CHRONO NIGHTDESK &lt;span class=&quot;nd-muted&quot;&gt;/&lt;/span&gt; Konzept 02&lt;/span&gt;&lt;span&gt;Interaktives Mockup · Alle Personen und Zahlen sind Demodaten&lt;/span&gt;&lt;/footer&gt;
+  &lt;script&gt;
+  (function(){
+    const root=document.getElementById(&#x27;chrono-nightdesk&#x27;);if(!root)return;
+    const $=s=&gt;root.querySelector(s),$$=s=&gt;Array.from(root.querySelectorAll(s));
+    const esc=s=&gt;String(s).replace(/[&amp;&lt;&gt;&quot;&#x27;]/g,c=&gt;({&#x27;&amp;&#x27;:&#x27;&amp;amp;&#x27;,&#x27;&lt;&#x27;:&#x27;&amp;lt;&#x27;,&#x27;&gt;&#x27;:&#x27;&amp;gt;&#x27;,&#x27;&quot;&#x27;:&#x27;&amp;quot;&#x27;,&quot;&#x27;&quot;:&#x27;&amp;#39;&#x27;}[c]));
+    const icon=n=&gt;&#x27;&lt;i data-lucide=&quot;&#x27;+n+&#x27;&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&#x27;;
+    const icons=()=&gt;{if(globalThis.lucide)globalThis.lucide.createIcons({attrs:{width:16,height:16}})};
+    const staff=[{name:&#x27;Nora Frei&#x27;,initials:&#x27;NF&#x27;,team:&#x27;People &amp; Finance&#x27;,model:&#x27;100&#x27;,balance:760,actual:2490,target:2400,problem:&#x27;&#x27;,stamps:&#x27;08:00–12:00 · 12:45–17:03&#x27;},{name:&#x27;Luca Weber&#x27;,initials:&#x27;LW&#x27;,team:&#x27;Engineering&#x27;,model:&#x27;100&#x27;,balance:490,actual:2440,target:2400,problem:&#x27;&#x27;,stamps:&#x27;08:15–12:00 · 12:45–17:08&#x27;},{name:&#x27;Sara Meier&#x27;,initials:&#x27;SM&#x27;,team:&#x27;Produkt &amp; Design&#x27;,model:&#x27;100&#x27;,balance:270,actual:2400,target:2400,problem:&#x27;&#x27;,stamps:&#x27;08:15–12:00 · 12:45–17:00&#x27;},{name:&#x27;Jonas Keller&#x27;,initials:&#x27;JK&#x27;,team:&#x27;Engineering&#x27;,model:&#x27;100&#x27;,balance:-200,actual:2200,target:2400,problem:&#x27;Ende fehlt&#x27;,stamps:&#x27;08:00–12:00 · 12:45–?&#x27;},{name:&#x27;Lea Fischer&#x27;,initials:&#x27;LF&#x27;,team:&#x27;Customer Success&#x27;,model:&#x27;80&#x27;,balance:-100,actual:1910,target:1920,problem:&#x27;&#x27;,stamps:&#x27;08:00–12:00 · 12:45–16:42&#x27;},{name:&#x27;Marco Baumann&#x27;,initials:&#x27;MB&#x27;,team:&#x27;Customer Success&#x27;,model:&#x27;80&#x27;,balance:-30,actual:1890,target:1920,problem:&#x27;&#x27;,stamps:&#x27;08:00–12:00 · 12:45–16:39&#x27;},{name:&#x27;Amira Roth&#x27;,initials:&#x27;AR&#x27;,team:&#x27;Produkt &amp; Design&#x27;,model:&#x27;100&#x27;,balance:360,actual:2430,target:2400,problem:&#x27;&#x27;,stamps:&#x27;08:00–12:00 · 12:45–16:51&#x27;},{name:&#x27;David Schmid&#x27;,initials:&#x27;DS&#x27;,team:&#x27;Operations&#x27;,model:&#x27;100&#x27;,balance:70,actual:1920,target:2400,problem:&#x27;Tag fehlt&#x27;,stamps:&#x27;Keine Buchung&#x27;}];
+    const tasks=[
+      {id:&#x27;sara-correction&#x27;,ref:&#x27;ZK-2048&#x27;,name:&#x27;Sara Meier&#x27;,kind:&#x27;correction&#x27;,label:&#x27;Korrektur&#x27;,title:&#x27;Eine halbe Stunde nachtragen.&#x27;,meta:&#x27;Montag, 7. Sept. · Ausstempeln&#x27;,age:&#x27;Vor 24 Min.&#x27;,extra:&#x27;+00:30 h&#x27;,note:&#x27;Ich habe nach dem Kundengespräch vergessen, auszustempeln. Mein Arbeitstag endete um 17:30 Uhr.&#x27;,old:&#x27;17:00&#x27;,next:&#x27;17:30&#x27;,oldSub:&#x27;Arbeitszeit 08:00 h&#x27;,nextSub:&#x27;Arbeitszeit 08:30 h · +00:30 h&#x27;,date:&#x27;7. September&#x27;,priority:1},
+      {id:&#x27;luca-holiday&#x27;,ref:&#x27;FE-1082&#x27;,name:&#x27;Luca Weber&#x27;,kind:&#x27;holiday&#x27;,label:&#x27;Ferien&#x27;,title:&#x27;Fünf Tage neue Energie.&#x27;,meta:&#x27;14.–18. September · 5 Tage&#x27;,age:&#x27;Vor 1 Std.&#x27;,extra:&#x27;Teamkapazität prüfen&#x27;,note:&#x27;Ich möchte eine Woche Ferien beziehen. Die Übergabe des API-Projekts an Jonas ist vorbereitet.&#x27;,old:&#x27;18 Tage&#x27;,next:&#x27;13 Tage&#x27;,oldSub:&#x27;Verfügbares Ferienguthaben&#x27;,nextSub:&#x27;Guthaben nach Genehmigung&#x27;,date:&#x27;14.–18. September&#x27;,priority:2},
+      {id:&#x27;jonas-issue&#x27;,ref:&#x27;ZP-0842&#x27;,name:&#x27;Jonas Keller&#x27;,kind:&#x27;issue&#x27;,label:&#x27;Unvollständig&#x27;,title:&#x27;Ein Arbeitstag ohne Abschluss.&#x27;,meta:&#x27;Freitag, 4. Sept. · Ende fehlt&#x27;,age:&#x27;Seit 3 Tagen&#x27;,extra:&#x27;Zeitprüfung&#x27;,note:&#x27;Für Freitag ist eine Startbuchung vorhanden. Die Endzeit fehlt noch. Prüfe die Stempelzeiten und ergänze die Buchung.&#x27;,old:&#x27;08:00&#x27;,next:&#x27;—&#x27;,oldSub:&#x27;Einstempelung vorhanden&#x27;,nextSub:&#x27;Ausstempelung fehlt&#x27;,date:&#x27;4. September&#x27;,priority:3},
+      {id:&#x27;amira-holiday&#x27;,ref:&#x27;FE-1081&#x27;,name:&#x27;Amira Roth&#x27;,kind:&#x27;holiday&#x27;,label:&#x27;Ferien&#x27;,title:&#x27;Drei Tage, gut abgestimmt.&#x27;,meta:&#x27;21.–23. September · 3 Tage&#x27;,age:&#x27;Vor 2 Std.&#x27;,extra:&#x27;Ohne Konflikte&#x27;,note:&#x27;Kurze Auszeit nach dem Release. Sara übernimmt während meiner Abwesenheit die laufenden Design-Abstimmungen.&#x27;,old:&#x27;15 Tage&#x27;,next:&#x27;12 Tage&#x27;,oldSub:&#x27;Verfügbares Ferienguthaben&#x27;,nextSub:&#x27;Guthaben nach Genehmigung&#x27;,date:&#x27;21.–23. September&#x27;,priority:4},
+      {id:&#x27;lea-swap&#x27;,ref:&#x27;AT-0308&#x27;,name:&#x27;Lea Fischer&#x27;,kind:&#x27;swap&#x27;,label:&#x27;Tagtausch&#x27;,title:&#x27;Zwei Arbeitstage tauschen.&#x27;,meta:&#x27;10. ↔ 11. September&#x27;,age:&#x27;Vor 3 Std.&#x27;,extra:&#x27;Mit Marco Baumann&#x27;,note:&#x27;Marco und ich möchten unsere Arbeitstage tauschen. Wir haben die Änderung gemeinsam abgestimmt.&#x27;,old:&#x27;Do, 10.&#x27;,next:&#x27;Fr, 11.&#x27;,oldSub:&#x27;Lea arbeitet · Marco frei&#x27;,nextSub:&#x27;Lea frei · Marco arbeitet&#x27;,date:&#x27;10. und 11. September&#x27;,priority:5},
+      {id:&#x27;marco-correction&#x27;,ref:&#x27;ZK-2047&#x27;,name:&#x27;Marco Baumann&#x27;,kind:&#x27;correction&#x27;,label:&#x27;Korrektur&#x27;,title:&#x27;Die Pause richtig erfassen.&#x27;,meta:&#x27;Donnerstag, 3. Sept. · Pause&#x27;,age:&#x27;Vor 4 Std.&#x27;,extra:&#x27;+00:15 h&#x27;,note:&#x27;Die Mittagspause dauerte 45 statt 60 Minuten. Bitte die Pausendauer entsprechend korrigieren.&#x27;,old:&#x27;01:00&#x27;,next:&#x27;00:45&#x27;,oldSub:&#x27;Bisherige Pausendauer&#x27;,nextSub:&#x27;Tatsächliche Pause · +00:15 h&#x27;,date:&#x27;3. September&#x27;,priority:6},
+      {id:&#x27;david-issue&#x27;,ref:&#x27;ZP-0841&#x27;,name:&#x27;David Schmid&#x27;,kind:&#x27;issue&#x27;,label:&#x27;Fehlend&#x27;,title:&#x27;Ein Tag ist noch offen.&#x27;,meta:&#x27;Mittwoch, 2. Sept. · Keine Zeit&#x27;,age:&#x27;Seit 5 Tagen&#x27;,extra:&#x27;Ganzer Arbeitstag&#x27;,note:&#x27;Für diesen geplanten Arbeitstag fehlen sämtliche Zeitbuchungen. Prüfe, ob eine Abwesenheit oder ein Zeiteintrag nachgetragen werden muss.&#x27;,old:&#x27;08:00 h&#x27;,next:&#x27;00:00 h&#x27;,oldSub:&#x27;Geplante Sollzeit&#x27;,nextSub:&#x27;Bisher erfasste Zeit&#x27;,date:&#x27;2. September&#x27;,priority:7},
+      {id:&#x27;nora-holiday&#x27;,ref:&#x27;FE-1080&#x27;,name:&#x27;Nora Frei&#x27;,kind:&#x27;holiday&#x27;,label:&#x27;Ferien&#x27;,title:&#x27;Ein verlängertes Wochenende.&#x27;,meta:&#x27;25. September · 1 Tag&#x27;,age:&#x27;Gestern&#x27;,extra:&#x27;Ohne Konflikte&#x27;,note:&#x27;Ich möchte am Freitag einen Ferientag beziehen. Die Lohnvorbereitung ist bis Donnerstag abgeschlossen.&#x27;,old:&#x27;12 Tage&#x27;,next:&#x27;11 Tage&#x27;,oldSub:&#x27;Verfügbares Ferienguthaben&#x27;,nextSub:&#x27;Guthaben nach Genehmigung&#x27;,date:&#x27;25. September&#x27;,priority:8}
+    ].map(t=&gt;({...t,status:&#x27;open&#x27;}));
+    const history=[{id:&#x27;history-01&#x27;,ref:&#x27;FE-1076&#x27;,name:&#x27;Sara Meier&#x27;,kind:&#x27;holiday&#x27;,label:&#x27;Ferien&#x27;,title:&#x27;Ferien wurden genehmigt.&#x27;,meta:&#x27;24.–28. August · 5 Tage&#x27;,age:&#x27;Gestern, 16:24&#x27;,extra:&#x27;Genehmigt durch Jan Steiner&#x27;,note:&#x27;Eine bereits abgeschlossene Beispielentscheidung im Verlauf.&#x27;,old:&#x27;15 Tage&#x27;,next:&#x27;10 Tage&#x27;,oldSub:&#x27;Guthaben vorher&#x27;,nextSub:&#x27;Guthaben nachher&#x27;,date:&#x27;24.–28. August&#x27;,status:&#x27;approved&#x27;,reason:&#x27;Genehmigt durch Jan Steiner&#x27;}];
+    const state={view:&#x27;work&#x27;,queue:&#x27;all&#x27;,selected:&#x27;sara-correction&#x27;,checked:new Set(),week:0,month:8,year:2026,day:8,timeMode:&#x27;all&#x27;,expanded:new Set(),calendarKinds:new Set([&#x27;Ferien&#x27;,&#x27;Krank&#x27;,&#x27;Feiertag&#x27;]),module:&#x27;&#x27;,exportMode:&#x27;&#x27;,density:17,accent:&#x27;#66d9e8&#x27;};
+    const format=(n,plus=false)=&gt;(n&lt;0?&#x27;−&#x27;:plus&amp;&amp;n&gt;0?&#x27;+&#x27;:&#x27;&#x27;)+String(Math.floor(Math.abs(n)/60)).padStart(2,&#x27;0&#x27;)+&#x27;:&#x27;+String(Math.abs(n)%60).padStart(2,&#x27;0&#x27;);
+    const selectedTask=()=&gt;tasks.concat(history).find(t=&gt;t.id===state.selected);
+    function toast(message){$(&#x27;#nd-toast&#x27;).hidden=false;$(&#x27;#nd-toast span&#x27;).textContent=message;}
+    function drawer(title,content){$(&#x27;#nd-drawer-title&#x27;).textContent=title;$(&#x27;#nd-drawer-content&#x27;).innerHTML=content;$(&#x27;#nd-drawer&#x27;).hidden=false;icons();}
+    function closeDrawer(){$(&#x27;#nd-drawer&#x27;).hidden=true;}
+    function setView(view){state.view=view;$$(&#x27;[data-view]&#x27;).forEach(b=&gt;b.setAttribute(&#x27;aria-pressed&#x27;,String(b.dataset.view===view)));[&#x27;work&#x27;,&#x27;time&#x27;,&#x27;calendar&#x27;,&#x27;modules&#x27;].forEach(v=&gt;$(&#x27;#nd-&#x27;+v+&#x27;-view&#x27;).hidden=v!==view);if(view===&#x27;time&#x27;)renderTime();if(view===&#x27;calendar&#x27;)renderCalendar();if(view===&#x27;modules&#x27;)renderModules();icons();}
+    function visibleTasks(){let list=state.queue===&#x27;history&#x27;?tasks.filter(t=&gt;t.status!==&#x27;open&#x27;).concat(history):tasks.filter(t=&gt;t.status===&#x27;open&#x27;);if(state.queue===&#x27;requests&#x27;)list=list.filter(t=&gt;t.kind!==&#x27;issue&#x27;);if([&#x27;issue&#x27;,&#x27;holiday&#x27;,&#x27;correction&#x27;,&#x27;swap&#x27;].includes(state.queue))list=list.filter(t=&gt;t.kind===state.queue);return list.sort((a,b)=&gt;$(&#x27;#nd-queue-sort&#x27;).value===&#x27;name&#x27;?a.name.localeCompare(b.name):a.priority-b.priority);}
+    function renderQueue(){const list=visibleTasks();$(&#x27;#nd-queue-count&#x27;).textContent=String(tasks.filter(t=&gt;t.status===&#x27;open&#x27;).length).padStart(2,&#x27;0&#x27;)+&#x27; offen&#x27;;$$(&#x27;[data-queue]&#x27;).forEach(b=&gt;b.setAttribute(&#x27;aria-pressed&#x27;,String(b.dataset.queue===state.queue||(b.dataset.queue===&#x27;requests&#x27;&amp;&amp;[&#x27;holiday&#x27;,&#x27;correction&#x27;,&#x27;swap&#x27;].includes(state.queue)))));$(&#x27;#nd-queue-list&#x27;).innerHTML=list.length?list.map(t=&gt;&#x27;&lt;div class=&quot;nd-queue-row&quot; data-active=&quot;&#x27;+(t.id===state.selected)+&#x27;&quot;&gt;&lt;input type=&quot;checkbox&quot; data-select-task=&quot;&#x27;+t.id+&#x27;&quot; aria-label=&quot;&#x27;+esc(t.name)+&#x27; auswählen&quot; &#x27;+(state.checked.has(t.id)?&#x27;checked&#x27;:&#x27;&#x27;)+(t.status!==&#x27;open&#x27;?&#x27; disabled&#x27;:&#x27;&#x27;)+&#x27;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-item&quot; data-task=&quot;&#x27;+t.id+&#x27;&quot; aria-pressed=&quot;&#x27;+(t.id===state.selected)+&#x27;&quot;&gt;&lt;span class=&quot;nd-item-top&quot;&gt;&lt;span class=&quot;nd-item-name&quot;&gt;&#x27;+esc(t.name)+&#x27;&lt;/span&gt;&lt;span class=&quot;nd-mini-label &#x27;+(t.kind===&#x27;issue&#x27;?&#x27;nd-urgent&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+esc(t.label)+&#x27;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;nd-item-meta&quot;&gt;&#x27;+esc(t.meta)+&#x27;&lt;/span&gt;&lt;span class=&quot;nd-item-bottom&quot;&gt;&#x27;+esc(t.status===&#x27;open&#x27;?t.age:(t.status===&#x27;approved&#x27;?&#x27;Genehmigt&#x27;:t.status===&#x27;resolved&#x27;?&#x27;Erledigt&#x27;:&#x27;Abgelehnt&#x27;))+&#x27; &lt;span&gt;·&lt;/span&gt; &#x27;+esc(t.status===&#x27;open&#x27;?t.extra:&#x27;Im Verlauf&#x27;)+&#x27;&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;):&#x27;&lt;div class=&quot;nd-empty&quot;&gt;Alles geklärt.&lt;br&gt;&lt;span class=&quot;nd-small&quot;&gt;Hier sind keine offenen Einträge.&lt;/span&gt;&lt;/div&gt;&#x27;;const checkable=list.filter(t=&gt;t.status===&#x27;open&#x27;);$(&#x27;#nd-select-all&#x27;).checked=checkable.length&gt;0&amp;&amp;checkable.every(t=&gt;state.checked.has(t.id));$(&#x27;#nd-select-all&#x27;).disabled=!checkable.length;$(&#x27;#nd-batch&#x27;).hidden=!state.checked.size;$(&#x27;#nd-selected-count&#x27;).textContent=state.checked.size+&#x27; ausgewählt&#x27;;[&#x27;holiday&#x27;,&#x27;correction&#x27;,&#x27;issue&#x27;].forEach(k=&gt;$(&#x27;#nd-kpi-&#x27;+k).textContent=String(tasks.filter(t=&gt;t.kind===k&amp;&amp;t.status===&#x27;open&#x27;).length).padStart(2,&#x27;0&#x27;));}
+    function renderDetail(){const t=selectedTask();if(!t){$(&#x27;#nd-detail&#x27;).innerHTML=&#x27;&lt;div class=&quot;nd-empty&quot;&gt;Wähle links einen Eintrag aus.&lt;/div&gt;&#x27;;return}const p=staff.find(p=&gt;p.name===t.name);const status=t.status===&#x27;open&#x27;?&#x27;Offen&#x27;:t.status===&#x27;approved&#x27;?&#x27;Genehmigt&#x27;:t.status===&#x27;resolved&#x27;?&#x27;Erledigt&#x27;:&#x27;Abgelehnt&#x27;;const kind={holiday:&#x27;Ferienantrag&#x27;,correction:&#x27;Zeitkorrektur&#x27;,swap:&#x27;Arbeitstagtausch&#x27;,issue:&#x27;Zeitproblem&#x27;}[t.kind];let context=&#x27;&#x27;;if(t.kind===&#x27;holiday&#x27;){context=&#x27;&lt;div class=&quot;nd-context&quot;&gt;&lt;div class=&quot;nd-context-head&quot;&gt;&lt;h3&gt;Teamabdeckung im Zeitraum&lt;/h3&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;show-calendar&quot;&gt;Kalender &#x27;+icon(&#x27;arrow-up-right&#x27;)+&#x27;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-track&quot; aria-label=&quot;7 von 8 Mitarbeitenden verfügbar&quot;&gt;&#x27;+Array.from({length:8},(_,i)=&gt;&#x27;&lt;span class=&quot;&#x27;+(i===7?&#x27;nd-track-empty&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+(i===7?&#x27;frei&#x27;:&#x27;&#x27;)+&#x27;&lt;/span&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;div class=&quot;nd-context-line&quot;&gt;&lt;span&gt;7 von 8 Mitarbeitenden verfügbar&lt;/span&gt;&lt;span&gt;87,5 %&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-checklist&quot;&gt;&lt;div&gt;&#x27;+icon(&#x27;check&#x27;)+&#x27;Ferienguthaben deckt den beantragten Zeitraum&lt;/div&gt;&lt;div&gt;&#x27;+icon(&#x27;check&#x27;)+&#x27;Stellvertretung in der Notiz dokumentiert&lt;/div&gt;&lt;/div&gt;&#x27;}else if(t.kind===&#x27;swap&#x27;){context=&#x27;&lt;div class=&quot;nd-context&quot;&gt;&lt;div class=&quot;nd-context-head&quot;&gt;&lt;h3&gt;Auswirkung auf die Planung&lt;/h3&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;open-schedule&quot;&gt;Dienstplan &#x27;+icon(&#x27;arrow-up-right&#x27;)+&#x27;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-context-line&quot;&gt;&lt;span&gt;Marco Baumann&lt;/span&gt;&lt;span&gt;80 % · Customer Success&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-checklist&quot;&gt;&lt;div&gt;&#x27;+icon(&#x27;check&#x27;)+&#x27;Beide Arbeitstage bleiben mit einer Person besetzt&lt;/div&gt;&lt;div&gt;&#x27;+icon(&#x27;check&#x27;)+&#x27;Wochen-Sollzeit bleibt unverändert&lt;/div&gt;&lt;/div&gt;&#x27;}else{context=&#x27;&lt;div class=&quot;nd-context&quot;&gt;&lt;div class=&quot;nd-context-head&quot;&gt;&lt;h3&gt;Kontext für deine Entscheidung&lt;/h3&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;show-time&quot;&gt;Zeitkonto öffnen &#x27;+icon(&#x27;arrow-up-right&#x27;)+&#x27;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;nd-context-line&quot;&gt;&lt;span&gt;Aktueller Gesamt-Saldo&lt;/span&gt;&lt;span class=&quot;nd-mono&quot;&gt;&#x27;+format(p.balance,true)+&#x27; h&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-checklist&quot;&gt;&lt;div&gt;&#x27;+icon(t.kind===&#x27;issue&#x27;?&#x27;circle-alert&#x27;:&#x27;check&#x27;)+(t.kind===&#x27;issue&#x27;?&#x27;Buchung vervollständigen, bevor die Woche abgeschlossen wird&#x27;:&#x27;Keine überlappende Buchung im Zeitraum&#x27;)+&#x27;&lt;/div&gt;&lt;div&gt;&#x27;+icon(&#x27;check&#x27;)+(t.kind===&#x27;issue&#x27;?&#x27;Arbeitsmodell: &#x27;+(p.model===&#x27;100&#x27;?&#x27;40&#x27;:&#x27;32&#x27;)+&#x27; Stunden pro Woche&#x27;:&#x27;45 Minuten Pause berücksichtigt&#x27;)+&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;}const buttons=t.status===&#x27;open&#x27;?(t.kind===&#x27;issue&#x27;?&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;show-time&quot;&gt;Stempelzeiten prüfen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;fix-time&quot;&gt;&#x27;+icon(&#x27;pencil&#x27;)+&#x27;Buchung ergänzen&lt;/button&gt;&#x27;:&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet nd-danger&quot; data-action=&quot;reject&quot;&gt;Ablehnen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;approve&quot;&gt;&#x27;+icon(&#x27;check&#x27;)+({correction:&#x27;Korrektur genehmigen&#x27;,holiday:&#x27;Ferien genehmigen&#x27;,swap:&#x27;Tausch genehmigen&#x27;}[t.kind])+&#x27;&lt;/button&gt;&#x27;):&#x27;&lt;span class=&quot;nd-tag&quot;&gt;&#x27;+icon(&#x27;check&#x27;)+esc(status)+&#x27;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;queue-all&quot;&gt;Zur Warteschlange&lt;/button&gt;&#x27;;$(&#x27;#nd-detail&#x27;).innerHTML=&#x27;&lt;div class=&quot;nd-detail-top&quot;&gt;&lt;span class=&quot;nd-detail-reference&quot;&gt;&#x27;+(t.kind===&#x27;issue&#x27;?&#x27;ZEITPRÜFUNG&#x27;:&#x27;ANTRAG&#x27;)+&#x27; / &#x27;+esc(t.ref)+&#x27;&lt;/span&gt;&lt;span class=&quot;nd-tag &#x27;+(t.status===&#x27;open&#x27;?&#x27;nd-pending&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+esc(status)+&#x27;&lt;/span&gt;&lt;/div&gt;&lt;p class=&quot;nd-eyebrow&quot;&gt;&#x27;+esc(kind)+&#x27; · &#x27;+esc(t.date)+&#x27;&lt;/p&gt;&lt;h2 style=&quot;margin-top:9px&quot;&gt;&#x27;+esc(t.title)+&#x27;&lt;/h2&gt;&lt;div class=&quot;nd-detail-person&quot;&gt;&lt;div class=&quot;nd-avatar&quot;&gt;&#x27;+p.initials+&#x27;&lt;/div&gt;&lt;div&gt;&lt;strong&gt;&#x27;+esc(p.name)+&#x27;&lt;/strong&gt;&lt;span&gt;&#x27;+esc(p.team)+&#x27; · &#x27;+(p.model===&#x27;100&#x27;?&#x27;Vollzeit&#x27;:&#x27;Teilzeit 80 %&#x27;)+&#x27;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;nd-note&quot;&gt;«&#x27;+esc(t.note)+&#x27;»&lt;/div&gt;&lt;div class=&quot;nd-comparison&quot;&gt;&lt;div&gt;&lt;span&gt;&#x27;+({holiday:&#x27;Vor dem Antrag&#x27;,swap:&#x27;Bisher geplant&#x27;,issue:&#x27;Vorhanden&#x27;,correction:&#x27;Bisher erfasst&#x27;}[t.kind])+&#x27;&lt;/span&gt;&lt;strong&gt;&#x27;+esc(t.old)+&#x27;&lt;/strong&gt;&lt;small&gt;&#x27;+esc(t.oldSub)+&#x27;&lt;/small&gt;&lt;/div&gt;&#x27;+icon(&#x27;arrow-right&#x27;)+&#x27;&lt;div&gt;&lt;span&gt;&#x27;+({holiday:&#x27;Nach Genehmigung&#x27;,swap:&#x27;Neu geplant&#x27;,issue:&#x27;Noch offen&#x27;,correction:&#x27;Beantragte Änderung&#x27;}[t.kind])+&#x27;&lt;/span&gt;&lt;strong class=&quot;nd-new&quot;&gt;&#x27;+esc(t.next)+&#x27;&lt;/strong&gt;&lt;small&gt;&#x27;+esc(t.nextSub)+&#x27;&lt;/small&gt;&lt;/div&gt;&lt;/div&gt;&#x27;+context+(t.reason?&#x27;&lt;div class=&quot;nd-note&quot;&gt;&#x27;+esc(t.reason)+&#x27;&lt;/div&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;div class=&quot;nd-decision&quot;&gt;&#x27;+buttons+&#x27;&lt;/div&gt;&lt;p class=&quot;nd-decision-note&quot;&gt;Lokale Demo · Entscheidungen erscheinen im Verlauf.&lt;/p&gt;&#x27;;icons();}
+    function setQueue(filter){state.queue=filter;state.checked.clear();const list=visibleTasks();if(list.length)state.selected=list[0].id;renderQueue();renderDetail();setView(&#x27;work&#x27;);}
+    function decide(ids,status,reason){const valid=ids.map(id=&gt;tasks.find(t=&gt;t.id===id)).filter(t=&gt;t&amp;&amp;t.status===&#x27;open&#x27;);valid.forEach(t=&gt;{t.status=status;t.reason=reason||&#x27;Im Mockup genehmigt durch Jan Steiner · heute, 09:42&#x27;;state.checked.delete(t.id)});renderQueue();renderDetail();closeDrawer();toast(valid.length+&#x27; &#x27;+(valid.length===1?&#x27;Eintrag&#x27;:&#x27;Einträge&#x27;)+&#x27; &#x27;+(status===&#x27;approved&#x27;?&#x27;genehmigt&#x27;:status===&#x27;resolved&#x27;?&#x27;erledigt&#x27;:&#x27;abgelehnt&#x27;)+&#x27; · im Verlauf gespeichert.&#x27;);}
+    function reject(ids){drawer(ids.length&gt;1?&#x27;Ausgewählte Anträge ablehnen&#x27;:&#x27;Antrag ablehnen&#x27;,&#x27;&lt;p&gt;&#x27;+ids.length+&#x27; &#x27;+(ids.length===1?&#x27;Antrag wird&#x27;:&#x27;Anträge werden&#x27;)+&#x27; nach deiner Bestätigung im lokalen Verlauf abgelegt.&lt;/p&gt;&lt;label class=&quot;nd-field&quot;&gt;Begründung&lt;textarea class=&quot;nd-input&quot; id=&quot;nd-reject-reason&quot; placeholder=&quot;Was soll die Person wissen?&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;p id=&quot;nd-reject-error&quot; role=&quot;alert&quot; hidden&gt;Bitte eine kurze Begründung ergänzen.&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-danger&quot; id=&quot;nd-confirm-reject&quot;&gt;Ablehnung bestätigen&lt;/button&gt;&#x27;);$(&#x27;#nd-confirm-reject&#x27;).onclick=()=&gt;{const reason=$(&#x27;#nd-reject-reason&#x27;).value.trim();if(!reason){$(&#x27;#nd-reject-error&#x27;).hidden=false;return}decide(ids,&#x27;rejected&#x27;,&#x27;Begründung: &#x27;+reason)};}
+    function timeRows(){const search=$(&#x27;#nd-employee-search&#x27;).value.toLowerCase();let list=staff.filter(p=&gt;p.name.toLowerCase().includes(search)&amp;&amp;($(&#x27;#nd-model-filter&#x27;).value===&#x27;all&#x27;||p.model===$(&#x27;#nd-model-filter&#x27;).value)&amp;&amp;(!$(&#x27;#nd-problem-filter&#x27;).checked||p.problem));if(state.timeMode===&#x27;negative&#x27;)list=list.filter(p=&gt;p.balance&lt;0);if(state.timeMode===&#x27;top&#x27;)list.sort((a,b)=&gt;b.balance-a.balance);return list;}
+    function weekDates(){const base=new Date(2026,7,31+state.week*7);return Array.from({length:7},(_,i)=&gt;new Date(base.getFullYear(),base.getMonth(),base.getDate()+i))}
+    function renderTime(){const ds=weekDates();$(&#x27;#nd-week-label&#x27;).textContent=&#x27;KW &#x27;+(36+state.week)+&#x27; · &#x27;+ds[0].toLocaleDateString(&#x27;de-CH&#x27;,{day:&#x27;numeric&#x27;,month:&#x27;short&#x27;})+&#x27;–&#x27;+ds[6].toLocaleDateString(&#x27;de-CH&#x27;,{day:&#x27;numeric&#x27;,month:&#x27;short&#x27;});const list=timeRows();$(&#x27;#nd-time-body&#x27;).innerHTML=list.map(p=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&lt;button type=&quot;button&quot; class=&quot;nd-row-button&quot; data-expand=&quot;&#x27;+esc(p.name)+&#x27;&quot; aria-expanded=&quot;&#x27;+state.expanded.has(p.name)+&#x27;&quot;&gt;&lt;span class=&quot;nd-avatar&quot;&gt;&#x27;+p.initials+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+esc(p.name)+&#x27;&lt;small&gt;&#x27;+esc(p.team)+&#x27; · &#x27;+p.model+&#x27; %&lt;/small&gt;&lt;/span&gt;&#x27;+icon(state.expanded.has(p.name)?&#x27;chevron-up&#x27;:&#x27;chevron-down&#x27;)+&#x27;&lt;/button&gt;&lt;/td&gt;&lt;td class=&quot;nd-number&quot;&gt;&#x27;+format(p.actual)+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number&quot;&gt;&#x27;+format(p.target)+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number &#x27;+(p.actual&lt;p.target?&#x27;nd-negative&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+format(p.actual-p.target,true)+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number &#x27;+(p.balance&lt;0?&#x27;nd-negative&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+format(p.balance,true)+&#x27;&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;nd-tag &#x27;+(p.problem?&#x27;nd-pending&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+(p.problem||&#x27;Geprüft&#x27;)+&#x27;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;+(state.expanded.has(p.name)?&#x27;&lt;tr class=&quot;nd-expanded&quot;&gt;&lt;td colspan=&quot;6&quot;&gt;&lt;div class=&quot;nd-stamps&quot;&gt;&#x27;+ds.slice(0,5).map((d,i)=&gt;&#x27;&lt;div class=&quot;nd-stamp&quot;&gt;&lt;strong&gt;&#x27;+d.toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;short&#x27;,day:&#x27;numeric&#x27;,month:&#x27;numeric&#x27;})+&#x27;&lt;/strong&gt;&lt;span&gt;&#x27;+esc(p.problem&amp;&amp;((p.name===&#x27;Jonas Keller&#x27;&amp;&amp;i===4)||(p.name===&#x27;David Schmid&#x27;&amp;&amp;i===2))?p.stamps:p.model===&#x27;80&#x27;&amp;&amp;i===4?&#x27;Arbeitsfreier Tag&#x27;:&#x27;08:00–12:00 · 12:45–16:45&#x27;)+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+(p.model===&#x27;80&#x27;&amp;&amp;i===4?&#x27;Soll 00:00 h&#x27;:&#x27;Pause 00:45 h&#x27;)+&#x27;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-stamp-person=&quot;&#x27;+esc(p.name)+&#x27;&quot; data-stamp-day=&quot;&#x27;+i+&#x27;&quot;&gt;Bearbeiten&lt;/button&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;:&#x27;&#x27;)).join(&#x27;&#x27;)||&#x27;&lt;tr&gt;&lt;td colspan=&quot;6&quot; class=&quot;nd-empty&quot;&gt;Keine Mitarbeitenden für diese Auswahl.&lt;/td&gt;&lt;/tr&gt;&#x27;;$(&#x27;#nd-time-count&#x27;).textContent=list.length+&#x27; von &#x27;+staff.length+&#x27; Mitarbeitenden&#x27;+(state.timeMode===&#x27;negative&#x27;?&#x27; · negative Salden&#x27;:state.timeMode===&#x27;top&#x27;?&#x27; · nach Gesamt-Saldo sortiert&#x27;:&#x27;&#x27;)+(state.week?&#x27; · beispielhafte Wochenwerte&#x27;:&#x27;&#x27;);icons();}
+    function editStamp(name,day){const p=staff.find(p=&gt;p.name===name);drawer(&#x27;Zeitbuchung · &#x27;+name,&#x27;&lt;p&gt;&#x27;+weekDates()[day].toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;long&#x27;,day:&#x27;numeric&#x27;,month:&#x27;long&#x27;})+&#x27; · lokale Korrekturvorschau&lt;/p&gt;&lt;div class=&quot;nd-options&quot;&gt;&lt;label class=&quot;nd-field&quot;&gt;Beginn&lt;input type=&quot;time&quot; class=&quot;nd-input&quot; id=&quot;nd-stamp-start&quot; value=&quot;08:00&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Ende&lt;input type=&quot;time&quot; class=&quot;nd-input&quot; id=&quot;nd-stamp-end&quot; value=&quot;16:45&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Pause (Min.)&lt;input type=&quot;number&quot; class=&quot;nd-input&quot; id=&quot;nd-stamp-pause&quot; value=&quot;45&quot; min=&quot;0&quot; max=&quot;180&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;nd-field&quot;&gt;Notiz&lt;input type=&quot;text&quot; class=&quot;nd-input&quot; id=&quot;nd-stamp-note&quot; placeholder=&quot;Begründung für die Änderung&quot;&gt;&lt;/label&gt;&lt;p id=&quot;nd-stamp-error&quot; role=&quot;alert&quot; hidden&gt;&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-save-stamp&quot;&gt;Buchung in Demo speichern&lt;/button&gt;&#x27;);$(&#x27;#nd-save-stamp&#x27;).onclick=()=&gt;{const start=$(&#x27;#nd-stamp-start&#x27;).value,end=$(&#x27;#nd-stamp-end&#x27;).value,pause=Number($(&#x27;#nd-stamp-pause&#x27;).value);const minutes=v=&gt;Number(v.split(&#x27;:&#x27;)[0])*60+Number(v.split(&#x27;:&#x27;)[1]);if(!start||!end||minutes(end)&lt;=minutes(start)||pause&lt;0||pause&gt;=minutes(end)-minutes(start)){$(&#x27;#nd-stamp-error&#x27;).hidden=false;$(&#x27;#nd-stamp-error&#x27;).textContent=&#x27;Bitte gültige Zeiten und eine passende Pause eingeben.&#x27;;return}p.stamps=start+&#x27;–&#x27;+end+&#x27; · Pause &#x27;+pause+&#x27; Min.&#x27;;p.problem=&#x27;&#x27;;const issue=tasks.find(t=&gt;t.name===name&amp;&amp;t.kind===&#x27;issue&#x27;&amp;&amp;t.status===&#x27;open&#x27;);if(issue){issue.status=&#x27;resolved&#x27;;issue.reason=&#x27;Buchung ergänzt: &#x27;+p.stamps;renderQueue();renderDetail()}state.expanded.add(name);renderTime();closeDrawer();toast(&#x27;Zeitbuchung für &#x27;+name+&#x27; lokal gespeichert · &#x27;+format(minutes(end)-minutes(start)-pause)+&#x27; h.&#x27;);};}
+    const calendarEvents=[{name:&#x27;Nora Frei&#x27;,kind:&#x27;Ferien&#x27;,start:7,end:9,note:&#x27;Genehmigt · 3 Tage&#x27;},{name:&#x27;Jonas Keller&#x27;,kind:&#x27;Krank&#x27;,start:8,end:8,note:&#x27;Ganzer Tag · gemeldet&#x27;},{name:&#x27;Luca Weber&#x27;,kind:&#x27;Ferien&#x27;,start:14,end:18,note:&#x27;Offener Antrag · 5 Tage&#x27;},{name:&#x27;Amira Roth&#x27;,kind:&#x27;Ferien&#x27;,start:21,end:23,note:&#x27;Offener Antrag · 3 Tage&#x27;},{name:&#x27;Nora Frei&#x27;,kind:&#x27;Ferien&#x27;,start:25,end:25,note:&#x27;Offener Antrag · 1 Tag&#x27;},{name:&#x27;Zürich · Knabenschiessen&#x27;,kind:&#x27;Feiertag&#x27;,start:14,end:14,note:&#x27;Regional · Nachmittag, gemäss Firmenkalender&#x27;}];
+    function dayEvents(day){return state.month===8&amp;&amp;state.year===2026?calendarEvents.filter(e=&gt;day&gt;=e.start&amp;&amp;day&lt;=e.end&amp;&amp;state.calendarKinds.has(e.kind)&amp;&amp;($(&#x27;#nd-calendar-person&#x27;).value===&#x27;all&#x27;||e.kind===&#x27;Feiertag&#x27;||$(&#x27;#nd-calendar-person&#x27;).value===e.name)):[];}
+    function renderCalendar(){const first=new Date(state.year,state.month,1);$(&#x27;#nd-month-label&#x27;).textContent=first.toLocaleDateString(&#x27;de-CH&#x27;,{month:&#x27;long&#x27;,year:&#x27;numeric&#x27;});const count=new Date(state.year,state.month+1,0).getDate(),offset=(first.getDay()+6)%7;$(&#x27;#nd-calendar-grid&#x27;).innerHTML=[&#x27;Mo&#x27;,&#x27;Di&#x27;,&#x27;Mi&#x27;,&#x27;Do&#x27;,&#x27;Fr&#x27;,&#x27;Sa&#x27;,&#x27;So&#x27;].map(d=&gt;&#x27;&lt;div class=&quot;nd-weekday&quot;&gt;&#x27;+d+&#x27;&lt;/div&gt;&#x27;).join(&#x27;&#x27;)+Array.from({length:offset},()=&gt;&#x27;&lt;div&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;)+Array.from({length:count},(_,i)=&gt;{const day=i+1,events=dayEvents(day);return &#x27;&lt;button type=&quot;button&quot; class=&quot;nd-day&quot; data-day=&quot;&#x27;+day+&#x27;&quot; aria-pressed=&quot;&#x27;+(day===state.day)+&#x27;&quot; aria-label=&quot;&#x27;+day+&#x27;. &#x27;+esc($(&#x27;#nd-month-label&#x27;).textContent)+&#x27;, &#x27;+events.length+&#x27; Einträge&quot;&gt;&lt;span&gt;&#x27;+day+(day===8&amp;&amp;state.month===8&amp;&amp;state.year===2026?&#x27; ·&#x27;:&#x27;&#x27;)+&#x27;&lt;/span&gt;&lt;span class=&quot;nd-day-label&quot;&gt;&#x27;+events.map(e=&gt;&#x27;&lt;span class=&quot;nd-day-mark&quot; data-kind=&quot;&#x27;+e.kind+&#x27;&quot;&gt;&lt;/span&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/span&gt;&lt;/button&gt;&#x27;}).join(&#x27;&#x27;);const events=dayEvents(state.day);$(&#x27;#nd-calendar-agenda&#x27;).innerHTML=&#x27;&lt;h3&gt;&#x27;+new Date(state.year,state.month,state.day).toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;long&#x27;,day:&#x27;numeric&#x27;,month:&#x27;long&#x27;})+&#x27;&lt;/h3&gt;&#x27;+(events.length?events.map(e=&gt;&#x27;&lt;div class=&quot;nd-agenda-entry&quot;&gt;&#x27;+esc(e.name)+&#x27;&lt;span&gt;&#x27;+esc(e.kind)+&#x27; · &#x27;+esc(e.note)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;):&#x27;&lt;p class=&quot;nd-muted nd-small&quot;&gt;Keine Abwesenheiten in dieser Demoauswahl.&lt;/p&gt;&#x27;)+&#x27;&lt;div class=&quot;nd-agenda-entry&quot;&gt;&#x27;+(8-events.filter(e=&gt;e.kind!==&#x27;Feiertag&#x27;).length)+&#x27; / 8 verfügbar&lt;span&gt;Teamkapazität · Demovorschau&lt;/span&gt;&lt;/div&gt;&#x27;;}
+    const modules=[
+      {group:&#x27;Personal&#x27;,name:&#x27;Mitarbeitende&#x27;,icon:&#x27;users&#x27;,description:&#x27;Profile, Verträge und Zeitkonten&#x27;,metric:&#x27;8 aktive Mitarbeitende&#x27;,rows:[&#x27;Sara Meier|Produkt &amp; Design · 100 %&#x27;,&#x27;Jonas Keller|Engineering · 100 %&#x27;,&#x27;Lea Fischer|Customer Success · 80 %&#x27;],action:&#x27;Mitarbeitende vormerken&#x27;},
+      {group:&#x27;Personal&#x27;,name:&#x27;Lohn&#x27;,icon:&#x27;wallet&#x27;,description:&#x27;Lohnperioden und Abrechnung&#x27;,metric:&#x27;September 2026 · in Vorbereitung&#x27;,rows:[&#x27;Monatslohn|8 Mitarbeitende · Prüfung offen&#x27;,&#x27;Variable Bestandteile|3 Positionen zu kontrollieren&#x27;,&#x27;Abschluss|30. September · noch nicht freigegeben&#x27;],action:&#x27;Abrechnung vorbereiten&#x27;},
+      {group:&#x27;Planung&#x27;,name:&#x27;Dienstplan&#x27;,icon:&#x27;calendar-range&#x27;,description:&#x27;Schichten und Teamabdeckung&#x27;,metric:&#x27;KW 37 · 38 von 40 Einsätzen besetzt&#x27;,rows:[&#x27;Montag, 7. September|8 / 8 Einsätze besetzt&#x27;,&#x27;Dienstag, 8. September|6 / 8 verfügbar · Ferien und Krankheit&#x27;,&#x27;Donnerstag, 10. September|Tagtausch Lea ↔ Marco offen&#x27;],action:&#x27;Einsatz planen&#x27;},
+      {group:&#x27;Planung&#x27;,name:&#x27;Regeln&#x27;,icon:&#x27;workflow&#x27;,description:&#x27;Arbeitsmodelle und Zeitregeln&#x27;,metric:&#x27;2 Arbeitsmodelle · 3 aktive Regeln&#x27;,rows:[&#x27;Vollzeit|40 Stunden / Woche · 100 %&#x27;,&#x27;Teilzeit|32 Stunden / Woche · 80 %&#x27;,&#x27;Pausenregel|45 Minuten Standardpause&#x27;],action:&#x27;Regel entwerfen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Projekte&#x27;,icon:&#x27;folder-kanban&#x27;,description:&#x27;Budgets, Fortschritt und Projektzeiten&#x27;,metric:&#x27;4 aktive Projekte · 1 Übergabe&#x27;,rows:[&#x27;Kundenportal 2.0|62 % abgeschlossen · 184 / 300 h&#x27;,&#x27;API Modernisierung|Übergabe an Jonas · 96 / 160 h&#x27;,&#x27;Website Relaunch|Designfreigabe ausstehend · 44 / 120 h&#x27;],action:&#x27;Projekt entwerfen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Aufgaben&#x27;,icon:&#x27;list-checks&#x27;,description:&#x27;Arbeit verteilen und priorisieren&#x27;,metric:&#x27;12 offen · 3 diese Woche fällig&#x27;,rows:[&#x27;API Übergabe vorbereiten|Luca Weber · 11. September&#x27;,&#x27;Designfreigabe einholen|Sara Meier · 9. September&#x27;,&#x27;Lohnbestandteile prüfen|Nora Frei · 10. September&#x27;],action:&#x27;Aufgabe hinzufügen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Kunden&#x27;,icon:&#x27;contact-round&#x27;,description:&#x27;Stammdaten und Zusammenarbeit&#x27;,metric:&#x27;16 aktive Kunden · 3 laufende Angebote&#x27;,rows:[&#x27;Alpenblick AG|2 Projekte · Zürich&#x27;,&#x27;Studio Nord GmbH|1 Projekt · Winterthur&#x27;,&#x27;Bergwerk Digital|Angebot in Vorbereitung&#x27;],action:&#x27;Kunde vormerken&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Reports&#x27;,icon:&#x27;chart-no-axes-combined&#x27;,description:&#x27;Zeiten, Auslastung und Kennzahlen&#x27;,metric:&#x27;3 gespeicherte Auswertungen&#x27;,rows:[&#x27;Team-Auslastung|August 2026 · 82 %&#x27;,&#x27;Projektzeiten|September · 324 Stunden gebucht&#x27;,&#x27;Saldoübersicht|8 Mitarbeitende · +27:00 h&#x27;],action:&#x27;Report konfigurieren&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;CRM&#x27;,icon:&#x27;handshake&#x27;,description:&#x27;Kontakte, Chancen und Pipeline&#x27;,metric:&#x27;5 offene Chancen · CHF 84’000&#x27;,rows:[&#x27;Alpenblick · Portal-Ausbau|Angebot · CHF 32’000&#x27;,&#x27;Studio Nord · Support|Verhandlung · CHF 18’000&#x27;,&#x27;Bergwerk · Discovery|Qualifizierung · CHF 12’000&#x27;],action:&#x27;Chance erfassen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;PMS&#x27;,icon:&#x27;panels-top-left&#x27;,description:&#x27;Projektportfolio und Ressourcen&#x27;,metric:&#x27;4 Projekte · 2 Meilensteine diese Woche&#x27;,rows:[&#x27;Portfolio September|4 aktive Projekte · 8 Mitarbeitende&#x27;,&#x27;Ressourcenplanung|Engineering 88 % · Design 76 %&#x27;,&#x27;Release Kundenportal|Meilenstein am 11. September&#x27;],action:&#x27;Meilenstein planen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Supply Chain&#x27;,icon:&#x27;package&#x27;,description:&#x27;Lieferanten und Beschaffung&#x27;,metric:&#x27;3 offene Bestellungen&#x27;,rows:[&#x27;Arbeitsplätze|2 Monitore · Lieferung 10. September&#x27;,&#x27;Softwarelizenzen|8 Verlängerungen · Freigabe offen&#x27;,&#x27;Lieferanten|6 aktiv · 1 Vertrag zur Prüfung&#x27;],action:&#x27;Bestellung entwerfen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Wissen&#x27;,icon:&#x27;book-open&#x27;,description:&#x27;Dokumentation und Teamwissen&#x27;,metric:&#x27;24 Artikel · 2 zuletzt aktualisiert&#x27;,rows:[&#x27;Onboarding|Checkliste für neue Mitarbeitende&#x27;,&#x27;Ferien &amp; Abwesenheiten|Interner Prozess · aktualisiert 4. September&#x27;,&#x27;API Übergabe|Technische Dokumentation · Entwurf&#x27;],action:&#x27;Artikel entwerfen&#x27;},
+      {group:&#x27;Geschäft&#x27;,name:&#x27;Buchhaltung&#x27;,icon:&#x27;calculator&#x27;,description:&#x27;Belege, Rechnungen und Abschluss&#x27;,metric:&#x27;7 offene Belege · CHF 12’450 ausstehend&#x27;,rows:[&#x27;Rechnung 2026-0084|Alpenblick AG · CHF 8’400 · offen&#x27;,&#x27;Rechnung 2026-0085|Studio Nord · CHF 4’050 · offen&#x27;,&#x27;Monatsabschluss August|Belegprüfung ausstehend&#x27;],action:&#x27;Beleg vormerken&#x27;},
+      {group:&#x27;System&#x27;,name:&#x27;Einstellungen&#x27;,icon:&#x27;settings-2&#x27;,description:&#x27;Firma, Rechte und Konfiguration&#x27;,metric:&#x27;Chrono Demo AG · Europe/Zurich&#x27;,rows:[&#x27;Organisation|Deutsch (Schweiz) · CHF&#x27;,&#x27;Rollen &amp; Berechtigungen|2 Admins · 6 Mitarbeitende&#x27;,&#x27;Benachrichtigungen|Anträge, Zeitprobleme, Monatsabschluss&#x27;],action:&#x27;Einstellung anpassen&#x27;},
+      {group:&#x27;System&#x27;,name:&#x27;Import&#x27;,icon:&#x27;upload&#x27;,description:&#x27;Mitarbeitende und Zeiten übernehmen&#x27;,metric:&#x27;Letzter Import · 1. September&#x27;,rows:[&#x27;Mitarbeitende|CSV-Vorlage · 8 gültige Datensätze&#x27;,&#x27;Zeitbuchungen|CSV-Vorlage · Datum, Person, Start, Ende&#x27;,&#x27;Importverlauf|1. September · erfolgreich&#x27;],action:&#x27;Importvorschau öffnen&#x27;},
+      {group:&#x27;System&#x27;,name:&#x27;Integrationen&#x27;,icon:&#x27;plug&#x27;,description:&#x27;Verbindungen und Datenaustausch&#x27;,metric:&#x27;3 mögliche Verbindungen · Demo&#x27;,rows:[&#x27;Kalender|Abwesenheiten synchronisieren · Vorschau&#x27;,&#x27;Lohnbuchhaltung|Periodenexport vorbereiten · Vorschau&#x27;,&#x27;API &amp; Webhooks|Verbindung konfigurieren · Vorschau&#x27;],action:&#x27;Verbindung entwerfen&#x27;}
+    ];
+    function renderModules(){const term=$(&#x27;#nd-module-search&#x27;).value.toLowerCase();$(&#x27;#nd-module-groups&#x27;).innerHTML=[&#x27;Personal&#x27;,&#x27;Planung&#x27;,&#x27;Geschäft&#x27;,&#x27;System&#x27;].map(group=&gt;{const list=modules.filter(m=&gt;m.group===group&amp;&amp;(m.name+&#x27; &#x27;+m.description).toLowerCase().includes(term));return list.length?&#x27;&lt;section class=&quot;nd-module-group&quot;&gt;&lt;h3&gt;&#x27;+group+&#x27;&lt;/h3&gt;&#x27;+list.map(m=&gt;&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-module&quot; data-module=&quot;&#x27;+esc(m.name)+&#x27;&quot;&gt;&lt;span class=&quot;nd-module-icon&quot;&gt;&#x27;+icon(m.icon)+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+esc(m.name)+&#x27;&lt;small&gt;&#x27;+esc(m.description)+&#x27;&lt;/small&gt;&lt;/span&gt;&#x27;+icon(&#x27;arrow-up-right&#x27;)+&#x27;&lt;/button&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/section&gt;&#x27;:&#x27;&#x27;}).join(&#x27;&#x27;)||&#x27;&lt;p class=&quot;nd-muted&quot;&gt;Keine passenden Module.&lt;/p&gt;&#x27;;icons();}
+    function openModule(name){const m=modules.find(m=&gt;m.name===name);if(!m)return;state.module=name;drawer(m.group+&#x27; / &#x27;+m.name,&#x27;&lt;p&gt;&#x27;+esc(m.metric)+&#x27;&lt;/p&gt;&lt;div class=&quot;nd-record-list&quot;&gt;&#x27;+m.rows.map((r,i)=&gt;{const parts=r.split(&#x27;|&#x27;);return &#x27;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;&#x27;+esc(parts[0])+&#x27;&lt;small&gt;&#x27;+esc(parts[1])+&#x27;&lt;/small&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-module-row=&quot;&#x27;+i+&#x27;&quot;&gt;Details&lt;/button&gt;&lt;/div&gt;&#x27;}).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;module-create&quot;&gt;&#x27;+icon(&#x27;plus&#x27;)+esc(m.action)+&#x27;&lt;/button&gt;&#x27;+(m.name===&#x27;Reports&#x27;||m.name===&#x27;Lohn&#x27;||m.name===&#x27;Buchhaltung&#x27;?&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;export-module&quot; style=&quot;margin-left:8px&quot;&gt;Exportvorschau&lt;/button&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;p style=&quot;margin-top:15px;font-size:10px&quot;&gt;Demovorschau · Änderungen bleiben in diesem Mockup.&lt;/p&gt;&#x27;);}
+    function moduleForm(){const m=modules.find(m=&gt;m.name===state.module);if(m.name===&#x27;Import&#x27;){drawer(&#x27;Import / Vorschau&#x27;,&#x27;&lt;p&gt;CSV-Beispiel prüfen. Die Daten werden nur lokal gelesen.&lt;/p&gt;&lt;label class=&quot;nd-field&quot;&gt;CSV-Daten&lt;textarea class=&quot;nd-input&quot; id=&quot;nd-import-value&quot;&gt;Name;Arbeitsmodell;Team\nMia Berger;80;Operations\nNoah Graf;100;Engineering&lt;/textarea&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-check-import&quot;&gt;Daten prüfen&lt;/button&gt;&lt;div id=&quot;nd-import-result&quot; style=&quot;margin-top:15px&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;&#x27;);$(&#x27;#nd-check-import&#x27;).onclick=()=&gt;{const lines=$(&#x27;#nd-import-value&#x27;).value.trim().split(&#x27;\n&#x27;).filter(Boolean);$(&#x27;#nd-import-result&#x27;).textContent=Math.max(0,lines.length-1)+&#x27; Datensätze erkannt · Vorschau geprüft. Kein Import in ein echtes System.&#x27;;};return}drawer(m.name+&#x27; / &#x27;+m.action,&#x27;&lt;label class=&quot;nd-field&quot;&gt;Bezeichnung&lt;input class=&quot;nd-input&quot; id=&quot;nd-draft-name&quot; placeholder=&quot;&#x27;+esc(m.name===&#x27;Aufgaben&#x27;?&#x27;Neue Aufgabe&#x27;:&#x27;Bezeichnung des Eintrags&#x27;)+&#x27;&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Notiz&lt;textarea class=&quot;nd-input&quot; id=&quot;nd-draft-note&quot; placeholder=&quot;Details für den Entwurf&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;p id=&quot;nd-draft-error&quot; role=&quot;alert&quot; hidden&gt;Bitte eine Bezeichnung eingeben.&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-save-draft&quot;&gt;Entwurf lokal speichern&lt;/button&gt;&#x27;);$(&#x27;#nd-save-draft&#x27;).onclick=()=&gt;{const name=$(&#x27;#nd-draft-name&#x27;).value.trim(),note=$(&#x27;#nd-draft-note&#x27;).value.trim();if(!name){$(&#x27;#nd-draft-error&#x27;).hidden=false;return}m.rows.unshift(name+&#x27;|&#x27;+(note||&#x27;Neuer lokaler Entwurf&#x27;));openModule(m.name);toast(&#x27;Entwurf in &#x27;+m.name+&#x27; gespeichert.&#x27;);};}
+    function exportPreview(mode){state.exportMode=mode;const rows=mode===&#x27;time&#x27;?timeRows().map(p=&gt;[p.name,format(p.actual),format(p.target),format(p.balance,true)].join(&#x27;;&#x27;)):mode===&#x27;module&#x27;?modules.find(m=&gt;m.name===state.module).rows.map(r=&gt;r.replace(&#x27;|&#x27;,&#x27;;&#x27;)):tasks.map(t=&gt;[t.ref,t.name,t.label,t.status===&#x27;open&#x27;?&#x27;Offen&#x27;:t.status===&#x27;approved&#x27;?&#x27;Genehmigt&#x27;:t.status===&#x27;resolved&#x27;?&#x27;Erledigt&#x27;:&#x27;Abgelehnt&#x27;].join(&#x27;;&#x27;));const header=mode===&#x27;time&#x27;?&#x27;Mitarbeitende;Ist;Soll;Gesamtsaldo&#x27;:mode===&#x27;module&#x27;?&#x27;Eintrag;Details&#x27;:&#x27;Referenz;Mitarbeitende;Typ;Status&#x27;;drawer(&#x27;Export / Vorschau&#x27;,&#x27;&lt;p&gt;&#x27;+rows.length+&#x27; Zeilen · &#x27;+(mode===&#x27;time&#x27;?esc($(&#x27;#nd-week-label&#x27;).textContent):mode===&#x27;module&#x27;?esc(state.module):&#x27;Arbeitswarteschlange&#x27;)+&#x27; · CSV mit Semikolon&lt;/p&gt;&lt;pre class=&quot;nd-preview&quot;&gt;&#x27;+esc(header+&#x27;\n&#x27;+rows.join(&#x27;\n&#x27;))+&#x27;&lt;/pre&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;confirm-export&quot;&gt;Export in Demo vormerken&lt;/button&gt;&lt;p style=&quot;margin-top:12px;font-size:10px&quot;&gt;Nachvollziehbare Mock-Vorschau. Es werden keine realen Daten exportiert.&lt;/p&gt;&#x27;);}
+    function configure(){drawer(&#x27;Deine Übersicht&#x27;,&#x27;&lt;p&gt;Zeige nur die Kennzahlen, die du regelmässig brauchst.&lt;/p&gt;&lt;div class=&quot;nd-options&quot;&gt;&#x27;+[[&#x27;holiday&#x27;,&#x27;Ferien&#x27;],[&#x27;correction&#x27;,&#x27;Korrekturen&#x27;],[&#x27;issue&#x27;,&#x27;Zeitprobleme&#x27;],[&#x27;balance&#x27;,&#x27;Team-Saldo&#x27;]].map(([key,label])=&gt;&#x27;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-config-metric=&quot;&#x27;+key+&#x27;&quot; &#x27;+(!$(&#x27;[data-metric=&quot;&#x27;+key+&#x27;&quot;]&#x27;).hidden?&#x27;checked&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+label+&#x27;&lt;/label&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;label class=&quot;nd-field&quot;&gt;Dichte der Warteschlange&lt;select id=&quot;nd-density&quot; class=&quot;nd-input&quot;&gt;&lt;option value=&quot;17&quot; &#x27;+(state.density===17?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Entspannt&lt;/option&gt;&lt;option value=&quot;12&quot; &#x27;+(state.density===12?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Kompakt&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;save-config&quot;&gt;Ansicht übernehmen&lt;/button&gt;&#x27;);}
+    root.addEventListener(&#x27;click&#x27;,event=&gt;{const b=event.target.closest(&#x27;button&#x27;);if(!b||!root.contains(b))return;if(b.dataset.view){setView(b.dataset.view);closeDrawer();return}if(b.dataset.queue){setQueue(b.dataset.queue);return}if(b.dataset.task){state.selected=b.dataset.task;renderQueue();renderDetail();return}if(b.dataset.metric){if(b.dataset.metric===&#x27;balance&#x27;){state.timeMode=&#x27;all&#x27;;$(&#x27;#nd-problem-filter&#x27;).checked=false;$(&#x27;#nd-employee-search&#x27;).value=&#x27;&#x27;;setView(&#x27;time&#x27;)}else setQueue(b.dataset.metric);return}if(b.dataset.expand){state.expanded.has(b.dataset.expand)?state.expanded.delete(b.dataset.expand):state.expanded.add(b.dataset.expand);renderTime();return}if(b.dataset.week){state.week+=Number(b.dataset.week);renderTime();return}if(b.dataset.month){const next=new Date(state.year,state.month+Number(b.dataset.month),1);state.month=next.getMonth();state.year=next.getFullYear();state.day=1;renderCalendar();return}if(b.dataset.day){state.day=Number(b.dataset.day);renderCalendar();return}if(b.dataset.module){openModule(b.dataset.module);return}if(b.dataset.stampPerson){editStamp(b.dataset.stampPerson,Number(b.dataset.stampDay));return}if(b.dataset.moduleRow!==undefined){const m=modules.find(m=&gt;m.name===state.module),parts=m.rows[Number(b.dataset.moduleRow)].split(&#x27;|&#x27;);drawer(m.name+&#x27; / &#x27;+parts[0],&#x27;&lt;p&gt;&#x27;+esc(parts[1])+&#x27;&lt;/p&gt;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;Status&lt;small&gt;Lokale Detailvorschau&lt;/small&gt;&lt;/span&gt;&lt;span class=&quot;nd-tag&quot;&gt;&#x27;+(parts[1].includes(&#x27;offen&#x27;)?&#x27;Offen&#x27;:&#x27;Aktiv&#x27;)+&#x27;&lt;/span&gt;&lt;/div&gt;&lt;label class=&quot;nd-field&quot;&gt;Interne Notiz&lt;textarea class=&quot;nd-input&quot; id=&quot;nd-record-note&quot; placeholder=&quot;Notiz zu diesem Eintrag&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-save-record&quot;&gt;Notiz speichern&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; id=&quot;nd-back-module&quot; style=&quot;margin-left:8px&quot;&gt;Zurück&lt;/button&gt;&#x27;);$(&#x27;#nd-save-record&#x27;).onclick=()=&gt;{const note=$(&#x27;#nd-record-note&#x27;).value.trim();if(!note){toast(&#x27;Bitte zuerst eine Notiz ergänzen.&#x27;);return}m.rows[Number(b.dataset.moduleRow)]=parts[0]+&#x27;|&#x27;+parts[1]+&#x27; · Notiz: &#x27;+note;openModule(m.name);toast(&#x27;Notiz lokal gespeichert.&#x27;);};$(&#x27;#nd-back-module&#x27;).onclick=()=&gt;openModule(m.name);return}
+      const action=b.dataset.action,t=selectedTask();if(action===&#x27;close-drawer&#x27;)closeDrawer();if(action===&#x27;dismiss-toast&#x27;)$(&#x27;#nd-toast&#x27;).hidden=true;if(action===&#x27;approve&#x27;&amp;&amp;t&amp;&amp;t.status===&#x27;open&#x27;)decide([t.id],&#x27;approved&#x27;);if(action===&#x27;reject&#x27;&amp;&amp;t)reject([t.id]);if(action===&#x27;batch-approve&#x27;){const ids=Array.from(state.checked).filter(id=&gt;tasks.find(t=&gt;t.id===id&amp;&amp;t.kind!==&#x27;issue&#x27;));if(!ids.length){toast(&#x27;Zeitprobleme bitte einzeln prüfen und die Buchung ergänzen.&#x27;);return}drawer(&#x27;Mehrere Anträge freigeben&#x27;,&#x27;&lt;p&gt;&#x27;+ids.length+&#x27; ausgewählte Anträge werden genehmigt. Zeitprobleme bleiben zur Einzelprüfung offen.&lt;/p&gt;&lt;div class=&quot;nd-record-list&quot;&gt;&#x27;+ids.map(id=&gt;{const t=tasks.find(t=&gt;t.id===id);return &#x27;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;&#x27;+esc(t.name)+&#x27;&lt;small&gt;&#x27;+esc(t.meta)+&#x27;&lt;/small&gt;&lt;/span&gt;&lt;span&gt;&#x27;+esc(t.label)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;}).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-confirm-batch&quot;&gt;&#x27;+ids.length+&#x27; Anträge genehmigen&lt;/button&gt;&#x27;);$(&#x27;#nd-confirm-batch&#x27;).onclick=()=&gt;decide(ids,&#x27;approved&#x27;);}if(action===&#x27;batch-reject&#x27;){const ids=Array.from(state.checked).filter(id=&gt;tasks.find(t=&gt;t.id===id&amp;&amp;t.kind!==&#x27;issue&#x27;));ids.length?reject(ids):toast(&#x27;Zeitprobleme bitte über die Buchung bearbeiten.&#x27;);}if(action===&#x27;queue-all&#x27;)setQueue(&#x27;all&#x27;);if(action===&#x27;show-time&#x27;){state.timeMode=&#x27;all&#x27;;$(&#x27;#nd-employee-search&#x27;).value=t?t.name:&#x27;&#x27;;$(&#x27;#nd-model-filter&#x27;).value=&#x27;all&#x27;;$(&#x27;#nd-problem-filter&#x27;).checked=false;if(t)state.expanded.add(t.name);setView(&#x27;time&#x27;);}if(action===&#x27;show-calendar&#x27;){state.month=8;state.year=2026;state.day=t&amp;&amp;t.id===&#x27;luca-holiday&#x27;?14:t&amp;&amp;t.id===&#x27;amira-holiday&#x27;?21:25;setView(&#x27;calendar&#x27;);}if(action===&#x27;fix-time&#x27;&amp;&amp;t)editStamp(t.name,t.name===&#x27;Jonas Keller&#x27;?4:2);if(action===&#x27;open-schedule&#x27;)openModule(&#x27;Dienstplan&#x27;);if(action===&#x27;negative&#x27;||action===&#x27;top-balance&#x27;){state.timeMode=action===&#x27;negative&#x27;?&#x27;negative&#x27;:&#x27;top&#x27;;$(&#x27;#nd-employee-search&#x27;).value=&#x27;&#x27;;$(&#x27;#nd-model-filter&#x27;).value=&#x27;all&#x27;;$(&#x27;#nd-problem-filter&#x27;).checked=false;renderTime();toast(action===&#x27;negative&#x27;?&#x27;3 Mitarbeitende mit negativem Gesamt-Saldo.&#x27;:&#x27;Mitarbeitende nach Gesamt-Saldo absteigend sortiert.&#x27;);}if(action===&#x27;calendar-today&#x27;){state.month=8;state.year=2026;state.day=8;renderCalendar();}if(action===&#x27;configure&#x27;)configure();if(action===&#x27;save-config&#x27;){$$(&#x27;[data-config-metric]&#x27;).forEach(c=&gt;$(&#x27;[data-metric=&quot;&#x27;+c.dataset.configMetric+&#x27;&quot;]&#x27;).hidden=!c.checked);const count=$$(&#x27;[data-metric]&#x27;).filter(m=&gt;!m.hidden).length;$(&#x27;.nd-metrics&#x27;).style.gridTemplateColumns=count?&#x27;repeat(&#x27;+count+&#x27;,minmax(0,1fr))&#x27;:&#x27;&#x27;;$(&#x27;.nd-metrics&#x27;).hidden=!count;state.density=Number($(&#x27;#nd-density&#x27;).value);root.style.setProperty(&#x27;--nd-row&#x27;,state.density+&#x27;px&#x27;);closeDrawer();toast(&#x27;Deine Übersicht wurde lokal angepasst.&#x27;);}if(action===&#x27;export&#x27;)exportPreview(state.view===&#x27;time&#x27;?&#x27;time&#x27;:&#x27;queue&#x27;);if(action===&#x27;export-time&#x27;)exportPreview(&#x27;time&#x27;);if(action===&#x27;export-module&#x27;)exportPreview(&#x27;module&#x27;);if(action===&#x27;confirm-export&#x27;){closeDrawer();toast(&#x27;Demo-Export vorgemerkt · Vorschau enthält ausschliesslich Beispieldaten.&#x27;);}if(action===&#x27;module-create&#x27;)moduleForm();if(action===&#x27;account&#x27;)drawer(&#x27;Jan Steiner / Administration&#x27;,&#x27;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;Organisation&lt;small&gt;Chrono Demo AG · Zürich&lt;/small&gt;&lt;/span&gt;&lt;span class=&quot;nd-tag&quot;&gt;Admin&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;Sprache und Region&lt;small&gt;Deutsch (Schweiz) · Europe/Zurich&lt;/small&gt;&lt;/span&gt;&lt;/div&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-module=&quot;Einstellungen&quot;&gt;Einstellungen öffnen&lt;/button&gt;&#x27;);
+    });
+    root.addEventListener(&#x27;change&#x27;,event=&gt;{const e=event.target;if(e.dataset.selectTask){e.checked?state.checked.add(e.dataset.selectTask):state.checked.delete(e.dataset.selectTask);renderQueue()}if(e.id===&#x27;nd-select-all&#x27;){visibleTasks().filter(t=&gt;t.status===&#x27;open&#x27;).forEach(t=&gt;e.checked?state.checked.add(t.id):state.checked.delete(t.id));renderQueue()}if(e.id===&#x27;nd-queue-sort&#x27;)renderQueue();if(e.id===&#x27;nd-model-filter&#x27;||e.id===&#x27;nd-problem-filter&#x27;){state.timeMode=&#x27;all&#x27;;renderTime()}if(e.id===&#x27;nd-calendar-person&#x27;)renderCalendar();if(e.dataset.calendarKind){e.checked?state.calendarKinds.add(e.dataset.calendarKind):state.calendarKinds.delete(e.dataset.calendarKind);renderCalendar()}});
+    $(&#x27;#nd-employee-search&#x27;).addEventListener(&#x27;input&#x27;,()=&gt;{state.timeMode=&#x27;all&#x27;;renderTime()});$(&#x27;#nd-module-search&#x27;).addEventListener(&#x27;input&#x27;,renderModules);
+    /* Secondary workflows stay one level below the focused workspace. */
+    staff.find(p=&gt;p.name===&#x27;Amira Roth&#x27;).model=&#x27;hourly&#x27;;
+    staff.find(p=&gt;p.name===&#x27;Amira Roth&#x27;).balance=0;
+    staff.find(p=&gt;p.name===&#x27;David Schmid&#x27;).balance=430;
+    staff.forEach(p=&gt;{p.bookings={};p.originalBalance=p.balance;p.originalProblem=p.problem;});
+    state.period=&#x27;week&#x27;;state.checkFilter=&#x27;all&#x27;;state.bookingDay=&#x27;&#x27;;
+    const pms=modules.find(m=&gt;m.name===&#x27;PMS&#x27;);
+    Object.assign(pms,{description:&#x27;Hotelverwaltung und Reservationen&#x27;,metric:&#x27;18 Zimmer · 3 Anreisen heute&#x27;,rows:[&#x27;Anreisen heute|3 Reservationen · Check-in ab 15:00&#x27;,&#x27;Zimmerübersicht|18 Zimmer · 14 belegt · 2 in Reinigung&#x27;,&#x27;Reservationen|24 bevorstehende Aufenthalte&#x27;],action:&#x27;Reservation vormerken&#x27;});
+    modules.push({group:&#x27;Geschäft&#x27;,name:&#x27;Zahlungsverkehr&#x27;,icon:&#x27;credit-card&#x27;,description:&#x27;Zahlungen, Abgleich und Freigaben&#x27;,metric:&#x27;4 Zahlungen zur Prüfung&#x27;,rows:[&#x27;Zahlungslauf September|4 Positionen · CHF 7’240 · Entwurf&#x27;,&#x27;Bankabgleich|3 Buchungen noch zuzuordnen&#x27;,&#x27;Freigaben|2 Zahlungen warten auf Prüfung&#x27;],action:&#x27;Zahlung vormerken&#x27;});
+    modules.push({group:&#x27;System&#x27;,name:&#x27;Chrono 2.0&#x27;,icon:&#x27;sparkles&#x27;,description:&#x27;Neue Funktionen und Umstellung&#x27;,metric:&#x27;Vorschau der nächsten Chrono-Version&#x27;,rows:[&#x27;Funktionsübersicht|Neue Arbeitsabläufe kennenlernen&#x27;,&#x27;Umstellungsstatus|Demo-Organisation · noch nicht gestartet&#x27;,&#x27;Rückmeldung|Ideen und Feedback sammeln&#x27;],action:&#x27;Rückmeldung entwerfen&#x27;});
+    $(&#x27;#nd-model-filter&#x27;).insertAdjacentHTML(&#x27;beforeend&#x27;,&#x27;&lt;option value=&quot;hourly&quot;&gt;Stundenlohn · ohne Soll&lt;/option&gt;&#x27;);
+    $(&#x27;#nd-time-view .nd-toolbar&#x27;).insertAdjacentHTML(&#x27;beforebegin&#x27;,&#x27;&lt;div class=&quot;nd-toolbar&quot; id=&quot;nd-period-options&quot;&gt;&lt;label class=&quot;nd-field&quot;&gt;Zeitraum&lt;select class=&quot;nd-input&quot; id=&quot;nd-period-type&quot;&gt;&lt;option value=&quot;week&quot;&gt;Woche&lt;/option&gt;&lt;option value=&quot;month&quot;&gt;Monat&lt;/option&gt;&lt;option value=&quot;cycle&quot;&gt;Monatszyklus · 26.–25.&lt;/option&gt;&lt;option value=&quot;custom&quot;&gt;Freier Zeitraum&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot; id=&quot;nd-custom-start-field&quot; hidden&gt;Von&lt;input type=&quot;date&quot; class=&quot;nd-input&quot; id=&quot;nd-custom-start&quot; value=&quot;2026-09-01&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot; id=&quot;nd-custom-end-field&quot; hidden&gt;Bis&lt;input type=&quot;date&quot; class=&quot;nd-input&quot; id=&quot;nd-custom-end&quot; value=&quot;2026-09-30&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Prüffilter&lt;select class=&quot;nd-input&quot; id=&quot;nd-check-filter&quot;&gt;&lt;option value=&quot;all&quot;&gt;Alle Prüfstatus&lt;/option&gt;&lt;option value=&quot;missing&quot;&gt;Fehlende Zeiten&lt;/option&gt;&lt;option value=&quot;incomplete&quot;&gt;Unvollständige Zeiten&lt;/option&gt;&lt;option value=&quot;auto&quot;&gt;Auto-beendet · ungeprüft&lt;/option&gt;&lt;option value=&quot;holiday&quot;&gt;Feiertag offen&lt;/option&gt;&lt;option value=&quot;deviation&quot;&gt;Wochenabweichung&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;person-report&quot;&gt;&#x27;+icon(&#x27;file-text&#x27;)+&#x27;Bericht pro Person&lt;/button&gt;&lt;/div&gt;&#x27;);
+    const iso=d=&gt;d.getFullYear()+&#x27;-&#x27;+String(d.getMonth()+1).padStart(2,&#x27;0&#x27;)+&#x27;-&#x27;+String(d.getDate()).padStart(2,&#x27;0&#x27;);
+    function periodRange(){if(state.period===&#x27;month&#x27;)return [new Date(2026,8+state.week,1),new Date(2026,9+state.week,0)];if(state.period===&#x27;cycle&#x27;)return [new Date(2026,7+state.week,26),new Date(2026,8+state.week,25)];if(state.period===&#x27;custom&#x27;)return [new Date($(&#x27;#nd-custom-start&#x27;).value+&#x27;T12:00:00&#x27;),new Date($(&#x27;#nd-custom-end&#x27;).value+&#x27;T12:00:00&#x27;)];const ds=weekDates();return [ds[0],ds[6]];}
+    function periodDays(){const [start,end]=periodRange();if(isNaN(start)||isNaN(end)||end&lt;start)return [];const result=[];for(let d=new Date(start);d&lt;=end&amp;&amp;result.length&lt;366;d.setDate(d.getDate()+1))result.push(new Date(d));return result;}
+    const dayPattern={NF:[498,498,498,498,498],LW:[488,488,488,488,488],SM:[480,480,480,480,480],JK:[480,480,480,480,280],LF:[478,478,477,477,0],MB:[473,473,472,472,0],AR:[486,486,486,486,486],DS:[480,480,0,480,480]};
+    function dayMinutes(p,d){const key=iso(d);if(p.bookings[key])return p.bookings[key].minutes;const weekday=(d.getDay()+6)%7;if(weekday&gt;4)return 0;if((p.initials===&#x27;JK&#x27;||p.initials===&#x27;DS&#x27;)&amp;&amp;(key&lt;&#x27;2026-08-31&#x27;||key&gt;&#x27;2026-09-06&#x27;))return 480;return dayPattern[p.initials][weekday];}
+    function planned(p,d){const weekday=(d.getDay()+6)%7;return p.model===&#x27;hourly&#x27;?null:weekday&gt;4||p.model===&#x27;80&#x27;&amp;&amp;weekday===4?0:480;}
+    function totals(p){const days=periodDays();return {actual:days.reduce((n,d)=&gt;n+dayMinutes(p,d),0),target:p.model===&#x27;hourly&#x27;?null:days.reduce((n,d)=&gt;n+planned(p,d),0)};}
+    function periodProblem(p){const days=periodDays().map(iso);return p.problem&amp;&amp;days.includes(p.initials===&#x27;JK&#x27;?&#x27;2026-09-04&#x27;:&#x27;2026-09-02&#x27;)?p.problem:&#x27;&#x27;;}
+    timeRows=function(){const search=$(&#x27;#nd-employee-search&#x27;).value.toLowerCase();let list=staff.filter(p=&gt;p.name.toLowerCase().includes(search)&amp;&amp;($(&#x27;#nd-model-filter&#x27;).value===&#x27;all&#x27;||p.model===$(&#x27;#nd-model-filter&#x27;).value)&amp;&amp;(!$(&#x27;#nd-problem-filter&#x27;).checked||periodProblem(p)));if(state.timeMode===&#x27;negative&#x27;)list=list.filter(p=&gt;p.model!==&#x27;hourly&#x27;&amp;&amp;p.balance&lt;0);if(state.timeMode===&#x27;top&#x27;)list.sort((a,b)=&gt;(b.model===&#x27;hourly&#x27;?-99999:b.balance)-(a.model===&#x27;hourly&#x27;?-99999:a.balance));if(state.checkFilter===&#x27;missing&#x27;)list=list.filter(p=&gt;periodProblem(p)===&#x27;Tag fehlt&#x27;);if(state.checkFilter===&#x27;incomplete&#x27;)list=list.filter(p=&gt;periodProblem(p)===&#x27;Ende fehlt&#x27;);if(state.checkFilter===&#x27;auto&#x27;)list=list.filter(p=&gt;p.initials===&#x27;NF&#x27;&amp;&amp;!p.autoReviewed);if(state.checkFilter===&#x27;holiday&#x27;)list=list.filter(p=&gt;p.initials===&#x27;LW&#x27;&amp;&amp;!p.holidayReviewed);if(state.checkFilter===&#x27;deviation&#x27;)list=list.filter(p=&gt;p.model!==&#x27;hourly&#x27;&amp;&amp;totals(p).actual!==totals(p).target);return list;};
+    function stampLabel(p,d){const record=p.bookings[iso(d)];if(record)return record.start+&#x27;–&#x27;+record.end+&#x27; · Pause &#x27;+record.pause+&#x27; Min.&#x27;;const minutes=dayMinutes(p,d);if(!minutes)return planned(p,d)===0?&#x27;Arbeitsfreier Tag&#x27;:&#x27;Keine Buchung&#x27;;if(periodProblem(p)&amp;&amp;((p.initials===&#x27;JK&#x27;&amp;&amp;iso(d)===&#x27;2026-09-04&#x27;)||(p.initials===&#x27;DS&#x27;&amp;&amp;iso(d)===&#x27;2026-09-02&#x27;)))return p.initials===&#x27;JK&#x27;?&#x27;08:00–12:40 · Ende fehlt&#x27;:&#x27;Keine Buchung&#x27;;return &#x27;08:00–12:00 · 12:45–&#x27;+format(480+minutes+45);}
+    function bookingItems(p,days){return days.map(d=&gt;&#x27;&lt;div class=&quot;nd-stamp&quot;&gt;&lt;strong&gt;&#x27;+d.toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;short&#x27;,day:&#x27;numeric&#x27;,month:&#x27;numeric&#x27;})+&#x27;&lt;/strong&gt;&lt;span&gt;&#x27;+esc(stampLabel(p,d))+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+format(dayMinutes(p,d))+&#x27; h · &#x27;+(p.model===&#x27;hourly&#x27;?&#x27;Stundenlohn&#x27;:planned(p,d)?&#x27;Soll &#x27;+format(planned(p,d))+&#x27; h&#x27;:&#x27;arbeitsfrei&#x27;)+&#x27;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-booking-person=&quot;&#x27;+esc(p.name)+&#x27;&quot; data-booking-date=&quot;&#x27;+iso(d)+&#x27;&quot;&gt;Bearbeiten&lt;/button&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;);}
+    renderTime=function(){const days=periodDays(),range=periodRange(),valid=days.length&gt;0;const label=valid?(state.period===&#x27;week&#x27;?&#x27;KW &#x27;+(36+state.week)+&#x27; · &#x27;:state.period===&#x27;cycle&#x27;?&#x27;Zyklus · &#x27;:&#x27;&#x27;)+range[0].toLocaleDateString(&#x27;de-CH&#x27;,{day:&#x27;numeric&#x27;,month:&#x27;short&#x27;})+&#x27;–&#x27;+range[1].toLocaleDateString(&#x27;de-CH&#x27;,{day:&#x27;numeric&#x27;,month:&#x27;short&#x27;,year:&#x27;numeric&#x27;}):&#x27;Zeitraum prüfen&#x27;;$(&#x27;#nd-week-label&#x27;).textContent=label;$(&#x27;#nd-time-view thead th:nth-child(4)&#x27;).textContent=state.period===&#x27;week&#x27;?&#x27;Wochen-Saldo&#x27;:&#x27;Perioden-Saldo&#x27;;$$(&#x27;[data-week]&#x27;).forEach(b=&gt;b.disabled=state.period===&#x27;custom&#x27;);const list=valid?timeRows():[];$(&#x27;#nd-time-body&#x27;).innerHTML=list.map(p=&gt;{const total=totals(p),problem=periodProblem(p),check=problem||(p.initials===&#x27;NF&#x27;&amp;&amp;!p.autoReviewed?&#x27;Auto · ungeprüft&#x27;:p.initials===&#x27;LW&#x27;&amp;&amp;!p.holidayReviewed?&#x27;Feiertag offen&#x27;:&#x27;Geprüft&#x27;);return &#x27;&lt;tr&gt;&lt;td&gt;&lt;button type=&quot;button&quot; class=&quot;nd-row-button&quot; data-expand=&quot;&#x27;+esc(p.name)+&#x27;&quot; aria-expanded=&quot;&#x27;+state.expanded.has(p.name)+&#x27;&quot;&gt;&lt;span class=&quot;nd-avatar&quot;&gt;&#x27;+p.initials+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+esc(p.name)+&#x27;&lt;small&gt;&#x27;+esc(p.team)+&#x27; · &#x27;+(p.model===&#x27;hourly&#x27;?&#x27;Stundenlohn&#x27;:p.model+&#x27; %&#x27;)+&#x27;&lt;/small&gt;&lt;/span&gt;&#x27;+icon(state.expanded.has(p.name)?&#x27;chevron-up&#x27;:&#x27;chevron-down&#x27;)+&#x27;&lt;/button&gt;&lt;/td&gt;&lt;td class=&quot;nd-number&quot;&gt;&#x27;+format(total.actual)+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number&quot;&gt;&#x27;+(total.target===null?&#x27;—&#x27;:format(total.target))+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number &#x27;+(total.target!==null&amp;&amp;total.actual&lt;total.target?&#x27;nd-negative&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+(total.target===null?&#x27;—&#x27;:format(total.actual-total.target,true))+&#x27;&lt;/td&gt;&lt;td class=&quot;nd-number &#x27;+(p.balance&lt;0?&#x27;nd-negative&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+(p.model===&#x27;hourly&#x27;?&#x27;—&#x27;:format(p.balance,true))+&#x27;&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;nd-tag &#x27;+(check!==&#x27;Geprüft&#x27;?&#x27;nd-pending&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+esc(check)+&#x27;&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;+(state.expanded.has(p.name)?&#x27;&lt;tr class=&quot;nd-expanded&quot;&gt;&lt;td colspan=&quot;6&quot;&gt;&lt;div class=&quot;nd-stamps&quot;&gt;&#x27;+bookingItems(p,days.filter(d=&gt;d.getDay()!==0&amp;&amp;d.getDay()!==6).slice(0,5))+&#x27;&lt;/div&gt;&lt;div class=&quot;nd-toolbar&quot; style=&quot;margin-top:16px;margin-bottom:0&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-all-bookings=&quot;&#x27;+esc(p.name)+&#x27;&quot;&gt;Alle Buchungen im Zeitraum&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-report-person=&quot;&#x27;+esc(p.name)+&#x27;&quot;&gt;PDF-Bericht&lt;/button&gt;&#x27;+(check===&#x27;Auto · ungeprüft&#x27;||check===&#x27;Feiertag offen&#x27;?&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-review-person=&quot;&#x27;+esc(p.name)+&#x27;&quot;&gt;&#x27;+(check===&#x27;Feiertag offen&#x27;?&#x27;Feiertag bestätigen&#x27;:&#x27;Buchungen als geprüft markieren&#x27;)+&#x27;&lt;/button&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;:&#x27;&#x27;);}).join(&#x27;&#x27;)||&#x27;&lt;tr&gt;&lt;td colspan=&quot;6&quot; class=&quot;nd-empty&quot;&gt;&#x27;+(valid?&#x27;Keine Mitarbeitenden für diese Auswahl.&#x27;:&#x27;Bitte einen gültigen Zeitraum eingeben.&#x27;)+&#x27;&lt;/td&gt;&lt;/tr&gt;&#x27;;$(&#x27;#nd-time-count&#x27;).textContent=list.length+&#x27; von &#x27;+staff.length+&#x27; Mitarbeitenden · &#x27;+(state.timeMode===&#x27;negative&#x27;?&#x27;negative Salden&#x27;:state.timeMode===&#x27;top&#x27;?&#x27;nach Gesamt-Saldo sortiert&#x27;:&#x27;Stundenlohn ohne Soll-/Überstundenbewertung&#x27;);icons();};
+    editStamp=function(name,day){const date=weekDates()[day];openBooking(name,iso(date));};
+    function updateBalances(){const total=staff.filter(p=&gt;p.model!==&#x27;hourly&#x27;).reduce((n,p)=&gt;n+p.balance,0),negative=staff.filter(p=&gt;p.model!==&#x27;hourly&#x27;&amp;&amp;p.balance&lt;0).length;$(&#x27;[data-metric=&quot;balance&quot;] strong&#x27;).textContent=format(total,true);$(&#x27;[data-metric=&quot;balance&quot;]&gt;span&#x27;).innerHTML=&#x27;Team-Saldo&lt;br&gt;&#x27;+negative+&#x27; im Minus&#x27;;$(&#x27;#nd-time-view .nd-summary-strip&#x27;).innerHTML=&#x27;&lt;span&gt;Team-Saldo&lt;strong&gt;&#x27;+format(total,true)+&#x27; h&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;Negative Salden&lt;strong&gt;&#x27;+negative+&#x27; Mitarbeitende&lt;/strong&gt;&lt;/span&gt;&lt;span&gt;Höchster Saldo&lt;strong&gt;&#x27;+staff.filter(p=&gt;p.model!==&#x27;hourly&#x27;).sort((a,b)=&gt;b.balance-a.balance)[0].name+&#x27; · &#x27;+format(Math.max(...staff.filter(p=&gt;p.model!==&#x27;hourly&#x27;).map(p=&gt;p.balance)),true)+&#x27; h&lt;/strong&gt;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;negative&quot;&gt;Negative anzeigen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-action=&quot;top-balance&quot;&gt;Top-Salden anzeigen&lt;/button&gt;&#x27;;}
+    function openBooking(name,date){const p=staff.find(p=&gt;p.name===name),d=new Date(date+&#x27;T12:00:00&#x27;),existing=p.bookings[date];drawer(&#x27;Zeitbuchung · &#x27;+name,&#x27;&lt;p&gt;&#x27;+d.toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;long&#x27;,day:&#x27;numeric&#x27;,month:&#x27;long&#x27;})+&#x27; · lokale Korrektur&lt;/p&gt;&lt;div class=&quot;nd-options&quot;&gt;&lt;label class=&quot;nd-field&quot;&gt;Beginn&lt;input type=&quot;time&quot; class=&quot;nd-input&quot; id=&quot;nd-book-start&quot; value=&quot;&#x27;+(existing?existing.start:&#x27;08:00&#x27;)+&#x27;&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Ende&lt;input type=&quot;time&quot; class=&quot;nd-input&quot; id=&quot;nd-book-end&quot; value=&quot;&#x27;+(existing?existing.end:&#x27;16:45&#x27;)+&#x27;&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Pause (Min.)&lt;input type=&quot;number&quot; class=&quot;nd-input&quot; id=&quot;nd-book-pause&quot; value=&quot;&#x27;+(existing?existing.pause:45)+&#x27;&quot; min=&quot;0&quot; max=&quot;180&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;nd-field&quot;&gt;Notiz&lt;input type=&quot;text&quot; class=&quot;nd-input&quot; id=&quot;nd-book-note&quot; placeholder=&quot;Begründung der Änderung&quot;&gt;&lt;/label&gt;&lt;p id=&quot;nd-book-error&quot; role=&quot;alert&quot; hidden&gt;&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-book-save&quot;&gt;Buchung lokal speichern&lt;/button&gt;&#x27;);$(&#x27;#nd-book-save&#x27;).onclick=()=&gt;{const start=$(&#x27;#nd-book-start&#x27;).value,end=$(&#x27;#nd-book-end&#x27;).value,pause=Number($(&#x27;#nd-book-pause&#x27;).value),minute=v=&gt;Number(v.split(&#x27;:&#x27;)[0])*60+Number(v.split(&#x27;:&#x27;)[1]),minutes=minute(end)-minute(start)-pause;if(!start||!end||!Number.isFinite(pause)||pause&lt;0||minutes&lt;=0){$(&#x27;#nd-book-error&#x27;).hidden=false;$(&#x27;#nd-book-error&#x27;).textContent=&#x27;Bitte gültige Start-/Endzeiten und Pause eingeben.&#x27;;return}const before=dayMinutes(p,d);p.bookings[date]={start,end,pause,minutes,note:$(&#x27;#nd-book-note&#x27;).value.trim()};if(p.model!==&#x27;hourly&#x27;)p.balance+=minutes-before;if((p.initials===&#x27;JK&#x27;&amp;&amp;date===&#x27;2026-09-04&#x27;)||(p.initials===&#x27;DS&#x27;&amp;&amp;date===&#x27;2026-09-02&#x27;)){p.problem=&#x27;&#x27;;const issue=tasks.find(t=&gt;t.name===name&amp;&amp;t.kind===&#x27;issue&#x27;&amp;&amp;t.status===&#x27;open&#x27;);if(issue){issue.status=&#x27;resolved&#x27;;issue.reason=&#x27;Buchung ergänzt: &#x27;+start+&#x27;–&#x27;+end+&#x27; · Pause &#x27;+pause+&#x27; Min.&#x27;;renderQueue();renderDetail();}}state.expanded.add(name);renderTime();updateBalances();closeDrawer();toast(&#x27;Buchung für &#x27;+name+&#x27; gespeichert · &#x27;+format(minutes)+&#x27; h.&#x27;);};}
+    function reportPreview(person){const p=staff.find(p=&gt;p.name===person)||staff[0];drawer(&#x27;Zeitbericht / PDF&#x27;,&#x27;&lt;div class=&quot;nd-options&quot;&gt;&lt;label class=&quot;nd-field&quot;&gt;Mitarbeitende&lt;select class=&quot;nd-input&quot; id=&quot;nd-report-person&quot;&gt;&#x27;+staff.map(x=&gt;&#x27;&lt;option &#x27;+(x.name===p.name?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+esc(x.name)+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Format&lt;select class=&quot;nd-input&quot; id=&quot;nd-report-format&quot;&gt;&lt;option&gt;PDF&lt;/option&gt;&lt;option&gt;CSV&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&lt;p&gt;Zeitraum: &#x27;+esc($(&#x27;#nd-week-label&#x27;).textContent)+&#x27;&lt;/p&gt;&lt;pre class=&quot;nd-preview&quot; id=&quot;nd-person-preview&quot;&gt;&lt;/pre&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;confirm-export&quot;&gt;Bericht in Demo vormerken&lt;/button&gt;&lt;p style=&quot;margin-top:12px;font-size:10px&quot;&gt;Dokumentvorschau mit Person und aktuellem Zeitraum. Kein Versand und kein realer Export.&lt;/p&gt;&#x27;);const refresh=()=&gt;{const person=staff.find(x=&gt;x.name===$(&#x27;#nd-report-person&#x27;).value),t=totals(person);$(&#x27;#nd-person-preview&#x27;).textContent=&#x27;CHRONO · &#x27;+$(&#x27;#nd-report-format&#x27;).value+&#x27;-BERICHT\n&#x27;+person.name+&#x27; · &#x27;+(person.model===&#x27;hourly&#x27;?&#x27;Stundenlohn&#x27;:person.model+&#x27; % Pensum&#x27;)+&#x27;\n&#x27;+$(&#x27;#nd-week-label&#x27;).textContent+&#x27;\n\nIst: &#x27;+format(t.actual)+&#x27; h\nSoll: &#x27;+(t.target===null?&#x27;Nicht bewertet&#x27;:format(t.target)+&#x27; h&#x27;)+&#x27;\nPeriodensaldo: &#x27;+(t.target===null?&#x27;Nicht bewertet&#x27;:format(t.actual-t.target,true)+&#x27; h&#x27;)+&#x27;\nGesamtsaldo: &#x27;+(person.model===&#x27;hourly&#x27;?&#x27;Nicht bewertet&#x27;:format(person.balance,true)+&#x27; h&#x27;)+&#x27;\n\nStatus: &#x27;+(periodProblem(person)||&#x27;Vollständige Buchungen&#x27;)+&#x27;\nDemodaten · Erstellt durch Jan Steiner&#x27;;};$(&#x27;#nd-report-person&#x27;).onchange=refresh;$(&#x27;#nd-report-format&#x27;).onchange=refresh;refresh();}
+    const originalExport=exportPreview;exportPreview=function(mode){if(mode!==&#x27;time&#x27;){originalExport(mode);return}const rows=timeRows().map(p=&gt;{const t=totals(p);return [p.name,format(t.actual),t.target===null?&#x27;Ohne Soll&#x27;:format(t.target),p.model===&#x27;hourly&#x27;?&#x27;Nicht bewertet&#x27;:format(p.balance,true)].join(&#x27;;&#x27;)});drawer(&#x27;Zeitprüfung / CSV-Vorschau&#x27;,&#x27;&lt;p&gt;&#x27;+rows.length+&#x27; Mitarbeitende · &#x27;+esc($(&#x27;#nd-week-label&#x27;).textContent)+&#x27;&lt;/p&gt;&lt;pre class=&quot;nd-preview&quot;&gt;&#x27;+esc(&#x27;Mitarbeitende;Ist;Soll;Gesamtsaldo\n&#x27;+rows.join(&#x27;\n&#x27;))+&#x27;&lt;/pre&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;confirm-export&quot;&gt;Export in Demo vormerken&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;person-report&quot; style=&quot;margin-left:8px&quot;&gt;PDF pro Person&lt;/button&gt;&#x27;);};
+    $(&#x27;#nd-calendar-view .nd-toolbar&#x27;).insertAdjacentHTML(&#x27;beforeend&#x27;,&#x27;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;new-absence&quot;&gt;&#x27;+icon(&#x27;plus&#x27;)+&#x27;Abwesenheit&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;holiday-regions&quot;&gt;Kantonale Feiertage&lt;/button&gt;&#x27;);
+    $(&#x27;#nd-calendar-view .nd-legend&#x27;).insertAdjacentHTML(&#x27;beforeend&#x27;,&#x27;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-calendar-kind=&quot;Überstundenfrei&quot; checked&gt;Überstundenfrei&lt;/label&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-calendar-kind=&quot;Betriebsurlaub&quot; checked&gt;Betriebsurlaub&lt;/label&gt;&#x27;);
+    state.calendarKinds.add(&#x27;Überstundenfrei&#x27;);state.calendarKinds.add(&#x27;Betriebsurlaub&#x27;);
+    calendarEvents.forEach((e,i)=&gt;{e.id=&#x27;event-&#x27;+i;e.month=8;e.year=2026;e.half=false;});
+    calendarEvents.push({id:&#x27;event-overtime&#x27;,name:&#x27;Sara Meier&#x27;,kind:&#x27;Überstundenfrei&#x27;,start:17,end:17,month:8,year:2026,half:true,hours:4,note:&#x27;Nachmittag · 4:00 h vom Zeitkonto&#x27;});
+    calendarEvents.push({id:&#x27;event-company&#x27;,name:&#x27;Gesamter Betrieb&#x27;,kind:&#x27;Betriebsurlaub&#x27;,start:28,end:28,month:8,year:2026,half:false,note:&#x27;1 Tag · ganzer Betrieb&#x27;});
+    dayEvents=function(day){return calendarEvents.filter(e=&gt;e.month===state.month&amp;&amp;e.year===state.year&amp;&amp;day&gt;=e.start&amp;&amp;day&lt;=e.end&amp;&amp;state.calendarKinds.has(e.kind)&amp;&amp;($(&#x27;#nd-calendar-person&#x27;).value===&#x27;all&#x27;||e.kind===&#x27;Feiertag&#x27;||e.kind===&#x27;Betriebsurlaub&#x27;||$(&#x27;#nd-calendar-person&#x27;).value===e.name));};
+    const basicCalendar=renderCalendar;renderCalendar=function(){basicCalendar();const events=dayEvents(state.day);const company=events.some(e=&gt;e.kind===&#x27;Betriebsurlaub&#x27;),full=new Set(events.filter(e=&gt;!e.half&amp;&amp;e.kind!==&#x27;Feiertag&#x27;&amp;&amp;e.kind!==&#x27;Betriebsurlaub&#x27;).map(e=&gt;e.name)).size,partial=new Set(events.filter(e=&gt;e.half&amp;&amp;e.kind!==&#x27;Feiertag&#x27;).map(e=&gt;e.name)).size;$(&#x27;#nd-calendar-agenda&#x27;).innerHTML=&#x27;&lt;h3&gt;&#x27;+new Date(state.year,state.month,state.day).toLocaleDateString(&#x27;de-CH&#x27;,{weekday:&#x27;long&#x27;,day:&#x27;numeric&#x27;,month:&#x27;long&#x27;})+&#x27;&lt;/h3&gt;&#x27;+(events.length?events.map(e=&gt;&#x27;&lt;div class=&quot;nd-agenda-entry&quot;&gt;&#x27;+esc(e.name)+&#x27;&lt;span&gt;&#x27;+esc(e.kind)+&#x27; · &#x27;+esc(e.note)+&#x27;&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;nd-link&quot; data-edit-absence=&quot;&#x27;+e.id+&#x27;&quot; style=&quot;margin-top:7px&quot;&gt;Bearbeiten&lt;/button&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;):&#x27;&lt;p class=&quot;nd-muted nd-small&quot;&gt;Keine Abwesenheiten für diese Auswahl.&lt;/p&gt;&#x27;)+&#x27;&lt;div class=&quot;nd-agenda-entry&quot;&gt;&#x27;+(company?&#x27;Betrieb geschlossen&#x27;:full+&#x27; ganztägig · &#x27;+partial+&#x27; teilweise abwesend&#x27;)+&#x27;&lt;span&gt;&#x27;+($(&#x27;#nd-calendar-person&#x27;).value===&#x27;all&#x27;?&#x27;Ganzes Team&#x27;:&#x27;Gefilterte Ansicht&#x27;)+&#x27; · sichtbare Abwesenheitsarten&lt;/span&gt;&lt;/div&gt;&#x27;;};
+    function absenceForm(eventId){const existing=calendarEvents.find(e=&gt;e.id===eventId),date=new Date(state.year,state.month,state.day),base=existing?new Date(existing.year,existing.month,existing.start):date;drawer(existing?&#x27;Abwesenheit bearbeiten&#x27;:&#x27;Abwesenheit erstellen&#x27;,&#x27;&lt;div class=&quot;nd-options&quot;&gt;&lt;label class=&quot;nd-field&quot;&gt;Person&lt;select class=&quot;nd-input&quot; id=&quot;nd-absence-person&quot;&gt;&#x27;+staff.map(p=&gt;&#x27;&lt;option &#x27;+(existing&amp;&amp;p.name===existing.name?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+esc(p.name)+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;option &#x27;+(existing&amp;&amp;existing.name===&#x27;Gesamter Betrieb&#x27;?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Gesamter Betrieb&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Art&lt;select class=&quot;nd-input&quot; id=&quot;nd-absence-kind&quot;&gt;&#x27;+[&#x27;Ferien&#x27;,&#x27;Krank&#x27;,&#x27;Überstundenfrei&#x27;,&#x27;Betriebsurlaub&#x27;,&#x27;Feiertag&#x27;].map(k=&gt;&#x27;&lt;option &#x27;+(existing&amp;&amp;existing.kind===k?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+k+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Von&lt;input type=&quot;date&quot; class=&quot;nd-input&quot; id=&quot;nd-absence-start&quot; value=&quot;&#x27;+iso(base)+&#x27;&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Bis&lt;input type=&quot;date&quot; class=&quot;nd-input&quot; id=&quot;nd-absence-end&quot; value=&quot;&#x27;+iso(existing?new Date(existing.year,existing.month,existing.end):date)+&#x27;&quot;&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Dauer&lt;select class=&quot;nd-input&quot; id=&quot;nd-absence-half&quot;&gt;&lt;option value=&quot;full&quot;&gt;Ganzer Tag&lt;/option&gt;&lt;option value=&quot;morning&quot; &#x27;+(existing&amp;&amp;existing.half?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Halbtag · Vormittag&lt;/option&gt;&lt;option value=&quot;afternoon&quot;&gt;Halbtag · Nachmittag&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Stunden vom Zeitkonto&lt;input type=&quot;number&quot; class=&quot;nd-input&quot; id=&quot;nd-absence-hours&quot; min=&quot;0&quot; step=&quot;0.5&quot; value=&quot;&#x27;+(existing&amp;&amp;existing.hours||0)+&#x27;&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;nd-field&quot;&gt;Notiz&lt;input class=&quot;nd-input&quot; id=&quot;nd-absence-note&quot; value=&quot;&#x27;+esc(existing?existing.note:&#x27;&#x27;)+&#x27;&quot; placeholder=&quot;Optionale Notiz&quot;&gt;&lt;/label&gt;&lt;p id=&quot;nd-absence-error&quot; role=&quot;alert&quot; hidden&gt;&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-absence-save&quot;&gt;Abwesenheit lokal speichern&lt;/button&gt;&lt;p style=&quot;margin-top:12px;font-size:10px&quot;&gt;Stundenabzug ist hier eine Planungsvorschau und verändert keinen echten Lohn- oder Zeitsaldo.&lt;/p&gt;&#x27;);$(&#x27;#nd-absence-kind&#x27;).onchange=()=&gt;{if($(&#x27;#nd-absence-kind&#x27;).value===&#x27;Betriebsurlaub&#x27;)$(&#x27;#nd-absence-person&#x27;).value=&#x27;Gesamter Betrieb&#x27;;};$(&#x27;#nd-absence-save&#x27;).onclick=()=&gt;{const start=new Date($(&#x27;#nd-absence-start&#x27;).value+&#x27;T12:00:00&#x27;),end=new Date($(&#x27;#nd-absence-end&#x27;).value+&#x27;T12:00:00&#x27;),kind=$(&#x27;#nd-absence-kind&#x27;).value,half=$(&#x27;#nd-absence-half&#x27;).value,hours=Number($(&#x27;#nd-absence-hours&#x27;).value);if(isNaN(start)||isNaN(end)||end&lt;start||hours&lt;0||!Number.isFinite(hours)){ $(&#x27;#nd-absence-error&#x27;).hidden=false;$(&#x27;#nd-absence-error&#x27;).textContent=&#x27;Bitte gültige Daten und einen nicht negativen Stundenabzug eingeben.&#x27;;return}const maxDays=Math.round((end-start)/86400000)+1;if(maxDays&gt;366){$(&#x27;#nd-absence-error&#x27;).hidden=false;$(&#x27;#nd-absence-error&#x27;).textContent=&#x27;Bitte einen Zeitraum von höchstens einem Jahr wählen.&#x27;;return}if(existing){const i=calendarEvents.indexOf(existing);calendarEvents.splice(i,1);}const note=($(&#x27;#nd-absence-note&#x27;).value.trim()||&#x27;Manuell erfasst&#x27;)+&#x27; · &#x27;+(half===&#x27;full&#x27;?&#x27;ganztägig&#x27;:half===&#x27;morning&#x27;?&#x27;Vormittag&#x27;:&#x27;Nachmittag&#x27;)+(hours?&#x27; · &#x27;+hours+&#x27; h Stundenabzug&#x27;:&#x27;&#x27;);let cursor=new Date(start);while(cursor&lt;=end){const monthEnd=new Date(cursor.getFullYear(),cursor.getMonth()+1,0),until=end&lt;monthEnd?end:monthEnd;calendarEvents.push({id:&#x27;manual-&#x27;+Date.now()+&#x27;-&#x27;+cursor.getMonth(),name:kind===&#x27;Betriebsurlaub&#x27;?&#x27;Gesamter Betrieb&#x27;:$(&#x27;#nd-absence-person&#x27;).value,kind,start:cursor.getDate(),end:until.getDate(),month:cursor.getMonth(),year:cursor.getFullYear(),half:half!==&#x27;full&#x27;,hours,note});cursor=new Date(cursor.getFullYear(),cursor.getMonth()+1,1);}state.month=start.getMonth();state.year=start.getFullYear();state.day=start.getDate();state.calendarKinds.add(kind);$$(&#x27;[data-calendar-kind]&#x27;).forEach(c=&gt;c.checked=state.calendarKinds.has(c.dataset.calendarKind));closeDrawer();setView(&#x27;calendar&#x27;);toast(&#x27;Abwesenheit lokal gespeichert und im Kalender eingetragen.&#x27;);};}
+    const metricNames={holiday:&#x27;Ferien&#x27;,correction:&#x27;Korrekturen&#x27;,issue:&#x27;Zeitprobleme&#x27;,balance:&#x27;Team-Saldo&#x27;},metricOrder=[&#x27;holiday&#x27;,&#x27;correction&#x27;,&#x27;issue&#x27;,&#x27;balance&#x27;];
+    configure=function(){drawer(&#x27;Deine Übersicht&#x27;,&#x27;&lt;p&gt;Die Kennzahlenleiste bleibt bewusst kompakt. Reihenfolge und Breite sind anpassbar.&lt;/p&gt;&#x27;+$$(&#x27;[data-metric]&#x27;).map((m,i)=&gt;&#x27;&lt;div class=&quot;nd-record&quot;&gt;&lt;label class=&quot;nd-check&quot;&gt;&lt;input type=&quot;checkbox&quot; data-config-metric=&quot;&#x27;+m.dataset.metric+&#x27;&quot; &#x27;+(!m.hidden?&#x27;checked&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+metricNames[m.dataset.metric]+&#x27;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Position&lt;select class=&quot;nd-input&quot; data-metric-position=&quot;&#x27;+m.dataset.metric+&#x27;&quot;&gt;&#x27;+[1,2,3,4].map(n=&gt;&#x27;&lt;option &#x27;+(n===i+1?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+n+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;nd-field&quot;&gt;Grösse&lt;select class=&quot;nd-input&quot; data-metric-size=&quot;&#x27;+m.dataset.metric+&#x27;&quot;&gt;&lt;option value=&quot;normal&quot;&gt;Normal&lt;/option&gt;&lt;option value=&quot;wide&quot; &#x27;+(m.dataset.size===&#x27;wide&#x27;?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Breit&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;label class=&quot;nd-field&quot;&gt;Dichte&lt;select class=&quot;nd-input&quot; id=&quot;nd-density&quot;&gt;&lt;option value=&quot;17&quot; &#x27;+(state.density===17?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Entspannt&lt;/option&gt;&lt;option value=&quot;12&quot; &#x27;+(state.density===12?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;Kompakt&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; data-action=&quot;save-config&quot;&gt;Ansicht übernehmen&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-quiet&quot; data-action=&quot;reset-config&quot; style=&quot;margin-left:8px&quot;&gt;Zurücksetzen&lt;/button&gt;&#x27;);};
+    const extraStyle=document.createElement(&#x27;style&#x27;);extraStyle.textContent=&#x27;#chrono-nightdesk .nd-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}#chrono-nightdesk .nd-metric[data-size=&quot;wide&quot;]{grid-column:span 2}#chrono-nightdesk .nd-day-mark[data-kind=&quot;Überstundenfrei&quot;]{background:#8ad8b1}#chrono-nightdesk .nd-day-mark[data-kind=&quot;Betriebsurlaub&quot;]{background:#b8a3df}#chrono-nightdesk #nd-period-options{align-items:flex-end}@media(max-width:620px){#chrono-nightdesk .nd-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#chrono-nightdesk .nd-metric[data-size=&quot;wide&quot;]{grid-column:span 2}#chrono-nightdesk #nd-period-options&gt;.nd-field{flex:1;min-width:125px}}&#x27;;root.appendChild(extraStyle);
+    root.addEventListener(&#x27;change&#x27;,event=&gt;{const e=event.target;if(e.id===&#x27;nd-period-type&#x27;){state.period=e.value;state.week=0;$(&#x27;#nd-custom-start-field&#x27;).hidden=state.period!==&#x27;custom&#x27;;$(&#x27;#nd-custom-end-field&#x27;).hidden=state.period!==&#x27;custom&#x27;;renderTime();}if(e.id===&#x27;nd-check-filter&#x27;){state.checkFilter=e.value;renderTime();}if(e.id===&#x27;nd-custom-start&#x27;||e.id===&#x27;nd-custom-end&#x27;)renderTime();});
+    root.addEventListener(&#x27;click&#x27;,event=&gt;{const b=event.target.closest(&#x27;button&#x27;);if(!b)return;const action=b.dataset.action;if(action===&#x27;person-report&#x27;){if(state.view!==&#x27;time&#x27;)renderTime();reportPreview();}if(b.dataset.reportPerson)reportPreview(b.dataset.reportPerson);if(b.dataset.bookingPerson)openBooking(b.dataset.bookingPerson,b.dataset.bookingDate);if(b.dataset.allBookings){const p=staff.find(p=&gt;p.name===b.dataset.allBookings);drawer(&#x27;Buchungen / &#x27;+p.name,&#x27;&lt;p&gt;&#x27;+esc($(&#x27;#nd-week-label&#x27;).textContent)+&#x27;&lt;/p&gt;&lt;div class=&quot;nd-stamps&quot;&gt;&#x27;+bookingItems(p,periodDays())+&#x27;&lt;/div&gt;&#x27;);}if(b.dataset.reviewPerson){const p=staff.find(p=&gt;p.name===b.dataset.reviewPerson);p.autoReviewed=true;p.holidayReviewed=true;renderTime();toast(&#x27;Prüfstatus für &#x27;+p.name+&#x27; lokal bestätigt.&#x27;);}if(action===&#x27;new-absence&#x27;)absenceForm();if(b.dataset.editAbsence)absenceForm(b.dataset.editAbsence);if(action===&#x27;holiday-regions&#x27;){drawer(&#x27;Kantonale Feiertage&#x27;,&#x27;&lt;p&gt;Feiertage gemäss Organisationskalender. Aktive Demo-Region: Zürich.&lt;/p&gt;&lt;label class=&quot;nd-field&quot;&gt;Kanton&lt;select class=&quot;nd-input&quot; id=&quot;nd-region&quot;&gt;&#x27;+[&#x27;Zürich&#x27;,&#x27;Bern&#x27;,&#x27;Aargau&#x27;,&#x27;Basel-Stadt&#x27;,&#x27;Luzern&#x27;,&#x27;St. Gallen&#x27;,&#x27;Tessin&#x27;,&#x27;Waadt&#x27;,&#x27;Genf&#x27;,&#x27;Zug&#x27;,&#x27;Solothurn&#x27;,&#x27;Schwyz&#x27;,&#x27;Thurgau&#x27;,&#x27;Graubünden&#x27;,&#x27;Wallis&#x27;,&#x27;Freiburg&#x27;,&#x27;Neuenburg&#x27;,&#x27;Jura&#x27;,&#x27;Schaffhausen&#x27;,&#x27;Basel-Landschaft&#x27;,&#x27;Appenzell Ausserrhoden&#x27;,&#x27;Appenzell Innerrhoden&#x27;,&#x27;Glarus&#x27;,&#x27;Nidwalden&#x27;,&#x27;Obwalden&#x27;,&#x27;Uri&#x27;].map(r=&gt;&#x27;&lt;option&gt;&#x27;+r+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;div class=&quot;nd-record&quot;&gt;&lt;span&gt;Montag, 14. September&lt;small&gt;Knabenschiessen · regionaler Nachmittag · Demo-Firmenkalender&lt;/small&gt;&lt;/span&gt;&lt;/div&gt;&lt;button type=&quot;button&quot; class=&quot;nd-action nd-primary&quot; id=&quot;nd-save-region&quot;&gt;Region in Vorschau übernehmen&lt;/button&gt;&#x27;);$(&#x27;#nd-save-region&#x27;).onclick=()=&gt;{const region=$(&#x27;#nd-region&#x27;).value;closeDrawer();toast(&#x27;Kalenderregion &#x27;+region+&#x27; vorgemerkt · Feiertagsabgleich in dieser Demo als Vorschau.&#x27;);};}if(action===&#x27;save-config&#x27;){const ordered=$$(&#x27;[data-metric-position]&#x27;).map((s,i)=&gt;({key:s.dataset.metricPosition,position:Number(s.value),original:i})).sort((a,b)=&gt;a.position-b.position||a.original-b.original);ordered.forEach(v=&gt;{const m=$(&#x27;[data-metric=&quot;&#x27;+v.key+&#x27;&quot;]&#x27;);m.dataset.size=$(&#x27;[data-metric-size=&quot;&#x27;+v.key+&#x27;&quot;]&#x27;).value;$(&#x27;.nd-metrics&#x27;).appendChild(m);});$(&#x27;.nd-metrics&#x27;).style.gridTemplateColumns=&#x27;&#x27;;}if(action===&#x27;reset-config&#x27;){metricOrder.forEach(key=&gt;{const m=$(&#x27;[data-metric=&quot;&#x27;+key+&#x27;&quot;]&#x27;);m.hidden=false;m.dataset.size=&#x27;normal&#x27;;$(&#x27;.nd-metrics&#x27;).appendChild(m);});$(&#x27;.nd-metrics&#x27;).hidden=false;$(&#x27;.nd-metrics&#x27;).style.gridTemplateColumns=&#x27;&#x27;;state.density=17;root.style.setProperty(&#x27;--nd-row&#x27;,&#x27;17px&#x27;);closeDrawer();toast(&#x27;Übersicht auf Standard zurückgesetzt.&#x27;);}});
+    renderQueue();renderDetail();renderModules();updateBalances();
+    if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=&gt;{root.style.setProperty(&#x27;--nd-accent&#x27;,state.accent);root.style.setProperty(&#x27;--nd-row&#x27;,state.density+&#x27;px&#x27;)}});tweak.addColorPicker(state,&#x27;accent&#x27;,{label:&#x27;Nightdesk Akzent&#x27;,reference:&#x27;--nd-accent&#x27;});tweak.addSlider(state,&#x27;density&#x27;,{label:&#x27;Zeilenabstand&#x27;,min:12,max:22,step:1,unit:&#x27;px&#x27;,reference:&#x27;--nd-row&#x27;});}
+  })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerdown&quot;, handlePointer);
+    document.removeEventListener(&quot;pointercancel&quot;, handlePointer);
+    document.removeEventListener(&quot;click&quot;, handleTouchClick);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerdown&quot;, handlePointer);
+  document.addEventListener(&quot;pointercancel&quot;, handlePointer);
+  document.addEventListener(&quot;click&quot;, handleTouchClick);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

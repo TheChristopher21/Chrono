@@ -70,6 +70,12 @@ public class Reservation {
     @Column(nullable = false)
     private int children;
 
+    @Column(name = "child_ages", length = 100)
+    private String childAges;
+
+    @Column(name = "guest_preference_snapshot", length = 1000)
+    private String guestPreferenceSnapshot;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
     private ReservationStatus status = ReservationStatus.CONFIRMED;

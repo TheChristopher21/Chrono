@@ -15,6 +15,7 @@ const user = {
     id: 7,
     username: 'anna',
     roles: ['ROLE_ADMIN'],
+    companyId: 12,
     companyFeatureKeys: ['projects', 'analytics', 'pms'],
     pagePermissions: {
         dashboard: 'MANAGE',
@@ -29,6 +30,7 @@ describe('workspaceRoutes', () => {
     it('resolves admin and PMS subareas to stable tab descriptors', () => {
         expect(resolveWorkspaceRoute('/admin/dashboard?tab=time', user)?.title).toContain('Zeitprüfung');
         expect(resolveWorkspaceRoute('/admin/dashboard?tab=time', user)?.instanceKey).toBe('adminDashboard:time');
+        expect(resolveWorkspaceRoute('/admin/projects', user)?.icon).toBe('PR');
         expect(resolveWorkspaceRoute('/pms?section=housekeeping', user)?.instanceKey).toBe('pms:housekeeping');
     });
 

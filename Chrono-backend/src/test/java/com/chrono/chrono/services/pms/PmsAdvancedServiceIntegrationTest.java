@@ -50,6 +50,8 @@ class PmsAdvancedServiceIntegrationTest {
     @Autowired
     private GroupBookingRepository groupRepository;
     @Autowired
+    private PmsOrganizationRepository organizationRepository;
+    @Autowired
     private FolioItemRepository folioItemRepository;
     @Autowired
     private NightAuditRepository nightAuditRepository;
@@ -597,6 +599,43 @@ class PmsAdvancedServiceIntegrationTest {
                 company, property.getId(), bookingId, today);
         assertThat(cancelled.resourceBookings().get(0).status())
                 .isEqualTo(ResourceBookingStatus.CANCELLED);
+    }
+
+    @Test
+    void createsMasterAndChildCompanyCardsWithStableReferencesAndMergeHistory() {
+        PmsAdvancedResponse withMaster = service.createOrganization(
+                company, property.getId(),
+                new UpsertOrganizationRequest(
+                        OrganizationType.COMPANY, "BMW Hauptsitz", null, "Hauptstrasse 1", "8000",
+                        "Zürich", "CH", "hq@example.com", null, "invoice@example.com",
+                        30, null, true, true, null),
+                today);
+        PmsAdvancedResponse.OrganizationView master = withMaster.organizations().stream()
+                .filter(PmsAdvancedResponse.OrganizationView::masterRecord).findFirst().orElseThrow();
+
+        PmsAdvancedResponse withChild = service.createOrganization(
+                company, property.getId(),
+                new UpsertOrganizationRequest(
+                        OrganizationType.COMPANY, "BMW Basel", null, "Rheinweg 2", "4051",
+                        "Basel", "CH", "basel@example.com", null, null,
+                        10, null, true, false, master.id()),
+                today);
+        PmsAdvancedResponse.OrganizationView child = withChild.organizations().stream()
+                .filter(value -> value.name().equals("BMW Basel")).findFirst().orElseThrow();
+
+        assertThat(master.referenceCode()).startsWith("MK");
+        assertThat(child.referenceCode()).startsWith("FK");
+        assertThat(child.parentOrganizationId()).isEqualTo(master.id());
+        assertThat(child.parentOrganizationName()).isEqualTo("BMW Hauptsitz");
+
+        service.mergeOrganization(company, property.getId(), child.id(),
+                new MergeOrganizationsRequest(master.id(), java.util.Set.of("email")), today);
+
+        PmsOrganization retainedSource = organizationRepository.findById(child.id()).orElseThrow();
+        PmsOrganization target = organizationRepository.findById(master.id()).orElseThrow();
+        assertThat(retainedSource.isActive()).isFalse();
+        assertThat(retainedSource.getMergedInto().getId()).isEqualTo(master.id());
+        assertThat(target.getEmail()).isEqualTo("basel@example.com");
     }
 
     private Room room(String number) {

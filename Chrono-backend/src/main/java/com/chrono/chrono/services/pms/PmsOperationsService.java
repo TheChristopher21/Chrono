@@ -50,6 +50,9 @@ public class PmsOperationsService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final GuestProfileRepository guestRepository;
+    private final PmsOrganizationRepository organizationRepository;
+    private final GroupBookingRepository groupRepository;
+    private final GuestCommunicationRepository communicationRepository;
     private final RatePlanRepository ratePlanRepository;
     private final RateOverrideRepository rateOverrideRepository;
     private final ReservationRepository reservationRepository;
@@ -69,6 +72,9 @@ public class PmsOperationsService {
                                 RoomTypeRepository roomTypeRepository,
                                 RoomRepository roomRepository,
                                 GuestProfileRepository guestRepository,
+                                PmsOrganizationRepository organizationRepository,
+                                GroupBookingRepository groupRepository,
+                                GuestCommunicationRepository communicationRepository,
                                 RatePlanRepository ratePlanRepository,
                                 RateOverrideRepository rateOverrideRepository,
                                 ReservationRepository reservationRepository,
@@ -87,6 +93,9 @@ public class PmsOperationsService {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.guestRepository = guestRepository;
+        this.organizationRepository = organizationRepository;
+        this.groupRepository = groupRepository;
+        this.communicationRepository = communicationRepository;
         this.ratePlanRepository = ratePlanRepository;
         this.rateOverrideRepository = rateOverrideRepository;
         this.reservationRepository = reservationRepository;
@@ -227,6 +236,10 @@ public class PmsOperationsService {
                 arrivals,
                 departures,
                 guests.stream().map(this::toGuestView).toList(),
+                organizationRepository.findAllByCompany_IdOrderByNameAsc(company.getId()).stream()
+                        .filter(PmsOrganization::isActive)
+                        .map(this::toOrganizationSummaryView)
+                        .toList(),
                 ratePlans.stream().map(this::toRatePlanView).toList(),
                 rateOverrides.stream().map(this::toRateOverrideView).toList(),
                 rooms.stream().map(room -> toRoomStateView(room, currentByRoom.get(room.getId()))).toList(),
@@ -363,7 +376,9 @@ public class PmsOperationsService {
         requireProperty(company, propertyId);
         GuestProfile guest = new GuestProfile();
         guest.setCompany(company);
-        applyGuest(guest, request);
+        applyGuest(company, guest, request);
+        guestRepository.save(guest);
+        ensureGuestReference(guest);
         return guestRepository.save(guest);
     }
 
@@ -376,8 +391,41 @@ public class PmsOperationsService {
         requireProperty(company, propertyId);
         GuestProfile guest = guestRepository.findByIdAndCompany_Id(guestId, company.getId())
                 .orElseThrow(() -> notFound("Gast nicht gefunden."));
-        applyGuest(guest, request);
+        applyGuest(company, guest, request);
+        ensureGuestReference(guest);
         guestRepository.save(guest);
+        return getOperations(company, propertyId, businessDate, null, null);
+    }
+
+    @Transactional
+    public PmsOperationsResponse mergeGuest(Company company,
+                                            Long propertyId,
+                                            Long sourceGuestId,
+                                            MergeGuestProfilesRequest request,
+                                            LocalDate businessDate) {
+        HotelProperty property = requireProperty(company, propertyId);
+        GuestProfile source = guestRepository.findByIdAndCompany_Id(sourceGuestId, company.getId())
+                .orElseThrow(() -> notFound("Quell-Gast nicht gefunden."));
+        GuestProfile target = guestRepository.findByIdAndCompany_Id(request.targetGuestId(), company.getId())
+                .orElseThrow(() -> notFound("Ziel-Gast nicht gefunden."));
+        if (source.getId().equals(target.getId())) {
+            throw badRequest("Quell- und Zielkartei müssen verschieden sein.");
+        }
+        if (!source.isActive() || source.getMergedInto() != null || !target.isActive()) {
+            throw conflict("Nur aktive, noch nicht zusammengeführte Gästekarteien können verwendet werden.");
+        }
+        Set<String> fields = request.takeFromSource() == null ? Set.of() : request.takeFromSource();
+        applyGuestMergeFields(source, target, fields);
+        reservationRepository.findAllByGuest_IdOrderByArrivalDateDesc(source.getId()).forEach(value -> value.setGuest(target));
+        groupRepository.findAllByContactGuest_Id(source.getId()).forEach(value -> value.setContactGuest(target));
+        communicationRepository.findAllByGuest_IdOrderByCreatedAtDesc(source.getId()).forEach(value -> value.setGuest(target));
+        source.setActive(false);
+        source.setMergedInto(target);
+        ensureGuestReference(target);
+        guestRepository.save(target);
+        guestRepository.save(source);
+        auditWriter.append(property, "guest.merged", "guest", String.valueOf(source.getId()),
+                "{\"targetGuestId\":" + target.getId() + "}");
         return getOperations(company, propertyId, businessDate, null, null);
     }
 
@@ -1175,7 +1223,7 @@ public class PmsOperationsService {
         return getOperations(company, propertyId, businessDate, null, null);
     }
 
-    private void applyGuest(GuestProfile guest, UpsertGuestRequest request) {
+    private void applyGuest(Company company, GuestProfile guest, UpsertGuestRequest request) {
         guest.setFirstName(required(request.firstName()));
         guest.setLastName(required(request.lastName()));
         guest.setEmail(lower(request.email()));
@@ -1183,6 +1231,16 @@ public class PmsOperationsService {
         guest.setDateOfBirth(request.dateOfBirth());
         guest.setNationalityCode(upper(request.nationalityCode()));
         guest.setLanguageCode(clean(request.languageCode()) == null ? "de" : lower(request.languageCode()));
+        guest.setAddressLine1(clean(request.addressLine1()));
+        guest.setPostalCode(clean(request.postalCode()));
+        guest.setCity(clean(request.city()));
+        guest.setCountryCode(upper(request.countryCode()));
+        guest.setVehiclePlate(upper(request.vehiclePlate()));
+        guest.setRoomPreferences(clean(request.roomPreferences()));
+        guest.setOrganization(request.organizationId() == null ? null
+                : organizationRepository.findByIdAndCompany_Id(request.organizationId(), company.getId())
+                .filter(PmsOrganization::isActive)
+                .orElseThrow(() -> notFound("Firmenkartei nicht gefunden.")));
         guest.setNotes(clean(request.notes()));
         guest.setVip(Boolean.TRUE.equals(request.vip()));
     }
@@ -1218,6 +1276,11 @@ public class PmsOperationsService {
         }
         GuestProfile guest = guestRepository.findByIdAndCompany_Id(request.guestId(), company.getId())
                 .orElseThrow(() -> notFound("Gast nicht gefunden."));
+        if (!guest.isActive()) {
+            throw conflict("Die Gästekartei wurde zusammengeführt und kann nicht mehr gebucht werden.");
+        }
+        boolean guestChanged = reservation.getGuest() == null
+                || !reservation.getGuest().getId().equals(guest.getId());
         RoomType roomType = requireRoomType(company, request.propertyId(), request.roomTypeId());
         RatePlan ratePlan = ratePlanRepository.findByIdAndProperty_Company_Id(request.ratePlanId(), company.getId())
                 .orElseThrow(() -> notFound("Ratenplan nicht gefunden."));
@@ -1272,6 +1335,14 @@ public class PmsOperationsService {
         reservation.setDepartureDate(request.departureDate());
         reservation.setAdults(request.adults());
         reservation.setChildren(request.children());
+        if (request.childAges() != null && !request.childAges().isEmpty()
+                && request.childAges().size() != request.children()) {
+            throw badRequest("Für jedes Kind muss genau ein Alter erfasst sein.");
+        }
+        reservation.setChildAges(serializeChildAges(request.childAges()));
+        if (guestChanged || reservation.getGuestPreferenceSnapshot() == null) {
+            reservation.setGuestPreferenceSnapshot(clean(guest.getRoomPreferences()));
+        }
         reservation.setStatus(targetStatus);
         reservation.setSource(request.source() == null ? ReservationSource.DIRECT : request.source());
         if (request.guaranteeStatus() != null) {
@@ -1467,6 +1538,7 @@ public class PmsOperationsService {
         folio.setCurrencyCode(reservation.getCurrencyCode());
         folio.setStatus(FolioStatus.OPEN);
         folio.setLabel("Hauptkonto");
+        folio.setOrganization(reservation.getGuest().getOrganization());
         folioRepository.save(folio);
         saveRoomChargeItems(folio, reservation);
     }
@@ -1527,6 +1599,7 @@ public class PmsOperationsService {
     private PmsOperationsResponse.GuestView toGuestView(GuestProfile guest) {
         return new PmsOperationsResponse.GuestView(
                 guest.getId(),
+                guest.getReferenceCode(),
                 guest.getFirstName(),
                 guest.getLastName(),
                 guest.getEmail(),
@@ -1534,9 +1607,28 @@ public class PmsOperationsService {
                 guest.getDateOfBirth(),
                 guest.getNationalityCode(),
                 guest.getLanguageCode(),
+                guest.getAddressLine1(),
+                guest.getPostalCode(),
+                guest.getCity(),
+                guest.getCountryCode(),
+                guest.getVehiclePlate(),
+                guest.getRoomPreferences(),
+                guest.getOrganization() == null ? null : guest.getOrganization().getId(),
+                guest.getOrganization() == null ? null : guest.getOrganization().getName(),
                 guest.getNotes(),
-                guest.isVip()
+                guest.isVip(),
+                guest.isActive(),
+                guest.getMergedInto() == null ? null : guest.getMergedInto().getId()
         );
+    }
+
+    private PmsOperationsResponse.OrganizationSummaryView toOrganizationSummaryView(PmsOrganization organization) {
+        return new PmsOperationsResponse.OrganizationSummaryView(
+                organization.getId(), organization.getReferenceCode(), organization.getName(),
+                organization.getAddressLine1(), organization.getPostalCode(), organization.getCity(),
+                organization.getCountryCode(), organization.isMasterRecord(),
+                organization.getParentOrganization() == null ? null : organization.getParentOrganization().getId(),
+                organization.isActive());
     }
 
     private PmsOperationsResponse.RatePlanView toRatePlanView(RatePlan ratePlan) {
@@ -1588,6 +1680,7 @@ public class PmsOperationsService {
                 reservation.getDepartureDate(),
                 reservation.getAdults(),
                 reservation.getChildren(),
+                parseChildAges(reservation.getChildAges()),
                 reservation.getStatus(),
                 reservation.getSource(),
                 reservation.getGuaranteeStatus(),
@@ -1595,6 +1688,7 @@ public class PmsOperationsService {
                 reservation.getTotalAmount(),
                 reservation.getCurrencyCode(),
                 reservation.getNotes(),
+                reservation.getGuestPreferenceSnapshot(),
                 reservation.getCheckedInAt(),
                 reservation.getCheckedOutAt(),
                 reservation.getCancelledAt(),
@@ -1621,6 +1715,7 @@ public class PmsOperationsService {
                 room.getRoomType().getName(),
                 room.getNumber(),
                 room.getFloor(),
+                room.getFeatures(),
                 room.getOperationalStatus(),
                 room.getHousekeepingStatus(),
                 currentReservation == null ? null : toReservationView(currentReservation)
@@ -1907,6 +2002,59 @@ public class PmsOperationsService {
     private String upper(String value) {
         String cleaned = clean(value);
         return cleaned == null ? null : cleaned.toUpperCase(Locale.ROOT);
+    }
+
+    private void ensureGuestReference(GuestProfile guest) {
+        if (guest.getReferenceCode() == null && guest.getId() != null) {
+            guest.setReferenceCode("GK%06d".formatted(guest.getId()));
+        }
+    }
+
+    private String serializeChildAges(List<Integer> childAges) {
+        if (childAges == null || childAges.isEmpty()) {
+            return null;
+        }
+        return childAges.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private List<Integer> parseChildAges(String value) {
+        String cleaned = clean(value);
+        if (cleaned == null) {
+            return List.of();
+        }
+        try {
+            return Arrays.stream(cleaned.split(","))
+                    .map(String::trim)
+                    .filter(part -> !part.isEmpty())
+                    .map(Integer::valueOf)
+                    .toList();
+        } catch (NumberFormatException ignored) {
+            return List.of();
+        }
+    }
+
+    private void applyGuestMergeFields(GuestProfile source, GuestProfile target, Set<String> fields) {
+        for (String field : fields) {
+            switch (field) {
+                case "firstName" -> target.setFirstName(source.getFirstName());
+                case "lastName" -> target.setLastName(source.getLastName());
+                case "email" -> target.setEmail(source.getEmail());
+                case "phone" -> target.setPhone(source.getPhone());
+                case "dateOfBirth" -> target.setDateOfBirth(source.getDateOfBirth());
+                case "nationalityCode" -> target.setNationalityCode(source.getNationalityCode());
+                case "languageCode" -> target.setLanguageCode(source.getLanguageCode());
+                case "addressLine1" -> target.setAddressLine1(source.getAddressLine1());
+                case "postalCode" -> target.setPostalCode(source.getPostalCode());
+                case "city" -> target.setCity(source.getCity());
+                case "countryCode" -> target.setCountryCode(source.getCountryCode());
+                case "vehiclePlate" -> target.setVehiclePlate(source.getVehiclePlate());
+                case "roomPreferences" -> target.setRoomPreferences(source.getRoomPreferences());
+                case "organization" -> target.setOrganization(source.getOrganization());
+                case "notes" -> target.setNotes(source.getNotes());
+                case "vip" -> target.setVip(source.isVip());
+                default -> throw badRequest("Unbekanntes Feld für die Zusammenführung: " + field);
+            }
+        }
     }
 
     private BigDecimal money(BigDecimal value) {

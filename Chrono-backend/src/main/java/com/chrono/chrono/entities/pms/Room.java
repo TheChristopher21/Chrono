@@ -52,6 +52,9 @@ public class Room {
     @Column(name = "housekeeping_section", length = 80)
     private String housekeepingSection;
 
+    @Column(length = 1000)
+    private String features;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "operational_status", nullable = false, length = 32)
     private RoomOperationalStatus operationalStatus = RoomOperationalStatus.IN_SERVICE;
@@ -113,6 +116,14 @@ public class Room {
 
     public void setHousekeepingSection(String housekeepingSection) {
         this.housekeepingSection = housekeepingSection;
+    }
+
+    public String getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(String features) {
+        this.features = features;
     }
 
     public RoomOperationalStatus getOperationalStatus() {

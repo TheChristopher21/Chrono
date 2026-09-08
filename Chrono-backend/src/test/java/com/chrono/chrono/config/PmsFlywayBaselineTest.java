@@ -20,7 +20,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(8);
+        assertThat(result.migrationsExecuted).isEqualTo(9);
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
@@ -35,6 +35,10 @@ class PmsFlywayBaselineTest {
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
             assertThat(columnExists(connection, "user_ui_preferences", "revision")).isTrue();
+            assertThat(columnExists(connection, "pms_guests", "reference_code")).isTrue();
+            assertThat(columnExists(connection, "pms_guests", "room_preferences")).isTrue();
+            assertThat(columnExists(connection, "pms_reservations", "child_ages")).isTrue();
+            assertThat(columnExists(connection, "pms_rooms", "features")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_user", "users")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_company", "companies")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_property", "pms_properties")).isTrue();
@@ -72,7 +76,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(7);
+        assertThat(result.migrationsExecuted).isEqualTo(8);
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
@@ -88,6 +92,9 @@ class PmsFlywayBaselineTest {
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
             assertThat(columnExists(connection, "user_ui_preferences", "revision")).isTrue();
+            assertThat(columnExists(connection, "pms_guests", "reference_code")).isTrue();
+            assertThat(columnExists(connection, "pms_organizations", "master_record")).isTrue();
+            assertThat(columnExists(connection, "pms_reservations", "guest_preference_snapshot")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_user", "users")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_company", "companies")).isTrue();
             assertThat(foreignKeyExists(connection, "user_ui_preferences", "fk_ui_pref_property", "pms_properties")).isTrue();

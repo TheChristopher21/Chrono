@@ -23,6 +23,20 @@ public class PmsOrganization {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @Column(name = "reference_code", length = 20)
+    private String referenceCode;
+
+    @Column(name = "master_record", nullable = false)
+    private boolean masterRecord;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_organization_id")
+    private PmsOrganization parentOrganization;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merged_into_id")
+    private PmsOrganization mergedInto;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private OrganizationType type;

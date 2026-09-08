@@ -47,7 +47,7 @@ public class CompanyManagementController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getCompany(@PathVariable Long id) {
         return companyRepository.findById(id)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(company -> ResponseEntity.ok(CompanyDTO.fromEntity(company)))
                 .orElse(ResponseEntity.badRequest().body("Company not found"));
     }
 
@@ -100,12 +100,11 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(body.getTeamsWebhookUrl());
         company.setNotifyVacation(body.getNotifyVacation());
         company.setNotifyOvertime(body.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(body.getCustomerTrackingEnabled());
         LinkedHashSet<String> enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures());
         if (Boolean.TRUE.equals(body.getAdminPmsAccess())) {
             enabledFeatures.add("pms");
         }
-        company.setEnabledFeatures(enabledFeatures);
+        applyProjectFeatureAliases(company, body.getCustomerTrackingEnabled(), enabledFeatures);
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);
@@ -183,7 +182,7 @@ public class CompanyManagementController {
         company.setAddressLine2(companyDTO.getAddressLine2());
         company.setPostalCode(companyDTO.getPostalCode());
         company.setCity(companyDTO.getCity());
-        company.setActive(companyDTO.isActive()); // Standard auf true oder vom DTO nehmen
+        company.setActive(companyDTO.getActive() == null || companyDTO.getActive());
         company.setPaid(false); // Standard für neue Firmen
         company.setCanceled(false); // Standard für neue Firmen
 
@@ -196,8 +195,11 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(companyDTO.getTeamsWebhookUrl());
         company.setNotifyVacation(companyDTO.getNotifyVacation());
         company.setNotifyOvertime(companyDTO.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
-        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
+        applyProjectFeatureAliases(
+                company,
+                companyDTO.getCustomerTrackingEnabled(),
+                companyDTO.getEnabledFeatures()
+        );
 
         Company saved = companyRepository.save(company);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -219,8 +221,8 @@ public class CompanyManagementController {
                         existingCompany.setPostalCode(companyDTO.getPostalCode());
                     if (companyDTO.getCity() != null)
                         existingCompany.setCity(companyDTO.getCity());
-                    // Das DTO sollte den aktuellen 'active' Status enthalten, nicht nur für den Toggle
-                    existingCompany.setActive(companyDTO.isActive());
+                    if (companyDTO.getActive() != null)
+                        existingCompany.setActive(companyDTO.getActive());
 
                     if (companyDTO.getCantonAbbreviation() != null) {
                         String canton = companyDTO.getCantonAbbreviation().trim().toUpperCase();
@@ -234,10 +236,11 @@ public class CompanyManagementController {
                         existingCompany.setNotifyVacation(companyDTO.getNotifyVacation());
                     if (companyDTO.getNotifyOvertime() != null)
                         existingCompany.setNotifyOvertime(companyDTO.getNotifyOvertime());
-                    if (companyDTO.getCustomerTrackingEnabled() != null)
-                        existingCompany.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
-                    if (companyDTO.getEnabledFeatures() != null)
-                        existingCompany.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
+                    applyProjectFeatureAliases(
+                            existingCompany,
+                            companyDTO.getCustomerTrackingEnabled(),
+                            companyDTO.getEnabledFeatures()
+                    );
                     // Zahlungsstatus sollte über /payment aktualisiert werden, um die Logik getrennt zu halten
                     // existingCompany.setPaid(companyDTO.isPaid());
                     // existingCompany.setPaymentMethod(companyDTO.getPaymentMethod());
@@ -299,7 +302,7 @@ public class CompanyManagementController {
         private String addressLine2;
         private String postalCode;
         private String city;
-        private boolean active;
+        private Boolean active;
         private int    userCount;
         private boolean paid;
         private String  paymentMethod;
@@ -331,9 +334,9 @@ public class CompanyManagementController {
             dto.teamsWebhookUrl = co.getTeamsWebhookUrl();
             dto.notifyVacation = co.getNotifyVacation();
             dto.notifyOvertime = co.getNotifyOvertime();
-            dto.customerTrackingEnabled = co.getCustomerTrackingEnabled();
+            dto.customerTrackingEnabled = RegistrationFeatures.isProjectsEnabled(co);
             dto.logoPath = co.getLogoPath();
-            dto.enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(co.getEnabledFeatures());
+            dto.enabledFeatures = RegistrationFeatures.effectiveOptionalFeatures(co);
             return dto;
         }
 
@@ -344,7 +347,7 @@ public class CompanyManagementController {
         public String getAddressLine2() { return addressLine2; }
         public String getPostalCode() { return postalCode; }
         public String getCity() { return city; }
-        public boolean isActive() { return active; }
+        public Boolean getActive() { return active; }
         public int getUserCount() { return userCount; }
         public boolean isPaid() { return paid; }
         public String getPaymentMethod() { return paymentMethod; }
@@ -365,7 +368,7 @@ public class CompanyManagementController {
         public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
         public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
         public void setCity(String city) { this.city = city; }
-        public void setActive(boolean active) { this.active = active; }
+        public void setActive(Boolean active) { this.active = active; }
         public void setUserCount(int userCount) { this.userCount = userCount; }
         public void setPaid(boolean paid) { this.paid = paid; }
         public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
@@ -475,6 +478,40 @@ public class CompanyManagementController {
         }
         country = country.toUpperCase(Locale.ROOT);
         return Set.of("CH", "DE").contains(country) ? country : null;
+    }
+
+    /**
+     * Keeps the historic customer-tracking flag and the modern projects feature
+     * key in sync. Requests sent by either an older or a newer client remain
+     * authoritative; conflicting explicit values resolve to enabled so an
+     * upgrade cannot silently remove an active company capability.
+     */
+    private static void applyProjectFeatureAliases(Company company,
+                                                   Boolean requestedLegacyValue,
+                                                   Set<String> requestedFeatures) {
+        boolean featureSetProvided = requestedFeatures != null;
+        LinkedHashSet<String> effectiveFeatures = featureSetProvided
+                ? RegistrationFeatures.sanitizeOptionalFeatures(requestedFeatures)
+                : RegistrationFeatures.sanitizeOptionalFeatures(company.getEnabledFeatures());
+
+        boolean projectsEnabled;
+        if (requestedLegacyValue != null && featureSetProvided) {
+            projectsEnabled = requestedLegacyValue || effectiveFeatures.contains("projects");
+        } else if (requestedLegacyValue != null) {
+            projectsEnabled = requestedLegacyValue;
+        } else if (featureSetProvided) {
+            projectsEnabled = effectiveFeatures.contains("projects");
+        } else {
+            projectsEnabled = RegistrationFeatures.isProjectsEnabled(company);
+        }
+
+        if (projectsEnabled) {
+            effectiveFeatures.add("projects");
+        } else {
+            effectiveFeatures.remove("projects");
+        }
+        company.setCustomerTrackingEnabled(projectsEnabled);
+        company.setEnabledFeatures(effectiveFeatures);
     }
 
     private static String trimToNull(String value) {

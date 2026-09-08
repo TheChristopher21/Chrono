@@ -7,18 +7,7 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
   />
   <meta name="color-scheme" content="light dark" />
-  <script>
-    (() => {
-      try {
-        const storedTheme = localStorage.getItem('theme');
-        const theme = storedTheme === 'dark' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        document.documentElement.style.colorScheme = theme;
-      } catch {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    })();
-  </script>
+  <script src="/theme-init.js"></script>
   <title>Chrono-Logisch | Arbeitszeit, Abwesenheiten &amp; Lohnprozesse</title>
   <meta
     name="description"

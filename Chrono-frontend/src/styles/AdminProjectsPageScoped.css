@@ -32,7 +32,11 @@
 
     position: relative;
     isolation: isolate;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
     min-height: 100vh;
+    overflow-x: clip;
     padding: var(--pg-gap-xl) clamp(1.5rem, 4vw, 3.5rem) var(--pg-gap-lg);
     margin: 0 auto;
     color: var(--pg-text);
@@ -53,25 +57,24 @@
     z-index: -1;
 }
 
-@media (prefers-color-scheme: light) {
-    .admin-projects-page.scoped-dashboard.neo-dashboard {
-        --pg-background: #f8fafc;
-        --pg-surface: rgba(255, 255, 255, 0.82);
-        --pg-surface-strong: rgba(248, 250, 252, 0.92);
-        --pg-border: rgba(148, 163, 184, 0.22);
-        --pg-border-strong: rgba(148, 163, 184, 0.45);
-        --pg-text: #0f172a;
-        --pg-text-subtle: #1e293b;
-        --pg-text-muted: rgba(51, 65, 85, 0.7);
-        --pg-accent: #2563eb;
-        --pg-accent-strong: #1d4ed8;
-        --pg-accent-soft: rgba(37, 99, 235, 0.1);
-        --pg-highlight: #0f766e;
-        --pg-danger: #dc2626;
-        background: radial-gradient(circle at 0% 15%, rgba(59, 130, 246, 0.28), transparent 62%),
-            radial-gradient(circle at 98% 12%, rgba(14, 165, 233, 0.2), transparent 58%),
-            linear-gradient(140deg, #f8fafc 0%, #e2e8f0 55%, #cbd5f5 100%);
-    }
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard {
+    --pg-background: #f8fafc;
+    --pg-surface: rgba(255, 255, 255, 0.82);
+    --pg-surface-strong: rgba(248, 250, 252, 0.92);
+    --pg-border: rgba(148, 163, 184, 0.22);
+    --pg-border-strong: rgba(148, 163, 184, 0.45);
+    --pg-text: #0f172a;
+    --pg-text-subtle: #1e293b;
+    --pg-text-muted: rgba(51, 65, 85, 0.7);
+    --pg-accent: #2563eb;
+    --pg-accent-strong: #1d4ed8;
+    --pg-accent-soft: rgba(37, 99, 235, 0.1);
+    --pg-highlight: #0f766e;
+    --pg-danger: #dc2626;
+    --pg-shadow-card: 0 18px 38px rgba(51, 65, 85, 0.2);
+    background: radial-gradient(circle at 0% 15%, rgba(59, 130, 246, 0.28), transparent 62%),
+        radial-gradient(circle at 98% 12%, rgba(14, 165, 233, 0.2), transparent 58%),
+        linear-gradient(140deg, #f8fafc 0%, #e2e8f0 55%, #cbd5f5 100%);
 }
 
 [data-theme="dark"] .admin-projects-page.scoped-dashboard.neo-dashboard {
@@ -102,7 +105,7 @@
 /* Hero                                                                       */
 /* -------------------------------------------------------------------------- */
 
-.page-hero {
+.admin-projects-page.scoped-dashboard.neo-dashboard .page-hero {
     display: grid;
     gap: var(--pg-gap-lg);
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -112,19 +115,19 @@
     max-width: var(--pg-panel-max);
     border-radius: var(--pg-radius-xl);
     border: 1px solid var(--pg-border);
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82), rgba(15, 118, 110, 0.28));
+    background: linear-gradient(135deg, var(--pg-surface-strong), rgba(15, 118, 110, 0.28));
     box-shadow: var(--pg-shadow-card);
     backdrop-filter: blur(28px);
 }
 
-.hero-heading {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-heading {
     display: flex;
     flex-direction: column;
     gap: var(--pg-gap-sm);
     min-width: 0;
 }
 
-.hero-kicker {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-kicker {
     text-transform: uppercase;
     letter-spacing: 0.28em;
     font-size: 0.7rem;
@@ -132,14 +135,14 @@
     color: var(--pg-text-muted);
 }
 
-.hero-heading h1 {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-heading h1 {
     margin: 0;
     font-size: clamp(1.7rem, 3vw, 2.3rem);
     font-weight: 700;
     color: var(--pg-text);
 }
 
-.hero-heading p {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-heading p {
     margin: 0;
     max-width: 36ch;
     font-size: 1rem;
@@ -147,24 +150,32 @@
     color: var(--pg-text-muted);
 }
 
-.hero-actions {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--pg-gap-xs);
     margin-top: var(--pg-gap-sm);
 }
 
-.hero-action {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-action {
     min-width: 0;
 }
 
-.hero-stats {
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-stats {
     display: grid;
     gap: var(--pg-gap-sm);
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.hero-stat-card {
+.admin-projects-page.scoped-dashboard.neo-dashboard .page-hero.page-hero--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .page-hero--single .hero-heading {
+    max-width: 760px;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .hero-stat-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -172,24 +183,24 @@
     padding: 1.1rem 1.2rem;
     border-radius: var(--pg-radius-lg);
     border: 1px solid var(--pg-border);
-    background: linear-gradient(145deg, rgba(96, 165, 250, 0.12), rgba(15, 23, 42, 0.65));
+    background: linear-gradient(145deg, var(--pg-accent-soft), var(--pg-surface));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.stat-label {
+.admin-projects-page.scoped-dashboard.neo-dashboard .stat-label {
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--pg-text-muted);
 }
 
-.stat-value {
+.admin-projects-page.scoped-dashboard.neo-dashboard .stat-value {
     font-size: clamp(1.6rem, 4vw, 2.4rem);
     font-weight: 700;
     color: var(--pg-text-subtle);
 }
 
-.stat-sublabel {
+.admin-projects-page.scoped-dashboard.neo-dashboard .stat-sublabel {
     font-size: 0.9rem;
     color: var(--pg-text-muted);
 }
@@ -198,16 +209,17 @@
 /* Tabs                                                                       */
 /* -------------------------------------------------------------------------- */
 
-.tab-shell {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-shell {
     display: flex;
     flex-direction: column;
     gap: var(--pg-gap-lg);
     max-width: var(--pg-panel-max);
     margin: 0 auto;
     width: 100%;
+    min-width: 0;
 }
 
-.tab-bar {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-bar {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0.65rem;
@@ -219,7 +231,7 @@
     backdrop-filter: blur(18px);
 }
 
-.tab-button {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-button {
     position: relative;
     display: flex;
     align-items: center;
@@ -235,32 +247,34 @@
     transition: transform 150ms ease, color 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
-.tab-button:hover,
-.tab-button:focus-visible {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-button:hover,
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-button:focus-visible {
     color: var(--pg-text);
     border-color: rgba(96, 165, 250, 0.5);
     background: rgba(96, 165, 250, 0.12);
     transform: translateY(-1px);
 }
 
-.tab-button.is-active {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-button.is-active {
     color: var(--pg-text);
     background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(37, 99, 235, 0.35));
     border-color: rgba(96, 165, 250, 0.6);
     box-shadow: 0 14px 30px rgba(37, 99, 235, 0.35);
 }
 
-.tab-panel-wrapper {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-panel-wrapper {
     display: flex;
     flex-direction: column;
     gap: var(--pg-gap-lg);
+    min-width: 0;
 }
 
-.tab-panel {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-panel {
     display: none;
+    min-width: 0;
 }
 
-.tab-panel.is-active {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tab-panel.is-active {
     display: flex;
     flex-direction: column;
     gap: var(--pg-gap-lg);
@@ -270,16 +284,18 @@
 /* Content Sections                                                           */
 /* -------------------------------------------------------------------------- */
 
-.content-grid {
+.admin-projects-page.scoped-dashboard.neo-dashboard .content-grid {
     display: grid;
     gap: var(--pg-gap-lg);
+    min-width: 0;
 }
 
-.content-grid--two {
+.admin-projects-page.scoped-dashboard.neo-dashboard .content-grid--two {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
-.content-section {
+.admin-projects-page.scoped-dashboard.neo-dashboard .content-section {
+    min-width: 0;
     padding: var(--pg-gap-lg);
     border-radius: var(--pg-radius-xl);
     border: 1px solid var(--pg-border);
@@ -288,7 +304,7 @@
     backdrop-filter: blur(26px);
 }
 
-.section-title {
+.admin-projects-page.scoped-dashboard.neo-dashboard .section-title {
     margin: 0 0 var(--pg-gap-sm);
     font-size: 1.05rem;
     font-weight: 600;
@@ -296,7 +312,20 @@
     color: var(--pg-text-subtle);
 }
 
-.empty-state {
+.admin-projects-page.scoped-dashboard.neo-dashboard .section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--pg-gap-sm);
+    margin-bottom: var(--pg-gap-sm);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .section-header .section-title {
+    margin-bottom: 0;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .empty-state {
     margin: var(--pg-gap-md) 0;
     padding: var(--pg-gap-md);
     border-radius: var(--pg-radius-lg);
@@ -305,16 +334,54 @@
     color: var(--pg-text-muted);
 }
 
-.empty-state h4 {
+.admin-projects-page.scoped-dashboard.neo-dashboard .empty-state h4 {
     margin: 0 0 0.35rem;
     font-size: 1.05rem;
     color: var(--pg-text-subtle);
 }
 
-.empty-state p,
-.empty-state-text {
+.admin-projects-page.scoped-dashboard.neo-dashboard .empty-state p,
+.admin-projects-page.scoped-dashboard.neo-dashboard .empty-state-text {
     margin: 0;
     color: var(--pg-text-muted);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .access-state {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .access-state p {
+    margin: 0;
+    color: var(--pg-text-muted);
+    line-height: 1.6;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .inline-state {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--pg-gap-sm);
+    margin: var(--pg-gap-sm) 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(96, 165, 250, 0.35);
+    border-radius: var(--pg-radius-md);
+    background: rgba(96, 165, 250, 0.12);
+    color: var(--pg-text-subtle);
+    line-height: 1.45;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .inline-state--error {
+    border-color: rgba(251, 113, 133, 0.5);
+    background: rgba(251, 113, 133, 0.12);
+    color: var(--pg-danger);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .inline-state--warning {
+    border-color: rgba(250, 204, 21, 0.45);
+    background: rgba(250, 204, 21, 0.1);
+    color: var(--pg-warning);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -325,22 +392,22 @@
 .admin-projects-page.scoped-dashboard.neo-dashboard select,
 .admin-projects-page.scoped-dashboard.neo-dashboard textarea {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding: 0.75rem 0.9rem;
     border-radius: var(--pg-radius-sm);
     border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.55);
+    background: var(--pg-surface);
     color: var(--pg-text);
     font: inherit;
     outline: none;
     transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
-@media (prefers-color-scheme: light) {
-    .admin-projects-page.scoped-dashboard.neo-dashboard input,
-    .admin-projects-page.scoped-dashboard.neo-dashboard select,
-    .admin-projects-page.scoped-dashboard.neo-dashboard textarea {
-        background: rgba(248, 250, 252, 0.85);
-    }
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard input,
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard select,
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard textarea {
+    background: rgba(248, 250, 252, 0.9);
 }
 
 .admin-projects-page.scoped-dashboard.neo-dashboard input:focus,
@@ -348,28 +415,38 @@
 .admin-projects-page.scoped-dashboard.neo-dashboard textarea:focus {
     border-color: rgba(96, 165, 250, 0.75);
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
-    background: rgba(15, 23, 42, 0.75);
+    background: var(--pg-surface-strong);
 }
 
-.create-form,
-.edit-form,
-.billing-form,
-.integration-form,
-.analytics-toolbar,
-.task-filter {
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard input:focus,
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard select:focus,
+[data-theme="light"] .admin-projects-page.scoped-dashboard.neo-dashboard textarea:focus {
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .create-form,
+.admin-projects-page.scoped-dashboard.neo-dashboard .edit-form,
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-toolbar,
+.admin-projects-page.scoped-dashboard.neo-dashboard .task-filter {
     display: flex;
     flex-direction: column;
     gap: var(--pg-gap-xs);
 }
 
-.billing-form,
-.integration-form,
-.analytics-toolbar {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-toolbar {
     gap: var(--pg-gap-sm);
 }
 
-.checkbox-field,
-.checkbox-inline {
+.admin-projects-page.scoped-dashboard.neo-dashboard .field-label {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--pg-text-subtle);
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .checkbox-field,
+.admin-projects-page.scoped-dashboard.neo-dashboard .checkbox-inline {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -377,8 +454,8 @@
     color: var(--pg-text-muted);
 }
 
-.checkbox-field input,
-.checkbox-inline input {
+.admin-projects-page.scoped-dashboard.neo-dashboard .checkbox-field input,
+.admin-projects-page.scoped-dashboard.neo-dashboard .checkbox-inline input {
     width: auto;
     accent-color: var(--pg-accent-strong);
 }
@@ -387,10 +464,10 @@
 /* Buttons                                                                    */
 /* -------------------------------------------------------------------------- */
 
-.button-primary,
-.button-secondary,
-.button-danger,
-.button-ghost {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-primary,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-secondary,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-danger,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -403,67 +480,67 @@
     font-size: 0.95rem;
 }
 
-.button-primary {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-primary {
     background: linear-gradient(135deg, var(--pg-accent-strong), #2563eb);
     border-color: rgba(96, 165, 250, 0.6);
     color: #fff;
     box-shadow: 0 18px 30px rgba(37, 99, 235, 0.35);
 }
 
-.button-primary:hover,
-.button-primary:focus-visible {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-primary:hover,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-primary:focus-visible {
     transform: translateY(-1px);
     box-shadow: 0 22px 38px rgba(37, 99, 235, 0.45);
 }
 
-.button-secondary {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-secondary {
     background: rgba(96, 165, 250, 0.12);
     color: var(--pg-text-subtle);
     border-color: rgba(96, 165, 250, 0.25);
 }
 
-.button-secondary:hover,
-.button-secondary:focus-visible {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-secondary:hover,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-secondary:focus-visible {
     transform: translateY(-1px);
     border-color: rgba(96, 165, 250, 0.5);
 }
 
-.button-danger {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-danger {
     background: rgba(251, 113, 133, 0.15);
     color: var(--pg-danger);
     border-color: rgba(251, 113, 133, 0.35);
 }
 
-.button-danger:hover,
-.button-danger:focus-visible {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-danger:hover,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-danger:focus-visible {
     transform: translateY(-1px);
     background: rgba(251, 113, 133, 0.22);
 }
 
-.button-ghost {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-ghost {
     background: transparent;
     border-color: rgba(148, 163, 184, 0.3);
     color: var(--pg-text-subtle);
 }
 
-.button-ghost:hover,
-.button-ghost:focus-visible {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-ghost:hover,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-ghost:focus-visible {
     border-color: rgba(148, 163, 184, 0.55);
     background: rgba(148, 163, 184, 0.12);
     transform: translateY(-1px);
 }
 
-.button-primary:disabled,
-.button-secondary:disabled,
-.button-danger:disabled,
-.button-ghost:disabled {
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-primary:disabled,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-secondary:disabled,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-danger:disabled,
+.admin-projects-page.scoped-dashboard.neo-dashboard .button-ghost:disabled {
     opacity: 0.55;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-.form-actions {
+.admin-projects-page.scoped-dashboard.neo-dashboard .form-actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--pg-gap-xs);
@@ -474,16 +551,16 @@
 /* Lists                                                                      */
 /* -------------------------------------------------------------------------- */
 
-.item-list-container {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-list-container {
     max-height: 420px;
     overflow: hidden auto;
     border-radius: var(--pg-radius-lg);
     border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.35);
+    background: var(--pg-surface);
     backdrop-filter: blur(18px);
 }
 
-.item-list {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -491,7 +568,7 @@
     flex-direction: column;
 }
 
-.list-item {
+.admin-projects-page.scoped-dashboard.neo-dashboard .list-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--pg-gap-sm);
@@ -501,34 +578,37 @@
     transition: background 150ms ease, transform 150ms ease;
 }
 
-.list-item:last-child {
+.admin-projects-page.scoped-dashboard.neo-dashboard .list-item:last-child {
     border-bottom: none;
 }
 
-.list-item:hover {
+.admin-projects-page.scoped-dashboard.neo-dashboard .list-item:hover {
     background: rgba(96, 165, 250, 0.08);
     transform: translateX(2px);
 }
 
-.item-details {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-details {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
     min-width: 0;
 }
 
-.item-name {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-name {
     font-weight: 600;
     color: var(--pg-text-subtle);
+    overflow-wrap: anywhere;
 }
 
-.item-meta {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
 }
 
-.item-chip {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-chip {
+    max-width: 100%;
+    min-width: 0;
     padding: 0.15rem 0.55rem;
     border-radius: 999px;
     font-size: 0.75rem;
@@ -536,9 +616,10 @@
     letter-spacing: 0.08em;
     background: rgba(96, 165, 250, 0.15);
     color: var(--pg-text-subtle);
+    overflow-wrap: anywhere;
 }
 
-.item-actions {
+.admin-projects-page.scoped-dashboard.neo-dashboard .item-actions {
     display: inline-flex;
     gap: 0.45rem;
     flex-wrap: wrap;
@@ -548,7 +629,7 @@
 /* Project Tree                                                               */
 /* -------------------------------------------------------------------------- */
 
-.project-tree {
+.admin-projects-page.scoped-dashboard.neo-dashboard .project-tree {
     list-style: none;
     padding-left: 0;
     margin: 0;
@@ -557,44 +638,48 @@
     gap: 0.55rem;
 }
 
-.project-tree > li {
+.admin-projects-page.scoped-dashboard.neo-dashboard .project-tree > li {
     border-left: 2px solid rgba(96, 165, 250, 0.35);
     padding-left: 1.1rem;
 }
 
-.tree-row {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-row {
     display: flex;
     flex-direction: column;
     gap: 0.45rem;
     padding: 0.75rem 0.9rem;
     border-radius: var(--pg-radius-md);
     border: 1px solid rgba(96, 165, 250, 0.15);
-    background: rgba(15, 23, 42, 0.55);
+    background: var(--pg-surface);
 }
 
-.tree-info {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-info {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
 }
 
-.tree-name {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-name {
     font-weight: 600;
     color: var(--pg-text-subtle);
+    overflow-wrap: anywhere;
 }
 
-.tree-customer {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-customer {
     font-size: 0.85rem;
     color: var(--pg-text-muted);
+    overflow-wrap: anywhere;
 }
 
-.tree-metrics {
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-metrics {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
 }
 
-.metric-chip {
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-chip {
+    max-width: 100%;
+    min-width: 0;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -603,9 +688,10 @@
     background: rgba(37, 99, 235, 0.16);
     color: var(--pg-text-subtle);
     font-size: 0.75rem;
+    overflow-wrap: anywhere;
 }
 
-.metric-progress {
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-progress {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -616,7 +702,7 @@
     color: var(--pg-text-subtle);
 }
 
-.metric-progress-bar {
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-progress-bar {
     position: relative;
     flex: 0 0 78px;
     height: 6px;
@@ -625,7 +711,7 @@
     overflow: hidden;
 }
 
-.metric-progress-bar::after {
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-progress-bar::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -634,7 +720,16 @@
     transform: scaleX(var(--progress, 0));
 }
 
-.tree-empty {
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-progress.is-over-budget {
+    border: 1px solid rgba(251, 113, 133, 0.45);
+    color: var(--pg-danger);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .metric-progress.is-over-budget .metric-progress-bar::after {
+    background: var(--pg-danger);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .tree-empty {
     margin: 0;
     padding: 1rem;
     border-radius: var(--pg-radius-md);
@@ -646,235 +741,102 @@
 /* Analytics                                                                  */
 /* -------------------------------------------------------------------------- */
 
-.analytics-toolbar {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-toolbar {
     align-items: flex-start;
 }
 
-.analytics-toolbar .date-range {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-toolbar .date-range {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: var(--pg-gap-xs);
 }
 
-.analytics-toolbar button {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-toolbar button {
     align-self: flex-end;
 }
 
-.analytics-summary {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-controls {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--pg-gap-sm);
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-field {
+    display: flex;
+    flex: 1 1 170px;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-controls > button {
+    flex: 0 0 auto;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--pg-gap-sm);
 }
 
-.summary-card {
+.admin-projects-page.scoped-dashboard.neo-dashboard .summary-card {
     padding: 1rem 1.1rem;
     border-radius: var(--pg-radius-lg);
     border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.55);
+    background: var(--pg-surface);
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
 }
 
-.summary-card strong {
+.admin-projects-page.scoped-dashboard.neo-dashboard .summary-card strong {
     font-size: 1.1rem;
     color: var(--pg-text-subtle);
 }
 
-.summary-card span {
+.admin-projects-page.scoped-dashboard.neo-dashboard .summary-card span {
     font-size: 0.85rem;
     color: var(--pg-text-muted);
 }
 
-.analytics-chart {
+.admin-projects-page.scoped-dashboard.neo-dashboard .analytics-chart {
     display: grid;
     gap: var(--pg-gap-sm);
 }
 
-.chart-grid {
+.admin-projects-page.scoped-dashboard.neo-dashboard .chart-grid {
     display: grid;
     gap: var(--pg-gap-sm);
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
-.chart-grid .chart-card {
+.admin-projects-page.scoped-dashboard.neo-dashboard .chart-grid .chart-card {
     padding: 1.25rem;
     border-radius: var(--pg-radius-lg);
     border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.55);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Integrations                                                               */
-/* -------------------------------------------------------------------------- */
-
-.integration-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--pg-gap-lg);
-}
-
-.integration-form {
-    padding: var(--pg-gap-md);
-    border-radius: var(--pg-radius-xl);
-    border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.6);
-}
-
-.integration-list {
-    display: grid;
-    gap: var(--pg-gap-sm);
-}
-
-.integration-card {
-    padding: 1.1rem 1.25rem;
-    border-radius: var(--pg-radius-lg);
-    border: 1px solid rgba(96, 165, 250, 0.25);
-    background: rgba(15, 23, 42, 0.55);
-    display: grid;
-    gap: 0.75rem;
-}
-
-.integration-card header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--pg-gap-xs);
-}
-
-.integration-card h4 {
-    margin: 0;
-    font-size: 1.05rem;
-    color: var(--pg-text-subtle);
-}
-
-.integration-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--pg-gap-xs);
-}
-
-.integration-result {
-    margin-top: var(--pg-gap-sm);
-    padding: 1rem;
-    border-radius: var(--pg-radius-lg);
-    border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.55);
-    max-height: 220px;
-    overflow: auto;
-}
-
-.integration-result pre {
-    margin: 0;
-    font-family: "JetBrains Mono", "Fira Code", monospace;
-    font-size: 0.8rem;
-    color: var(--pg-text);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Audit & Billing                                                            */
-/* -------------------------------------------------------------------------- */
-
-.audit-table-wrapper {
-    overflow: auto;
-    border-radius: var(--pg-radius-lg);
-    border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.55);
-}
-
-.audit-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-}
-
-.audit-table th,
-.audit-table td {
-    padding: 0.85rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.audit-table th {
-    font-weight: 600;
-    color: var(--pg-text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 0.75rem;
-}
-
-.audit-table tbody tr:hover {
-    background: rgba(96, 165, 250, 0.08);
-}
-
-.billing-summary {
-    margin-top: var(--pg-gap-sm);
-    padding: var(--pg-gap-md);
-    border-radius: var(--pg-radius-xl);
-    border: 1px solid var(--pg-border);
-    background: rgba(15, 23, 42, 0.6);
-    display: grid;
-    gap: var(--pg-gap-sm);
-}
-
-.billing-summary-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--pg-gap-xs);
-}
-
-.billing-summary-header h4 {
-    margin: 0;
-    font-size: 1.15rem;
-}
-
-.billing-summary-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--pg-gap-xs);
-    color: var(--pg-text-muted);
-}
-
-.billing-summary-metrics span {
-    background: rgba(37, 99, 235, 0.15);
-    border-radius: 999px;
-    padding: 0.25rem 0.75rem;
-}
-
-.billing-lines {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-}
-
-.billing-lines th,
-.billing-lines td {
-    padding: 0.75rem 0.9rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.billing-lines th {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 0.72rem;
+    background: var(--pg-surface);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Misc                                                                       */
 /* -------------------------------------------------------------------------- */
 
-.task-filter {
+.admin-projects-page.scoped-dashboard.neo-dashboard .task-filter {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--pg-gap-xs);
 }
 
-.task-filter select {
+.admin-projects-page.scoped-dashboard.neo-dashboard .task-filter select {
     max-width: 280px;
 }
 
-.sr-only {
+.admin-projects-page.scoped-dashboard.neo-dashboard .project-selector {
+    max-width: 520px;
+}
+
+.admin-projects-page.scoped-dashboard.neo-dashboard .sr-only {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -886,30 +848,76 @@
     border: 0;
 }
 
+@media (max-width: 900px) {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .content-grid--two {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .list-item {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .item-actions {
+        justify-content: flex-start;
+    }
+}
+
 @media (max-width: 768px) {
-    .page-hero {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .page-hero {
         grid-template-columns: 1fr;
     }
 
-    .hero-actions {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .hero-actions {
         width: 100%;
         flex-direction: column;
         align-items: stretch;
     }
 
-    .hero-action {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .hero-action {
         width: 100%;
     }
 
-    .tab-bar {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .tab-bar {
         grid-template-columns: 1fr;
     }
 
-    .content-grid--two {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .tab-button {
+        min-width: 0;
+        white-space: normal;
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .content-grid--two {
         grid-template-columns: 1fr;
     }
 
-    .item-actions {
+    .admin-projects-page.scoped-dashboard.neo-dashboard .item-actions {
         justify-content: flex-start;
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .analytics-controls,
+    .admin-projects-page.scoped-dashboard.neo-dashboard .analytics-controls > button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-projects-page.scoped-dashboard.neo-dashboard {
+        padding-inline: 1rem;
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .page-hero,
+    .admin-projects-page.scoped-dashboard.neo-dashboard .content-section {
+        padding: 1rem;
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .list-item {
+        grid-template-columns: minmax(0, 1fr);
+        padding-inline: 0.9rem;
+    }
+
+    .admin-projects-page.scoped-dashboard.neo-dashboard .item-actions > button,
+    .admin-projects-page.scoped-dashboard.neo-dashboard .form-actions > button {
+        flex: 1 1 100%;
+        width: 100%;
     }
 }

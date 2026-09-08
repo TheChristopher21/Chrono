@@ -155,6 +155,13 @@ const PmsOperationsWorkspace = ({
         dateOfBirth: '',
         nationalityCode: 'CH',
         languageCode: 'de',
+        addressLine1: '',
+        postalCode: '',
+        city: '',
+        countryCode: 'CH',
+        vehiclePlate: '',
+        roomPreferences: '',
+        organizationId: '',
         notes: '',
         vip: false,
     };
@@ -187,6 +194,7 @@ const PmsOperationsWorkspace = ({
         departureDate: tomorrowKey(),
         adults: 1,
         children: 0,
+        childAges: [],
         status: 'CONFIRMED',
         source: initialAction === 'walk-in' ? 'WALK_IN' : 'DIRECT',
         notes: '',
@@ -197,6 +205,7 @@ const PmsOperationsWorkspace = ({
     const [rateForm, setRateForm] = useState(emptyRate);
     const [overrideForm, setOverrideForm] = useState(emptyOverride);
     const [reservationForm, setReservationForm] = useState(emptyReservation);
+    const [guestMerge, setGuestMerge] = useState({ sourceGuestId: '', targetGuestId: '', takeFromSource: [] });
     const [paymentForm, setPaymentForm] = useState({ folioId: '', amount: '', method: 'CARD', reference: '' });
     const [cashShiftForm, setCashShiftForm] = useState({ openingFloat: '200.00', actualCash: '', notes: '' });
     const [chargeForm, setChargeForm] = useState({
@@ -261,6 +270,7 @@ const PmsOperationsWorkspace = ({
     }, [guestSearch, property?.id]);
 
     const guests = operations?.guests ?? [];
+    const organizations = operations?.organizations ?? [];
     const guestOptions = useMemo(() => {
         const byId = new Map([...guests, ...guestMatches].map((guest) => [guest.id, guest]));
         return [...byId.values()].sort((left, right) => (
@@ -351,11 +361,27 @@ const PmsOperationsWorkspace = ({
         const url = editingGuestId
             ? `/api/pms/properties/${property.id}/guests/${editingGuestId}`
             : `/api/pms/properties/${property.id}/guests`;
-        const result = await runMutation(editingGuestId ? 'put' : 'post', url, guestForm, 'Gastprofil gespeichert.');
+        const payload = {
+            ...guestForm,
+            organizationId: guestForm.organizationId ? Number(guestForm.organizationId) : null,
+        };
+        const result = await runMutation(editingGuestId ? 'put' : 'post', url, payload, 'Gastprofil gespeichert.');
         if (result) {
             setGuestForm(emptyGuest);
             setEditingGuestId(null);
         }
+    };
+
+    const mergeGuest = async (event) => {
+        event.preventDefault();
+        if (!guestMerge.sourceGuestId || !guestMerge.targetGuestId) return;
+        const result = await runMutation(
+            'post',
+            `/api/pms/properties/${property.id}/guests/${guestMerge.sourceGuestId}/merge`,
+            { targetGuestId: Number(guestMerge.targetGuestId), takeFromSource: guestMerge.takeFromSource },
+            'Gästekarteien wurden zusammengeführt; Buchungen und Kommunikation zeigen nun auf die Zielkartei.',
+        );
+        if (result) setGuestMerge({ sourceGuestId: '', targetGuestId: '', takeFromSource: [] });
     };
 
     const exportGuestData = async (guest) => {
@@ -411,6 +437,14 @@ const PmsOperationsWorkspace = ({
                             lastName: `GAST-${privacyGuestId}`,
                             email: null,
                             phone: null,
+                            addressLine1: null,
+                            postalCode: null,
+                            city: null,
+                            countryCode: null,
+                            vehiclePlate: null,
+                            roomPreferences: null,
+                            organizationId: null,
+                            organizationName: null,
                             notes: null,
                             vip: false,
                         }
@@ -418,7 +452,7 @@ const PmsOperationsWorkspace = ({
                 )),
                 reservations: reservations.map((reservation) => (
                     reservation.guestId === privacyGuestId
-                        ? { ...reservation, guestName: anonymizedName, notes: null }
+                        ? { ...reservation, guestName: anonymizedName, notes: null, guestPreferenceSnapshot: null }
                         : reservation
                 )),
                 folios: folios.map((folio) => (
@@ -485,6 +519,7 @@ const PmsOperationsWorkspace = ({
             ratePlanId: Number(reservationForm.ratePlanId),
             adults: Number(reservationForm.adults),
             children: Number(reservationForm.children),
+            childAges: (reservationForm.childAges ?? []).map(Number),
         };
         const url = editingReservationId
             ? `/api/pms/reservations/${editingReservationId}`
@@ -513,6 +548,10 @@ const PmsOperationsWorkspace = ({
             departureDate: reservation.departureDate,
             adults: reservation.adults,
             children: reservation.children,
+            childAges: Array.from(
+                { length: Number(reservation.children || 0) },
+                (_, index) => reservation.childAges?.[index] ?? '',
+            ),
             status: ['OFFERED', 'TENTATIVE', 'WAITLISTED', 'CONFIRMED'].includes(reservation.status)
                 ? reservation.status
                 : 'CONFIRMED',
@@ -894,8 +933,24 @@ const PmsOperationsWorkspace = ({
                                     </label>
                                     <label>
                                         Kinder
-                                        <input type="number" min="0" value={reservationForm.children} onChange={(event) => setReservationForm({ ...reservationForm, children: event.target.value })} required />
+                                        <input type="number" min="0" max="20" value={reservationForm.children} onChange={(event) => {
+                                            const children = Number(event.target.value);
+                                            setReservationForm({
+                                                ...reservationForm,
+                                                children,
+                                                childAges: Array.from({ length: Math.max(0, children) }, (_, index) => reservationForm.childAges?.[index] ?? ''),
+                                            });
+                                        }} required />
                                     </label>
+                                    {(reservationForm.childAges ?? []).map((age, index) => (
+                                        <label key={`reservation-child-${index}`}>
+                                            Alter Kind {index + 1}
+                                            <input type="number" min="0" max="17" value={age} onChange={(event) => setReservationForm({
+                                                ...reservationForm,
+                                                childAges: reservationForm.childAges.map((value, ageIndex) => ageIndex === index ? event.target.value : value),
+                                            })} required />
+                                        </label>
+                                    ))}
                                     <label>
                                         Quelle
                                         <select value={reservationForm.source} onChange={(event) => setReservationForm({ ...reservationForm, source: event.target.value })}>
@@ -935,6 +990,11 @@ const PmsOperationsWorkspace = ({
                                         Notizen
                                         <textarea value={reservationForm.notes} onChange={(event) => setReservationForm({ ...reservationForm, notes: event.target.value })} />
                                     </label>
+                                    {guestOptions.find((guest) => String(guest.id) === String(reservationForm.guestId))?.roomPreferences && (
+                                        <div className="pms-inline-message is-wide" role="status">
+                                            Zimmerwunsch: {guestOptions.find((guest) => String(guest.id) === String(reservationForm.guestId)).roomPreferences}
+                                        </div>
+                                    )}
                                     <div className="pms-form-actions is-wide">
                                         <button type="button" onClick={loadAvailability} disabled={busy}>Verfügbarkeit prüfen</button>
                                         <button type="submit" className="is-primary" disabled={!canManage || busy || !guestOptions.length || !filteredRates.length}>
@@ -1006,6 +1066,8 @@ const PmsOperationsWorkspace = ({
                                                     {formatPmsDate(reservation.arrivalDate)} → {formatPmsDate(reservation.departureDate)} · {reservation.roomNumber ? `Zimmer ${reservation.roomNumber}` : reservation.roomTypeName}
                                                 </small>
                                                 <small>{money(reservation.totalAmount, reservation.currencyCode)} · {getPmsEnumLabel(RESERVATION_STATUS_LABELS, reservation.status)}</small>
+                                                {reservation.children > 0 && <small>Kinder: {reservation.childAges?.length ? `${reservation.childAges.join(', ')} Jahre` : reservation.children}</small>}
+                                                {reservation.guestPreferenceSnapshot && <small>Zimmerwunsch: {reservation.guestPreferenceSnapshot}</small>}
                                                 <small>
                                                     {getPmsEnumLabel(RESERVATION_GUARANTEE_STATUS_LABELS, reservation.guaranteeStatus)}
                                                     {reservation.holdUntil ? ` · Frist ${new Date(reservation.holdUntil).toLocaleString('de-CH')}` : ''}
@@ -1080,6 +1142,7 @@ const PmsOperationsWorkspace = ({
                                             <span>Zimmer</span>
                                             <strong>{room.number}</strong>
                                             <small>{room.roomTypeName} · Etage {room.floor || '–'}</small>
+                                            {room.features && <small>Ausstattung: {room.features}</small>}
                                             <div className="pms-room-plan-statuses">
                                                 <p>
                                                     <span>Housekeeping</span>
@@ -1100,6 +1163,7 @@ const PmsOperationsWorkspace = ({
                                                 >
                                                     {room.currentReservation.guestName}
                                                     <small>{getPmsEnumLabel(RESERVATION_STATUS_LABELS, room.currentReservation.status)}</small>
+                                                    {room.currentReservation.guestPreferenceSnapshot && <small>Wunsch: {room.currentReservation.guestPreferenceSnapshot}</small>}
                                                 </button>
                                             ) : (
                                                 <em className={roomSalesState.assignable ? '' : 'is-unavailable'}>
@@ -1127,6 +1191,13 @@ const PmsOperationsWorkspace = ({
                                     <label>Geburtsdatum<input type="date" value={guestForm.dateOfBirth} onChange={(event) => setGuestForm({ ...guestForm, dateOfBirth: event.target.value })} /></label>
                                     <label>Nationalität (ISO-Ländercode, z. B. CH)<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={guestForm.nationalityCode} onChange={(event) => setGuestForm({ ...guestForm, nationalityCode: event.target.value.toUpperCase() })} /></label>
                                     <label>Sprache (Sprachcode, z. B. de)<input maxLength="8" value={guestForm.languageCode} onChange={(event) => setGuestForm({ ...guestForm, languageCode: event.target.value })} /></label>
+                                    <label>Firma / Rechnungskartei<select value={guestForm.organizationId} onChange={(event) => setGuestForm({ ...guestForm, organizationId: event.target.value })}><option value="">Privat</option>{organizations.filter((entry) => entry.active).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode ? `${entry.referenceCode} · ` : ''}{entry.name}</option>)}</select></label>
+                                    <label className="is-wide">Privatadresse<input value={guestForm.addressLine1} onChange={(event) => setGuestForm({ ...guestForm, addressLine1: event.target.value })} /></label>
+                                    <label>PLZ<input value={guestForm.postalCode} onChange={(event) => setGuestForm({ ...guestForm, postalCode: event.target.value })} /></label>
+                                    <label>Ort<input value={guestForm.city} onChange={(event) => setGuestForm({ ...guestForm, city: event.target.value })} /></label>
+                                    <label>Wohnsitzland<input maxLength="2" value={guestForm.countryCode} onChange={(event) => setGuestForm({ ...guestForm, countryCode: event.target.value.toUpperCase() })} /></label>
+                                    <label>Kennzeichen<input maxLength="40" value={guestForm.vehiclePlate} onChange={(event) => setGuestForm({ ...guestForm, vehiclePlate: event.target.value.toUpperCase() })} /></label>
+                                    <label className="is-wide">Zimmerwünsche<textarea placeholder="z. B. ruhig, hohe Etage, Badewanne, Parkett, King-Bett" value={guestForm.roomPreferences} onChange={(event) => setGuestForm({ ...guestForm, roomPreferences: event.target.value })} /></label>
                                     <label className="is-wide">Notizen<textarea value={guestForm.notes} onChange={(event) => setGuestForm({ ...guestForm, notes: event.target.value })} /></label>
                                     <label className="pms-checkbox"><input type="checkbox" checked={guestForm.vip} onChange={(event) => setGuestForm({ ...guestForm, vip: event.target.checked })} /> VIP-Gast</label>
                                     <div className="pms-form-actions is-wide">
@@ -1141,9 +1212,13 @@ const PmsOperationsWorkspace = ({
                                     {guests.map((guest) => (
                                         <article className="pms-record" key={guest.id}>
                                             <div>
-                                                <span>{guest.vip ? 'VIP' : 'Gast'}</span>
+                                                <span>{guest.referenceCode || (guest.vip ? 'VIP' : 'Gast')}{guest.vip ? ' · VIP' : ''}</span>
                                                 <strong>{guest.firstName} {guest.lastName}</strong>
                                                 <small>{guest.email || 'Keine E-Mail'} · {guest.phone || 'Kein Telefon'}</small>
+                                                {(guest.addressLine1 || guest.city) && <small>{[guest.addressLine1, guest.postalCode, guest.city, guest.countryCode].filter(Boolean).join(', ')}</small>}
+                                                {guest.organizationName && <small>Firma / Rechnungsadresse: {guest.organizationName}</small>}
+                                                {guest.vehiclePlate && <small>Kennzeichen: {guest.vehiclePlate}</small>}
+                                                {guest.roomPreferences && <small>Zimmerwunsch: {guest.roomPreferences}</small>}
                                             </div>
                                             <div className="pms-record-actions">
                                                 <button type="button" onClick={() => {
@@ -1156,6 +1231,13 @@ const PmsOperationsWorkspace = ({
                                                         dateOfBirth: guest.dateOfBirth ?? '',
                                                         nationalityCode: guest.nationalityCode ?? '',
                                                         languageCode: guest.languageCode ?? 'de',
+                                                        addressLine1: guest.addressLine1 ?? '',
+                                                        postalCode: guest.postalCode ?? '',
+                                                        city: guest.city ?? '',
+                                                        countryCode: guest.countryCode ?? 'CH',
+                                                        vehiclePlate: guest.vehiclePlate ?? '',
+                                                        roomPreferences: guest.roomPreferences ?? '',
+                                                        organizationId: guest.organizationId ?? '',
                                                         notes: guest.notes ?? '',
                                                         vip: guest.vip,
                                                     });
@@ -1186,6 +1268,32 @@ const PmsOperationsWorkspace = ({
                                         </article>
                                     ))}
                                 </div>
+                                <details className="pms-work-card">
+                                    <summary>Dubletten zusammenführen</summary>
+                                    <p>Die Quellkartei bleibt als inaktive Historie erhalten. Buchungen, Gruppen und Kommunikation werden auf die Zielkartei umgehängt.</p>
+                                    <form className="pms-form-grid" onSubmit={mergeGuest}>
+                                        <label>Quellkartei<select value={guestMerge.sourceGuestId} onChange={(event) => setGuestMerge({ ...guestMerge, sourceGuestId: event.target.value })} required><option value="">Quelle wählen</option>{guests.filter((guest) => String(guest.id) !== String(guestMerge.targetGuestId)).map((guest) => <option key={guest.id} value={guest.id}>{guest.referenceCode} · {guest.firstName} {guest.lastName}</option>)}</select></label>
+                                        <label>Zielkartei<select value={guestMerge.targetGuestId} onChange={(event) => setGuestMerge({ ...guestMerge, targetGuestId: event.target.value })} required><option value="">Ziel wählen</option>{guests.filter((guest) => String(guest.id) !== String(guestMerge.sourceGuestId)).map((guest) => <option key={guest.id} value={guest.id}>{guest.referenceCode} · {guest.firstName} {guest.lastName}</option>)}</select></label>
+                                        <fieldset className="is-wide">
+                                            <legend>Diese Werte aus der Quelle übernehmen</legend>
+                                            {[
+                                                ['firstName', 'Vorname'], ['lastName', 'Nachname'],
+                                                ['email', 'E-Mail'], ['phone', 'Telefon'], ['dateOfBirth', 'Geburtsdatum'],
+                                                ['addressLine1', 'Adresse'], ['postalCode', 'PLZ'], ['city', 'Ort'],
+                                                ['countryCode', 'Land'], ['vehiclePlate', 'Kennzeichen'],
+                                                ['roomPreferences', 'Zimmerwünsche'], ['organization', 'Firma'], ['notes', 'Notizen'], ['vip', 'VIP-Status'],
+                                            ].map(([value, label]) => (
+                                                <label className="pms-checkbox" key={value}><input type="checkbox" checked={guestMerge.takeFromSource.includes(value)} onChange={(event) => setGuestMerge((current) => ({
+                                                    ...current,
+                                                    takeFromSource: event.target.checked
+                                                        ? [...current.takeFromSource, value]
+                                                        : current.takeFromSource.filter((field) => field !== value),
+                                                }))} /> {label}</label>
+                                            ))}
+                                        </fieldset>
+                                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Zusammenführen</button></div>
+                                    </form>
+                                </details>
                                 {canManageGuestPrivacy && privacyGuestId && (
                                     <form className="pms-form-grid" onSubmit={requestGuestAnonymization}>
                                         <div className="is-wide">

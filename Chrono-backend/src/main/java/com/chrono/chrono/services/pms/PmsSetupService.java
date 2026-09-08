@@ -1,6 +1,7 @@
 package com.chrono.chrono.services.pms;
 
 import com.chrono.chrono.dto.pms.PmsSetupResponse;
+import com.chrono.chrono.dto.pms.BulkCreateRoomsRequest;
 import com.chrono.chrono.dto.pms.UpsertHotelPropertyRequest;
 import com.chrono.chrono.dto.pms.UpsertRoomRequest;
 import com.chrono.chrono.dto.pms.UpsertRoomTypeRequest;
@@ -19,11 +20,18 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.ZoneId;
 import java.util.Currency;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class PmsSetupService {
+
+    private static final Pattern TRAILING_NUMBER = Pattern.compile("^(.*?)(\\d+)$");
 
     private final HotelPropertyRepository propertyRepository;
     private final RoomTypeRepository roomTypeRepository;
@@ -176,6 +184,39 @@ public class PmsSetupService {
         return getSetup(company);
     }
 
+    @Transactional
+    public PmsSetupResponse createRooms(Company company,
+                                        Long propertyId,
+                                        BulkCreateRoomsRequest request) {
+        requireCompany(company);
+        HotelProperty property = requireProperty(company.getId(), propertyId);
+        RoomType roomType = requireRoomTypeForProperty(company.getId(), propertyId, request.roomTypeId());
+        List<String> roomNumbers = sequentialRoomNumbers(request.startNumber(), request.count());
+        Set<String> normalized = new HashSet<>();
+        for (String roomNumber : roomNumbers) {
+            if (!normalized.add(roomNumber.toLowerCase(Locale.ROOT))
+                    || roomRepository.existsByProperty_IdAndNumberIgnoreCase(propertyId, roomNumber)) {
+                throw conflict("Die Zimmernummer " + roomNumber + " ist bereits vergeben.");
+            }
+        }
+        List<Room> rooms = new ArrayList<>();
+        for (int index = 0; index < roomNumbers.size(); index++) {
+            Room room = new Room();
+            room.setProperty(property);
+            room.setRoomType(roomType);
+            String name = cleanNullable(request.namePrefix());
+            UpsertRoomRequest roomRequest = new UpsertRoomRequest(
+                    request.roomTypeId(), roomNumbers.get(index),
+                    name == null ? null : name + " " + (index + 1),
+                    request.floor(), request.housekeepingSection(), request.operationalStatus(),
+                    request.active(), request.features());
+            applyRoom(room, roomRequest, true);
+            rooms.add(room);
+        }
+        roomRepository.saveAll(rooms);
+        return getSetup(company);
+    }
+
     private PmsSetupResponse.PropertyView toPropertyView(HotelProperty property) {
         List<RoomType> roomTypes = roomTypeRepository
                 .findAllByProperty_IdOrderBySortOrderAscNameAsc(property.getId());
@@ -209,6 +250,7 @@ public class PmsSetupService {
                         room.getName(),
                         room.getFloor(),
                         room.getHousekeepingSection(),
+                        room.getFeatures(),
                         room.getOperationalStatus(),
                         room.getHousekeepingStatus(),
                         room.isActive()
@@ -300,6 +342,7 @@ public class PmsSetupService {
         room.setName(cleanNullable(request.name()));
         room.setFloor(cleanNullable(request.floor()));
         room.setHousekeepingSection(cleanNullable(request.housekeepingSection()));
+        room.setFeatures(cleanNullable(request.features()));
         if (request.operationalStatus() != null) {
             room.setOperationalStatus(request.operationalStatus());
         } else if (creating) {
@@ -319,6 +362,36 @@ public class PmsSetupService {
                     "Die maximale Belegung darf nicht kleiner als die Standardbelegung sein."
             );
         }
+    }
+
+    private List<String> sequentialRoomNumbers(String startNumber, int count) {
+        String cleaned = cleanRequired(startNumber);
+        if (count <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Die Anzahl muss mindestens 1 sein.");
+        }
+        Matcher matcher = TRAILING_NUMBER.matcher(cleaned);
+        if (!matcher.matches()) {
+            if (count == 1) {
+                return List.of(cleaned);
+            }
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Für mehrere Zimmer muss die Start-Zimmernummer mit einer Zahl enden."
+            );
+        }
+        String prefix = matcher.group(1);
+        String digits = matcher.group(2);
+        long start;
+        try {
+            start = Long.parseLong(digits);
+        } catch (NumberFormatException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Die Start-Zimmernummer ist ungültig.");
+        }
+        List<String> result = new ArrayList<>();
+        for (int offset = 0; offset < count; offset++) {
+            result.add(prefix + String.format(Locale.ROOT, "%0" + digits.length() + "d", start + offset));
+        }
+        return result;
     }
 
     private void validateTimezoneAndCurrency(String timezone, String currencyCode) {

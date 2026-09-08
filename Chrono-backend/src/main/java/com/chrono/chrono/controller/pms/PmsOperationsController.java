@@ -107,6 +107,19 @@ public class PmsOperationsController {
         ));
     }
 
+    @PostMapping("/properties/{propertyId}/guests/{sourceGuestId}/merge")
+    public ResponseEntity<PmsOperationsResponse> mergeGuest(
+            @PathVariable Long propertyId,
+            @PathVariable Long sourceGuestId,
+            @RequestParam(required = false) LocalDate businessDate,
+            @Valid @RequestBody MergeGuestProfilesRequest request,
+            Principal principal
+    ) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(operationsService.mergeGuest(
+                context.company(), propertyId, sourceGuestId, request, businessDate));
+    }
+
     @PostMapping("/properties/{propertyId}/rate-plans")
     public ResponseEntity<PmsOperationsResponse> createRatePlan(
             @PathVariable Long propertyId,

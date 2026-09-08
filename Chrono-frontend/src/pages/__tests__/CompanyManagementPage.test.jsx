@@ -73,6 +73,7 @@ describe('CompanyManagementPage', () => {
         api.delete.mockReset();
         api.get.mockImplementation(resolvedGet);
         api.post.mockResolvedValue({ data: {} });
+        api.put.mockResolvedValue({ data: {} });
         vi.spyOn(window, 'alert').mockImplementation(() => {});
     });
 
@@ -134,6 +135,8 @@ describe('CompanyManagementPage', () => {
         await user.type(within(form).getByLabelText('Nachname'), 'Hotel');
         await user.type(within(form).getByLabelText('Abteilung / Funktion'), 'Direktion');
         await user.type(within(form).getByLabelText('Personalnummer'), 'HOTEL-TEST-001');
+        expect(within(form).queryByRole('checkbox', { name: /Kunden-Zeiterfassung/ })).not.toBeInTheDocument();
+        await user.click(within(form).getByRole('checkbox', { name: /Projekte\/Kunden/ }));
         await user.click(within(form).getByLabelText('Hotelverwaltung (PMS) verwalten'));
         await user.click(within(form).getByRole('button', { name: 'Firma + Admin erstellen' }));
 
@@ -151,6 +154,70 @@ describe('CompanyManagementPage', () => {
                     adminPersonnelNumber: 'HOTEL-TEST-001',
                     adminIncludeInTimeTracking: false,
                     adminPmsAccess: true,
+                    customerTrackingEnabled: true,
+                    enabledFeatures: ['projects'],
+                })
+            );
+        });
+    });
+
+    it('keeps the legacy projects flag synchronized in quick company creation', async () => {
+        render(<CompanyManagementPage />);
+
+        const section = (await screen.findByRole('heading', { name: 'Neue Firma anlegen' })).closest('section');
+        const user = userEvent.setup();
+
+        await user.type(within(section).getByLabelText('Firmenname'), 'Projekt AG');
+        await user.click(within(section).getByRole('button', { name: 'Erweiterte Felder anzeigen' }));
+        expect(within(section).queryByRole('checkbox', { name: /Kunden-Zeiterfassung/ })).not.toBeInTheDocument();
+        await user.click(within(section).getByRole('checkbox', { name: /Projekte\/Kunden/ }));
+        await user.click(within(section).getByRole('button', { name: 'Firma erstellen' }));
+
+        await waitFor(() => {
+            expect(api.post).toHaveBeenCalledWith(
+                '/api/superadmin/companies',
+                expect.objectContaining({
+                    name: 'Projekt AG',
+                    customerTrackingEnabled: true,
+                    enabledFeatures: ['projects'],
+                })
+            );
+        });
+    });
+
+    it('normalizes a legacy projects company and disables both API aliases when edited', async () => {
+        api.get.mockImplementation((url) => {
+            if (url === '/api/superadmin/companies') {
+                return Promise.resolve({
+                    data: [{
+                        ...company,
+                        customerTrackingEnabled: true,
+                        enabledFeatures: [],
+                    }],
+                });
+            }
+            return resolvedGet(url);
+        });
+
+        render(<CompanyManagementPage />);
+        const user = userEvent.setup();
+        const companyHeading = await screen.findByRole('heading', { name: 'Chrono Testhotel' });
+        const companyCard = companyHeading.closest('article');
+
+        await user.click(within(companyCard).getByRole('button', { name: 'Bearbeiten' }));
+        const projectsToggle = within(companyCard).getByRole('checkbox', { name: /Projekte\/Kunden/ });
+        expect(projectsToggle).toBeChecked();
+        expect(within(companyCard).queryByRole('checkbox', { name: /Kunden-Zeiterfassung/ })).not.toBeInTheDocument();
+
+        await user.click(projectsToggle);
+        await user.click(within(companyCard).getByRole('button', { name: 'Speichern' }));
+
+        await waitFor(() => {
+            expect(api.put).toHaveBeenCalledWith(
+                '/api/superadmin/companies/1',
+                expect.objectContaining({
+                    customerTrackingEnabled: false,
+                    enabledFeatures: [],
                 })
             );
         });

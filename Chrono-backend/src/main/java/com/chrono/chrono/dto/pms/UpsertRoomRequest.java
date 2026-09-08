@@ -12,6 +12,11 @@ public record UpsertRoomRequest(
         @Size(max = 40) String floor,
         @Size(max = 80) String housekeepingSection,
         RoomOperationalStatus operationalStatus,
-        Boolean active
+        Boolean active,
+        @Size(max = 1000) String features
 ) {
+    public UpsertRoomRequest(Long roomTypeId, String number, String name, String floor,
+                             String housekeepingSection, RoomOperationalStatus operationalStatus, Boolean active) {
+        this(roomTypeId, number, name, floor, housekeepingSection, operationalStatus, active, null);
+    }
 }

@@ -17,6 +17,7 @@ public record PmsGuestDataExport(
 ) {
     public record GuestData(
             Long id,
+            String referenceCode,
             String firstName,
             String lastName,
             String email,
@@ -24,6 +25,14 @@ public record PmsGuestDataExport(
             LocalDate dateOfBirth,
             String nationalityCode,
             String languageCode,
+            String addressLine1,
+            String postalCode,
+            String city,
+            String countryCode,
+            String vehiclePlate,
+            String roomPreferences,
+            Long organizationId,
+            String organizationName,
             String notes,
             boolean vip,
             LocalDateTime createdAt,
@@ -38,11 +47,15 @@ public record PmsGuestDataExport(
             String confirmationCode,
             LocalDate arrivalDate,
             LocalDate departureDate,
+            int adults,
+            int children,
+            List<Integer> childAges,
             String status,
             String source,
             String currencyCode,
             String totalAmount,
-            String notes
+            String notes,
+            String guestPreferenceSnapshot
     ) {
     }
 

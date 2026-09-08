@@ -4,20 +4,31 @@ import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
 import { useAuth } from './AuthContext';
 import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
+import { hasPageAccess, hasProjectsFeature } from '../utils/pageAccess.js';
 
 export const ProjectContext = createContext();
+
+const logUnexpectedError = (label, error) => {
+  if (![401, 403].includes(error?.response?.status)) {
+    console.error(label, error);
+  }
+};
 
 export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const [projectHierarchy, setProjectHierarchy] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState(null);
   const { notify } = useNotification();
   const { t } = useTranslation();
   const { authToken, currentUser } = useAuth();
   const isMountedRef = useRef(true);
+  const requestSequenceRef = useRef(0);
   const notifyRef = useRef(notify);
   const translateRef = useRef(t);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -32,48 +43,93 @@ export const ProjectProvider = ({ children }) => {
   }, [t]);
 
   const translate = useCallback((key, fallback) => translateRef.current?.(key, fallback) ?? fallback ?? key, []);
-
   const pushNotification = useCallback((message, type = 'info') => {
-    if (!message) {
-      return;
-    }
-    notifyRef.current?.({ message, type });
+    if (message) notifyRef.current?.(message, type);
   }, []);
 
+  const companyContextKey = currentUser?.company?.id ?? currentUser?.companyId ?? null;
+  const activeCompanyContextRef = useRef(companyContextKey);
+  activeCompanyContextRef.current = companyContextKey;
+
+  const projectsFeatureEnabled = hasProjectsFeature(currentUser);
+  const canReadProjects = projectsFeatureEnabled && [
+    'dashboard',
+    'adminProjects',
+    'adminProjectReport',
+    'adminTasks'
+  ].some((pageKey) => hasPageAccess(currentUser, pageKey, 'VIEW'));
+
   const fetchProjects = useCallback(async () => {
+    const requestSequence = ++requestSequenceRef.current;
+    if (!canReadProjects) {
+      if (isMountedRef.current) {
+        setProjects([]);
+        setProjectHierarchy([]);
+        setProjectsError(null);
+        setProjectsLoading(false);
+      }
+      return;
+    }
+    if (isMountedRef.current) {
+      setProjectsLoading(true);
+      setProjectsError(null);
+    }
     try {
       const [listResult, hierarchyResult] = await Promise.allSettled([
         api.get('/api/projects'),
         api.get('/api/projects/hierarchy')
       ]);
 
-      if (listResult.status === 'rejected') {
-        console.error('Error loading project list', listResult.reason);
-      }
-      if (hierarchyResult.status === 'rejected') {
-        console.error('Error loading project hierarchy', hierarchyResult.reason);
+      if (!isMountedRef.current || requestSequence !== requestSequenceRef.current) {
+        return;
       }
 
-      const listData =
-        listResult.status === 'fulfilled' && Array.isArray(listResult.value?.data)
-          ? listResult.value.data
-          : [];
-      const hierarchyData =
-        hierarchyResult.status === 'fulfilled' && Array.isArray(hierarchyResult.value?.data)
-          ? hierarchyResult.value.data
-          : [];
+      const authorizationFailed = [listResult, hierarchyResult].some(
+        (result) => result.status === 'rejected' && [401, 403].includes(result.reason?.response?.status)
+      );
 
-      if (isMountedRef.current) {
-        setProjects(listData);
-        setProjectHierarchy(hierarchyData);
+      if (authorizationFailed) {
+        setProjects([]);
+        setProjectHierarchy([]);
+        setProjectsError(translate('project.access.changed', 'Deine Berechtigung hat sich geändert. Bitte lade die Seite neu.'));
+        return;
+      }
+
+      if (listResult.status === 'fulfilled') {
+        setProjects(Array.isArray(listResult.value?.data) ? listResult.value.data : []);
+      } else {
+        setProjects([]);
+        logUnexpectedError('Error loading project list', listResult.reason);
+      }
+      if (hierarchyResult.status === 'fulfilled') {
+        setProjectHierarchy(Array.isArray(hierarchyResult.value?.data) ? hierarchyResult.value.data : []);
+      } else {
+        setProjectHierarchy([]);
+        logUnexpectedError('Error loading project hierarchy', hierarchyResult.reason);
+      }
+      if (listResult.status === 'rejected' || hierarchyResult.status === 'rejected') {
+        const message = translate('project.loadError', 'Projekte konnten nicht vollständig geladen werden.');
+        setProjectsError(message);
+        pushNotification(message, 'error');
       }
     } catch (err) {
-      console.error('Error loading projects', err);
-      pushNotification(translate('projectSaveError', 'Fehler beim Laden der Projekte'), 'error');
+      if (isMountedRef.current && requestSequence === requestSequenceRef.current) {
+        logUnexpectedError('Error loading projects', err);
+        setProjects([]);
+        setProjectHierarchy([]);
+        const message = translate('project.loadError', 'Projekte konnten nicht geladen werden.');
+        setProjectsError(message);
+        pushNotification(message, 'error');
+      }
+    } finally {
+      if (isMountedRef.current && requestSequence === requestSequenceRef.current) {
+        setProjectsLoading(false);
+      }
     }
-  }, [pushNotification, translate]);
+  }, [canReadProjects, companyContextKey, pushNotification, translate]);
 
   const createProject = useCallback(async ({ name, customerId, budgetMinutes, parentId, hourlyRate }) => {
+    const mutationCompanyKey = activeCompanyContextRef.current;
     try {
       const payload = {
         name: name.trim(),
@@ -83,16 +139,17 @@ export const ProjectProvider = ({ children }) => {
         hourlyRate
       };
       const res = await api.post('/api/projects', payload);
-      await fetchProjects();
+      if (mutationCompanyKey === activeCompanyContextRef.current) {
+        await fetchProjects();
+      }
       return res.data;
     } catch (err) {
-      console.error('Error creating project', err);
-      pushNotification(translate('projectSaveError', 'Fehler beim Anlegen'), 'error');
       throw err;
     }
-  }, [fetchProjects, pushNotification, translate]);
+  }, [fetchProjects]);
 
   const updateProject = useCallback(async (id, { name, customerId, budgetMinutes, parentId, hourlyRate }) => {
+    const mutationCompanyKey = activeCompanyContextRef.current;
     try {
       const payload = {
         name: name.trim(),
@@ -102,59 +159,64 @@ export const ProjectProvider = ({ children }) => {
         hourlyRate
       };
       const res = await api.put(`/api/projects/${id}`, payload);
-      await fetchProjects();
+      if (mutationCompanyKey === activeCompanyContextRef.current) {
+        await fetchProjects();
+      }
       return res.data;
     } catch (err) {
-      console.error('Error updating project', err);
-      pushNotification(translate('projectSaveError', 'Fehler beim Speichern'), 'error');
       throw err;
     }
-  }, [fetchProjects, pushNotification, translate]);
+  }, [fetchProjects]);
 
   const deleteProject = useCallback(async (id) => {
+    const mutationCompanyKey = activeCompanyContextRef.current;
     try {
       await api.delete(`/api/projects/${id}`);
-      await fetchProjects();
+      if (mutationCompanyKey === activeCompanyContextRef.current) {
+        await fetchProjects();
+      }
     } catch (err) {
-      console.error('Error deleting project', err);
-      pushNotification(translate('projectSaveError', 'Fehler beim Löschen'), 'error');
       throw err;
     }
-  }, [fetchProjects, pushNotification, translate]);
-
-  const customerTrackingEnabled = currentUser?.customerTrackingEnabled;
+  }, [fetchProjects]);
 
   useRefreshOnMutation(['projects', 'customers'], fetchProjects, {
-    enabled: Boolean(authToken && customerTrackingEnabled),
+    enabled: Boolean(authToken && canReadProjects),
     refreshOnLocalMutation: false,
     refreshOnFocus: true,
     focusThrottleMs: 30_000,
   });
 
   useEffect(() => {
+    requestSequenceRef.current += 1;
+    setProjects([]);
+    setProjectHierarchy([]);
+    setProjectsError(null);
+    setProjectsLoading(false);
+
     if (!authToken) {
-      setProjects([]);
-      setProjectHierarchy([]);
       return;
     }
 
-    if (customerTrackingEnabled == null) {
-      // Warten, bis der Benutzer vollständig geladen wurde, um unnötige 403-Fehler zu vermeiden.
-      return;
-    }
-
-    if (customerTrackingEnabled === false) {
-      setProjects([]);
-      setProjectHierarchy([]);
+    if (!canReadProjects) {
       return;
     }
 
     fetchProjects();
-  }, [fetchProjects, authToken, customerTrackingEnabled]);
+  }, [fetchProjects, authToken, companyContextKey, canReadProjects]);
 
 
   return (
-    <ProjectContext.Provider value={{ projects, projectHierarchy, fetchProjects, createProject, updateProject, deleteProject }}>
+    <ProjectContext.Provider value={{
+      projects,
+      projectHierarchy,
+      projectsLoading,
+      projectsError,
+      fetchProjects,
+      createProject,
+      updateProject,
+      deleteProject
+    }}>
       {children}
     </ProjectContext.Provider>
   );

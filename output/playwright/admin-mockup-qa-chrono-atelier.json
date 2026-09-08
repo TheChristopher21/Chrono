@@ -1,0 +1,84 @@
+[
+  {
+    "name": "chrono-atelier",
+    "sizes": [
+      {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 1031,
+        "overflow": false
+      },
+      {
+        "width": 736,
+        "scrollWidth": 736,
+        "height": 1256,
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 2203,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(247, 244, 237)",
+      "color": "rgb(57, 39, 54)"
+    },
+    "interactions": [
+      {
+        "afterApproval": "4"
+      },
+      {
+        "afterRejection": "3"
+      },
+      {
+        "personFilter": "NK\nNoah Keller\nEntwicklung\n100 % · Vollzeit\t38 h 00\t40 h 00\t−2 h 00\t0 h 00\tFehlende Zeiten\t"
+      },
+      {
+        "pms": "Die wichtigsten Einträge für deinen Arbeitsalltag.\n\nEintrag\tAktion\nReservation 2041 · Doppelzimmer · 8.–11. Sept.\tÖffnen\nZimmerstatus · 18 belegt · 6 verfügbar\tÖffnen\nAnreisen heute · 4 Gäste erwartet\tÖffnen\nNeuer Eintrag"
+      },
+      {
+        "view": "home",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "requests",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "team",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  }
+]

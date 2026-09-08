@@ -39,6 +39,8 @@ class PmsOperationsServiceIntegrationTest {
     @Autowired
     private GuestProfileRepository guestRepository;
     @Autowired
+    private PmsOrganizationRepository organizationRepository;
+    @Autowired
     private RatePlanRepository ratePlanRepository;
     @Autowired
     private FolioRepository folioRepository;
@@ -754,6 +756,76 @@ class PmsOperationsServiceIntegrationTest {
         roomRepository.save(room);
         assertThat(service.getOperations(company, property.getId(), today, null, null)
                 .metrics().dirtyRooms()).isZero();
+    }
+
+    @Test
+    void storesGuestCardCompanyChildrenAgesAndPreferenceSnapshot() {
+        roomType.setMaxOccupancy(4);
+        roomTypeRepository.save(roomType);
+        PmsOrganization organization = new PmsOrganization();
+        organization.setCompany(company);
+        organization.setType(OrganizationType.COMPANY);
+        organization.setName("BMW Schweiz AG");
+        organization.setCountryCode("CH");
+        organization = organizationRepository.save(organization);
+
+        GuestProfile createdGuest = service.createGuestRecord(company, property.getId(), new UpsertGuestRequest(
+                "Max", "Müller", "max@example.com", "+41 79 123 45 67", null,
+                "CH", "de", "Stammgast", true,
+                "Seestrasse 4", "8002", "Zürich", "CH", "ZH 12345",
+                "Ruhig, hohe Etage, Badewanne", organization.getId()));
+
+        PmsOperationsResponse response = service.createReservation(
+                company,
+                new UpsertReservationRequest(
+                        property.getId(), createdGuest.getId(), roomType.getId(), room.getId(), ratePlan.getId(),
+                        today.plusDays(1), today.plusDays(2), 1, 2,
+                        ReservationStatus.CONFIRMED, ReservationSource.DIRECT, null,
+                        ReservationGuaranteeStatus.COMPANY_GUARANTEE, null, java.util.List.of(4, 9)),
+                "Christopher",
+                today);
+
+        assertThat(createdGuest.getReferenceCode()).startsWith("GK");
+        assertThat(response.guests()).filteredOn(view -> view.id().equals(createdGuest.getId())).singleElement()
+                .satisfies(view -> {
+                    assertThat(view.addressLine1()).isEqualTo("Seestrasse 4");
+                    assertThat(view.vehiclePlate()).isEqualTo("ZH 12345");
+                    assertThat(view.organizationName()).isEqualTo("BMW Schweiz AG");
+                });
+        assertThat(response.reservations()).singleElement().satisfies(view -> {
+            assertThat(view.childAges()).containsExactly(4, 9);
+            assertThat(view.guestPreferenceSnapshot()).isEqualTo("Ruhig, hohe Etage, Badewanne");
+        });
+        assertThat(response.folios()).singleElement()
+                .satisfies(view -> assertThat(view.organizationName()).isEqualTo("BMW Schweiz AG"));
+    }
+
+    @Test
+    void mergesDuplicateGuestWithoutDeletingHistoryAndReassignsReservations() {
+        GuestProfile duplicate = service.createGuestRecord(company, property.getId(), new UpsertGuestRequest(
+                "Gabi", "Tschopp", "neu@example.com", null, null,
+                "CH", "de", "Notiz aus Dublette", false));
+        service.createReservation(
+                company,
+                new UpsertReservationRequest(
+                        property.getId(), duplicate.getId(), roomType.getId(), room.getId(), ratePlan.getId(),
+                        today.plusDays(1), today.plusDays(2), 1, 0,
+                        ReservationStatus.CONFIRMED, ReservationSource.PHONE, null),
+                "Christopher", today);
+
+        service.mergeGuest(company, property.getId(), duplicate.getId(),
+                new MergeGuestProfilesRequest(guest.getId(), java.util.Set.of("email", "notes")), today);
+
+        GuestProfile retainedSource = guestRepository.findById(duplicate.getId()).orElseThrow();
+        GuestProfile updatedTarget = guestRepository.findById(guest.getId()).orElseThrow();
+        assertThat(retainedSource.isActive()).isFalse();
+        assertThat(retainedSource.getMergedInto().getId()).isEqualTo(guest.getId());
+        assertThat(updatedTarget.getEmail()).isEqualTo("neu@example.com");
+        assertThat(updatedTarget.getNotes()).isEqualTo("Notiz aus Dublette");
+        assertThat(reservationRepository.findAllByGuest_IdOrderByArrivalDateDesc(guest.getId())).hasSize(1);
+        assertThat(guestRepository.searchForOperations(company.getId(), "%%",
+                org.springframework.data.domain.PageRequest.of(0, 20)))
+                .extracting(GuestProfile::getId).doesNotContain(duplicate.getId());
     }
 
     private UpsertReservationRequest reservationRequest(LocalDate arrival,

@@ -15,6 +15,7 @@ public interface FolioRepository extends JpaRepository<Folio, Long> {
     List<Folio> findAllByReservation_IdOrderByIdAsc(Long reservationId);
     Optional<Folio> findByIdAndReservation_Property_Company_Id(Long id, Long companyId);
     List<Folio> findAllByReservation_Property_IdOrderByCreatedAtDesc(Long propertyId);
+    List<Folio> findAllByOrganization_Id(Long organizationId);
 
     @Query("""
             select folio from Folio folio

@@ -60,6 +60,7 @@ public record PmsSetupResponse(
             String name,
             String floor,
             String housekeepingSection,
+            String features,
             RoomOperationalStatus operationalStatus,
             HousekeepingStatus housekeepingStatus,
             boolean active

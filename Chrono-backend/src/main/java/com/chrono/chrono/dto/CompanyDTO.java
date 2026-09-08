@@ -1,5 +1,7 @@
 package com.chrono.chrono.dto;
 
+import com.chrono.chrono.utils.RegistrationFeatures;
+
 public class CompanyDTO {
 
     private Long   id;
@@ -75,7 +77,7 @@ public class CompanyDTO {
                 co.getPaymentMethod(),
                 co.isCanceled()
         );
-        dto.setCustomerTrackingEnabled(co.getCustomerTrackingEnabled());
+        dto.setCustomerTrackingEnabled(RegistrationFeatures.isProjectsEnabled(co));
         dto.setAddressLine1(co.getAddressLine1());
         dto.setAddressLine2(co.getAddressLine2());
         dto.setPostalCode(co.getPostalCode());

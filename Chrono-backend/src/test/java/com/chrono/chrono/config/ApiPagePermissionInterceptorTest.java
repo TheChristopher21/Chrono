@@ -88,6 +88,111 @@ class ApiPagePermissionInterceptorTest {
     }
 
     @Test
+    void allowsTaskAdministratorToReadProjectsNeededByTaskWorkspace() {
+        User user = user("task-admin", "ROLE_ADMIN", Set.of("projects"), Map.of(
+                UserPermissionService.PAGE_DASHBOARD, UserPermissionService.ACCESS_NONE,
+                UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_NONE,
+                UserPermissionService.PAGE_ADMIN_PROJECT_REPORT, UserPermissionService.ACCESS_NONE,
+                UserPermissionService.PAGE_ADMIN_TASKS, UserPermissionService.ACCESS_VIEW
+        ));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("GET", "/api/projects/hierarchy"), response, new Object());
+
+        assertTrue(allowed);
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void deniesTaskAdministratorProjectWritesWithoutProjectManageAccess() {
+        User user = user("task-admin", "ROLE_ADMIN", Set.of("projects"), Map.of(
+                UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_NONE,
+                UserPermissionService.PAGE_ADMIN_TASKS, UserPermissionService.ACCESS_MANAGE
+        ));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("POST", "/api/projects"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void allowsDashboardUserToReadCompanyCustomersForTimeTracking() {
+        User user = user("worker", "ROLE_USER", Set.of("projects"),
+                Map.of(UserPermissionService.PAGE_DASHBOARD, UserPermissionService.ACCESS_VIEW));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("GET", "/api/customers"), response, new Object());
+
+        assertTrue(allowed);
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void legacyProjectFlagStillSatisfiesProjectPageFeatureGate() {
+        User user = user("legacy-admin", "ROLE_ADMIN", Set.of(),
+                Map.of(UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_VIEW));
+        user.getCompany().setCustomerTrackingEnabled(true);
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(
+                request("GET", "/api/report/analytics/projects"), response, new Object());
+
+        assertTrue(allowed);
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void deniesBillingUntilAccountingWritesAreTenantScoped() {
+        User user = user("billing-admin", "ROLE_ADMIN", Set.of("projects"),
+                Map.of(UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_MANAGE));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(
+                request("POST", "/api/billing/invoice"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void deniesPlaceholderIntegrationsUntilOutboundDeliveryIsImplementedSecurely() {
+        User user = user("integration-admin", "ROLE_ADMIN", Set.of("projects"),
+                Map.of(UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_MANAGE));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(
+                request("GET", "/api/integrations"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void deniesGlobalAuditFeedToProjectOnlyAdministrators() {
+        User user = user("project-admin", "ROLE_ADMIN", Set.of("projects"),
+                Map.of(
+                        UserPermissionService.PAGE_ADMIN_DASHBOARD, UserPermissionService.ACCESS_NONE,
+                        UserPermissionService.PAGE_ADMIN_PROJECTS, UserPermissionService.ACCESS_MANAGE
+                ));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(
+                request("GET", "/api/audit"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
     void deniesPmsSetupWriteWithPmsViewAccess() {
         User user = user("reception", "ROLE_USER", Set.of("pms"),
                 Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));

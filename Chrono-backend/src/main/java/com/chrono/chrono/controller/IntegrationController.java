@@ -9,6 +9,7 @@ import com.chrono.chrono.services.ComplianceAuditService;
 import com.chrono.chrono.services.IntegrationConfigService;
 import com.chrono.chrono.services.ReportService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +40,7 @@ public class IntegrationController {
     private ComplianceAuditService complianceAuditService;
 
     private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
     }
 
     private boolean isAdmin(User user) {

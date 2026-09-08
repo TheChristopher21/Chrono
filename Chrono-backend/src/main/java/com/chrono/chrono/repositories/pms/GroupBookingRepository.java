@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface GroupBookingRepository extends JpaRepository<GroupBooking, Long> {
     List<GroupBooking> findAllByProperty_IdOrderByArrivalDateDesc(Long propertyId);
+    List<GroupBooking> findAllByContactGuest_Id(Long guestId);
+    List<GroupBooking> findAllByOrganization_Id(Long organizationId);
     Optional<GroupBooking> findByIdAndProperty_Company_Id(Long id, Long companyId);
     boolean existsByProperty_IdAndGroupCodeIgnoreCase(Long propertyId, String groupCode);
 }

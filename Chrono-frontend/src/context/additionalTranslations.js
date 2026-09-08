@@ -759,8 +759,7 @@ export const additionalTranslations = {
             "management": {
                 "hero": {
                     "createProject": "Neues Projekt starten",
-                    "customersSubtitle": "CRM synchronisiert",
-                    "integrations": "Integrationen",
+                    "customersSubtitle": "In der Kundenverwaltung erfasst",
                     "kicker": "Chronos Control Center",
                     "projectsWithBudgetSuffix": "mit Budget",
                     "rateCurrency": "CHF",
@@ -770,8 +769,8 @@ export const additionalTranslations = {
                     "title": "Projekte & Workflows orchestrieren",
                     "totalBudget": "Gesamtbudget",
                     "totalBudgetUnit": "Stunden hinterlegt",
-                    "totalCustomers": "Verknüpfte Kunden",
-                    "totalProjects": "Aktive Projekte"
+                    "totalCustomers": "Kunden gesamt",
+                    "totalProjects": "Projekte gesamt"
                 }
             }
         },
@@ -1659,8 +1658,7 @@ export const additionalTranslations = {
             "management": {
                 "hero": {
                     "createProject": "Start new project",
-                    "customersSubtitle": "CRM synced",
-                    "integrations": "Integrations",
+                    "customersSubtitle": "Recorded in customer management",
                     "kicker": "Chronos Control Center",
                     "projectsWithBudgetSuffix": "with budget",
                     "rateCurrency": "CHF",
@@ -1670,8 +1668,8 @@ export const additionalTranslations = {
                     "title": "Orchestrate projects & workflows",
                     "totalBudget": "Total budget",
                     "totalBudgetUnit": "hours deposited",
-                    "totalCustomers": "Connected customers",
-                    "totalProjects": "Active projects"
+                    "totalCustomers": "Total customers",
+                    "totalProjects": "Total projects"
                 }
             }
         },

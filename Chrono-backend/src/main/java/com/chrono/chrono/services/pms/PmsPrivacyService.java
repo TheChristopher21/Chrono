@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,9 +80,13 @@ public class PmsPrivacyService {
                 LocalDateTime.now().withNano(0),
                 safe(username),
                 new PmsGuestDataExport.GuestData(
-                        guest.getId(), guest.getFirstName(), guest.getLastName(), guest.getEmail(),
+                        guest.getId(), guest.getReferenceCode(), guest.getFirstName(), guest.getLastName(), guest.getEmail(),
                         guest.getPhone(), guest.getDateOfBirth(), guest.getNationalityCode(),
-                        guest.getLanguageCode(), guest.getNotes(), guest.isVip(),
+                        guest.getLanguageCode(), guest.getAddressLine1(), guest.getPostalCode(), guest.getCity(),
+                        guest.getCountryCode(), guest.getVehiclePlate(), guest.getRoomPreferences(),
+                        guest.getOrganization() == null ? null : guest.getOrganization().getId(),
+                        guest.getOrganization() == null ? null : guest.getOrganization().getName(),
+                        guest.getNotes(), guest.isVip(),
                         guest.getCreatedAt(), guest.getUpdatedAt()),
                 reservations.stream().map(this::reservationData).toList(),
                 communications.stream().map(this::communicationData).toList(),
@@ -120,11 +125,21 @@ public class PmsPrivacyService {
         guest.setPhone(null);
         guest.setDateOfBirth(null);
         guest.setNationalityCode(null);
+        guest.setAddressLine1(null);
+        guest.setPostalCode(null);
+        guest.setCity(null);
+        guest.setCountryCode(null);
+        guest.setVehiclePlate(null);
+        guest.setRoomPreferences(null);
+        guest.setOrganization(null);
         guest.setNotes(null);
         guest.setVip(false);
         guestRepository.save(guest);
 
-        reservations.forEach(reservation -> reservation.setNotes(null));
+        reservations.forEach(reservation -> {
+            reservation.setNotes(null);
+            reservation.setGuestPreferenceSnapshot(null);
+        });
         communicationRepository.findAllByGuest_IdOrderByCreatedAtDesc(guestId).forEach(communication -> {
             communication.setRecipient(anonymizedReference);
             communication.setSender(null);
@@ -190,8 +205,20 @@ public class PmsPrivacyService {
         return new PmsGuestDataExport.ReservationData(
                 value.getId(), value.getProperty().getId(), value.getProperty().getName(),
                 value.getConfirmationCode(), value.getArrivalDate(), value.getDepartureDate(),
+                value.getAdults(), value.getChildren(), childAges(value.getChildAges()),
                 value.getStatus().name(), value.getSource().name(), value.getCurrencyCode(),
-                value.getTotalAmount().toPlainString(), value.getNotes());
+                value.getTotalAmount().toPlainString(), value.getNotes(), value.getGuestPreferenceSnapshot());
+    }
+
+    private List<Integer> childAges(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        try {
+            return Arrays.stream(value.split(",")).map(String::trim).map(Integer::valueOf).toList();
+        } catch (NumberFormatException ignored) {
+            return List.of();
+        }
     }
 
     private PmsGuestDataExport.CommunicationData communicationData(GuestCommunication value) {

@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller.pms;
 
 import com.chrono.chrono.dto.pms.PmsSetupResponse;
+import com.chrono.chrono.dto.pms.BulkCreateRoomsRequest;
 import com.chrono.chrono.dto.pms.UpsertHotelPropertyRequest;
 import com.chrono.chrono.dto.pms.UpsertRoomRequest;
 import com.chrono.chrono.dto.pms.UpsertRoomTypeRequest;
@@ -110,6 +111,18 @@ public class PmsSetupController {
                 request
         );
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/rooms"))
+                .body(response);
+    }
+
+    @PostMapping("/properties/{propertyId}/rooms/bulk")
+    public ResponseEntity<PmsSetupResponse> createRooms(
+            @PathVariable Long propertyId,
+            @Valid @RequestBody BulkCreateRoomsRequest request,
+            Principal principal
+    ) {
+        PmsSetupResponse response = pmsSetupService.createRooms(
+                requireCompany(principal, UserPermissionService.ACCESS_MANAGE), propertyId, request);
+        return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/rooms/bulk"))
                 .body(response);
     }
 

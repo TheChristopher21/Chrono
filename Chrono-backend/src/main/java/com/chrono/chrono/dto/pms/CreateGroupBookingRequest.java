@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.pms.GroupBookingStatus;
 import com.chrono.chrono.entities.pms.ReservationSource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -33,7 +34,17 @@ public record CreateGroupBookingRequest(
             @Min(1) @Max(20) int adults,
             @Min(0) @Max(20) int children,
             ReservationSource source,
-            @Size(max = 2000) String notes
+            @Size(max = 2000) String notes,
+            @Size(max = 20) List<@Min(0) @Max(17) Integer> childAges
     ) {
+        public RoomingEntry(Long guestId, Long roomTypeId, Long roomId, Long ratePlanId,
+                            int adults, int children, ReservationSource source, String notes) {
+            this(guestId, roomTypeId, roomId, ratePlanId, adults, children, source, notes, null);
+        }
+
+        @AssertTrue(message = "Wenn Kinderalter angegeben sind, muss für jedes Kind genau ein Alter erfasst sein.")
+        public boolean isChildAgeCountValid() {
+            return childAges == null || childAges.isEmpty() || childAges.size() == children;
+        }
     }
 }

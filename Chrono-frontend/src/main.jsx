@@ -43,21 +43,21 @@ root.render(
     <BrowserRouter>
         {/* LanguageProvider muss die Provider umschließen, die useTranslation() verwenden */}
         <LanguageProvider>
-            <AuthProvider>
-                <WorkspaceTabsProvider>
-                    <CustomerProvider>
-                        <ProjectProvider>
-                            <TaskProvider>
-                                <NotificationProvider>
+            <NotificationProvider>
+                <AuthProvider>
+                    <WorkspaceTabsProvider>
+                        <CustomerProvider>
+                            <ProjectProvider>
+                                <TaskProvider>
                                     <React.StrictMode>
                                         <App />
                                     </React.StrictMode>
-                                </NotificationProvider>
-                            </TaskProvider>
-                        </ProjectProvider>
-                    </CustomerProvider>
-                </WorkspaceTabsProvider>
-            </AuthProvider>
+                                </TaskProvider>
+                            </ProjectProvider>
+                        </CustomerProvider>
+                    </WorkspaceTabsProvider>
+                </AuthProvider>
+            </NotificationProvider>
         </LanguageProvider>
     </BrowserRouter>
 );

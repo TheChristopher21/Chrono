@@ -98,6 +98,48 @@ describe('App print report routing', () => {
     });
 });
 
+describe('App projects feature alias routing', () => {
+    const projectUser = (overrides) => ({
+        username: 'project-user',
+        companyId: 12,
+        roles: ['ROLE_USER'],
+        pagePermissions: { adminProjects: 'VIEW' },
+        ...overrides,
+    });
+
+    it('accepts the legacy customer-tracking flag while feature keys roll out', () => {
+        renderApp(
+            {
+                authToken: 'token',
+                currentUser: projectUser({
+                    customerTrackingEnabled: true,
+                    companyFeatureKeys: [],
+                }),
+                isAuthLoading: false,
+            },
+            '/admin/projects'
+        );
+
+        expect(screen.getByText('Admin projects')).toBeInTheDocument();
+    });
+
+    it('accepts the canonical projects feature when the legacy flag is stale', () => {
+        renderApp(
+            {
+                authToken: 'token',
+                currentUser: projectUser({
+                    customerTrackingEnabled: false,
+                    companyFeatureKeys: ['projects'],
+                }),
+                isAuthLoading: false,
+            },
+            '/admin/projects'
+        );
+
+        expect(screen.getByText('Admin projects')).toBeInTheDocument();
+    });
+});
+
 describe('App PMS routing', () => {
     it('opens the public direct-booking route without authentication', () => {
         renderApp({ authToken: null, currentUser: null, isAuthLoading: false }, '/book/ZRH');

@@ -15,6 +15,7 @@ import com.chrono.chrono.entities.DailyNote;
 import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.exceptions.UserNotFoundException;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
@@ -144,8 +145,7 @@ public class TimeTrackingService {
         if (task != null && task.getProject() != null) {
             return task.getProject();
         }
-        if (customer == null || user == null || user.getCompany() == null
-                || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (customer == null || user == null || !RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             return null;
         }
 
@@ -160,11 +160,11 @@ public class TimeTrackingService {
     public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source, Long customerId, Long projectId, Long taskId, Integer durationMinutes, String description) {
         User user = loadUserByUsername(username);
         Customer customer = null;
-        if (customerId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (customerId != null && RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             customer = resolveCustomerForUser(customerId, user);
         }
         Project project = null;
-        if (projectId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (projectId != null && RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             project = resolveProjectForUser(projectId, user);
         }
         Task task = null;
@@ -1561,7 +1561,7 @@ public class TimeTrackingService {
         if (!allowed) {
             throw new SecurityException("Not allowed");
         }
-        if (entryUser.getCompany() == null || !Boolean.TRUE.equals(entryUser.getCompany().getCustomerTrackingEnabled())) {
+        if (!RegistrationFeatures.isProjectsEnabled(entryUser.getCompany())) {
             throw new IllegalStateException("Feature disabled");
         }
         Customer customer = null;
@@ -1596,7 +1596,7 @@ public class TimeTrackingService {
         if (!allowed) {
             throw new SecurityException("Not allowed");
         }
-        if (entryUser.getCompany() == null || !Boolean.TRUE.equals(entryUser.getCompany().getCustomerTrackingEnabled())) {
+        if (!RegistrationFeatures.isProjectsEnabled(entryUser.getCompany())) {
             throw new IllegalStateException("Feature disabled");
         }
         Project project = null;
@@ -1618,7 +1618,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignCustomerForDay(String username, LocalDate date, Long customerId) {
         User user = loadUserByUsername(username);
-        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             throw new IllegalStateException("Feature disabled");
         }
         Customer customer = resolveCustomerForUser(customerId, user);
@@ -1641,7 +1641,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignProjectForDay(String username, LocalDate date, Long projectId) {
         User user = loadUserByUsername(username);
-        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             throw new IllegalStateException("Feature disabled");
         }
         Project project = resolveProjectForUser(projectId, user);
@@ -1655,7 +1655,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignCustomerForTimeRange(String username, LocalDate date, LocalTime startTime, LocalTime endTime, Long customerId) {
         User user = loadUserByUsername(username);
-        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
             throw new IllegalStateException("Feature disabled");
         }
         if (startTime == null || endTime == null) {

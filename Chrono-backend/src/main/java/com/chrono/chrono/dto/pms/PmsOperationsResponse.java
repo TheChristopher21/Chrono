@@ -17,6 +17,7 @@ public record PmsOperationsResponse(
         List<ReservationView> arrivals,
         List<ReservationView> departures,
         List<GuestView> guests,
+        List<OrganizationSummaryView> organizations,
         List<RatePlanView> ratePlans,
         List<RateOverrideView> rateOverrides,
         List<RoomStateView> rooms,
@@ -59,6 +60,7 @@ public record PmsOperationsResponse(
             LocalDate departureDate,
             int adults,
             int children,
+            List<Integer> childAges,
             ReservationStatus status,
             ReservationSource source,
             ReservationGuaranteeStatus guaranteeStatus,
@@ -66,6 +68,7 @@ public record PmsOperationsResponse(
             BigDecimal totalAmount,
             String currencyCode,
             String notes,
+            String guestPreferenceSnapshot,
             LocalDateTime checkedInAt,
             LocalDateTime checkedOutAt,
             LocalDateTime cancelledAt,
@@ -87,6 +90,7 @@ public record PmsOperationsResponse(
 
     public record GuestView(
             Long id,
+            String referenceCode,
             String firstName,
             String lastName,
             String email,
@@ -94,8 +98,32 @@ public record PmsOperationsResponse(
             LocalDate dateOfBirth,
             String nationalityCode,
             String languageCode,
+            String addressLine1,
+            String postalCode,
+            String city,
+            String countryCode,
+            String vehiclePlate,
+            String roomPreferences,
+            Long organizationId,
+            String organizationName,
             String notes,
-            boolean vip
+            boolean vip,
+            boolean active,
+            Long mergedIntoId
+    ) {
+    }
+
+    public record OrganizationSummaryView(
+            Long id,
+            String referenceCode,
+            String name,
+            String addressLine1,
+            String postalCode,
+            String city,
+            String countryCode,
+            boolean masterRecord,
+            Long parentOrganizationId,
+            boolean active
     ) {
     }
 
@@ -132,6 +160,7 @@ public record PmsOperationsResponse(
             String roomTypeName,
             String number,
             String floor,
+            String features,
             RoomOperationalStatus operationalStatus,
             HousekeepingStatus housekeepingStatus,
             ReservationView currentReservation

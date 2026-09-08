@@ -170,7 +170,7 @@ export const PAGE_CATALOG = [
         order: 140,
         supportsManage: true,
         group: "Projekte",
-        icon: "Projekte",
+        icon: "PR",
     },
     {
         key: "adminTasks",
@@ -435,6 +435,10 @@ export const isAdminUser = (user) => Boolean(
     user?.roles?.includes("ROLE_ADMIN") || user?.roles?.includes("ROLE_SUPERADMIN")
 );
 
+export const hasCompanyContext = (user) => (
+    user?.company?.id != null || user?.companyId != null
+);
+
 export const getCompanyFeatureList = (userOrFeatureKeys) => {
     const featureKeys = userOrFeatureKeys?.companyFeatureKeys ?? userOrFeatureKeys;
     if (!featureKeys) return [];
@@ -442,9 +446,18 @@ export const getCompanyFeatureList = (userOrFeatureKeys) => {
     return Object.values(featureKeys);
 };
 
+// During rolling deployments the legacy boolean and the canonical feature key
+// may arrive at different times. Either flag enables the tenant-scoped module.
+export const hasProjectsFeature = (user) => Boolean(
+    hasCompanyContext(user) && (
+        user?.customerTrackingEnabled === true || getCompanyFeatureList(user).includes("projects")
+    )
+);
+
 export const hasFeatureAccess = (user, featureKey) => {
     if (!featureKey) return true;
     if (isSuperAdminUser(user)) return true;
+    if (featureKey === "projects") return hasProjectsFeature(user);
     return getCompanyFeatureList(user).includes(featureKey);
 };
 

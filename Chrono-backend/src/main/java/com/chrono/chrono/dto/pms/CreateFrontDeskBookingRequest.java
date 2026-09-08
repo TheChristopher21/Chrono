@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 public record CreateFrontDeskBookingRequest(
@@ -27,7 +28,8 @@ public record CreateFrontDeskBookingRequest(
         ReservationGuaranteeStatus guaranteeStatus,
         @Size(max = 2000) String notes,
         @Valid CompleteGuestRegistrationRequest registration,
-        boolean checkInNow
+        boolean checkInNow,
+        @Size(max = 20) List<@Min(0) @Max(17) Integer> childAges
 ) {
     private static final Set<ReservationSource> FRONT_DESK_SOURCES = EnumSet.of(
             ReservationSource.DIRECT,
@@ -64,6 +66,21 @@ public record CreateFrontDeskBookingRequest(
     @AssertTrue(message = "Für einen direkten Check-in muss ein Zimmer zugewiesen sein.")
     public boolean isRoomAssignedForCheckIn() {
         return !checkInNow || roomId != null;
+    }
+
+    @AssertTrue(message = "Wenn Kinderalter angegeben sind, muss für jedes Kind genau ein Alter erfasst sein.")
+    public boolean isChildAgeCountValid() {
+        return childAges == null || childAges.isEmpty() || childAges.size() == children;
+    }
+
+    public CreateFrontDeskBookingRequest(
+            Long existingGuestId, UpsertGuestRequest newGuest, Long roomTypeId, Long roomId, Long ratePlanId,
+            LocalDate arrivalDate, LocalDate departureDate, int adults, int children, ReservationSource source,
+            ReservationGuaranteeStatus guaranteeStatus, String notes,
+            CompleteGuestRegistrationRequest registration, boolean checkInNow
+    ) {
+        this(existingGuestId, newGuest, roomTypeId, roomId, ratePlanId, arrivalDate, departureDate,
+                adults, children, source, guaranteeStatus, notes, registration, checkInNow, null);
     }
 
     private static boolean hasText(String value) {

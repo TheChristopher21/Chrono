@@ -188,6 +188,22 @@ describe('PmsReceptionBookingFlow', () => {
         apiMock.post.mockResolvedValue({ data: successfulResult() });
     });
 
+    it('captures one validated age for every child before checking availability', async () => {
+        renderFlow();
+
+        fireEvent.change(screen.getByLabelText('Kinder'), { target: { value: '2' } });
+        expect(screen.getByLabelText('Alter Kind 1')).toBeRequired();
+        expect(screen.getByLabelText('Alter Kind 2')).toBeRequired();
+
+        fireEvent.submit(screen.getByRole('button', { name: 'Weiter zur Verfügbarkeit' }).closest('form'));
+        expect(screen.getByRole('alert')).toHaveTextContent('für jedes Kind ein Alter');
+
+        fireEvent.change(screen.getByLabelText('Alter Kind 1'), { target: { value: '4' } });
+        fireEvent.change(screen.getByLabelText('Alter Kind 2'), { target: { value: '9' } });
+        await userEvent.click(screen.getByRole('button', { name: 'Weiter zur Verfügbarkeit' }));
+        expect(await screen.findByRole('radio', { name: /Doppelzimmer · Beste Rate/ })).toBeInTheDocument();
+    });
+
     it('fixes a walk-in arrival to today while allowing a multi-night stay', async () => {
         renderFlow({ mode: 'walk-in', businessDate: '2030-01-15' });
         await act(async () => {
@@ -236,6 +252,13 @@ describe('PmsReceptionBookingFlow', () => {
                     dateOfBirth: '1990-04-03',
                     nationalityCode: 'CH',
                     languageCode: 'de',
+                    addressLine1: 'Musterweg 12',
+                    postalCode: '8000',
+                    city: 'Zürich',
+                    countryCode: 'CH',
+                    vehiclePlate: 'ZH 12345',
+                    roomPreferences: null,
+                    organizationId: null,
                     notes: null,
                     vip: false,
                 },
@@ -246,6 +269,7 @@ describe('PmsReceptionBookingFlow', () => {
                 departureDate: TOMORROW,
                 adults: 1,
                 children: 0,
+                childAges: [],
                 source: 'WALK_IN',
                 guaranteeStatus: 'UNGUARANTEED',
                 notes: null,

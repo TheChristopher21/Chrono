@@ -30,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -245,7 +246,9 @@ public class PmsAdvancedService {
         HotelProperty property = requireProperty(company, propertyId);
         PmsOrganization organization = new PmsOrganization();
         organization.setCompany(company);
-        applyOrganization(organization, request);
+        applyOrganization(company, organization, request);
+        organizationRepository.save(organization);
+        ensureOrganizationReference(organization);
         organizationRepository.save(organization);
         return response(company, property, effectiveDate(property, businessDate));
     }
@@ -259,8 +262,45 @@ public class PmsAdvancedService {
         HotelProperty property = requireProperty(company, propertyId);
         PmsOrganization organization = organizationRepository.findByIdAndCompany_Id(organizationId, company.getId())
                 .orElseThrow(() -> notFound("Firma oder Reisebüro nicht gefunden."));
-        applyOrganization(organization, request);
+        applyOrganization(company, organization, request);
+        ensureOrganizationReference(organization);
         organizationRepository.save(organization);
+        return response(company, property, effectiveDate(property, businessDate));
+    }
+
+    @Transactional
+    public PmsAdvancedResponse mergeOrganization(Company company,
+                                                 Long propertyId,
+                                                 Long sourceOrganizationId,
+                                                 MergeOrganizationsRequest request,
+                                                 LocalDate businessDate) {
+        HotelProperty property = requireProperty(company, propertyId);
+        PmsOrganization source = requireOrganization(company, sourceOrganizationId);
+        PmsOrganization target = requireOrganization(company, request.targetOrganizationId());
+        if (source.getId().equals(target.getId())) {
+            throw badRequest("Quell- und Zielkartei müssen verschieden sein.");
+        }
+        if (!source.isActive() || source.getMergedInto() != null || !target.isActive()) {
+            throw conflict("Nur aktive, noch nicht zusammengeführte Firmenkarteien können verwendet werden.");
+        }
+        List<PmsOrganization> childOrganizations = organizationRepository
+                .findAllByParentOrganization_Id(source.getId());
+        if (!childOrganizations.isEmpty() && !target.isMasterRecord()) {
+            throw badRequest("Eine Masterkartei mit Unterkarteien kann nur in eine andere Masterkartei überführt werden.");
+        }
+        Set<String> fields = request.takeFromSource() == null ? Set.of() : request.takeFromSource();
+        applyOrganizationMergeFields(source, target, fields);
+        guestRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
+        folioRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
+        groupRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
+        childOrganizations.forEach(value -> value.setParentOrganization(target));
+        source.setActive(false);
+        source.setMergedInto(target);
+        ensureOrganizationReference(target);
+        organizationRepository.save(target);
+        organizationRepository.save(source);
+        auditWriter.append(property, "organization.merged", "organization", String.valueOf(source.getId()),
+                "{\"targetOrganizationId\":" + target.getId() + "}");
         return response(company, property, effectiveDate(property, businessDate));
     }
 
@@ -300,7 +340,7 @@ public class PmsAdvancedService {
                     property.getId(), room.guestId(), room.roomTypeId(), room.roomId(), room.ratePlanId(),
                     request.arrivalDate(), request.departureDate(), room.adults(), room.children(),
                     reservationStatus, room.source() == null ? ReservationSource.DIRECT : room.source(),
-                    clean(room.notes())
+                    clean(room.notes()), null, null, room.childAges()
             );
             Reservation reservation = operationsService.createReservationRecord(company, reservationRequest, username);
             reservation.setGroupBooking(group);
@@ -1136,9 +1176,13 @@ public class PmsAdvancedService {
 
     private PmsAdvancedResponse.OrganizationView organizationView(PmsOrganization value) {
         return new PmsAdvancedResponse.OrganizationView(
-                value.getId(), value.getType(), value.getName(), value.getVatNumber(), value.getAddressLine1(),
+                value.getId(), value.getReferenceCode(), value.getType(), value.getName(), value.getVatNumber(), value.getAddressLine1(),
                 value.getPostalCode(), value.getCity(), value.getCountryCode(), value.getEmail(), value.getPhone(),
-                value.getBillingEmail(), value.getPaymentTermsDays(), value.getNotes(), value.isActive());
+                value.getBillingEmail(), value.getPaymentTermsDays(), value.getNotes(), value.isActive(),
+                value.isMasterRecord(),
+                value.getParentOrganization() == null ? null : value.getParentOrganization().getId(),
+                value.getParentOrganization() == null ? null : value.getParentOrganization().getName(),
+                value.getMergedInto() == null ? null : value.getMergedInto().getId());
     }
 
     private PmsAdvancedResponse.GroupBookingView groupView(GroupBooking group) {
@@ -1257,7 +1301,7 @@ public class PmsAdvancedService {
         }
     }
 
-    private void applyOrganization(PmsOrganization organization, UpsertOrganizationRequest request) {
+    private void applyOrganization(Company company, PmsOrganization organization, UpsertOrganizationRequest request) {
         organization.setType(request.type());
         organization.setName(required(request.name()));
         organization.setVatNumber(clean(request.vatNumber()));
@@ -1271,6 +1315,59 @@ public class PmsAdvancedService {
         organization.setPaymentTermsDays(request.paymentTermsDays());
         organization.setNotes(clean(request.notes()));
         organization.setActive(request.active());
+        boolean masterRecord = Boolean.TRUE.equals(request.masterRecord());
+        if (!masterRecord && organization.getId() != null
+                && !organizationRepository.findAllByParentOrganization_Id(organization.getId()).isEmpty()) {
+            throw badRequest("Eine Masterkartei mit Unterkarteien kann nicht in eine normale Firmenkartei umgewandelt werden.");
+        }
+        organization.setMasterRecord(masterRecord);
+        if (masterRecord || request.parentOrganizationId() == null) {
+            organization.setParentOrganization(null);
+        } else {
+            PmsOrganization parent = organizationRepository
+                    .findByIdAndCompany_Id(request.parentOrganizationId(), company.getId())
+                    .filter(PmsOrganization::isActive)
+                    .filter(PmsOrganization::isMasterRecord)
+                    .orElseThrow(() -> badRequest("Die übergeordnete Kartei muss eine aktive Masterkartei sein."));
+            if (organization.getId() != null && organization.getId().equals(parent.getId())) {
+                throw badRequest("Eine Firmenkartei kann sich nicht selbst übergeordnet sein.");
+            }
+            organization.setParentOrganization(parent);
+        }
+    }
+
+    private void ensureOrganizationReference(PmsOrganization organization) {
+        if (organization.getReferenceCode() == null && organization.getId() != null) {
+            organization.setReferenceCode((organization.isMasterRecord() ? "MK" : "FK")
+                    + "%06d".formatted(organization.getId()));
+        } else if (organization.getReferenceCode() != null
+                && organization.getReferenceCode().matches("(?:FK|MK)\\d+")
+                && organization.isMasterRecord() != organization.getReferenceCode().startsWith("MK")) {
+            organization.setReferenceCode((organization.isMasterRecord() ? "MK" : "FK")
+                    + organization.getReferenceCode().substring(2));
+        }
+    }
+
+    private void applyOrganizationMergeFields(PmsOrganization source,
+                                              PmsOrganization target,
+                                              Set<String> fields) {
+        for (String field : fields) {
+            switch (field) {
+                case "type" -> target.setType(source.getType());
+                case "name" -> target.setName(source.getName());
+                case "vatNumber" -> target.setVatNumber(source.getVatNumber());
+                case "addressLine1" -> target.setAddressLine1(source.getAddressLine1());
+                case "postalCode" -> target.setPostalCode(source.getPostalCode());
+                case "city" -> target.setCity(source.getCity());
+                case "countryCode" -> target.setCountryCode(source.getCountryCode());
+                case "email" -> target.setEmail(source.getEmail());
+                case "phone" -> target.setPhone(source.getPhone());
+                case "billingEmail" -> target.setBillingEmail(source.getBillingEmail());
+                case "paymentTermsDays" -> target.setPaymentTermsDays(source.getPaymentTermsDays());
+                case "notes" -> target.setNotes(source.getNotes());
+                default -> throw badRequest("Unbekanntes Feld für die Zusammenführung: " + field);
+            }
+        }
     }
 
     private void applyTemplate(CommunicationTemplate template, UpsertCommunicationTemplateRequest request) {

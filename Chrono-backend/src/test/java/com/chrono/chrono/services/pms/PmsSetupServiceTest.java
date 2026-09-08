@@ -1,9 +1,13 @@
 package com.chrono.chrono.services.pms;
 
 import com.chrono.chrono.dto.pms.UpsertHotelPropertyRequest;
+import com.chrono.chrono.dto.pms.BulkCreateRoomsRequest;
 import com.chrono.chrono.dto.pms.UpsertRoomTypeRequest;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.pms.HotelProperty;
+import com.chrono.chrono.entities.pms.Room;
+import com.chrono.chrono.entities.pms.RoomOperationalStatus;
+import com.chrono.chrono.entities.pms.RoomType;
 import com.chrono.chrono.repositories.pms.HotelPropertyRepository;
 import com.chrono.chrono.repositories.pms.RoomRepository;
 import com.chrono.chrono.repositories.pms.RoomTypeRepository;
@@ -14,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -110,6 +115,32 @@ class PmsSetupServiceTest {
         assertThat(response.totalRoomTypes()).isZero();
         assertThat(response.totalRooms()).isZero();
         assertThat(response.foundationComplete()).isFalse();
+    }
+
+    @Test
+    void createsSequentialRoomsWithSharedFeaturesInOneOperation() {
+        HotelProperty property = new HotelProperty();
+        ReflectionTestUtils.setField(property, "id", 5L);
+        property.setCompany(company);
+        RoomType roomType = new RoomType();
+        ReflectionTestUtils.setField(roomType, "id", 7L);
+        roomType.setProperty(property);
+        when(propertyRepository.findByIdAndCompany_Id(5L, 12L)).thenReturn(Optional.of(property));
+        when(roomTypeRepository.findByIdAndProperty_Company_Id(7L, 12L)).thenReturn(Optional.of(roomType));
+        when(propertyRepository.findAllByCompany_IdOrderByNameAsc(12L)).thenReturn(List.of());
+
+        service.createRooms(company, 5L, new BulkCreateRoomsRequest(
+                7L, "A008", 3, "Gartenzimmer", "1", "Nord",
+                "Parkett, ruhig", RoomOperationalStatus.IN_SERVICE, true));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Room>> captor = ArgumentCaptor.forClass(List.class);
+        verify(roomRepository).saveAll(captor.capture());
+        assertThat(captor.getValue()).extracting(Room::getNumber).containsExactly("A008", "A009", "A010");
+        assertThat(captor.getValue()).allSatisfy(saved -> {
+            assertThat(saved.getFeatures()).isEqualTo("Parkett, ruhig");
+            assertThat(saved.getRoomType()).isSameAs(roomType);
+        });
     }
 
     private UpsertHotelPropertyRequest propertyRequest(String code, String name) {

@@ -7,9 +7,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record UpsertReservationRequest(
         @NotNull Long propertyId,
@@ -25,7 +27,8 @@ public record UpsertReservationRequest(
         ReservationSource source,
         @Size(max = 2000) String notes,
         ReservationGuaranteeStatus guaranteeStatus,
-        LocalDateTime holdUntil
+        LocalDateTime holdUntil,
+        @Size(max = 20) List<@Min(0) @Max(17) Integer> childAges
 ) {
     public UpsertReservationRequest(
             Long propertyId,
@@ -42,6 +45,21 @@ public record UpsertReservationRequest(
             String notes
     ) {
         this(propertyId, guestId, roomTypeId, roomId, ratePlanId, arrivalDate, departureDate,
-                adults, children, status, source, notes, null, null);
+                adults, children, status, source, notes, null, null, null);
+    }
+
+    public UpsertReservationRequest(
+            Long propertyId, Long guestId, Long roomTypeId, Long roomId, Long ratePlanId,
+            LocalDate arrivalDate, LocalDate departureDate, int adults, int children,
+            ReservationStatus status, ReservationSource source, String notes,
+            ReservationGuaranteeStatus guaranteeStatus, LocalDateTime holdUntil
+    ) {
+        this(propertyId, guestId, roomTypeId, roomId, ratePlanId, arrivalDate, departureDate,
+                adults, children, status, source, notes, guaranteeStatus, holdUntil, null);
+    }
+
+    @AssertTrue(message = "Wenn Kinderalter angegeben sind, muss für jedes Kind genau ein Alter erfasst sein.")
+    public boolean isChildAgeCountValid() {
+        return childAges == null || childAges.isEmpty() || childAges.size() == children;
     }
 }

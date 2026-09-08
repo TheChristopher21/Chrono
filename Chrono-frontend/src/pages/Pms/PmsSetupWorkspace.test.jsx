@@ -147,4 +147,44 @@ describe('PmsSetupWorkspace', () => {
         expect(screen.getAllByText('Inaktiv (nicht im Verkauf)')).toHaveLength(2);
         expect(screen.queryByText('Gesperrt')).not.toBeInTheDocument();
     });
+
+    it('creates a numbered room series with shared room features', async () => {
+        const configuredSetup = {
+            properties: [{
+                id: 5,
+                code: 'ZRH',
+                name: 'Chrono Zürich',
+                roomTypes: [{ id: 10, code: 'DBL', name: 'Doppelzimmer', roomCount: 0 }],
+                rooms: [],
+            }],
+            totalProperties: 1,
+            totalRoomTypes: 1,
+            totalRooms: 0,
+            foundationComplete: false,
+        };
+        apiMock.post.mockResolvedValueOnce({ data: configuredSetup });
+
+        render(
+            <PmsSetupWorkspace
+                setup={configuredSetup}
+                activePropertyId={5}
+                canManage
+                onSetupChange={vi.fn()}
+                onPropertyChange={vi.fn()}
+                onClose={vi.fn()}
+            />
+        );
+
+        await userEvent.type(screen.getByLabelText('Start-Zimmernummer'), '201');
+        fireEvent.change(screen.getByLabelText('Anzahl'), { target: { value: '3' } });
+        await userEvent.type(screen.getByLabelText('Zimmermerkmale'), 'Parkett, ruhig');
+        await userEvent.click(screen.getByRole('button', { name: 'Zimmer anlegen' }));
+
+        expect(apiMock.post).toHaveBeenCalledWith('/api/pms/properties/5/rooms/bulk', expect.objectContaining({
+            roomTypeId: 10,
+            startNumber: '201',
+            count: 3,
+            features: 'Parkett, ruhig',
+        }));
+    });
 });

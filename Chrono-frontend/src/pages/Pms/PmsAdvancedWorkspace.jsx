@@ -114,13 +114,14 @@ const PmsAdvancedWorkspace = ({
     const [organizationForm, setOrganizationForm] = useState({
         type: 'COMPANY', name: '', vatNumber: '', addressLine1: '', postalCode: '', city: '',
         countryCode: 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10,
-        notes: '', active: true,
+        notes: '', active: true, masterRecord: false, parentOrganizationId: '',
     });
+    const [organizationMerge, setOrganizationMerge] = useState({ sourceOrganizationId: '', targetOrganizationId: '', takeFromSource: [] });
     const [groupForm, setGroupForm] = useState({
         groupCode: '', name: '', contactGuestId: '', organizationId: '',
         arrivalDate: addDays(businessDate, 1), departureDate: addDays(businessDate, 2),
         status: 'CONFIRMED', notes: '',
-        rooms: [{ guestId: '', roomTypeId: property?.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0 }],
+        rooms: [{ guestId: '', roomTypeId: property?.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0, childAges: [] }],
     });
     const [invoiceForm, setInvoiceForm] = useState({
         folioId: '', dueDate: addDays(businessDate, 10), vatRate: '8.10',
@@ -286,14 +287,33 @@ const PmsAdvancedWorkspace = ({
         const saved = await mutateAdvanced(
             'post',
             `/api/pms/properties/${property.id}/organizations`,
-            { ...organizationForm, paymentTermsDays: Number(organizationForm.paymentTermsDays) },
+            {
+                ...organizationForm,
+                paymentTermsDays: Number(organizationForm.paymentTermsDays),
+                parentOrganizationId: organizationForm.parentOrganizationId ? Number(organizationForm.parentOrganizationId) : null,
+            },
             'Firmenprofil gespeichert.',
         );
         if (saved) setOrganizationForm({
             type: 'COMPANY', name: '', vatNumber: '', addressLine1: '', postalCode: '', city: '',
             countryCode: 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10,
-            notes: '', active: true,
+            notes: '', active: true, masterRecord: false, parentOrganizationId: '',
         });
+    };
+
+    const mergeOrganization = async (event) => {
+        event.preventDefault();
+        const saved = await mutateAdvanced(
+            'post',
+            `/api/pms/properties/${property.id}/organizations/${organizationMerge.sourceOrganizationId}/merge`,
+            {
+                targetOrganizationId: Number(organizationMerge.targetOrganizationId),
+                takeFromSource: organizationMerge.takeFromSource,
+            },
+            'Firmenkarteien wurden zusammengeführt; Gäste, Gruppen und Gastkonten zeigen nun auf die Zielkartei.',
+            true,
+        );
+        if (saved) setOrganizationMerge({ sourceOrganizationId: '', targetOrganizationId: '', takeFromSource: [] });
     };
 
     const submitGroup = async (event) => {
@@ -311,6 +331,7 @@ const PmsAdvancedWorkspace = ({
                 ratePlanId: Number(entry.ratePlanId),
                 adults: Number(entry.adults),
                 children: Number(entry.children),
+                childAges: (entry.childAges ?? []).map(Number),
                 source: 'DIRECT',
             })),
         };
@@ -634,7 +655,7 @@ const PmsAdvancedWorkspace = ({
                                     <h4>Zimmerliste (Rooming List)</h4>
                                     <button type="button" onClick={() => setGroupForm((current) => ({
                                         ...current,
-                                        rooms: [...current.rooms, { guestId: '', roomTypeId: property.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0 }],
+                                        rooms: [...current.rooms, { guestId: '', roomTypeId: property.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0, childAges: [] }],
                                     }))}>Zimmer hinzufügen</button>
                                 </div>
                                 {groupForm.rooms.map((entry, index) => (
@@ -643,6 +664,15 @@ const PmsAdvancedWorkspace = ({
                                         <select aria-label={`Zimmertyp Zimmer ${index + 1}`} value={entry.roomTypeId} onChange={(event) => updateGroupRoom(index, { roomTypeId: event.target.value, roomId: '', ratePlanId: '' })} required>{property.roomTypes?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select>
                                         <select aria-label={`Ratenplan Zimmer ${index + 1}`} value={entry.ratePlanId} onChange={(event) => updateGroupRoom(index, { ratePlanId: event.target.value })} required><option value="">Ratenplan</option>{groupRoomChoices[index]?.rates.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select>
                                         <select aria-label={`Zimmernummer ${index + 1}`} value={entry.roomId} onChange={(event) => updateGroupRoom(index, { roomId: event.target.value })}><option value="">Automatisch</option>{groupRoomChoices[index]?.rooms.map((room) => <option key={room.id} value={room.id}>{room.number}</option>)}</select>
+                                        <input aria-label={`Erwachsene Zimmer ${index + 1}`} type="number" min="1" max="20" value={entry.adults} onChange={(event) => updateGroupRoom(index, { adults: event.target.value })} required />
+                                        <input aria-label={`Kinder Zimmer ${index + 1}`} type="number" min="0" max="20" value={entry.children} onChange={(event) => {
+                                            const children = Number(event.target.value);
+                                            updateGroupRoom(index, {
+                                                children,
+                                                childAges: Array.from({ length: Math.max(0, children) }, (_, ageIndex) => entry.childAges?.[ageIndex] ?? ''),
+                                            });
+                                        }} required />
+                                        {(entry.childAges ?? []).map((age, ageIndex) => <input key={`group-child-age-${index}-${ageIndex}`} aria-label={`Alter Kind ${ageIndex + 1} Zimmer ${index + 1}`} type="number" min="0" max="17" value={age} onChange={(event) => updateGroupRoom(index, { childAges: entry.childAges.map((value, currentAgeIndex) => currentAgeIndex === ageIndex ? event.target.value : value) })} required />)}
                                         {groupForm.rooms.length > 1 && <button type="button" aria-label={`Zimmer ${index + 1} entfernen`} onClick={() => setGroupForm((current) => ({ ...current, rooms: current.rooms.filter((_, roomIndex) => roomIndex !== index) }))}>×</button>}
                                     </div>
                                 ))}
@@ -666,19 +696,39 @@ const PmsAdvancedWorkspace = ({
                         <form className="pms-form-grid" onSubmit={submitOrganization}>
                             <label>Typ<select value={organizationForm.type} onChange={(event) => setOrganizationForm({ ...organizationForm, type: event.target.value })}>{getPmsEnumOptions(ORGANIZATION_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                             <label>Name<input value={organizationForm.name} onChange={(event) => setOrganizationForm({ ...organizationForm, name: event.target.value })} required /></label>
+                            <label className="pms-checkbox"><input type="checkbox" checked={organizationForm.masterRecord} onChange={(event) => setOrganizationForm({ ...organizationForm, masterRecord: event.target.checked, parentOrganizationId: event.target.checked ? '' : organizationForm.parentOrganizationId })} /> Masterkartei / Hauptsitz</label>
+                            {!organizationForm.masterRecord && <label>Übergeordnete Masterkartei<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm({ ...organizationForm, parentOrganizationId: event.target.value })}><option value="">Keine</option>{organizations.filter((entry) => entry.active && entry.masterRecord).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>}
                             <label>UID / MWST-Nr.<input value={organizationForm.vatNumber} onChange={(event) => setOrganizationForm({ ...organizationForm, vatNumber: event.target.value })} /></label>
                             <label>Zahlungsziel (Tage)<input type="number" min="0" value={organizationForm.paymentTermsDays} onChange={(event) => setOrganizationForm({ ...organizationForm, paymentTermsDays: event.target.value })} /></label>
                             <label className="is-wide">Adresse<input value={organizationForm.addressLine1} onChange={(event) => setOrganizationForm({ ...organizationForm, addressLine1: event.target.value })} /></label>
                             <label>PLZ<input value={organizationForm.postalCode} onChange={(event) => setOrganizationForm({ ...organizationForm, postalCode: event.target.value })} /></label>
                             <label>Ort<input value={organizationForm.city} onChange={(event) => setOrganizationForm({ ...organizationForm, city: event.target.value })} /></label>
+                            <label>Land<input maxLength="2" value={organizationForm.countryCode} onChange={(event) => setOrganizationForm({ ...organizationForm, countryCode: event.target.value.toUpperCase() })} /></label>
                             <label>E-Mail<input type="email" value={organizationForm.email} onChange={(event) => setOrganizationForm({ ...organizationForm, email: event.target.value })} /></label>
+                            <label>Telefon<input value={organizationForm.phone} onChange={(event) => setOrganizationForm({ ...organizationForm, phone: event.target.value })} /></label>
                             <label>Rechnungs-E-Mail<input type="email" value={organizationForm.billingEmail} onChange={(event) => setOrganizationForm({ ...organizationForm, billingEmail: event.target.value })} /></label>
+                            <label className="is-wide">Notizen<textarea value={organizationForm.notes} onChange={(event) => setOrganizationForm({ ...organizationForm, notes: event.target.value })} /></label>
                             <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Geschäftspartner speichern</button></div>
                         </form>
                     </section>
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Geschäftspartner</span><h3>{organizations.length} Profile</h3></div></div>
-                        <div className="pms-record-list">{organizations.map((entry) => <article className="pms-record" key={entry.id}><div><span>{getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}</span><strong>{entry.name}</strong><small>{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small></div></article>)}</div>
+                        <div className="pms-record-list">{organizations.map((entry) => <article className="pms-record" key={entry.id}><div><span>{entry.referenceCode || getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)} · {entry.masterRecord ? 'Masterkartei' : getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}{!entry.active ? ' · zusammengeführt' : ''}</span><strong>{entry.name}</strong><small>{entry.parentOrganizationName ? `Unterkartei von ${entry.parentOrganizationName} · ` : ''}{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small><small>{[entry.addressLine1, entry.postalCode, entry.city, entry.countryCode].filter(Boolean).join(', ')}</small></div></article>)}</div>
+                        <details className="pms-work-card">
+                            <summary>Firmen-Dubletten zusammenführen</summary>
+                            <p>Die Quellkartei bleibt inaktiv als Historie erhalten. Verknüpfte Gäste, Gruppen, Unterkarteien und Rechnungsadressen wechseln zur Zielkartei.</p>
+                            <form className="pms-form-grid" onSubmit={mergeOrganization}>
+                                <label>Quellkartei<select value={organizationMerge.sourceOrganizationId} onChange={(event) => setOrganizationMerge({ ...organizationMerge, sourceOrganizationId: event.target.value })} required><option value="">Quelle wählen</option>{organizations.filter((entry) => entry.active && String(entry.id) !== String(organizationMerge.targetOrganizationId)).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>
+                                <label>Zielkartei<select value={organizationMerge.targetOrganizationId} onChange={(event) => setOrganizationMerge({ ...organizationMerge, targetOrganizationId: event.target.value })} required><option value="">Ziel wählen</option>{organizations.filter((entry) => entry.active && String(entry.id) !== String(organizationMerge.sourceOrganizationId)).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>
+                                <fieldset className="is-wide"><legend>Diese Werte aus der Quelle übernehmen</legend>{[
+                                    ['name', 'Name'], ['vatNumber', 'UID / MWST-Nr.'], ['addressLine1', 'Adresse'],
+                                    ['postalCode', 'PLZ'], ['city', 'Ort'], ['countryCode', 'Land'],
+                                    ['email', 'E-Mail'], ['phone', 'Telefon'], ['billingEmail', 'Rechnungs-E-Mail'],
+                                    ['paymentTermsDays', 'Zahlungsziel'], ['notes', 'Notizen'],
+                                ].map(([value, label]) => <label className="pms-checkbox" key={value}><input type="checkbox" checked={organizationMerge.takeFromSource.includes(value)} onChange={(event) => setOrganizationMerge((current) => ({ ...current, takeFromSource: event.target.checked ? [...current.takeFromSource, value] : current.takeFromSource.filter((field) => field !== value) }))} /> {label}</label>)}</fieldset>
+                                <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy || !organizationMerge.sourceOrganizationId || !organizationMerge.targetOrganizationId}>Zusammenführen</button></div>
+                            </form>
+                        </details>
                     </section>
                 </div>
             )}
@@ -688,7 +738,22 @@ const PmsAdvancedWorkspace = ({
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Rechnungswesen</span><h3>Rechnung erstellen</h3></div></div>
                         <form className="pms-form-grid" onSubmit={submitInvoice}>
-                            <label className="is-wide">Gastkonto (Folio)<select value={invoiceForm.folioId} onChange={(event) => { const folio = folios.find((entry) => String(entry.id) === event.target.value); setInvoiceForm({ ...invoiceForm, folioId: event.target.value, recipientName: folio?.organizationName || folio?.guestName || '' }); }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => Number(folio.charges) > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode} · {folio.guestName}</option>)}</select></label>
+                            <label className="is-wide">Gastkonto (Folio)<select value={invoiceForm.folioId} onChange={(event) => {
+                                const folio = folios.find((entry) => String(entry.id) === event.target.value);
+                                const organization = organizations.find((entry) => String(entry.id) === String(folio?.organizationId));
+                                const reservation = reservations.find((entry) => String(entry.id) === String(folio?.reservationId));
+                                const guest = guests.find((entry) => String(entry.id) === String(reservation?.guestId));
+                                const recipient = organization || guest;
+                                setInvoiceForm({
+                                    ...invoiceForm,
+                                    folioId: event.target.value,
+                                    recipientName: organization?.name || folio?.guestName || '',
+                                    recipientAddress: recipient?.addressLine1 || '',
+                                    recipientPostalCode: recipient?.postalCode || '',
+                                    recipientCity: recipient?.city || '',
+                                    recipientCountryCode: recipient?.countryCode || 'CH',
+                                });
+                            }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => Number(folio.charges) > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode} · {folio.organizationName || folio.guestName}</option>)}</select></label>
                             <label>Empfänger<input value={invoiceForm.recipientName} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientName: event.target.value })} required /></label>
                             <label>Fällig am<input type="date" value={invoiceForm.dueDate} onChange={(event) => setInvoiceForm({ ...invoiceForm, dueDate: event.target.value })} required /></label>
                             <label>MWST-Satz (%)<input type="number" min="0" max="100" step="0.01" value={invoiceForm.vatRate} onChange={(event) => setInvoiceForm({ ...invoiceForm, vatRate: event.target.value })} required /></label>

@@ -24,6 +24,9 @@ public class GuestProfile {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @Column(name = "reference_code", length = 20)
+    private String referenceCode;
+
     @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
@@ -35,6 +38,32 @@ public class GuestProfile {
 
     @Column(length = 60)
     private String phone;
+
+    @Column(name = "address_line_1", length = 180)
+    private String addressLine1;
+
+    @Column(name = "postal_code", length = 20)
+    private String postalCode;
+
+    @Column(length = 120)
+    private String city;
+
+    @Column(name = "country_code", length = 2)
+    private String countryCode;
+
+    @Column(name = "vehicle_plate", length = 40)
+    private String vehiclePlate;
+
+    @Column(name = "room_preferences", length = 1000)
+    private String roomPreferences;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private PmsOrganization organization;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merged_into_id")
+    private GuestProfile mergedInto;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
@@ -50,6 +79,9 @@ public class GuestProfile {
 
     @Column(nullable = false)
     private boolean vip;
+
+    @Column(nullable = false)
+    private boolean active = true;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

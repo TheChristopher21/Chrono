@@ -6,6 +6,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.ProjectService;
 import com.chrono.chrono.services.TaskService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ public class TaskController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return u.getCompany() != null && Boolean.TRUE.equals(u.getCompany().getCustomerTrackingEnabled());
+        return RegistrationFeatures.isProjectsEnabled(u.getCompany());
     }
 
     @GetMapping

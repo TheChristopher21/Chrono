@@ -25,6 +25,7 @@ public record PmsAdvancedResponse(
 ) {
     public record OrganizationView(
             Long id,
+            String referenceCode,
             OrganizationType type,
             String name,
             String vatNumber,
@@ -37,7 +38,11 @@ public record PmsAdvancedResponse(
             String billingEmail,
             int paymentTermsDays,
             String notes,
-            boolean active
+            boolean active,
+            boolean masterRecord,
+            Long parentOrganizationId,
+            String parentOrganizationName,
+            Long mergedIntoId
     ) {
     }
 
