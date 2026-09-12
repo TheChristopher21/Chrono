@@ -283,8 +283,31 @@ public class PmsOperationsService {
                                                 Long propertyId,
                                                 LocalDate arrival,
                                                 LocalDate departure) {
+        return getAvailability(company, propertyId, arrival, departure, 1, 0, null);
+    }
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse getAvailability(Company company, Long propertyId, LocalDate arrival,
+                                                LocalDate departure, int adults, int children, Long guestId) {
+        return getAvailability(company, propertyId, arrival, departure, adults, children, guestId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse getAvailability(Company company, Long propertyId, LocalDate arrival,
+                                                LocalDate departure, int adults, int children, Long guestId, Long organizationId) {
         HotelProperty property = requireProperty(company, propertyId);
         validateStay(arrival, departure);
+        if (adults < 1 || children < 0 || adults > 100 || children > 100) {
+            throw badRequest("Bitte eine gültige Anzahl Erwachsener und Kinder angeben.");
+        }
+        GuestProfile bookingGuest = guestId == null ? null : guestRepository.findByIdAndCompany_Id(guestId, company.getId())
+                .filter(GuestProfile::isActive).orElseThrow(() -> notFound("Gast nicht gefunden."));
+        PmsOrganization bookingOrganization = bookingGuest == null ? null : bookingGuest.getOrganization();
+        if (bookingGuest == null && organizationId != null) {
+            bookingOrganization = organizationRepository.findByIdAndCompany_Id(organizationId, company.getId())
+                    .filter(PmsOrganization::isActive).orElseThrow(() -> notFound("Firma nicht gefunden."));
+        }
+        final PmsOrganization quotedOrganization = bookingOrganization;
         List<RoomType> roomTypes = roomTypeRepository.findAllByProperty_IdOrderBySortOrderAscNameAsc(propertyId);
         List<RatePlan> ratePlans = ratePlanRepository.findAllByProperty_IdOrderByRoomType_SortOrderAscNameAsc(propertyId);
         List<Room> rooms = roomRepository.findAllByProperty_IdOrderByFloorAscNumberAsc(propertyId);
@@ -332,8 +355,14 @@ public class PmsOperationsService {
                             .filter(ratePlan -> ratePlan.getRoomType().getId().equals(roomType.getId()))
                             .map(ratePlan -> {
                                 Quote quote = quote(ratePlan, arrival, departure,
-                                        overridesByRatePlan.getOrDefault(ratePlan.getId(), List.of()));
-                                boolean canBook = available > 0 && quote.restriction() == null;
+                                        overridesByRatePlan.getOrDefault(ratePlan.getId(), List.of()), adults, children);
+                                String restriction = quote.restriction();
+                                if (adults + children > roomType.getMaxOccupancy()) {
+                                    restriction = "Die Belegung überschreitet die Zimmerkapazität.";
+                                } else if (!eligibleForOrganization(ratePlan, quotedOrganization)) {
+                                    restriction = "Diese Firmenrate benötigt einen zugeordneten Gast der Firma.";
+                                }
+                                boolean canBook = available > 0 && restriction == null;
                                 return new AvailabilityResponse.RateOption(
                                         ratePlan.getId(),
                                         ratePlan.getCode(),
@@ -341,7 +370,7 @@ public class PmsOperationsService {
                                         ratePlan.getCurrencyCode(),
                                         quote.total(),
                                         canBook,
-                                        available == 0 ? "Ausgebucht" : quote.restriction()
+                                        available == 0 ? "Ausgebucht" : restriction
                                 );
                             })
                             .toList();
@@ -1243,6 +1272,19 @@ public class PmsOperationsService {
                 .orElseThrow(() -> notFound("Firmenkartei nicht gefunden.")));
         guest.setNotes(clean(request.notes()));
         guest.setVip(Boolean.TRUE.equals(request.vip()));
+        guest.setPrivateEmail(lower(request.privateEmail()));
+        guest.setBusinessEmail(lower(request.businessEmail()));
+        guest.setAdditionalEmails(PmsProfileData.encode(PmsProfileData.normalizeEmails(request.additionalEmails())));
+        guest.setDietaryNotes(clean(request.dietaryNotes()));
+        guest.setVatNumber(clean(request.vatNumber()));
+        guest.setBillingOverride(Boolean.TRUE.equals(request.billingOverride()));
+        guest.setBillingProfile(PmsProfileData.encode(request.billingProfile()));
+        String contactId = clean(request.organizationContactId());
+        if (contactId != null && (guest.getOrganization() == null || PmsProfileData.contacts(guest.getOrganization().getContacts())
+                .stream().noneMatch(contact -> contactId.equals(contact.id())))) {
+            throw badRequest("Der Ansprechpartner muss zur ausgewählten Firma gehören.");
+        }
+        guest.setOrganizationContactId(contactId);
     }
 
     private void applyRatePlan(RatePlan ratePlan,
@@ -1256,6 +1298,57 @@ public class PmsOperationsService {
         ratePlan.setMinStay(request.minStay());
         ratePlan.setBreakfastIncluded(request.breakfastIncluded());
         ratePlan.setRefundable(request.refundable());
+        if (request.maxStay() != null && request.maxStay() < request.minStay()) {
+            throw badRequest("Der Höchstaufenthalt darf den Mindestaufenthalt nicht unterschreiten.");
+        }
+        if (request.minAdvanceDays() != null && request.maxAdvanceDays() != null
+                && request.minAdvanceDays() > request.maxAdvanceDays()) {
+            throw badRequest("Die maximale Vorausbuchung muss mindestens der minimalen entsprechen.");
+        }
+        if (request.validFrom() != null && request.validTo() != null && request.validFrom().isAfter(request.validTo())
+                || request.bookingFrom() != null && request.bookingTo() != null && request.bookingFrom().isAfter(request.bookingTo())) {
+            throw badRequest("Das Ende eines Ratenzeitraums muss am oder nach dem Beginn liegen.");
+        }
+        BigDecimal breakfast = request.breakfastAmount() == null ? BigDecimal.ZERO : money(request.breakfastAmount());
+        if (breakfast.signum() < 0 || breakfast.compareTo(ratePlan.getNightlyRate()) > 0
+                || !request.breakfastIncluded() && breakfast.signum() > 0) {
+            throw badRequest("Der Frühstücksanteil muss im Nachtpreis enthalten sein und Frühstück eingeschaltet sein.");
+        }
+        boolean inclusive = request.taxIncluded() == null ? ratePlan.isTaxIncluded() : request.taxIncluded();
+        if (!inclusive && request.vatRate() == null) {
+            throw badRequest("Für Nettopreise ist ein Steuersatz erforderlich (auch bei 0 %).");
+        }
+        if (breakfast.signum() > 0 && request.breakfastVatRate() == null) {
+            throw badRequest("Für den getrennten Frühstücksanteil ist ein eigener Steuersatz erforderlich.");
+        }
+        int includedAdults = request.includedAdults() == null ? ratePlan.getIncludedAdults() : request.includedAdults();
+        if (includedAdults > ratePlan.getRoomType().getMaxOccupancy()) {
+            throw badRequest("Die enthaltenen Erwachsenen überschreiten die Zimmerkapazität.");
+        }
+        ratePlan.setVatRate(request.vatRate());
+        ratePlan.setTaxIncluded(inclusive);
+        ratePlan.setBreakfastAmount(breakfast);
+        ratePlan.setBreakfastVatRate(request.breakfastVatRate());
+        ratePlan.setValidFrom(request.validFrom());
+        ratePlan.setValidTo(request.validTo());
+        ratePlan.setBookingFrom(request.bookingFrom());
+        ratePlan.setBookingTo(request.bookingTo());
+        ratePlan.setMaxStay(request.maxStay());
+        ratePlan.setMinAdvanceDays(request.minAdvanceDays());
+        ratePlan.setMaxAdvanceDays(request.maxAdvanceDays());
+        ratePlan.setIncludedAdults(includedAdults);
+        ratePlan.setExtraAdultRate(request.extraAdultRate() == null ? BigDecimal.ZERO : money(request.extraAdultRate()));
+        ratePlan.setChildRate(request.childRate() == null ? BigDecimal.ZERO : money(request.childRate()));
+        ratePlan.setCancellationDeadlineHours(request.cancellationDeadlineHours());
+        ratePlan.setCancellationFeePercent(request.cancellationFeePercent());
+        ratePlan.setDepositPercent(request.depositPercent());
+        ratePlan.setPaymentDueDays(request.paymentDueDays());
+        ratePlan.setCancellationPolicy(clean(request.cancellationPolicy()));
+        ratePlan.setPaymentPolicy(clean(request.paymentPolicy()));
+        ratePlan.setNotes(clean(request.notes()));
+        ratePlan.setOrganization(request.organizationId() == null ? null : organizationRepository
+                .findByIdAndCompany_Id(request.organizationId(), property.getCompany().getId())
+                .filter(PmsOrganization::isActive).orElseThrow(() -> notFound("Firma für die Vertragsrate nicht gefunden.")));
         if (request.active() != null) {
             ratePlan.setActive(request.active());
         } else if (creating) {
@@ -1323,7 +1416,12 @@ public class PmsOperationsService {
                 ensureRoomNotBlocked(room, request.arrivalDate(), request.departureDate());
             }
         }
-        Quote quote = quote(ratePlan, request.arrivalDate(), request.departureDate());
+        if (!eligibleForRate(ratePlan, guest)) {
+            throw conflict("Die Firmenrate ist nur für Gäste der zugeordneten Firma buchbar.");
+        }
+        LocalDate bookingDate = reservation.getCreatedAt() == null ? today(ratePlan.getProperty())
+                : reservation.getCreatedAt().toLocalDate();
+        Quote quote = quote(ratePlan, request.arrivalDate(), request.departureDate(), request.adults(), request.children(), bookingDate);
         if (quote.restriction() != null) {
             throw conflict(quote.restriction());
         }
@@ -1448,7 +1546,18 @@ public class PmsOperationsService {
         return minimum;
     }
 
-    private Quote quote(RatePlan ratePlan, LocalDate arrival, LocalDate departure) {
+    private boolean eligibleForRate(RatePlan ratePlan, GuestProfile guest) {
+        return eligibleForOrganization(ratePlan, guest == null ? null : guest.getOrganization());
+    }
+
+    private boolean eligibleForOrganization(RatePlan ratePlan, PmsOrganization organization) {
+        return ratePlan.getOrganization() == null || organization != null
+                && ratePlan.getOrganization().isActive()
+                && ratePlan.getOrganization().getId().equals(organization.getId());
+    }
+
+    private Quote quote(RatePlan ratePlan, LocalDate arrival, LocalDate departure, int adults, int children,
+                         LocalDate bookingDate) {
         validateStay(arrival, departure);
         List<RateOverride> overrides =
                 rateOverrideRepository.findAllByRatePlan_IdAndStayDateBetweenOrderByStayDateAsc(
@@ -1456,12 +1565,19 @@ public class PmsOperationsService {
                         arrival,
                         departure
                 );
-        return quote(ratePlan, arrival, departure, overrides);
+        return quote(ratePlan, arrival, departure, overrides, adults, children, bookingDate);
     }
 
     private Quote quote(RatePlan ratePlan, LocalDate arrival, LocalDate departure,
-                        List<RateOverride> overrides) {
+                        List<RateOverride> overrides, int adults, int children) {
+        return quote(ratePlan, arrival, departure, overrides, adults, children, today(ratePlan.getProperty()));
+    }
+
+    private Quote quote(RatePlan ratePlan, LocalDate arrival, LocalDate departure,
+                        List<RateOverride> overrides, int adults, int children, LocalDate bookingDate) {
         validateStay(arrival, departure);
+        String restriction = PmsRatePricing.restriction(ratePlan, arrival, departure, bookingDate);
+        if (restriction != null) return new Quote(BigDecimal.ZERO, restriction);
         long nights = ChronoUnit.DAYS.between(arrival, departure);
         Map<LocalDate, RateOverride> byDate = overrides.stream()
                 .collect(Collectors.toMap(RateOverride::getStayDate, Function.identity()));
@@ -1478,9 +1594,12 @@ public class PmsOperationsService {
                     return new Quote(BigDecimal.ZERO, "Anreise ist am " + date + " geschlossen.");
                 }
                 requiredStay = Math.max(requiredStay, override.getMinStay());
-                total = total.add(override.getPrice());
-            } else {
-                total = total.add(ratePlan.getNightlyRate());
+            }
+            try {
+                total = total.add(PmsRatePricing.night(ratePlan,
+                        override == null ? ratePlan.getNightlyRate() : override.getPrice(), adults, children).total());
+            } catch (IllegalArgumentException ex) {
+                return new Quote(BigDecimal.ZERO, ex.getMessage());
             }
             date = date.plusDays(1);
         }
@@ -1549,7 +1668,7 @@ public class PmsOperationsService {
         if (folio.getStatus() != FolioStatus.OPEN) {
             throw conflict("Ein geschlossenes Gastkonto kann nicht aktualisiert werden.");
         }
-        folioItemRepository.deleteAllByFolio_IdAndType(folio.getId(), FolioItemType.ROOM);
+        folioItemRepository.deleteAllByFolio_IdAndRateGeneratedTrue(folio.getId());
         saveRoomChargeItems(folio, reservation);
     }
 
@@ -1567,17 +1686,32 @@ public class PmsOperationsService {
             BigDecimal nightly = Optional.ofNullable(overrides.get(date))
                     .map(RateOverride::getPrice)
                     .orElse(reservation.getRatePlan().getNightlyRate());
-            FolioItem item = new FolioItem();
-            item.setFolio(folio);
-            item.setServiceDate(date);
-            item.setType(FolioItemType.ROOM);
-            item.setDescription("Übernachtung " + reservation.getRoomType().getName());
-            item.setQuantity(BigDecimal.ONE);
-            item.setUnitPrice(money(nightly));
-            item.setTotalAmount(money(nightly));
-            folioItemRepository.save(item);
+            RatePlan rate = reservation.getRatePlan();
+            PmsRatePricing.NightPrice price = PmsRatePricing.night(rate, nightly, reservation.getAdults(), reservation.getChildren());
+            saveRateChargeItem(folio, date, FolioItemType.ROOM, "Übernachtung " + reservation.getRoomType().getName(),
+                    price.accommodation(), rate.getVatRate());
+            if (price.breakfast().signum() > 0) {
+                saveRateChargeItem(folio, date, FolioItemType.BREAKFAST, "Frühstück · " + rate.getName(),
+                        price.breakfast(), rate.getBreakfastVatRate());
+            }
             date = date.plusDays(1);
         }
+    }
+
+    private void saveRateChargeItem(Folio folio, LocalDate date, FolioItemType type, String description,
+                                    BigDecimal gross, BigDecimal taxRate) {
+        FolioItem item = new FolioItem();
+        item.setFolio(folio);
+        item.setServiceDate(date);
+        item.setType(type);
+        item.setDescription(description);
+        item.setQuantity(BigDecimal.ONE);
+        item.setUnitPrice(gross);
+        item.setTotalAmount(gross);
+        item.setTaxRate(taxRate);
+        item.setTaxIncluded(true);
+        item.setRateGenerated(true);
+        folioItemRepository.save(item);
     }
 
     private void markRoomDirty(HotelProperty property, Room room, LocalDate serviceDate) {
@@ -1618,7 +1752,10 @@ public class PmsOperationsService {
                 guest.getNotes(),
                 guest.isVip(),
                 guest.isActive(),
-                guest.getMergedInto() == null ? null : guest.getMergedInto().getId()
+                guest.getMergedInto() == null ? null : guest.getMergedInto().getId(),
+                guest.getPrivateEmail(), guest.getBusinessEmail(), PmsProfileData.emails(guest.getAdditionalEmails()),
+                guest.getDietaryNotes(), guest.getVatNumber(), guest.getOrganizationContactId(), guest.isBillingOverride(),
+                PmsProfileData.billing(guest.getBillingProfile())
         );
     }
 
@@ -1628,7 +1765,7 @@ public class PmsOperationsService {
                 organization.getAddressLine1(), organization.getPostalCode(), organization.getCity(),
                 organization.getCountryCode(), organization.isMasterRecord(),
                 organization.getParentOrganization() == null ? null : organization.getParentOrganization().getId(),
-                organization.isActive());
+                organization.isActive(), PmsProfileData.contacts(organization.getContacts()), PmsProfileData.billing(organization.getBillingProfile()));
     }
 
     private PmsOperationsResponse.RatePlanView toRatePlanView(RatePlan ratePlan) {
@@ -1643,7 +1780,15 @@ public class PmsOperationsService {
                 ratePlan.getMinStay(),
                 ratePlan.isBreakfastIncluded(),
                 ratePlan.isRefundable(),
-                ratePlan.isActive()
+                ratePlan.isActive(),
+                ratePlan.getVatRate(), ratePlan.isTaxIncluded(), ratePlan.getBreakfastAmount(), ratePlan.getBreakfastVatRate(),
+                ratePlan.getValidFrom(), ratePlan.getValidTo(), ratePlan.getBookingFrom(), ratePlan.getBookingTo(),
+                ratePlan.getMaxStay(), ratePlan.getMinAdvanceDays(), ratePlan.getMaxAdvanceDays(), ratePlan.getIncludedAdults(),
+                ratePlan.getExtraAdultRate(), ratePlan.getChildRate(), ratePlan.getCancellationDeadlineHours(),
+                ratePlan.getCancellationFeePercent(), ratePlan.getDepositPercent(), ratePlan.getPaymentDueDays(),
+                ratePlan.getCancellationPolicy(), ratePlan.getPaymentPolicy(), ratePlan.getNotes(),
+                ratePlan.getOrganization() == null ? null : ratePlan.getOrganization().getId(),
+                ratePlan.getOrganization() == null ? null : ratePlan.getOrganization().getName()
         );
     }
 
@@ -2039,6 +2184,12 @@ public class PmsOperationsService {
                 case "firstName" -> target.setFirstName(source.getFirstName());
                 case "lastName" -> target.setLastName(source.getLastName());
                 case "email" -> target.setEmail(source.getEmail());
+                case "privateEmail" -> target.setPrivateEmail(source.getPrivateEmail());
+                case "businessEmail" -> target.setBusinessEmail(source.getBusinessEmail());
+                case "additionalEmails" -> target.setAdditionalEmails(source.getAdditionalEmails());
+                case "dietaryNotes" -> target.setDietaryNotes(source.getDietaryNotes());
+                case "vatNumber" -> target.setVatNumber(source.getVatNumber());
+                case "billingProfile" -> { target.setBillingProfile(source.getBillingProfile()); target.setBillingOverride(source.isBillingOverride()); }
                 case "phone" -> target.setPhone(source.getPhone());
                 case "dateOfBirth" -> target.setDateOfBirth(source.getDateOfBirth());
                 case "nationalityCode" -> target.setNationalityCode(source.getNationalityCode());

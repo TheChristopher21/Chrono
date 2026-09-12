@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import { BillingProfileEditor } from './PmsGuestProfileDetails.jsx';
+import { OrganizationProfileDetails, OrganizationDocuments } from './PmsOrganizationDetails.jsx';
 import { formatPmsDate, formatPmsDateTime } from './pmsFormatting.js';
 import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
 import {
@@ -100,6 +102,7 @@ const PmsAdvancedWorkspace = ({
     operations,
     businessDate,
     canManage,
+    canManageSettings = false,
     onOperationsChange,
 }) => {
     const locale = usePmsLocale();
@@ -116,6 +119,7 @@ const PmsAdvancedWorkspace = ({
         countryCode: 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10,
         notes: '', active: true, masterRecord: false, parentOrganizationId: '',
     });
+    const [editingOrganizationId, setEditingOrganizationId] = useState(null);
     const [organizationMerge, setOrganizationMerge] = useState({ sourceOrganizationId: '', targetOrganizationId: '', takeFromSource: [] });
     const [groupForm, setGroupForm] = useState({
         groupCode: '', name: '', contactGuestId: '', organizationId: '',
@@ -126,7 +130,7 @@ const PmsAdvancedWorkspace = ({
     const [invoiceForm, setInvoiceForm] = useState({
         folioId: '', dueDate: addDays(businessDate, 10), vatRate: '8.10',
         recipientName: '', recipientAddress: '', recipientPostalCode: '', recipientCity: '',
-        recipientCountryCode: 'CH', creditorIban: '', qrReference: '',
+        recipientCountryCode: property?.countryCode || 'CH', creditorIban: '', qrReference: '', useProfileBilling: true, billingProfile: {},
     });
     const [templateForm, setTemplateForm] = useState({
         code: '', name: '', subject: '', body: '', languageCode: 'de', active: true,
@@ -285,8 +289,8 @@ const PmsAdvancedWorkspace = ({
     const submitOrganization = async (event) => {
         event.preventDefault();
         const saved = await mutateAdvanced(
-            'post',
-            `/api/pms/properties/${property.id}/organizations`,
+            editingOrganizationId ? 'put' : 'post',
+            `/api/pms/properties/${property.id}/organizations${editingOrganizationId ? `/${editingOrganizationId}` : ''}`,
             {
                 ...organizationForm,
                 paymentTermsDays: Number(organizationForm.paymentTermsDays),
@@ -294,11 +298,11 @@ const PmsAdvancedWorkspace = ({
             },
             'Firmenprofil gespeichert.',
         );
-        if (saved) setOrganizationForm({
+        if (saved) { setEditingOrganizationId(null); setOrganizationForm({
             type: 'COMPANY', name: '', vatNumber: '', addressLine1: '', postalCode: '', city: '',
             countryCode: 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10,
-            notes: '', active: true, masterRecord: false, parentOrganizationId: '',
-        });
+            notes: '', active: true, masterRecord: false, parentOrganizationId: '', contacts: [], billingProfile: {},
+        }); }
     };
 
     const mergeOrganization = async (event) => {
@@ -613,7 +617,7 @@ const PmsAdvancedWorkspace = ({
                             <label>Lage / Raum<input value={resourceForm.location} onChange={(event) => setResourceForm({ ...resourceForm, location: event.target.value })} /></label>
                             <label>Kapazität<input type="number" min="1" value={resourceForm.capacity} onChange={(event) => setResourceForm({ ...resourceForm, capacity: event.target.value })} required /></label>
                             <label>Preis pro Stunde (falls berechnet)<input type="number" min="0" step="0.01" value={resourceForm.hourlyRate} onChange={(event) => setResourceForm({ ...resourceForm, hourlyRate: event.target.value })} required /></label>
-                            <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Ressource anlegen</button></div>
+                            <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManageSettings || busy}>Ressource anlegen</button></div>
                         </form>
                         <hr />
                         <h4>Ressource buchen</h4>
@@ -692,12 +696,12 @@ const PmsAdvancedWorkspace = ({
             {section === 'organizations' && (
                 <div className="pms-operations-layout">
                     <section className="pms-work-card">
-                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Firmen, Reisebüros & Veranstalter</span><h3>Geschäftspartner anlegen</h3></div></div>
+                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Firmen, Reisebüros & Veranstalter</span><h3>{editingOrganizationId ? 'Geschäftspartner bearbeiten' : 'Geschäftspartner anlegen'}</h3></div></div>
                         <form className="pms-form-grid" onSubmit={submitOrganization}>
                             <label>Typ<select value={organizationForm.type} onChange={(event) => setOrganizationForm({ ...organizationForm, type: event.target.value })}>{getPmsEnumOptions(ORGANIZATION_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                             <label>Name<input value={organizationForm.name} onChange={(event) => setOrganizationForm({ ...organizationForm, name: event.target.value })} required /></label>
                             <label className="pms-checkbox"><input type="checkbox" checked={organizationForm.masterRecord} onChange={(event) => setOrganizationForm({ ...organizationForm, masterRecord: event.target.checked, parentOrganizationId: event.target.checked ? '' : organizationForm.parentOrganizationId })} /> Masterkartei / Hauptsitz</label>
-                            {!organizationForm.masterRecord && <label>Übergeordnete Masterkartei<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm({ ...organizationForm, parentOrganizationId: event.target.value })}><option value="">Keine</option>{organizations.filter((entry) => entry.active && entry.masterRecord).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>}
+                            {!organizationForm.masterRecord && <label>Übergeordnete Masterkartei<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm({ ...organizationForm, parentOrganizationId: event.target.value })}><option value="">Keine</option>{organizations.filter((entry) => entry.active && entry.masterRecord && entry.id !== editingOrganizationId).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>}
                             <label>UID / MWST-Nr.<input value={organizationForm.vatNumber} onChange={(event) => setOrganizationForm({ ...organizationForm, vatNumber: event.target.value })} /></label>
                             <label>Zahlungsziel (Tage)<input type="number" min="0" value={organizationForm.paymentTermsDays} onChange={(event) => setOrganizationForm({ ...organizationForm, paymentTermsDays: event.target.value })} /></label>
                             <label className="is-wide">Adresse<input value={organizationForm.addressLine1} onChange={(event) => setOrganizationForm({ ...organizationForm, addressLine1: event.target.value })} /></label>
@@ -708,12 +712,14 @@ const PmsAdvancedWorkspace = ({
                             <label>Telefon<input value={organizationForm.phone} onChange={(event) => setOrganizationForm({ ...organizationForm, phone: event.target.value })} /></label>
                             <label>Rechnungs-E-Mail<input type="email" value={organizationForm.billingEmail} onChange={(event) => setOrganizationForm({ ...organizationForm, billingEmail: event.target.value })} /></label>
                             <label className="is-wide">Notizen<textarea value={organizationForm.notes} onChange={(event) => setOrganizationForm({ ...organizationForm, notes: event.target.value })} /></label>
-                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Geschäftspartner speichern</button></div>
+                            <OrganizationProfileDetails value={organizationForm} onChange={setOrganizationForm} guests={guests} />
+                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Geschäftspartner speichern</button>{editingOrganizationId && <button type="button" onClick={() => { setEditingOrganizationId(null); setOrganizationForm({ type: 'COMPANY', name: '', vatNumber: '', addressLine1: '', postalCode: '', city: '', countryCode: property?.countryCode || 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10, notes: '', active: true, masterRecord: false, parentOrganizationId: '', contacts: [], billingProfile: {} }); }}>Neue Kartei</button>}</div>
                         </form>
                     </section>
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Geschäftspartner</span><h3>{organizations.length} Profile</h3></div></div>
-                        <div className="pms-record-list">{organizations.map((entry) => <article className="pms-record" key={entry.id}><div><span>{entry.referenceCode || getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)} · {entry.masterRecord ? 'Masterkartei' : getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}{!entry.active ? ' · zusammengeführt' : ''}</span><strong>{entry.name}</strong><small>{entry.parentOrganizationName ? `Unterkartei von ${entry.parentOrganizationName} · ` : ''}{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small><small>{[entry.addressLine1, entry.postalCode, entry.city, entry.countryCode].filter(Boolean).join(', ')}</small></div></article>)}</div>
+                        <div className="pms-record-list">{organizations.map((entry) => <article className="pms-record" key={entry.id}><div><span>{entry.referenceCode || getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)} · {entry.masterRecord ? 'Masterkartei' : getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}{!entry.active ? ' · zusammengeführt' : ''}</span><strong>{entry.name}</strong><small>{entry.parentOrganizationName ? `Unterkartei von ${entry.parentOrganizationName} · ` : ''}{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small><small>{[entry.addressLine1, entry.postalCode, entry.city, entry.countryCode].filter(Boolean).join(', ')}</small><small>{(entry.contacts || []).map((contact) => contact.name).join(' · ')}</small></div><button type="button" onClick={() => { setEditingOrganizationId(entry.id); setOrganizationForm({ ...entry, parentOrganizationId: entry.parentOrganizationId || '' }); }}>{canManage ? 'Bearbeiten / Dokumente' : 'Ansehen / Dokumente'}</button></article>)}</div>
+                        {editingOrganizationId && <OrganizationDocuments organizationId={editingOrganizationId} rates={operations?.ratePlans || []} canManage={canManageSettings} />}
                         <details className="pms-work-card">
                             <summary>Firmen-Dubletten zusammenführen</summary>
                             <p>Die Quellkartei bleibt inaktiv als Historie erhalten. Verknüpfte Gäste, Gruppen, Unterkarteien und Rechnungsadressen wechseln zur Zielkartei.</p>
@@ -744,23 +750,34 @@ const PmsAdvancedWorkspace = ({
                                 const reservation = reservations.find((entry) => String(entry.id) === String(folio?.reservationId));
                                 const guest = guests.find((entry) => String(entry.id) === String(reservation?.guestId));
                                 const recipient = organization || guest;
+                                const employeeBilling = guest?.billingOverride && String(guest?.organizationId) === String(organization?.id)
+                                    ? Object.fromEntries(Object.entries(guest?.billingProfile || {}).filter(([, value]) => value != null && value !== '')) : {};
+                                const billing = organization ? { ...organization.billingProfile, ...employeeBilling } : guest?.billingProfile;
+                                const contact = organization?.contacts?.find((entry) => entry.id === guest?.organizationContactId);
                                 setInvoiceForm({
                                     ...invoiceForm,
                                     folioId: event.target.value,
-                                    recipientName: organization?.name || folio?.guestName || '',
-                                    recipientAddress: recipient?.addressLine1 || '',
-                                    recipientPostalCode: recipient?.postalCode || '',
-                                    recipientCity: recipient?.city || '',
-                                    recipientCountryCode: recipient?.countryCode || 'CH',
+                                    recipientName: billing?.legalName || organization?.name || folio?.guestName || '',
+                                    billingProfile: { ...billing, attention: billing?.attention || contact?.name || '', vatNumber: billing?.vatNumber || recipient?.vatNumber || '' },
+                                    useProfileBilling: true,
+                                    dueDate: addDays(businessDate, organization?.paymentTermsDays ?? property?.invoiceDueDays ?? 14),
+                                    recipientAddress: billing?.addressLine1 || recipient?.addressLine1 || '',
+                                    recipientPostalCode: billing?.postalCode || recipient?.postalCode || '',
+                                    recipientCity: billing?.city || recipient?.city || '',
+                                    recipientCountryCode: billing?.countryCode || recipient?.countryCode || property?.countryCode || 'CH',
                                 });
                             }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => Number(folio.charges) > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode} · {folio.organizationName || folio.guestName}</option>)}</select></label>
-                            <label>Empfänger<input value={invoiceForm.recipientName} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientName: event.target.value })} required /></label>
+                            <label className="pms-checkbox is-wide"><input type="checkbox" checked={invoiceForm.useProfileBilling} onChange={(e) => setInvoiceForm({ ...invoiceForm, useProfileBilling: e.target.checked })} /> Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)</label>
+                            <label>Empfänger<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientName} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientName: event.target.value })} required /></label>
                             <label>Fällig am<input type="date" value={invoiceForm.dueDate} onChange={(event) => setInvoiceForm({ ...invoiceForm, dueDate: event.target.value })} required /></label>
-                            <label>MWST-Satz (%)<input type="number" min="0" max="100" step="0.01" value={invoiceForm.vatRate} onChange={(event) => setInvoiceForm({ ...invoiceForm, vatRate: event.target.value })} required /></label>
+                            <label>Steuersatz für Positionen ohne hinterlegten Satz (%)<input type="number" min="0" max="100" step="0.01" value={invoiceForm.vatRate} onChange={(event) => setInvoiceForm({ ...invoiceForm, vatRate: event.target.value })} required /></label>
                             <label>IBAN<input value={invoiceForm.creditorIban} onChange={(event) => setInvoiceForm({ ...invoiceForm, creditorIban: event.target.value })} placeholder="optional für Schweizer QR-Rechnung" /></label>
-                            <label className="is-wide">Adresse<input value={invoiceForm.recipientAddress} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientAddress: event.target.value })} /></label>
-                            <label>PLZ<input value={invoiceForm.recipientPostalCode} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientPostalCode: event.target.value })} /></label>
-                            <label>Ort<input value={invoiceForm.recipientCity} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientCity: event.target.value })} /></label>
+                            <label className="is-wide">Adresse<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientAddress} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientAddress: event.target.value })} /></label>
+                            <label>PLZ<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientPostalCode} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientPostalCode: event.target.value })} /></label>
+                            <label>Ort<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientCity} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientCity: event.target.value })} /></label>
+                            <label>Empfängerland (ISO)<input maxLength={2} disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientCountryCode} onChange={(e) => setInvoiceForm({ ...invoiceForm, recipientCountryCode: e.target.value.toUpperCase() })} /></label>
+                            {!invoiceForm.useProfileBilling && <BillingProfileEditor value={invoiceForm.billingProfile} onChange={(billingProfile) => setInvoiceForm({ ...invoiceForm, billingProfile })} />}
+                            {invoiceForm.useProfileBilling && <p className="is-wide">Empfänger: {invoiceForm.recipientName} · {invoiceForm.billingProfile?.attention} · {invoiceForm.recipientAddress} · {invoiceForm.recipientPostalCode} {invoiceForm.recipientCity} {invoiceForm.recipientCountryCode}{invoiceForm.billingProfile?.vatNumber ? ` · VAT / Tax ID: ${invoiceForm.billingProfile.vatNumber}` : ''}. Die Angaben werden bei Ausstellung unveränderlich gespeichert.</p>}
                             <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Rechnung ausstellen</button></div>
                         </form>
                     </section>
@@ -794,7 +811,7 @@ const PmsAdvancedWorkspace = ({
                             <label>Name<input value={templateForm.name} onChange={(event) => setTemplateForm({ ...templateForm, name: event.target.value })} required /></label>
                             <label className="is-wide">Betreff<input value={templateForm.subject} onChange={(event) => setTemplateForm({ ...templateForm, subject: event.target.value })} required /></label>
                             <label className="is-wide">Text<textarea value={templateForm.body} onChange={(event) => setTemplateForm({ ...templateForm, body: event.target.value })} placeholder="{{guestName}}, {{hotelName}}, {{arrivalDate}}, {{departureDate}}, {{confirmationCode}}" required /></label>
-                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Vorlage speichern</button></div>
+                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManageSettings || busy}>Vorlage speichern</button></div>
                         </form>
                         <hr />
                         <h4>Versand vorbereiten</h4>
@@ -941,7 +958,7 @@ const PmsAdvancedWorkspace = ({
                         <label>Ratenplan<select value={channelForm.ratePlanId} onChange={(event) => setChannelForm({ ...channelForm, ratePlanId: event.target.value })} required><option value="">Ratenplan wählen</option>{rates.filter((rate) => String(rate.roomTypeId) === String(channelForm.roomTypeId)).map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
                         <label>Externer Zimmercode<input value={channelForm.externalRoomCode} onChange={(event) => setChannelForm({ ...channelForm, externalRoomCode: event.target.value })} required /></label>
                         <label>Externer Ratencode<input value={channelForm.externalRateCode} onChange={(event) => setChannelForm({ ...channelForm, externalRateCode: event.target.value })} required /></label>
-                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>{channelForm.environment === 'LIVE' ? 'Produktive Verbindung anlegen' : 'Testverbindung anlegen'}</button></div>
+                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManageSettings || busy}>{channelForm.environment === 'LIVE' ? 'Produktive Verbindung anlegen' : 'Testverbindung anlegen'}</button></div>
                     </form>
                     <div className="pms-record-list">{advanced?.channelConnections?.map((connection) => <article className="pms-record" key={connection.id}><div><span>{getPmsEnumLabel(CHANNEL_ENVIRONMENT_LABELS, connection.environment)} · {getPmsEnumLabel(CHANNEL_CONNECTION_STATUS_LABELS, connection.status)}</span><strong>{connection.displayName}</strong><small>{connection.mappings.length} Zuordnungen · {connection.lastSyncMessage || 'Noch kein Abgleich'}</small></div><button type="button" onClick={() => mutateAdvanced('post', `/api/pms/properties/${property.id}/channel-connections/${connection.id}/sync`, undefined, connection.environment === 'LIVE' ? 'Produktiver Abgleich eingeplant.' : 'Testabgleich erstellt.')} disabled={!canManage || busy}>{connection.environment === 'LIVE' ? 'Produktiv synchronisieren' : 'Synchronisierung testen'}</button></article>)}</div>
                     <div className="pms-record-list">{advanced?.integrationOutbox?.map((event) => <article className="pms-record" key={event.id}><div><span>{getPmsEnumLabel(OUTBOX_STATUS_LABELS, event.status)} · {aggregateLabel(event.aggregateType)} #{event.aggregateId}</span><strong>{eventLabel(event.eventType)}</strong><small>{formatPmsDateTime(event.createdAt)} · Übertragungsversuch {event.attemptCount}{event.lastError ? ` · ${integrationErrorLabel(event.lastError)}` : ''}</small></div><div className="pms-inline-actions">{event.status === 'PENDING' && <button type="button" disabled={!canManage || busy} onClick={() => mutateAdvanced('post', `/api/pms/properties/${property.id}/integration-outbox/${event.id}/acknowledge`, undefined, 'Übertragung als zugestellt bestätigt.')}>Bestätigen</button>}{['FAILED', 'DEAD_LETTER'].includes(event.status) && <button type="button" disabled={!canManage || busy} onClick={() => mutateAdvanced('post', `/api/pms/properties/${property.id}/integration-outbox/${event.id}/retry`, undefined, 'Übertragung erneut eingeplant.')}>Erneut versuchen</button>}</div></article>)}</div>

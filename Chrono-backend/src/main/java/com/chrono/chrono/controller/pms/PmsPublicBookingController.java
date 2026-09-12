@@ -26,10 +26,12 @@ public class PmsPublicBookingController {
 
     @GetMapping("/{propertyCode}/availability")
     public ResponseEntity<AvailabilityResponse> availability(@PathVariable String propertyCode,
-            @RequestParam LocalDate arrival, @RequestParam LocalDate departure, HttpServletRequest servletRequest) {
+            @RequestParam LocalDate arrival, @RequestParam LocalDate departure,
+            @RequestParam(defaultValue = "1") int adults, @RequestParam(defaultValue = "0") int children,
+            HttpServletRequest servletRequest) {
         PmsPublicRateLimiter.Decision decision = rateLimiter.check(servletRequest.getRemoteAddr(), "booking-read");
         if (!decision.allowed()) return limited(decision);
-        return ResponseEntity.ok(service.publicAvailability(propertyCode, arrival, departure));
+        return ResponseEntity.ok(service.publicAvailability(propertyCode, arrival, departure, adults, children));
     }
 
     @GetMapping("/{propertyCode}")

@@ -25,12 +25,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import({PmsOperationsService.class, PmsAdvancedService.class, PmsAuditWriter.class,
-        PmsDocumentFingerprintService.class})
+        PmsDocumentFingerprintService.class, PmsProfileDocumentService.class})
 @ActiveProfiles("test")
 class PmsAdvancedServiceIntegrationTest {
 
     @Autowired
     private PmsAdvancedService service;
+    @Autowired
+    private PmsProfileDocumentService documentService;
+    @Autowired
+    private PmsInvoiceLineRepository invoiceLineRepository;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
     @Autowired
     private PmsOperationsService operationsService;
     @Autowired
@@ -636,6 +642,114 @@ class PmsAdvancedServiceIntegrationTest {
         assertThat(retainedSource.isActive()).isFalse();
         assertThat(retainedSource.getMergedInto().getId()).isEqualTo(master.id());
         assertThat(target.getEmail()).isEqualTo("basel@example.com");
+    }
+
+    @Test
+    void snapshotsEmployeeBillingAndSupplierAndPreservesMixedTaxLinesOnCredit() {
+        property.setTaxNumber("CHE-123.456.789 MWST");
+        property.setInvoicePrefix("ZRH");
+        property.setInvoiceFooter("Register Zürich · Zahlung netto");
+        PmsOrganization organization = new PmsOrganization();
+        organization.setCompany(company); organization.setName("International Company");
+        organization.setType(OrganizationType.COMPANY); organization.setCountryCode("US");
+        organization = organizationRepository.save(organization);
+        guest.setOrganization(organization);
+        guest.setBillingOverride(true);
+        BillingProfile billing = new BillingProfile("US Branch Inc.", "Finance / Gabriela", "Main Street 1", "Floor 4",
+                "10001", "New York", "NY", "US", "US-CUSTOMER-123", "ap@example.com", "PO-23", "CC-42",
+                "PERSON_FIRST", "CITY_REGION_POSTAL", "Cost approval on file");
+        guest.setBillingProfile(PmsProfileData.encode(billing));
+        var created = operationsService.createReservation(company, reservationRequest(), "Tester", today);
+        Long folioId = created.folios().get(0).id();
+        var items = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId);
+        items.get(0).setTaxRate(new BigDecimal("8.10"));
+        items.get(1).setTaxRate(new BigDecimal("3.80"));
+        var issued = service.createInvoice(company, property.getId(), new CreateInvoiceRequest(folioId,today.plusDays(10),
+                new BigDecimal("99"),"ignored","ignored",null,null,"CH",null,null,true,null),today);
+        var invoice = invoiceRepository.findById(issued.invoices().get(0).id()).orElseThrow();
+        assertThat(invoice.getRecipientName()).isEqualTo("US Branch Inc.");
+        assertThat(invoice.getInvoiceNumber()).startsWith("ZRH-");
+        assertThat(invoice.getDueDate()).isEqualTo(today.plusDays(10));
+        assertThat(invoice.getRecipientCountryCode()).isEqualTo("US");
+        assertThat(PmsProfileData.billing(invoice.getRecipientSnapshot()).costCenter()).isEqualTo("CC-42");
+        assertThat(PmsProfileData.recipientBlock(billing)).startsWith("Finance / Gabriela\nUS Branch Inc.").contains("New York NY 10001");
+        assertThat(invoiceLineRepository.findAllByInvoice_IdOrderByIdAsc(invoice.getId()))
+                .extracting(PmsInvoiceLine::getVatRate).containsExactly(new BigDecimal("8.10"),new BigDecimal("3.80"));
+        assertThat(invoice.getNetAmount()).isEqualByComparingTo("204.14");
+        property.setLegalName("Changed operator"); guest.setBillingProfile(null);
+        assertThat(PmsProfileData.billing(invoice.getSupplierSnapshot()).legalName()).isEqualTo("Chrono Hotel AG");
+        assertThat(service.generateInvoicePdf(company,invoice.getId())).startsWith("%PDF".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        var corrected = service.correctInvoice(company,property.getId(),invoice.getId(),new CorrectInvoiceRequest("Test correction"),"Tester",today);
+        var creditId = corrected.invoices().stream().filter(value -> value.type() == InvoiceType.CREDIT_NOTE).findFirst().orElseThrow().id();
+        var credit = invoiceRepository.findById(creditId).orElseThrow();
+        assertThat(credit.getRecipientSnapshot()).isEqualTo(invoice.getRecipientSnapshot());
+        assertThat(credit.getSupplierSnapshot()).isEqualTo(invoice.getSupplierSnapshot());
+        assertThat(credit.getNetAmount()).isEqualByComparingTo(invoice.getNetAmount().negate());
+    }
+
+    @Test
+    void storesMultipleContactsAndLinksGuestWithinTenant() {
+        var request = new UpsertOrganizationRequest(OrganizationType.COMPANY,"Acme","US-123","Main Street 1","10001",
+                "New York","US","main@example.com",null,"ap@example.com",30,null,true,false,null,
+                "owner@example.com","office@example.com",List.of("extra@example.com"),
+                List.of(new OrganizationContact(null,guest.getId(),"Gabriela Tschopp","Travel manager","travel@example.com",null,true),
+                        new OrganizationContact(null,null,"Accounts payable","Finance","ap@example.com",null,false)),null);
+        var result=service.createOrganization(company,property.getId(),request,today).organizations().get(0);
+        assertThat(result.contacts()).hasSize(2);
+        assertThat(result.contacts().get(0).id()).isNotBlank();
+        assertThat(guest.getOrganization().getId()).isEqualTo(result.id());
+        assertThat(result.additionalEmails()).containsExactly("extra@example.com");
+        Company other=companyRepository.save(new Company("Other tenant"));
+        GuestProfile foreign=new GuestProfile(); foreign.setCompany(other);foreign.setFirstName("Foreign");foreign.setLastName("Guest");guestRepository.save(foreign);
+        var invalid=new UpsertOrganizationRequest(OrganizationType.COMPANY,"Bad",null,null,null,null,"US",null,null,null,0,null,true,false,null,
+                null,null,null,List.of(new OrganizationContact(null,foreign.getId(),"Foreign",null,null,null,true)),null);
+        assertThatThrownBy(() -> service.createOrganization(company,property.getId(),invalid,today))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Gast nicht gefunden");
+    }
+
+    @Test
+    void storesPrivateValidatedContractAndRejectsOtherTenantDownload() throws Exception {
+        PmsOrganization organization=new PmsOrganization(); organization.setCompany(company);organization.setName("Contracts");organization.setType(OrganizationType.COMPANY);
+        organization=organizationRepository.save(organization);
+        byte[] pdf="%PDF-1.4\ncontract".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var saved=documentService.upload(company,organization.getId(),ratePlan.getId(),
+                new org.springframework.mock.web.MockMultipartFile("file","contract.pdf","application/pdf",pdf),"Tester");
+        entityManager.flush();
+        entityManager.clear();
+        var statistics = entityManager.getEntityManagerFactory().unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        boolean statisticsWereEnabled = statistics.isStatisticsEnabled();
+        statistics.setStatisticsEnabled(true);
+        try {
+            long loadedBefore = statistics.getEntityStatistics(PmsProfileDocument.class.getName()).getLoadCount();
+            var metadata = documentService.list(company,organization.getId());
+            assertThat(metadata).singleElement().satisfies(value -> assertThat(value.fileName()).isEqualTo("contract.pdf"));
+            assertThat(statistics.getEntityStatistics(PmsProfileDocument.class.getName()).getLoadCount()).isEqualTo(loadedBefore);
+            String json = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(metadata);
+            assertThat(json).contains("\"contentType\":\"application/pdf\"").doesNotContain("\"content\":");
+        } finally {
+            statistics.setStatisticsEnabled(statisticsWereEnabled);
+        }
+        assertThat(documentService.download(company,saved.id()).getContent()).containsExactly(pdf);
+        Company other=companyRepository.save(new Company("Other tenant"));
+        assertThatThrownBy(() -> documentService.download(other,saved.id())).isInstanceOf(ResponseStatusException.class).hasMessageContaining("404");
+        Long organizationId=organization.getId();
+        assertThatThrownBy(() -> documentService.upload(company,organizationId,null,
+                new org.springframework.mock.web.MockMultipartFile("file","malware.pdf","application/pdf","<script>".getBytes()),"Tester"))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Dateiinhalt");
+    }
+
+    @Test
+    void rejectsContractAttachmentForRateNegotiatedWithAnotherOrganization() {
+        PmsOrganization first = new PmsOrganization(); first.setCompany(company);first.setName("First company");first.setType(OrganizationType.COMPANY);
+        first = organizationRepository.save(first);
+        PmsOrganization second = new PmsOrganization(); second.setCompany(company);second.setName("Second company");second.setType(OrganizationType.COMPANY);
+        second = organizationRepository.save(second);
+        ratePlan.setOrganization(second);
+        Long targetOrganizationId = first.getId();
+        var file = new org.springframework.mock.web.MockMultipartFile("file","contract.pdf","application/pdf","%PDF-1.4\ncontract".getBytes());
+        assertThatThrownBy(() -> documentService.upload(company,targetOrganizationId,ratePlan.getId(),file,"Tester"))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("anderen Firma");
+        assertThat(documentService.list(company,targetOrganizationId)).isEmpty();
     }
 
     private Room room(String number) {

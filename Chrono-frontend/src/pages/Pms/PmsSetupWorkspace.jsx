@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import PmsPropertyBillingFields, { propertyBillingDefaults, propertyBillingForm } from './PmsPropertyBillingFields.jsx';
 import { PmsTranslationBoundary } from './pmsI18n.jsx';
 import {
     ROOM_OPERATIONAL_STATUS_LABELS,
@@ -8,6 +9,7 @@ import {
 } from './pmsTerminology.js';
 
 const propertyDefaults = {
+    ...propertyBillingDefaults,
     code: '',
     name: '',
     legalName: '',
@@ -49,6 +51,7 @@ const roomDefaults = {
 };
 
 const cleanPropertyForForm = (property) => ({
+    ...propertyBillingForm(property),
     code: property.code ?? '',
     name: property.name ?? '',
     legalName: property.legalName ?? '',
@@ -136,9 +139,10 @@ const PmsSetupWorkspace = ({
     const saveProperty = async (event) => {
         event.preventDefault();
         if (!canManage) return;
+        const payload = { ...propertyForm, invoiceDueDays: Number(propertyForm.invoiceDueDays) };
         const response = await submit(() => newProperty
-            ? api.post('/api/pms/properties', propertyForm)
-            : api.put(`/api/pms/properties/${selectedProperty.id}`, propertyForm));
+            ? api.post('/api/pms/properties', payload)
+            : api.put(`/api/pms/properties/${selectedProperty.id}`, payload));
         if (!response) return;
 
         const savedProperty = response.properties.find(
@@ -294,7 +298,7 @@ const PmsSetupWorkspace = ({
                 </nav>
 
                 {!canManage && (
-                    <div className="pms-setup-readonly">Du hast Lesezugriff. Änderungen erfordern die Berechtigung „Verwalten“.</div>
+                    <div className="pms-setup-readonly">Du hast Lesezugriff. Hotelstammdaten, Raten, Steuern und Schnittstellen darf nur ein PMS-Master ändern. Diese Berechtigung wird einem persönlichen Administratorkonto in der Benutzerverwaltung zugewiesen.</div>
                 )}
                 {error && <div className="pms-setup-feedback is-error" role="alert">{error}</div>}
                 {message && <div className="pms-setup-feedback is-success" role="status">{message}</div>}
@@ -305,7 +309,7 @@ const PmsSetupWorkspace = ({
                             <div className="pms-setup-form-heading">
                                 <div>
                                     <h3>{newProperty ? 'Hotel anlegen' : 'Hotel bearbeiten'}</h3>
-                                    <p>Betriebliche Identität, Lokalisierung und Standardzeiten.</p>
+                                    <p>PMS-Master · Betriebsdaten, Lokalisierung, Rechnungen und Standardzeiten.</p>
                                 </div>
                                 <span>{newProperty ? 'Neu' : selectedProperty?.code}</span>
                             </div>
@@ -362,6 +366,7 @@ const PmsSetupWorkspace = ({
                                     Telefon
                                     <input name="phone" maxLength="60" value={propertyForm.phone} onChange={updateForm(setPropertyForm)} />
                                 </label>
+                                <PmsPropertyBillingFields value={propertyForm} onChange={updateForm(setPropertyForm)} />
                                 <label className="pms-checkbox-field">
                                     <input type="checkbox" name="active" checked={propertyForm.active} onChange={updateForm(setPropertyForm)} />
                                     Betrieb aktiv

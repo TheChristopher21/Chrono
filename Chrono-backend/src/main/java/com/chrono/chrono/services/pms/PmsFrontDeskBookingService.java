@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.pms.CreateFrontDeskBookingRequest;
 import com.chrono.chrono.dto.pms.FrontDeskBookingResponse;
 import com.chrono.chrono.dto.pms.PmsOperationsResponse;
 import com.chrono.chrono.dto.pms.UpsertReservationRequest;
+import com.chrono.chrono.dto.pms.UpsertGuestRequest;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.pms.Folio;
 import com.chrono.chrono.entities.pms.FrontDeskBookingRequestRecord;
@@ -104,7 +105,7 @@ public class PmsFrontDeskBookingService {
         }
 
         GuestProfile guest = request.existingGuestId() == null
-                ? operationsService.createGuestRecord(company, propertyId, request.newGuest())
+                ? operationsService.createGuestRecord(company, propertyId, withPrimaryEmail(request.newGuest()))
                 : guestRepository.findByIdAndCompany_Id(request.existingGuestId(), company.getId())
                         .orElseThrow(() -> notFound("Gast nicht gefunden."));
 
@@ -211,7 +212,7 @@ public class PmsFrontDeskBookingService {
             throw badRequest("Genau ein bestehender oder neuer Gast muss angegeben werden.");
         }
         if (request.newGuest() != null
-                && clean(request.newGuest().email()) == null
+                && primaryEmail(request.newGuest()) == null
                 && clean(request.newGuest().phone()) == null) {
             throw badRequest("Für einen neuen Gast muss eine E-Mail-Adresse oder Telefonnummer angegeben werden.");
         }
@@ -260,6 +261,21 @@ public class PmsFrontDeskBookingService {
                 add(digest, request.newGuest().vehiclePlate());
                 add(digest, request.newGuest().roomPreferences());
                 add(digest, request.newGuest().organizationId());
+                // JSON preserves list/record boundaries and has deterministic key ordering.
+                // Omit empty extensions to keep legacy retries valid after the profile upgrade.
+                java.util.Map<String, Object> profile = new java.util.TreeMap<>();
+                profile.put("privateEmail", request.newGuest().privateEmail());
+                profile.put("businessEmail", request.newGuest().businessEmail());
+                profile.put("additionalEmails", request.newGuest().additionalEmails());
+                profile.put("dietaryNotes", request.newGuest().dietaryNotes());
+                profile.put("vatNumber", request.newGuest().vatNumber());
+                profile.put("organizationContactId", request.newGuest().organizationContactId());
+                profile.put("billingOverride", request.newGuest().billingOverride());
+                profile.put("billingProfile", request.newGuest().billingProfile());
+                profile.values().removeIf(value -> value == null || Boolean.FALSE.equals(value)
+                        || value instanceof String text && text.isBlank()
+                        || value instanceof java.util.Collection<?> collection && collection.isEmpty());
+                if (!profile.isEmpty()) add(digest, PmsProfileData.encode(profile));
             }
             add(digest, request.roomTypeId());
             add(digest, request.roomId());
@@ -304,6 +320,21 @@ public class PmsFrontDeskBookingService {
         digest.update(Integer.toString(bytes.length).getBytes(StandardCharsets.US_ASCII));
         digest.update((byte) ':');
         digest.update(bytes);
+    }
+
+    private String primaryEmail(UpsertGuestRequest guest) {
+        if (clean(guest.email()) != null) return clean(guest.email());
+        if (clean(guest.businessEmail()) != null) return clean(guest.businessEmail());
+        if (clean(guest.privateEmail()) != null) return clean(guest.privateEmail());
+        return guest.additionalEmails() == null ? null : guest.additionalEmails().stream()
+                .map(this::clean).filter(java.util.Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private UpsertGuestRequest withPrimaryEmail(UpsertGuestRequest guest) {
+        return new UpsertGuestRequest(guest.firstName(),guest.lastName(),primaryEmail(guest),guest.phone(),guest.dateOfBirth(),
+                guest.nationalityCode(),guest.languageCode(),guest.notes(),guest.vip(),guest.addressLine1(),guest.postalCode(),guest.city(),
+                guest.countryCode(),guest.vehiclePlate(),guest.roomPreferences(),guest.organizationId(),guest.privateEmail(),guest.businessEmail(),
+                guest.additionalEmails(),guest.dietaryNotes(),guest.vatNumber(),guest.organizationContactId(),guest.billingOverride(),guest.billingProfile());
     }
 
     private BigDecimal money(BigDecimal value) {

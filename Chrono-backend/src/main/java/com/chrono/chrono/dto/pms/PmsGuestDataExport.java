@@ -36,7 +36,15 @@ public record PmsGuestDataExport(
             String notes,
             boolean vip,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            String privateEmail,
+            String businessEmail,
+            List<String> additionalEmails,
+            String dietaryNotes,
+            String vatNumber,
+            String organizationContactId,
+            boolean billingOverride,
+            BillingProfile billingProfile
     ) {
     }
 

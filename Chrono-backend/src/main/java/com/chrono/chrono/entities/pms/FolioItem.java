@@ -40,6 +40,15 @@ public class FolioItem {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "tax_rate", precision = 7, scale = 4)
+    private BigDecimal taxRate;
+
+    @Column(name = "tax_included", nullable = false)
+    private boolean taxIncluded = true;
+
+    @Column(name = "rate_generated", nullable = false)
+    private boolean rateGenerated;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

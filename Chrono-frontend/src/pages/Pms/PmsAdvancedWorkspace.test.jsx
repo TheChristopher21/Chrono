@@ -177,18 +177,24 @@ const portfolioReport = {
     }],
 };
 
-const renderWorkspace = (section) => render(
+const renderWorkspace = (section, canManageSettings = true) => render(
     <PmsAdvancedWorkspace
         section={section}
         property={property}
         operations={operations}
         businessDate="2026-07-28"
         canManage
+        canManageSettings={canManageSettings}
         onOperationsChange={vi.fn()}
     />,
 );
 
 describe('PmsAdvancedWorkspace', () => {
+    it('requires master access for hotel configuration while preserving operational access', async () => {
+        renderWorkspace('integrations', false);
+        expect(await screen.findByRole('button', { name: 'Testverbindung anlegen' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Bestätigen' })).toBeEnabled();
+    });
     beforeEach(() => {
         vi.clearAllMocks();
         apiMock.get.mockImplementation((url) => Promise.resolve({

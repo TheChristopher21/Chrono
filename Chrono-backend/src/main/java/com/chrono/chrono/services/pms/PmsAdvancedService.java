@@ -6,6 +6,7 @@ import com.chrono.chrono.entities.pms.*;
 import com.chrono.chrono.repositories.pms.*;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BarcodeQRCode;
+import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
@@ -48,6 +49,9 @@ public class PmsAdvancedService {
     @Value("${app.pms.provider-gateway.enabled:false}")
     private boolean providerGatewayEnabled;
 
+    @Value("${app.pms.invoice.font-path:}")
+    private String invoiceFontPath;
+
     private final HotelPropertyRepository propertyRepository;
     private final PmsOrganizationRepository organizationRepository;
     private final GroupBookingRepository groupRepository;
@@ -76,6 +80,7 @@ public class PmsAdvancedService {
     private final PmsAuditWriter auditWriter;
     private final PmsOperationsService operationsService;
     private final PmsDocumentFingerprintService documentFingerprintService;
+    private final PmsProfileDocumentRepository profileDocumentRepository;
 
     public PmsAdvancedService(HotelPropertyRepository propertyRepository,
                               PmsOrganizationRepository organizationRepository,
@@ -104,7 +109,8 @@ public class PmsAdvancedService {
                               PmsAuditEventRepository auditEventRepository,
                               PmsAuditWriter auditWriter,
                               PmsOperationsService operationsService,
-                              PmsDocumentFingerprintService documentFingerprintService) {
+                              PmsDocumentFingerprintService documentFingerprintService,
+                              PmsProfileDocumentRepository profileDocumentRepository) {
         this.propertyRepository = propertyRepository;
         this.organizationRepository = organizationRepository;
         this.groupRepository = groupRepository;
@@ -133,6 +139,7 @@ public class PmsAdvancedService {
         this.auditWriter = auditWriter;
         this.operationsService = operationsService;
         this.documentFingerprintService = documentFingerprintService;
+        this.profileDocumentRepository = profileDocumentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -290,6 +297,13 @@ public class PmsAdvancedService {
         }
         Set<String> fields = request.takeFromSource() == null ? Set.of() : request.takeFromSource();
         applyOrganizationMergeFields(source, target, fields);
+        java.util.Map<String, OrganizationContact> mergedContacts = new java.util.LinkedHashMap<>();
+        PmsProfileData.contacts(target.getContacts()).forEach(contact -> mergedContacts.put(contact.id(), contact));
+        PmsProfileData.contacts(source.getContacts()).forEach(contact -> mergedContacts.putIfAbsent(contact.id(),
+                new OrganizationContact(contact.id(),contact.linkedGuestId(),contact.name(),contact.role(),contact.email(),contact.phone(),false)));
+        target.setContacts(PmsProfileData.encode(mergedContacts.values()));
+        source.setContacts(null);
+        profileDocumentRepository.relinkOrganization(company.getId(),source.getId(),target);
         guestRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
         folioRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
         groupRepository.findAllByOrganization_Id(source.getId()).forEach(value -> value.setOrganization(target));
@@ -423,28 +437,44 @@ public class PmsAdvancedService {
         String iban = normalizeIban(request.creditorIban());
         String reference = clean(request.qrReference());
         validateQrPaymentData(iban, reference);
+        if (iban != null && (!Set.of("CHF", "EUR").contains(folio.getCurrencyCode())
+                || !Set.of("CH", "LI").contains(property.getCountryCode()))) {
+            throw badRequest("Der Swiss-QR-Zahlteil benötigt CHF oder EUR und einen Zahlungsempfänger in CH oder LI.");
+        }
         BigDecimal gross = money(items.stream().map(FolioItem::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         if (gross.signum() <= 0) {
             throw conflict("Der Rechnungsbetrag muss positiv sein.");
         }
-        BigDecimal divisor = BigDecimal.ONE.add(request.vatRate().movePointLeft(2));
-        BigDecimal net = money(gross.divide(divisor, 8, RoundingMode.HALF_UP));
+        BigDecimal net = items.stream().map(item -> money(item.getTotalAmount().divide(
+                BigDecimal.ONE.add((item.getTaxRate() == null ? request.vatRate() : item.getTaxRate()).movePointLeft(2)),
+                8, RoundingMode.HALF_UP))).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal vat = money(gross.subtract(net));
 
         PmsInvoice invoice = new PmsInvoice();
         invoice.setProperty(property);
         invoice.setFolio(folio);
         invoice.setType(InvoiceType.INVOICE);
-        invoice.setInvoiceNumber("INV-" + issueDate.getYear() + "-"
+        invoice.setInvoiceNumber((clean(property.getInvoicePrefix()) == null ? "INV" : property.getInvoicePrefix()) + "-" + issueDate.getYear() + "-"
                 + String.format(Locale.ROOT, "%05d", invoiceRepository.countByProperty_Id(propertyId) + 1));
         invoice.setIssueDate(issueDate);
         invoice.setDueDate(request.dueDate());
-        invoice.setRecipientName(required(request.recipientName()));
-        invoice.setRecipientAddress(clean(request.recipientAddress()));
-        invoice.setRecipientPostalCode(clean(request.recipientPostalCode()));
-        invoice.setRecipientCity(clean(request.recipientCity()));
-        invoice.setRecipientCountryCode(country(request.recipientCountryCode()));
+        BillingProfile recipient = resolveInvoiceRecipient(folio, request);
+        invoice.setRecipientName(required(recipient.legalName()));
+        invoice.setRecipientAddress(clean(recipient.addressLine1()));
+        invoice.setRecipientPostalCode(clean(recipient.postalCode()));
+        invoice.setRecipientCity(clean(recipient.city()));
+        invoice.setRecipientCountryCode(country(recipient.countryCode()));
+        invoice.setRecipientSnapshot(PmsProfileData.encode(recipient));
+        invoice.setSupplierSnapshot(PmsProfileData.encode(new BillingProfile(
+                clean(property.getLegalName()) == null ? property.getName() : property.getLegalName(), null,
+                property.getAddressLine1(), property.getAddressLine2(), property.getPostalCode(), property.getCity(),
+                property.getRegion(), property.getCountryCode(), property.getTaxNumber(), property.getEmail(), null, null,
+                "COMPANY_FIRST", "POSTAL_CITY", property.getInvoiceFooter())));
+        invoice.setSupplierTaxLabel(property.getTaxRegistrationLabel());
+        invoice.setSupplierRegistrationNumber(property.getRegistrationNumber());
+        invoice.setServiceFrom(items.stream().map(FolioItem::getServiceDate).min(LocalDate::compareTo).orElse(issueDate));
+        invoice.setServiceTo(items.stream().map(FolioItem::getServiceDate).max(LocalDate::compareTo).orElse(issueDate));
         invoice.setCurrencyCode(folio.getCurrencyCode());
         invoice.setNetAmount(net);
         invoice.setVatAmount(vat);
@@ -457,10 +487,13 @@ public class PmsAdvancedService {
 
         for (FolioItem item : items) {
             BigDecimal lineGross = money(item.getTotalAmount());
-            BigDecimal lineNet = money(lineGross.divide(divisor, 8, RoundingMode.HALF_UP));
+            BigDecimal lineRate = item.getTaxRate() == null ? request.vatRate() : item.getTaxRate();
+            BigDecimal lineNet = money(lineGross.divide(BigDecimal.ONE.add(lineRate.movePointLeft(2)), 8, RoundingMode.HALF_UP));
             PmsInvoiceLine line = new PmsInvoiceLine();
             line.setInvoice(invoice);
             line.setDescription(item.getDescription());
+            line.setVatRate(lineRate);
+            line.setServiceDate(item.getServiceDate());
             line.setQuantity(item.getQuantity());
             line.setGrossAmount(lineGross);
             line.setNetAmount(lineNet);
@@ -501,6 +534,12 @@ public class PmsAdvancedService {
                 + String.format(Locale.ROOT, "%05d", invoiceRepository.countByProperty_Id(propertyId) + 1));
         credit.setIssueDate(issueDate);
         credit.setDueDate(issueDate);
+        credit.setRecipientSnapshot(original.getRecipientSnapshot());
+        credit.setSupplierSnapshot(original.getSupplierSnapshot());
+        credit.setSupplierTaxLabel(original.getSupplierTaxLabel());
+        credit.setSupplierRegistrationNumber(original.getSupplierRegistrationNumber());
+        credit.setServiceFrom(original.getServiceFrom());
+        credit.setServiceTo(original.getServiceTo());
         credit.setRecipientName(original.getRecipientName());
         credit.setRecipientAddress(original.getRecipientAddress());
         credit.setRecipientPostalCode(original.getRecipientPostalCode());
@@ -521,6 +560,8 @@ public class PmsAdvancedService {
             PmsInvoiceLine line = new PmsInvoiceLine();
             line.setInvoice(credit);
             line.setDescription("Korrektur: " + source.getDescription());
+            line.setVatRate(source.getVatRate());
+            line.setServiceDate(source.getServiceDate());
             line.setQuantity(source.getQuantity());
             line.setNetAmount(source.getNetAmount().negate());
             line.setVatAmount(source.getVatAmount().negate());
@@ -1182,7 +1223,9 @@ public class PmsAdvancedService {
                 value.isMasterRecord(),
                 value.getParentOrganization() == null ? null : value.getParentOrganization().getId(),
                 value.getParentOrganization() == null ? null : value.getParentOrganization().getName(),
-                value.getMergedInto() == null ? null : value.getMergedInto().getId());
+                value.getMergedInto() == null ? null : value.getMergedInto().getId(),
+                value.getPrivateEmail(), value.getBusinessEmail(), PmsProfileData.emails(value.getAdditionalEmails()),
+                PmsProfileData.contacts(value.getContacts()), PmsProfileData.billing(value.getBillingProfile()));
     }
 
     private PmsAdvancedResponse.GroupBookingView groupView(GroupBooking group) {
@@ -1315,6 +1358,32 @@ public class PmsAdvancedService {
         organization.setPaymentTermsDays(request.paymentTermsDays());
         organization.setNotes(clean(request.notes()));
         organization.setActive(request.active());
+        organization.setPrivateEmail(clean(request.privateEmail()));
+        organization.setBusinessEmail(clean(request.businessEmail()));
+        organization.setAdditionalEmails(PmsProfileData.encode(PmsProfileData.normalizeEmails(request.additionalEmails())));
+        organization.setBillingProfile(PmsProfileData.encode(request.billingProfile()));
+        if (request.contacts() != null) {
+            java.util.Set<String> ids = new java.util.HashSet<>();
+            long primaryCount = request.contacts().stream().filter(OrganizationContact::primaryContact).count();
+            if (primaryCount > 1) throw badRequest("Nur ein Hauptansprechpartner ist zulässig.");
+            List<OrganizationContact> contacts = request.contacts().stream().map(contact -> {
+                String id = clean(contact.id()) == null ? UUID.randomUUID().toString() : contact.id();
+                if (!ids.add(id)) throw badRequest("Ansprechpartner-ID ist doppelt.");
+                if (contact.linkedGuestId() != null) {
+                    GuestProfile linked = guestRepository.findByIdAndCompany_Id(contact.linkedGuestId(), company.getId())
+                            .filter(GuestProfile::isActive).orElseThrow(() -> badRequest("Verknüpfter Gast nicht gefunden."));
+                    if (linked.getOrganization() != null && !linked.getOrganization().equals(organization))
+                        throw badRequest("Der Gast gehört bereits zu einer anderen Firma.");
+                    linked.setOrganization(organization);
+                }
+                return new OrganizationContact(id, contact.linkedGuestId(), required(contact.name()), clean(contact.role()),
+                        clean(contact.email()), clean(contact.phone()), contact.primaryContact());
+            }).toList();
+            if (organization.getId() != null) guestRepository.findAllByOrganization_Id(organization.getId()).stream()
+                    .filter(guest -> guest.getOrganizationContactId() != null && !ids.contains(guest.getOrganizationContactId()))
+                    .forEach(guest -> guest.setOrganizationContactId(null));
+            organization.setContacts(PmsProfileData.encode(contacts));
+        }
         boolean masterRecord = Boolean.TRUE.equals(request.masterRecord());
         if (!masterRecord && organization.getId() != null
                 && !organizationRepository.findAllByParentOrganization_Id(organization.getId()).isEmpty()) {
@@ -1361,6 +1430,10 @@ public class PmsAdvancedService {
                 case "city" -> target.setCity(source.getCity());
                 case "countryCode" -> target.setCountryCode(source.getCountryCode());
                 case "email" -> target.setEmail(source.getEmail());
+                case "privateEmail" -> target.setPrivateEmail(source.getPrivateEmail());
+                case "businessEmail" -> target.setBusinessEmail(source.getBusinessEmail());
+                case "additionalEmails" -> target.setAdditionalEmails(source.getAdditionalEmails());
+                case "billingProfile" -> target.setBillingProfile(source.getBillingProfile());
                 case "phone" -> target.setPhone(source.getPhone());
                 case "billingEmail" -> target.setBillingEmail(source.getBillingEmail());
                 case "paymentTermsDays" -> target.setPaymentTermsDays(source.getPaymentTermsDays());
@@ -1386,72 +1459,167 @@ public class PmsAdvancedService {
                 .replace("{{departureDate}}", reservation == null ? "" : reservation.getDepartureDate().toString());
     }
 
+    private BillingProfile resolveInvoiceRecipient(Folio folio, CreateInvoiceRequest request) {
+        GuestProfile guest = folio.getReservation().getGuest();
+        PmsOrganization organization = folio.getOrganization();
+        if (Boolean.TRUE.equals(request.useProfileBilling())) {
+            BillingProfile profile = organization == null ? PmsProfileData.billing(guest.getBillingProfile())
+                    : PmsProfileData.billing(organization.getBillingProfile());
+            if (organization != null && guest.isBillingOverride() && guest.getOrganization() != null
+                    && guest.getOrganization().getId().equals(organization.getId())) {
+                profile = inheritBilling(PmsProfileData.billing(guest.getBillingProfile()), profile);
+            }
+            String legalName = organization == null ? guestName(guest) : organization.getName();
+            String street = organization == null ? guest.getAddressLine1() : organization.getAddressLine1();
+            String postal = organization == null ? guest.getPostalCode() : organization.getPostalCode();
+            String city = organization == null ? guest.getCity() : organization.getCity();
+            String countryCode = organization == null ? or(guest.getCountryCode(),folio.getReservation().getProperty().getCountryCode()) : organization.getCountryCode();
+            String vatNumber = organization == null ? guest.getVatNumber() : organization.getVatNumber();
+            String email = organization == null ? guest.getEmail() : organization.getBillingEmail();
+            String attention = organization == null ? null : PmsProfileData.contacts(organization.getContacts()).stream()
+                    .filter(contact -> java.util.Objects.equals(contact.id(), guest.getOrganizationContactId()))
+                    .map(OrganizationContact::name).findFirst().orElse(null);
+            if (profile == null) return new BillingProfile(legalName, attention, street, null, postal, city, null,
+                    countryCode, vatNumber, email, null, null, "COMPANY_FIRST", "POSTAL_CITY", null);
+            return new BillingProfile(or(profile.legalName(),legalName), or(profile.attention(), attention),
+                    or(profile.addressLine1(),street),profile.addressLine2(),or(profile.postalCode(),postal),or(profile.city(),city),
+                    profile.region(),or(profile.countryCode(),countryCode),or(profile.vatNumber(),vatNumber),or(profile.billingEmail(),email),
+                    profile.reference(),profile.costCenter(),profile.recipientOrder(),profile.addressFormat(),profile.footer());
+        }
+        BillingProfile details = request.billingProfile();
+        return new BillingProfile(request.recipientName(), details == null ? null : details.attention(), request.recipientAddress(),
+                details == null ? null : details.addressLine2(), request.recipientPostalCode(), request.recipientCity(),
+                details == null ? null : details.region(), request.recipientCountryCode(), details == null ? null : details.vatNumber(),
+                details == null ? null : details.billingEmail(), details == null ? null : details.reference(),
+                details == null ? null : details.costCenter(), details == null ? "COMPANY_FIRST" : details.recipientOrder(),
+                details == null ? "POSTAL_CITY" : details.addressFormat(), details == null ? null : details.footer());
+    }
+
+    private String or(String value, String fallback) { return clean(value) == null ? fallback : clean(value); }
+
+    private BillingProfile inheritBilling(BillingProfile employee, BillingProfile company) {
+        if (employee == null) return company;
+        if (company == null) return employee;
+        return new BillingProfile(or(employee.legalName(),company.legalName()),or(employee.attention(),company.attention()),
+                or(employee.addressLine1(),company.addressLine1()),or(employee.addressLine2(),company.addressLine2()),
+                or(employee.postalCode(),company.postalCode()),or(employee.city(),company.city()),or(employee.region(),company.region()),
+                or(employee.countryCode(),company.countryCode()),or(employee.vatNumber(),company.vatNumber()),
+                or(employee.billingEmail(),company.billingEmail()),or(employee.reference(),company.reference()),
+                or(employee.costCenter(),company.costCenter()),or(employee.recipientOrder(),company.recipientOrder()),
+                or(employee.addressFormat(),company.addressFormat()),or(employee.footer(),company.footer()));
+    }
+
     private byte[] renderInvoice(PmsInvoice invoice, List<PmsInvoiceLine> lines) {
         Document document = new Document(PageSize.A4, 40, 40, 40, 40);
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PdfWriter.getInstance(document, output);
             document.open();
             HotelProperty property = invoice.getProperty();
-            Font title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20);
-            Font heading = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-            document.add(new Paragraph(property.getLegalName() == null ? property.getName() : property.getLegalName(), title));
-            document.add(new Paragraph(address(property.getAddressLine1(), property.getPostalCode(), property.getCity())));
+            Font title = invoiceFont(20, Font.BOLD);
+            Font heading = invoiceFont(10, Font.BOLD);
+            BillingProfile supplier = PmsProfileData.billing(invoice.getSupplierSnapshot());
+            BillingProfile recipient = PmsProfileData.billing(invoice.getRecipientSnapshot());
+            document.add(invoiceParagraph(supplier == null ? (property.getLegalName() == null ? property.getName() : property.getLegalName())
+                    : supplier.legalName(), title));
+            document.add(invoiceParagraph(supplier == null ? address(property.getAddressLine1(), property.getPostalCode(), property.getCity())
+                    : PmsProfileData.recipientBlock(new BillingProfile(null,null,supplier.addressLine1(),supplier.addressLine2(),
+                    supplier.postalCode(),supplier.city(),supplier.region(),supplier.countryCode(),null,null,null,null,null,supplier.addressFormat(),null))));
+            if (supplier != null && clean(supplier.vatNumber()) != null) document.add(invoiceParagraph(
+                    or(invoice.getSupplierTaxLabel(), "VAT / Tax ID") + ": " + supplier.vatNumber()));
+            if (clean(invoice.getSupplierRegistrationNumber()) != null) document.add(invoiceParagraph("Register: " + invoice.getSupplierRegistrationNumber()));
             document.add(Chunk.NEWLINE);
             String documentLabel = invoice.getType() == InvoiceType.CREDIT_NOTE ? "Gutschrift" : "Rechnung";
-            document.add(new Paragraph(documentLabel + " " + invoice.getInvoiceNumber(), title));
+            document.add(invoiceParagraph(documentLabel + " " + invoice.getInvoiceNumber(), title));
             if (invoice.getOriginalInvoice() != null) {
-                document.add(new Paragraph("Korrektur zu Rechnung "
+                document.add(invoiceParagraph("Korrektur zu Rechnung "
                         + invoice.getOriginalInvoice().getInvoiceNumber()));
             }
-            document.add(new Paragraph("Dokumentdatum: " + invoice.getIssueDate() + "    Fällig: " + invoice.getDueDate()));
+            document.add(invoiceParagraph("Dokumentdatum: " + invoice.getIssueDate() + "    Fällig: " + invoice.getDueDate()));
             document.add(Chunk.NEWLINE);
-            document.add(new Paragraph(invoice.getRecipientName(), heading));
-            document.add(new Paragraph(address(invoice.getRecipientAddress(), invoice.getRecipientPostalCode(), invoice.getRecipientCity())));
+            document.add(invoiceParagraph(recipient == null ? invoice.getRecipientName() + "\n" + address(invoice.getRecipientAddress(),
+                    invoice.getRecipientPostalCode(), invoice.getRecipientCity()) : PmsProfileData.recipientBlock(recipient), heading));
+            if (recipient != null) {
+                if (clean(recipient.vatNumber()) != null) document.add(invoiceParagraph("VAT / Tax ID: " + recipient.vatNumber()));
+                if (clean(recipient.reference()) != null) document.add(invoiceParagraph("Referenz / PO: " + recipient.reference()));
+                if (clean(recipient.costCenter()) != null) document.add(invoiceParagraph("Kostenstelle: " + recipient.costCenter()));
+                if (clean(recipient.billingEmail()) != null) document.add(invoiceParagraph("Rechnungs-E-Mail: " + recipient.billingEmail()));
+            }
+            if (invoice.getServiceFrom() != null) document.add(invoiceParagraph("Leistungszeitraum: " + invoice.getServiceFrom() + " bis " + invoice.getServiceTo()));
             document.add(Chunk.NEWLINE);
-            PdfPTable table = new PdfPTable(new float[]{5f, 1f, 1.7f, 1.7f});
+            PdfPTable table = new PdfPTable(new float[]{4f, 1.5f, 1f, 1.3f, 1.3f, 1.3f});
             table.setWidthPercentage(100);
             addCell(table, "Leistung", true);
+            addCell(table, "Datum", true);
             addCell(table, "Menge", true);
+            addCell(table, "Steuer %", true);
             addCell(table, "Netto", true);
             addCell(table, "Brutto", true);
             for (PmsInvoiceLine line : lines) {
                 addCell(table, line.getDescription(), false);
+                addCell(table, line.getServiceDate() == null ? "" : line.getServiceDate().toString(), false);
                 addCell(table, line.getQuantity().stripTrailingZeros().toPlainString(), false);
+                addCell(table, (line.getVatRate() == null ? invoice.getVatRate() : line.getVatRate()).stripTrailingZeros().toPlainString(), false);
                 addCell(table, amount(line.getNetAmount(), invoice.getCurrencyCode()), false);
                 addCell(table, amount(line.getGrossAmount(), invoice.getCurrencyCode()), false);
             }
             document.add(table);
             document.add(Chunk.NEWLINE);
-            document.add(new Paragraph("Netto: " + amount(invoice.getNetAmount(), invoice.getCurrencyCode())));
-            document.add(new Paragraph("MWST " + invoice.getVatRate().stripTrailingZeros().toPlainString()
-                    + "%: " + amount(invoice.getVatAmount(), invoice.getCurrencyCode())));
-            document.add(new Paragraph("Total: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode()), heading));
+            document.add(invoiceParagraph("Netto: " + amount(invoice.getNetAmount(), invoice.getCurrencyCode())));
+            java.util.Map<BigDecimal, BigDecimal> taxGroups = new java.util.TreeMap<>();
+            for (PmsInvoiceLine line : lines) taxGroups.merge(line.getVatRate() == null ? invoice.getVatRate() : line.getVatRate(), line.getVatAmount(), BigDecimal::add);
+            for (var group : taxGroups.entrySet()) document.add(invoiceParagraph("MWST / Tax " + group.getKey().stripTrailingZeros().toPlainString()
+                    + "%: " + amount(group.getValue(), invoice.getCurrencyCode())));
+            if (supplier != null && clean(supplier.footer()) != null) document.add(invoiceParagraph(supplier.footer()));
+            if (recipient != null && clean(recipient.footer()) != null) document.add(invoiceParagraph(recipient.footer()));
+            document.add(invoiceParagraph("Total: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode()), heading));
             if (invoice.getType() == InvoiceType.INVOICE && clean(invoice.getCreditorIban()) != null) {
                 document.add(Chunk.NEWLINE);
-                document.add(new Paragraph("Swiss QR-Zahlteil", heading));
+                document.add(invoiceParagraph("Swiss QR-Zahlteil", heading));
                 Image qrImage = swissQrImage(invoice);
                 qrImage.scaleAbsolute(145, 145);
                 document.add(qrImage);
-                document.add(new Paragraph("IBAN: " + invoice.getCreditorIban()));
-                document.add(new Paragraph("Betrag: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode())));
+                document.add(invoiceParagraph("IBAN: " + invoice.getCreditorIban()));
+                document.add(invoiceParagraph("Betrag: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode())));
             }
             document.close();
             return output.toByteArray();
+        } catch (ResponseStatusException exception) {
+            throw exception;
         } catch (Exception exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Die Rechnung konnte nicht als PDF erstellt werden.", exception);
         }
     }
 
+    private Font invoiceFont(float size, int style) {
+        if (clean(invoiceFontPath) == null) return FontFactory.getFont(FontFactory.HELVETICA, size, style);
+        try {
+            return new Font(BaseFont.createFont(invoiceFontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED), size, style);
+        } catch (Exception exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Die konfigurierte Rechnungsschrift konnte nicht geladen werden (app.pms.invoice.font-path).", exception);
+        }
+    }
+
+    private Paragraph invoiceParagraph(String value) { return invoiceParagraph(value, invoiceFont(10, Font.NORMAL)); }
+    private Paragraph invoiceParagraph(String value, Font font) {
+        BaseFont base = font.getCalculatedBaseFont(false);
+        if (value != null && value.codePoints().anyMatch(character -> !Character.isISOControl(character) && !base.charExists(character)))
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Die Rechnung enthält Zeichen, die die Rechnungsschrift nicht unterstützt. Bitte eine passende Unicode-Schrift unter app.pms.invoice.font-path konfigurieren.");
+        return new Paragraph(value, font);
+    }
+
     String swissQrPayload(PmsInvoice invoice) {
         HotelProperty property = invoice.getProperty();
-        String creditorName = clean(property.getLegalName()) == null ? property.getName() : property.getLegalName();
-        StreetParts creditorAddress = splitStreet(property.getAddressLine1());
+        BillingProfile supplier = PmsProfileData.billing(invoice.getSupplierSnapshot());
+        String creditorName = supplier == null ? (clean(property.getLegalName()) == null ? property.getName() : property.getLegalName()) : supplier.legalName();
+        StreetParts creditorAddress = splitStreet(supplier == null ? property.getAddressLine1() : supplier.addressLine1());
         StreetParts debtorAddress = splitStreet(invoice.getRecipientAddress());
         return String.join("\n",
                 "SPC", "0200", "1", invoice.getCreditorIban(), "S", qr(creditorName),
                 creditorAddress.street(), creditorAddress.buildingNumber(),
-                qr(property.getPostalCode()), qr(property.getCity()), property.getCountryCode(),
+                qr(supplier == null ? property.getPostalCode() : supplier.postalCode()), qr(supplier == null ? property.getCity() : supplier.city()), supplier == null ? property.getCountryCode() : supplier.countryCode(),
                 "", "", "", "", "", "", "",
                 invoice.getGrossAmount().setScale(2, RoundingMode.HALF_UP).toPlainString(),
                 invoice.getCurrencyCode(), "S", qr(invoice.getRecipientName()), debtorAddress.street(),
@@ -1484,9 +1652,7 @@ public class PmsAdvancedService {
     }
 
     private void addCell(PdfPTable table, String value, boolean header) {
-        PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : value,
-                header ? FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9)
-                        : FontFactory.getFont(FontFactory.HELVETICA, 9)));
+        PdfPCell cell = new PdfPCell(invoiceParagraph(value == null ? "" : value, invoiceFont(9, header ? Font.BOLD : Font.NORMAL)));
         cell.setPadding(6);
         table.addCell(cell);
     }

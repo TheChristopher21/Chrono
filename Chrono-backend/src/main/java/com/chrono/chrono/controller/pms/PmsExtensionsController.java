@@ -38,14 +38,14 @@ public class PmsExtensionsController {
     @PutMapping("/properties/{propertyId}/booking-engine")
     public PmsExtensionsResponse updateBookingEngine(@PathVariable Long propertyId,
             @Valid @RequestBody PmsExtensionsRequests.BookingSettings request, Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return service.updateBookingSettings(context.company(), propertyId, request);
     }
 
     @PutMapping("/properties/{propertyId}/tourism-tax")
     public PmsExtensionsResponse updateTourismTax(@PathVariable Long propertyId,
             @Valid @RequestBody PmsExtensionsRequests.TourismTaxRuleRequest request, Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return service.updateTourismTax(context.company(), propertyId, request);
     }
 
@@ -80,7 +80,7 @@ public class PmsExtensionsController {
     @PostMapping("/properties/{propertyId}/migration-batches")
     public PmsExtensionsResponse importMigration(@PathVariable Long propertyId,
             @Valid @RequestBody PmsExtensionsRequests.MigrationImport request, Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return service.importMigration(context.company(), propertyId, request, context.username());
     }
 
@@ -97,6 +97,10 @@ public class PmsExtensionsController {
     }
 
     private AccessContext requireContext(Principal principal, String accessLevel) {
+        return requireContext(principal, accessLevel, false);
+    }
+
+    private AccessContext requireContext(Principal principal, String accessLevel, boolean masterOnly) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentifizierung erforderlich.");
         }
@@ -105,6 +109,10 @@ public class PmsExtensionsController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht gefunden."));
         userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS, accessLevel,
                 "Die erforderliche PMS-Berechtigung fehlt.");
+        if (masterOnly) {
+            userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
+                    UserPermissionService.ACCESS_MANAGE, "Für diese Einstellung ist ein PMS-Master erforderlich.");
+        }
         if (user.getCompany() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }

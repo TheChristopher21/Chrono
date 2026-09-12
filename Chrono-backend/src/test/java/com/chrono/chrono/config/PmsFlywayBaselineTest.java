@@ -20,10 +20,16 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(9);
+        assertThat(result.migrationsExecuted).isEqualTo(13);
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
+            assertThat(tableExists(connection, "pms_profile_documents")).isTrue();
+            assertThat(columnExists(connection, "pms_properties", "invoice_prefix")).isTrue();
+            assertThat(columnExists(connection, "pms_properties", "tax_number")).isTrue();
+            assertThat(columnExists(connection, "pms_organizations", "contacts")).isTrue();
+            assertThat(columnExists(connection, "pms_guests", "billing_profile")).isTrue();
+            assertThat(columnExists(connection, "pms_rate_plans", "vat_rate")).isTrue();
             assertThat(tableExists(connection, "pms_reservations")).isTrue();
             assertThat(tableExists(connection, "pms_integration_outbox")).isTrue();
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
@@ -76,7 +82,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(8);
+        assertThat(result.migrationsExecuted).isEqualTo(12);
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {

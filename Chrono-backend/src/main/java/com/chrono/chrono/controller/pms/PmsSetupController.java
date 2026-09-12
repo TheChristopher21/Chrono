@@ -42,8 +42,9 @@ public class PmsSetupController {
     }
 
     @GetMapping("/setup")
-    public ResponseEntity<PmsSetupResponse> getSetup(Principal principal) {
-        return ResponseEntity.ok(pmsSetupService.getSetup(requireCompany(principal, UserPermissionService.ACCESS_VIEW)));
+    public ResponseEntity<PmsSetupResponse> getSetup(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "true") boolean includeRooms, Principal principal) {
+        return ResponseEntity.ok(pmsSetupService.getSetup(requireCompany(principal, UserPermissionService.ACCESS_VIEW), includeRooms));
     }
 
     @PostMapping("/properties")
@@ -153,6 +154,10 @@ public class PmsSetupController {
                 accessLevel,
                 "Berechtigung für die Hotelverwaltung (PMS) erforderlich."
         );
+        if (UserPermissionService.ACCESS_MANAGE.equals(accessLevel)) {
+            userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
+                    UserPermissionService.ACCESS_MANAGE, "Nur ein PMS-Master darf Hotelstammdaten und Einstellungen ändern.");
+        }
         if (user.getCompany() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }

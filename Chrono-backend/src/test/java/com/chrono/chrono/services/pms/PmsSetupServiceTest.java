@@ -28,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class PmsSetupServiceTest {
@@ -115,6 +117,83 @@ class PmsSetupServiceTest {
         assertThat(response.totalRoomTypes()).isZero();
         assertThat(response.totalRooms()).isZero();
         assertThat(response.foundationComplete()).isFalse();
+    }
+
+    @Test
+    void compactSetupCountsLargeHotelsWithoutLoadingRoomEntities() {
+        HotelProperty property = new HotelProperty();
+        ReflectionTestUtils.setField(property, "id", 5L);
+        property.setCompany(company);
+        property.setName("Grand Hotel Tokyo");
+        property.setCountryCode("JP");
+        property.setCurrencyCode("JPY");
+        property.setTimezone("Asia/Tokyo");
+        property.setRegion("Tokyo");
+        property.setTaxNumber("T1234567890123");
+        RoomType type = new RoomType();
+        ReflectionTestUtils.setField(type, "id", 7L);
+        type.setProperty(property);
+        when(propertyRepository.findAllByCompany_IdOrderByNameAsc(12L)).thenReturn(List.of(property));
+        when(roomTypeRepository.findAllByProperty_IdOrderBySortOrderAscNameAsc(5L)).thenReturn(List.of(type));
+        when(roomRepository.countRoomsByType(5L)).thenReturn(List.of(new RoomRepository.RoomTypeCount() {
+            public Long getRoomTypeId() { return 7L; }
+            public long getRoomCount() { return 12_000L; }
+        }));
+
+        var result = service.getSetup(company, false);
+
+        assertThat(result.totalRooms()).isEqualTo(12_000);
+        assertThat(result.totalRoomTypes()).isEqualTo(1);
+        assertThat(result.foundationComplete()).isTrue();
+        assertThat(result.properties().get(0).rooms()).isEmpty();
+        assertThat(result.properties().get(0).roomTypes().get(0).roomCount()).isEqualTo(12_000);
+        assertThat(result.properties().get(0).countryCode()).isEqualTo("JP");
+        assertThat(result.properties().get(0).currencyCode()).isEqualTo("JPY");
+        assertThat(result.properties().get(0).timezone()).isEqualTo("Asia/Tokyo");
+        assertThat(result.properties().get(0).taxNumber()).isEqualTo("T1234567890123");
+        assertThat(result.properties().get(0).region()).isEqualTo("Tokyo");
+        verify(roomRepository, never()).findAllByProperty_IdOrderByFloorAscNumberAsc(anyLong());
+    }
+
+    @Test
+    void compactSetupWithoutRoomsDoesNotClaimFoundationIsComplete() {
+        HotelProperty property = new HotelProperty();
+        ReflectionTestUtils.setField(property, "id", 5L);
+        property.setCompany(company);
+        RoomType type = new RoomType();
+        ReflectionTestUtils.setField(type, "id", 7L);
+        type.setProperty(property);
+        when(propertyRepository.findAllByCompany_IdOrderByNameAsc(12L)).thenReturn(List.of(property));
+        when(roomTypeRepository.findAllByProperty_IdOrderBySortOrderAscNameAsc(5L)).thenReturn(List.of(type));
+        when(roomRepository.countRoomsByType(5L)).thenReturn(List.of());
+
+        var result = service.getSetup(company, false);
+        assertThat(result.totalRooms()).isZero();
+        assertThat(result.foundationComplete()).isFalse();
+        verify(roomRepository, never()).findAllByProperty_IdOrderByFloorAscNumberAsc(anyLong());
+    }
+
+    @Test
+    void savesInternationalPropertyAndItsInvoiceIdentity() {
+        when(propertyRepository.findAllByCompany_IdOrderByNameAsc(12L)).thenReturn(List.of());
+        service.createProperty(company, new UpsertHotelPropertyRequest(
+                "NYC", "Grand Hotel", "Grand Hotel LLC", "US", "USD", "America/New_York", "5 Fifth Avenue",
+                "10001", "New York", "+12120000000", "hotel@example.com", LocalTime.of(15, 0), LocalTime.of(11, 0), true,
+                "12-3456789", "EIN", "NY12345", "Suite 10", "New York", "Thank you for your stay.", "NYC-INV", 14));
+        ArgumentCaptor<HotelProperty> captor = ArgumentCaptor.forClass(HotelProperty.class);
+        verify(propertyRepository).save(captor.capture());
+        HotelProperty saved = captor.getValue();
+        assertThat(saved.getCountryCode()).isEqualTo("US");
+        assertThat(saved.getCurrencyCode()).isEqualTo("USD");
+        assertThat(saved.getTimezone()).isEqualTo("America/New_York");
+        assertThat(saved.getTaxNumber()).isEqualTo("12-3456789");
+        assertThat(saved.getTaxRegistrationLabel()).isEqualTo("EIN");
+        assertThat(saved.getRegistrationNumber()).isEqualTo("NY12345");
+        assertThat(saved.getAddressLine2()).isEqualTo("Suite 10");
+        assertThat(saved.getRegion()).isEqualTo("New York");
+        assertThat(saved.getInvoiceFooter()).isEqualTo("Thank you for your stay.");
+        assertThat(saved.getInvoicePrefix()).isEqualTo("NYC-INV");
+        assertThat(saved.getInvoiceDueDays()).isEqualTo(14);
     }
 
     @Test

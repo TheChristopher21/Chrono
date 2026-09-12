@@ -72,4 +72,19 @@ describe('PmsBookingPage', () => {
         ));
         expect(await screen.findByText('Reservierung bestätigt')).toBeInTheDocument();
     });
+
+    it('quotes the selected occupancy and clears an outdated price after a change', async () => {
+        renderPage();
+        await screen.findByText('Chrono Zürich');
+        fireEvent.change(screen.getByLabelText('Erwachsene'), { target: { value: '2' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Verfügbarkeit prüfen' }));
+        await screen.findByText('Doppelzimmer');
+        expect(apiMock.get).toHaveBeenCalledWith('/api/public/pms/booking/ZRH/availability', {
+            params: expect.objectContaining({ adults: 2, children: 0 }),
+        });
+        fireEvent.click(screen.getByRole('radio'));
+        fireEvent.change(screen.getByLabelText('Erwachsene'), { target: { value: '1' } });
+        expect(screen.queryByRole('button', { name: /Kostenpflichtig buchen/ })).not.toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    });
 });

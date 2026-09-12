@@ -109,7 +109,15 @@ public record PmsOperationsResponse(
             String notes,
             boolean vip,
             boolean active,
-            Long mergedIntoId
+            Long mergedIntoId,
+            String privateEmail,
+            String businessEmail,
+            List<String> additionalEmails,
+            String dietaryNotes,
+            String vatNumber,
+            String organizationContactId,
+            boolean billingOverride,
+            BillingProfile billingProfile
     ) {
     }
 
@@ -123,7 +131,9 @@ public record PmsOperationsResponse(
             String countryCode,
             boolean masterRecord,
             Long parentOrganizationId,
-            boolean active
+            boolean active,
+            List<OrganizationContact> contacts,
+            BillingProfile billingProfile
     ) {
     }
 
@@ -138,7 +148,30 @@ public record PmsOperationsResponse(
             int minStay,
             boolean breakfastIncluded,
             boolean refundable,
-            boolean active
+            boolean active,
+            BigDecimal vatRate,
+            boolean taxIncluded,
+            BigDecimal breakfastAmount,
+            BigDecimal breakfastVatRate,
+            LocalDate validFrom,
+            LocalDate validTo,
+            LocalDate bookingFrom,
+            LocalDate bookingTo,
+            Integer maxStay,
+            Integer minAdvanceDays,
+            Integer maxAdvanceDays,
+            int includedAdults,
+            BigDecimal extraAdultRate,
+            BigDecimal childRate,
+            Integer cancellationDeadlineHours,
+            BigDecimal cancellationFeePercent,
+            BigDecimal depositPercent,
+            Integer paymentDueDays,
+            String cancellationPolicy,
+            String paymentPolicy,
+            String notes,
+            Long organizationId,
+            String organizationName
     ) {
     }
 

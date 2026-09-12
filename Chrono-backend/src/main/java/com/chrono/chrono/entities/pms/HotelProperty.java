@@ -79,6 +79,30 @@ public class HotelProperty {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "tax_number", length = 80)
+    private String taxNumber;
+
+    @Column(name = "tax_registration_label", length = 40, nullable = false)
+    private String taxRegistrationLabel = "VAT / Tax ID";
+
+    @Column(name = "registration_number", length = 100)
+    private String registrationNumber;
+
+    @Column(name = "address_line_2", length = 180)
+    private String addressLine2;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Column(name = "invoice_footer", length = 2000)
+    private String invoiceFooter;
+
+    @Column(name = "invoice_prefix", length = 24, nullable = false)
+    private String invoicePrefix = "INV";
+
+    @Column(name = "invoice_due_days", nullable = false)
+    private int invoiceDueDays = 14;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -96,6 +120,30 @@ public class HotelProperty {
     void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public String getTaxNumber() { return taxNumber; }
+    public void setTaxNumber(String value) { this.taxNumber = value; }
+
+    public String getTaxRegistrationLabel() { return taxRegistrationLabel; }
+    public void setTaxRegistrationLabel(String value) { this.taxRegistrationLabel = value; }
+
+    public String getRegistrationNumber() { return registrationNumber; }
+    public void setRegistrationNumber(String value) { this.registrationNumber = value; }
+
+    public String getAddressLine2() { return addressLine2; }
+    public void setAddressLine2(String value) { this.addressLine2 = value; }
+
+    public String getRegion() { return region; }
+    public void setRegion(String value) { this.region = value; }
+
+    public String getInvoiceFooter() { return invoiceFooter; }
+    public void setInvoiceFooter(String value) { this.invoiceFooter = value; }
+
+    public String getInvoicePrefix() { return invoicePrefix; }
+    public void setInvoicePrefix(String value) { this.invoicePrefix = value; }
+
+    public int getInvoiceDueDays() { return invoiceDueDays; }
+    public void setInvoiceDueDays(int value) { this.invoiceDueDays = value; }
 
     public Long getId() {
         return id;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../utils/api.js';
+import PmsGuestProfileDetails, { profileDetails, profilePayload, preferredProfileEmail } from './PmsGuestProfileDetails.jsx';
 
 const RESERVATION_SOURCES = [
     ['DIRECT', 'Direktreservierung'],
@@ -58,6 +59,7 @@ const initialStay = (businessDate, walkIn) => {
 };
 
 const emptyGuest = () => ({
+    ...profileDetails(),
     firstName: '',
     lastName: '',
     email: '',
@@ -255,6 +257,10 @@ const PmsReceptionBookingFlow = ({
             params: {
                 arrival: stay.arrivalDate,
                 departure: stay.departureDate,
+                adults: Number(stay.adults),
+                children: Number(stay.children),
+                guestId: guestMode === 'existing' ? existingGuestId || undefined : undefined,
+                organizationId: guestMode === 'new' ? newGuest.organizationId || undefined : undefined,
             },
             signal: controller.signal,
         }).then((response) => {
@@ -271,7 +277,7 @@ const PmsReceptionBookingFlow = ({
         });
 
         return () => controller.abort();
-    }, [availabilityRefresh, property?.id, stay.arrivalDate, stay.departureDate]);
+    }, [availabilityRefresh, property?.id, stay.arrivalDate, stay.departureDate, stay.adults, stay.children, guestMode, existingGuestId, newGuest.organizationId]);
 
     useEffect(() => {
         const stillAvailable = rateChoices.some((rate) => (
@@ -437,10 +443,10 @@ const PmsReceptionBookingFlow = ({
             if (walkIn && guestMode === 'existing' && !clean(selectedGuest?.dateOfBirth)) {
                 return 'Im gewählten Gastprofil fehlt das Geburtsdatum. Bitte ergänze das Profil oder erfasse den Gast neu.';
             }
-            if (guestMode === 'new' && !clean(newGuest.email) && !clean(newGuest.phone)) {
+            if (guestMode === 'new' && !preferredProfileEmail(newGuest) && !clean(newGuest.phone)) {
                 return 'Für einen neuen Hauptgast ist mindestens E-Mail oder Telefon erforderlich.';
             }
-            if (guestMode === 'new' && clean(newGuest.email) && !isValidEmail(newGuest.email)) {
+            if (guestMode === 'new' && preferredProfileEmail(newGuest) && !isValidEmail(preferredProfileEmail(newGuest))) {
                 return 'Bitte gib eine gültige E-Mail-Adresse ein.';
             }
             if (newGuest.nationalityCode && upperCountry(newGuest.nationalityCode).length !== 2) {
@@ -484,9 +490,10 @@ const PmsReceptionBookingFlow = ({
     const buildPayload = () => ({
         existingGuestId: guestMode === 'existing' ? Number(existingGuestId) : null,
         newGuest: guestMode === 'new' ? {
+            ...profilePayload(newGuest),
             firstName: clean(newGuest.firstName),
             lastName: clean(newGuest.lastName),
-            email: optional(newGuest.email),
+            email: optional(preferredProfileEmail(newGuest)),
             phone: optional(newGuest.phone),
             dateOfBirth: optional(newGuest.dateOfBirth),
             nationalityCode: optional(upperCountry(newGuest.nationalityCode)),
@@ -879,7 +886,7 @@ const PmsReceptionBookingFlow = ({
                             )}
                         </>
                     )}
-                    <div className="pms-form-actions"><button type="button" onClick={previousStep}>Zurück</button><button type="submit" className="is-primary">Weiter zum Gast</button></div>
+                    <div className="pms-form-actions"><button type="button" onClick={previousStep}>Zurück</button><button type="button" onClick={() => setStep(3)}>Gast oder Firma zuerst auswählen</button><button type="submit" className="is-primary">Weiter zum Gast</button></div>
                 </form>
             )}
 
@@ -940,10 +947,16 @@ const PmsReceptionBookingFlow = ({
                                 <label>Kennzeichen<input value={newGuest.vehiclePlate} onChange={(event) => setNewGuest((current) => ({ ...current, vehiclePlate: event.target.value.toUpperCase() }))} /></label>
                                 <label className="is-wide">Zimmerwünsche<textarea placeholder="z. B. ruhig, hohe Etage, Badewanne, Parkett, King-Bett" value={newGuest.roomPreferences} onChange={(event) => setNewGuest((current) => ({ ...current, roomPreferences: event.target.value }))} /></label>
                                 <label className="pms-checkbox"><input type="checkbox" checked={newGuest.vip} onChange={(event) => setNewGuest((current) => ({ ...current, vip: event.target.checked }))} /> VIP-Gast</label>
+                                <PmsGuestProfileDetails value={newGuest} onChange={setNewGuest} organizations={organizations} />
                                 <label className="is-wide">Gastnotizen<textarea value={newGuest.notes} onChange={(event) => setNewGuest((current) => ({ ...current, notes: event.target.value }))} /></label>
                             </div>
                         </fieldset>
                     )}
+
+                    <div className="pms-work-card">
+                        <p>Nach der Gast- oder Firmenauswahl stehen passende Vertragsraten in der Verfügbarkeit bereit.</p>
+                        <button type="button" onClick={() => { setStep(2); setAvailabilityRefresh((current) => current + 1); }}>Passende Firmenraten prüfen</button>
+                    </div>
 
                     {!walkIn && (
                         <label className="pms-checkbox">

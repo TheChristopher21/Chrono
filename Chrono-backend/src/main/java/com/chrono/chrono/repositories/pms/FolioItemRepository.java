@@ -11,6 +11,7 @@ public interface FolioItemRepository extends JpaRepository<FolioItem, Long> {
     List<FolioItem> findAllByFolio_IdOrderByServiceDateAscIdAsc(Long folioId);
     List<FolioItem> findAllByFolio_IdInOrderByServiceDateAscIdAsc(List<Long> folioIds);
     void deleteAllByFolio_IdAndType(Long folioId, FolioItemType type);
+    void deleteAllByFolio_IdAndRateGeneratedTrue(Long folioId);
     List<FolioItem> findAllByFolio_Reservation_Property_IdAndServiceDateGreaterThanEqualAndServiceDateLessThanOrderByServiceDateAscIdAsc(
             Long propertyId, LocalDate from, LocalDate toExclusive);
 }

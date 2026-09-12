@@ -247,15 +247,20 @@ public class PmsExtensionsService {
         posTicketRepository.save(ticket);
 
         if (folio != null) {
-            FolioItem item = new FolioItem();
-            item.setFolio(folio);
-            item.setServiceDate(request.serviceDate());
-            item.setType(FolioItemType.SERVICE);
-            item.setDescription("POS " + ticket.getOutletCode() + " · " + ticket.getTicketNumber());
-            item.setQuantity(BigDecimal.ONE);
-            item.setUnitPrice(ticket.getGrossAmount());
-            item.setTotalAmount(ticket.getGrossAmount());
-            folioItemRepository.save(item);
+            for (PosTicketLine line : ticket.getLines()) {
+                FolioItem item = new FolioItem();
+                item.setFolio(folio);
+                item.setServiceDate(request.serviceDate());
+                item.setType(FolioItemType.SERVICE);
+                String description = "POS " + ticket.getOutletCode() + " · " + ticket.getTicketNumber() + " · " + line.getDescription();
+                item.setDescription(description.substring(0, Math.min(description.length(), 240)));
+                item.setQuantity(BigDecimal.ONE);
+                item.setUnitPrice(line.getGrossAmount());
+                item.setTotalAmount(line.getGrossAmount());
+                item.setTaxRate(line.getTaxRate());
+                item.setTaxIncluded(true);
+                folioItemRepository.save(item);
+            }
         }
         auditWriter.append(property, "pos.ticket_settled", "pos_ticket", ticket.getId().toString(),
                 "{\"gross\":" + ticket.getGrossAmount().toPlainString() + "}");
@@ -328,10 +333,19 @@ public class PmsExtensionsService {
 
     @Transactional(readOnly = true)
     public AvailabilityResponse publicAvailability(String propertyCode, LocalDate arrival, LocalDate departure) {
+        return publicAvailability(propertyCode, arrival, departure, 1, 0);
+    }
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse publicAvailability(String propertyCode, LocalDate arrival, LocalDate departure,
+                                                   int adults, int children) {
         HotelProperty property = requirePublicProperty(propertyCode);
         validatePublicStay(arrival, departure);
         AvailabilityResponse internal = operationsService.getAvailability(
-                property.getCompany(), property.getId(), arrival, departure);
+                property.getCompany(), property.getId(), arrival, departure, adults, children, null);
+        Set<Long> publicRateIds = new HashSet<>();
+        ratePlanRepository.findAllByProperty_IdOrderByRoomType_SortOrderAscNameAsc(property.getId()).stream()
+                .filter(rate -> rate.getOrganization() == null).forEach(rate -> publicRateIds.add(rate.getId()));
         return new AvailabilityResponse(
                 internal.propertyId(),
                 internal.arrivalDate(),
@@ -344,7 +358,7 @@ public class PmsExtensionsService {
                                 roomType.totalRooms(),
                                 roomType.soldRooms(),
                                 roomType.availableRooms(),
-                                roomType.rates(),
+                                roomType.rates().stream().filter(rate -> publicRateIds.contains(rate.ratePlanId())).toList(),
                                 List.of()
                         ))
                         .toList()
@@ -374,7 +388,8 @@ public class PmsExtensionsService {
                             .map(value -> value.getVerifiedAt() == null).orElse(false));
         }
         AvailabilityResponse availability = operationsService.getAvailability(
-                property.getCompany(), property.getId(), request.arrivalDate(), request.departureDate());
+                property.getCompany(), property.getId(), request.arrivalDate(), request.departureDate(),
+                request.adults(), request.children(), null);
         AvailabilityResponse.RateOption option = availability.roomTypes().stream()
                 .flatMap(roomType -> roomType.rates().stream())
                 .filter(rate -> rate.ratePlanId().equals(request.ratePlanId()))

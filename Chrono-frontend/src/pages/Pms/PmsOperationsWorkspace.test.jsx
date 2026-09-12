@@ -13,6 +13,7 @@ const apiMock = vi.hoisted(() => ({
 vi.mock('../../utils/api.js', () => ({ default: apiMock }));
 
 import PmsOperationsWorkspace from './PmsOperationsWorkspace.jsx';
+import { hotelToday, addPlanDays } from './pmsRoomPlan.js';
 
 const property = {
     id: 5,
@@ -258,7 +259,7 @@ describe('PmsOperationsWorkspace', () => {
         expect(screen.queryByText('POSTED')).not.toBeInTheDocument();
     });
 
-    it('separates housekeeping from the dated operational and sales status in the room plan', () => {
+    it('separates housekeeping from date-specific blocks in the continuous room plan', async () => {
         const roomPlanOperations = {
             ...operations,
             rooms: [
@@ -323,36 +324,25 @@ describe('PmsOperationsWorkspace', () => {
             ],
         };
 
+        const today = hotelToday();
+        apiMock.get.mockResolvedValue({ data: {
+            rooms: roomPlanOperations.rooms.map((room) => ({ ...room, active: true })),
+            reservations: [],
+            blocks: roomPlanOperations.roomBlocks.filter((block) => block.id !== 70).map((block) => ({ ...block, startDate: today, endDate: addPlanDays(today, 2) })),
+            page: 0, size: 50, totalRooms: 6, filters: {},
+        } });
         renderWorkspace({ section: 'room-plan', operations: roomPlanOperations });
-
-        const availableRoom = screen.getByText('101').closest('article');
-        const outOfOrderRoom = screen.getByText('102').closest('article');
-        const ownerUseRoom = screen.getByText('103').closest('article');
-        const outOfServiceRoom = screen.getByText('104').closest('article');
-        const permanentlyUnavailableRoom = screen.getByText('105').closest('article');
-        const unknownStatusRoom = screen.getByText('106').closest('article');
-
-        expect(within(availableRoom).getByText('Housekeeping')).toBeInTheDocument();
-        expect(within(availableRoom).getByText('Betriebs-/Verkaufsstatus')).toBeInTheDocument();
-        expect(within(availableRoom).getByText('Frei und zuweisbar')).toBeInTheDocument();
-
-        expect(within(outOfOrderRoom).getByText('Ausser Betrieb – nicht verkaufbar (OOO)')).toBeInTheDocument();
-        expect(within(outOfOrderRoom).getByText('Nicht belegbar und nicht zuweisbar')).toBeInTheDocument();
-        expect(within(outOfOrderRoom).queryByText(/^Frei/)).not.toBeInTheDocument();
-
-        expect(within(ownerUseRoom).getByText('Eigennutzung – nicht verkaufbar')).toBeInTheDocument();
-        expect(within(ownerUseRoom).getByText('Eigennutzung – nicht zuweisbar')).toBeInTheDocument();
-        expect(within(ownerUseRoom).queryByText(/^Frei/)).not.toBeInTheDocument();
-
-        expect(within(outOfServiceRoom).getByText('Eingeschränkter Betrieb – weiterhin zuweisbar (OOS)')).toBeInTheDocument();
-        expect(within(outOfServiceRoom).getByText('Frei · eingeschränkt, aber zuweisbar')).toBeInTheDocument();
-
-        expect(within(permanentlyUnavailableRoom).getByText('Technisch ausser Betrieb – nicht verkaufbar')).toBeInTheDocument();
-        expect(within(permanentlyUnavailableRoom).queryByText(/^Frei/)).not.toBeInTheDocument();
-
-        expect(within(unknownStatusRoom).getByText('Unbekannt')).toBeInTheDocument();
-        expect(within(unknownStatusRoom).getByText('Betriebsstatus unbekannt – nicht zuweisbar')).toBeInTheDocument();
-        expect(within(unknownStatusRoom).queryByText(/^Frei/)).not.toBeInTheDocument();
+        await screen.findByRole('table');
+        const row = (number) => screen.getByRole('rowheader', { name: new RegExp(number) }).closest('[role=row]');
+        expect(within(row('101')).getByText('Sauber')).toBeInTheDocument();
+        expect(within(row('101')).queryByRole('button')).not.toBeInTheDocument();
+        expect(within(row('102')).getByRole('button', { name: 'Ausser Betrieb – nicht verkaufbar (OOO)' })).toBeInTheDocument();
+        expect(within(row('103')).getByRole('button', { name: 'Eigennutzung – nicht verkaufbar' })).toBeInTheDocument();
+        expect(within(row('104')).getByRole('button', { name: 'Eingeschränkter Betrieb – weiterhin zuweisbar (OOS)' })).toBeInTheDocument();
+        expect(row('105')).toHaveClass('is-unavailable');
+        expect(within(row('105')).getByText(/Technisch ausser Betrieb – nicht verkaufbar/)).toBeInTheDocument();
+        expect(row('106')).toHaveClass('is-unavailable');
+        expect(within(row('106')).getByText(/Unbekannt/)).toBeInTheDocument();
     });
 
     it('shows unknown folio statuses as unknown instead of closed', () => {
@@ -432,6 +422,11 @@ describe('PmsOperationsWorkspace', () => {
         const { onOperationsChange } = renderWorkspace({
             section: 'guests',
             canManageGuestPrivacy: true,
+            operations: { ...operations, guests: operations.guests.map((guest) => ({ ...guest,
+                privateEmail: 'private@example.test', businessEmail: 'business@example.test',
+                additionalEmails: ['additional@example.test'], dietaryNotes: 'Laktosefrei',
+                organizationContactId: 'contact-1', billingOverride: true, billingProfile: { costCenter: 'SALES' },
+            })) },
         });
 
         await userEvent.click(screen.getByRole('button', { name: 'Anonymisieren' }));
@@ -468,12 +463,15 @@ describe('PmsOperationsWorkspace', () => {
                 firstName: 'Anonymisiert',
                 lastName: 'GAST-7',
                 email: null,
+                privateEmail: '', businessEmail: '', additionalEmails: [], dietaryNotes: '',
+                organizationContactId: '', billingOverride: false, billingProfile: {},
             })],
         }));
         expect(await screen.findByText(/Gastprofil wurde anonymisiert/)).toBeInTheDocument();
     });
 
     it('moves an open reservation between compatible rooms with drag and drop', async () => {
+        const today = hotelToday();
         const reservation = {
             id: 60,
             guestId: 7,
@@ -484,8 +482,8 @@ describe('PmsOperationsWorkspace', () => {
             roomId: 30,
             roomNumber: '101',
             ratePlanId: 20,
-            arrivalDate: '2026-07-28',
-            departureDate: '2026-07-29',
+            arrivalDate: today,
+            departureDate: addPlanDays(today, 1),
             adults: 1,
             children: 0,
             status: 'CONFIRMED',
@@ -500,8 +498,10 @@ describe('PmsOperationsWorkspace', () => {
                 { ...operations.rooms[0], id: 31, number: '102', currentReservation: null },
             ],
         };
+        apiMock.get.mockResolvedValue({ data: { rooms: roomPlanOperations.rooms.map((room) => ({ ...room, active: true })), reservations: [reservation], blocks: [], page: 0, size: 50, totalRooms: 2, filters: {} } });
         renderWorkspace({ section: 'room-plan', operations: roomPlanOperations });
-        expect(screen.getByRole('heading', { name: 'Zimmerplan für 28.07.2026' }))
+        await screen.findByRole('table');
+        expect(screen.getByRole('heading', { name: 'Zimmerplan', level: 3 }))
             .toBeInTheDocument();
         const data = {};
         const dataTransfer = {
@@ -509,19 +509,21 @@ describe('PmsOperationsWorkspace', () => {
             getData: (type) => data[type],
         };
         const guestButton = screen.getByRole('button', { name: /Gabriela Tschopp/ });
-        const targetRoom = screen.getByText('102').closest('article');
+        const targetRoom = screen.getByRole('rowheader', { name: /102/ }).closest('[role=row]');
 
         fireEvent.dragStart(guestButton, { dataTransfer });
         fireEvent.dragOver(targetRoom, { dataTransfer });
         fireEvent.drop(targetRoom, { dataTransfer });
 
         await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
-            '/api/pms/reservations/60/move-room?businessDate=2026-07-28',
-            { roomId: 31, reason: 'Verschoben im Zimmerplan' },
+            '/api/pms/reservations/60/move-room',
+            { roomId: 31, reason: 'Verschoben im fortlaufenden Zimmerplan' },
+            { params: { businessDate: '2026-07-28' } },
         ));
     });
 
     it('prevents moving a reservation onto an OOO room', async () => {
+        const today = hotelToday();
         const reservation = {
             id: 60,
             guestId: 7,
@@ -532,8 +534,8 @@ describe('PmsOperationsWorkspace', () => {
             roomId: 30,
             roomNumber: '101',
             ratePlanId: 20,
-            arrivalDate: '2026-07-28',
-            departureDate: '2026-07-29',
+            arrivalDate: today,
+            departureDate: addPlanDays(today, 1),
             adults: 1,
             children: 0,
             status: 'CONFIRMED',
@@ -552,11 +554,13 @@ describe('PmsOperationsWorkspace', () => {
                 roomId: 31,
                 type: 'OUT_OF_ORDER',
                 status: 'ACTIVE',
-                startDate: '2026-07-28',
-                endDate: '2026-07-30',
+                startDate: today,
+                endDate: addPlanDays(today, 2),
             }],
         };
+        apiMock.get.mockResolvedValue({ data: { rooms: roomPlanOperations.rooms.map((room) => ({ ...room, active: true })), reservations: [reservation], blocks: roomPlanOperations.roomBlocks, page: 0, size: 50, totalRooms: 2, filters: {} } });
         renderWorkspace({ section: 'room-plan', operations: roomPlanOperations });
+        await screen.findByRole('table');
         const data = {};
         const dataTransfer = {
             setData: (type, value) => { data[type] = value; },
@@ -564,7 +568,7 @@ describe('PmsOperationsWorkspace', () => {
         };
 
         fireEvent.dragStart(screen.getByRole('button', { name: /Gabriela Tschopp/ }), { dataTransfer });
-        fireEvent.drop(screen.getByText('102').closest('article'), { dataTransfer });
+        fireEvent.drop(screen.getByRole('rowheader', { name: /102/ }).closest('[role=row]'), { dataTransfer });
 
         await waitFor(() => expect(apiMock.post).not.toHaveBeenCalled());
     });

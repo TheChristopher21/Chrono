@@ -63,6 +63,19 @@ public class PmsInvoice {
     @Column(name = "recipient_country_code", nullable = false, length = 2)
     private String recipientCountryCode = "CH";
 
+    @Column(name = "recipient_snapshot", columnDefinition = "text")
+    private String recipientSnapshot;
+    @Column(name = "supplier_snapshot", columnDefinition = "text")
+    private String supplierSnapshot;
+    @Column(name = "supplier_tax_label", length = 40)
+    private String supplierTaxLabel;
+    @Column(name = "supplier_registration_number", length = 100)
+    private String supplierRegistrationNumber;
+    @Column(name = "service_from")
+    private LocalDate serviceFrom;
+    @Column(name = "service_to")
+    private LocalDate serviceTo;
+
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
 

@@ -30,7 +30,9 @@ public record PmsSetupResponse(
             LocalTime checkOutTime,
             boolean active,
             List<RoomTypeView> roomTypes,
-            List<RoomView> rooms
+            List<RoomView> rooms,
+            String taxNumber, String taxRegistrationLabel, String registrationNumber,
+            String addressLine2, String region, String invoiceFooter, String invoicePrefix, int invoiceDueDays
     ) {
     }
 

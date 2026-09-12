@@ -19,6 +19,14 @@ public record CreateInvoiceRequest(
         @Size(max = 120) String recipientCity,
         @Size(min = 2, max = 2) String recipientCountryCode,
         @Size(max = 34) String creditorIban,
-        @Size(max = 27) String qrReference
+        @Size(max = 27) String qrReference,
+        Boolean useProfileBilling,
+        @jakarta.validation.Valid BillingProfile billingProfile
 ) {
+    public CreateInvoiceRequest(Long folioId, LocalDate dueDate, BigDecimal vatRate, String recipientName,
+        String recipientAddress, String recipientPostalCode, String recipientCity, String recipientCountryCode,
+        String creditorIban, String qrReference) {
+        this(folioId,dueDate,vatRate,recipientName,recipientAddress,recipientPostalCode,recipientCity,recipientCountryCode,
+            creditorIban,qrReference,false,null);
+    }
 }

@@ -49,6 +49,12 @@ class PmsPrivacyServiceTest {
         guest.setAddressLine1("Privatweg 1");
         guest.setVehiclePlate("ZH 12345");
         guest.setRoomPreferences("Ruhig und hohe Etage");
+        guest.setPrivateEmail("private@example.com");
+        guest.setBusinessEmail("business@example.com");
+        guest.setAdditionalEmails("[\"extra@example.com\"]");
+        guest.setDietaryNotes("Laktoseintoleranz");
+        guest.setVatNumber("DE123456789");
+        guest.setBillingProfile("{\"legalName\":\"Private billing\"}");
         reservation.setId(11L);
         reservation.setGuest(guest);
         reservation.setProperty(property);
@@ -81,6 +87,12 @@ class PmsPrivacyServiceTest {
         assertThat(guest.getAddressLine1()).isNull();
         assertThat(guest.getVehiclePlate()).isNull();
         assertThat(guest.getRoomPreferences()).isNull();
+        assertThat(guest.getPrivateEmail()).isNull();
+        assertThat(guest.getBusinessEmail()).isNull();
+        assertThat(guest.getAdditionalEmails()).isNull();
+        assertThat(guest.getDietaryNotes()).isNull();
+        assertThat(guest.getVatNumber()).isNull();
+        assertThat(guest.getBillingProfile()).isNull();
         assertThat(reservation.getGuestPreferenceSnapshot()).isNull();
         assertThat(folio.getStatus()).isEqualTo(FolioStatus.CLOSED);
         verify(auditWriter).append(

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
+import PmsRoomPlan from './PmsRoomPlan.jsx';
+import PmsRatePlansWorkspace from './PmsRatePlansWorkspace.jsx';
 import PmsExtensionsWorkspace from './PmsExtensionsWorkspace.jsx';
 import PmsReceptionBookingFlow from './PmsReceptionBookingFlow.jsx';
+import PmsGuestProfileDetails, { profileDetails, profilePayload } from './PmsGuestProfileDetails.jsx';
 import { formatPmsDate } from './pmsFormatting.js';
 import { PMS_SECTIONS } from './pmsNavigation.js';
 import { PmsTranslationBoundary, usePmsLocale } from './pmsI18n.jsx';
@@ -20,7 +23,6 @@ import {
     RESERVATION_SOURCE_LABELS,
     RESERVATION_STATUS_LABELS,
     ROOM_BLOCK_TYPE_LABELS,
-    ROOM_OPERATIONAL_STATUS_LABELS,
     getFolioDisplayLabel,
     getPmsEnumLabel,
     getPmsEnumOptions,
@@ -63,57 +65,6 @@ const errorMessage = (error) => (
     || 'Die Aktion konnte nicht abgeschlossen werden.'
 );
 
-const getRoomSalesState = (room, activeBlock) => {
-    if (room.operationalStatus === 'INACTIVE') {
-        return {
-            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
-            availabilityLabel: 'Nicht belegbar und nicht zuweisbar',
-            assignable: false,
-            tone: 'is-room-unavailable',
-        };
-    }
-    if (room.operationalStatus === 'OUT_OF_ORDER') {
-        return {
-            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
-            availabilityLabel: 'Nicht belegbar und nicht zuweisbar',
-            assignable: false,
-            tone: 'is-room-unavailable',
-        };
-    }
-    if (room.operationalStatus !== 'IN_SERVICE') {
-        return {
-            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
-            availabilityLabel: 'Betriebsstatus unbekannt – nicht zuweisbar',
-            assignable: false,
-            tone: 'is-room-unavailable',
-        };
-    }
-    if (activeBlock?.type === 'OUT_OF_ORDER' || activeBlock?.type === 'OWNER_USE') {
-        return {
-            label: getPmsEnumLabel(ROOM_BLOCK_TYPE_LABELS, activeBlock.type),
-            availabilityLabel: activeBlock.type === 'OWNER_USE'
-                ? 'Eigennutzung – nicht zuweisbar'
-                : 'Nicht belegbar und nicht zuweisbar',
-            assignable: false,
-            tone: 'is-room-unavailable',
-        };
-    }
-    if (activeBlock?.type === 'OUT_OF_SERVICE') {
-        return {
-            label: getPmsEnumLabel(ROOM_BLOCK_TYPE_LABELS, activeBlock.type),
-            availabilityLabel: 'Frei · eingeschränkt, aber zuweisbar',
-            assignable: true,
-            tone: 'is-room-limited',
-        };
-    }
-    return {
-        label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
-        availabilityLabel: 'Frei und zuweisbar',
-        assignable: true,
-        tone: '',
-    };
-};
-
 const PmsOperationsWorkspace = ({
     section = 'reservations',
     setup,
@@ -121,6 +72,7 @@ const PmsOperationsWorkspace = ({
     property,
     businessDate,
     canManage,
+    canManageSettings = false,
     canManageGuestPrivacy = false,
     initialAction,
     onOperationsChange,
@@ -140,7 +92,6 @@ const PmsOperationsWorkspace = ({
     const [availability, setAvailability] = useState(null);
     const [editingReservationId, setEditingReservationId] = useState(null);
     const [editingGuestId, setEditingGuestId] = useState(null);
-    const [editingRateId, setEditingRateId] = useState(null);
     const [privacyGuestId, setPrivacyGuestId] = useState(null);
     const [privacyReason, setPrivacyReason] = useState('');
     const [privacyConfirmationOpen, setPrivacyConfirmationOpen] = useState(false);
@@ -148,6 +99,7 @@ const PmsOperationsWorkspace = ({
     const [guestMatches, setGuestMatches] = useState([]);
 
     const emptyGuest = {
+        ...profileDetails(),
         firstName: '',
         lastName: '',
         email: '',
@@ -164,25 +116,6 @@ const PmsOperationsWorkspace = ({
         organizationId: '',
         notes: '',
         vip: false,
-    };
-    const emptyRate = {
-        roomTypeId: property?.roomTypes?.[0]?.id ?? '',
-        code: '',
-        name: '',
-        nightlyRate: '',
-        minStay: 1,
-        breakfastIncluded: false,
-        refundable: true,
-        active: true,
-    };
-    const emptyOverride = {
-        ratePlanId: '',
-        stayDate: businessDate,
-        price: '',
-        minStay: 1,
-        closed: false,
-        closedArrival: false,
-        closedDeparture: false,
     };
     const emptyReservation = {
         propertyId: property?.id ?? '',
@@ -202,8 +135,6 @@ const PmsOperationsWorkspace = ({
         holdUntil: '',
     };
     const [guestForm, setGuestForm] = useState(emptyGuest);
-    const [rateForm, setRateForm] = useState(emptyRate);
-    const [overrideForm, setOverrideForm] = useState(emptyOverride);
     const [reservationForm, setReservationForm] = useState(emptyReservation);
     const [guestMerge, setGuestMerge] = useState({ sourceGuestId: '', targetGuestId: '', takeFromSource: [] });
     const [paymentForm, setPaymentForm] = useState({ folioId: '', amount: '', method: 'CARD', reference: '' });
@@ -249,10 +180,6 @@ const PmsOperationsWorkspace = ({
             propertyId: property.id,
             roomTypeId: current.roomTypeId || property.roomTypes?.[0]?.id || '',
         }));
-        setRateForm((current) => ({
-            ...current,
-            roomTypeId: current.roomTypeId || property.roomTypes?.[0]?.id || '',
-        }));
     }, [property]);
 
     useEffect(() => {
@@ -283,23 +210,6 @@ const PmsOperationsWorkspace = ({
     const folios = operations?.folios ?? [];
     const tasks = operations?.housekeepingTasks ?? [];
     const currency = operations?.currencyCode ?? property?.currencyCode ?? 'CHF';
-    const activeRoomBlocksByRoomId = useMemo(() => {
-        const dateKey = String(businessDate ?? '').slice(0, 10);
-        const blocksByRoomId = new Map();
-        (operations?.roomBlocks ?? [])
-            .filter((block) => block.status === 'ACTIVE')
-            .filter((block) => block.startDate <= dateKey && dateKey < block.endDate)
-            .forEach((block) => {
-                const existingBlock = blocksByRoomId.get(block.roomId);
-                const blocksInventory = ['OUT_OF_ORDER', 'OWNER_USE'].includes(block.type);
-                const existingBlocksInventory = ['OUT_OF_ORDER', 'OWNER_USE'].includes(existingBlock?.type);
-                if (!existingBlock || (blocksInventory && !existingBlocksInventory)) {
-                    blocksByRoomId.set(block.roomId, block);
-                }
-            });
-        return blocksByRoomId;
-    }, [businessDate, operations?.roomBlocks]);
-
     const filteredRates = useMemo(
         () => ratePlans.filter((rate) => String(rate.roomTypeId) === String(reservationForm.roomTypeId) && rate.active),
         [ratePlans, reservationForm.roomTypeId],
@@ -346,6 +256,9 @@ const PmsOperationsWorkspace = ({
                 params: {
                     arrival: reservationForm.arrivalDate,
                     departure: reservationForm.departureDate,
+                    adults: Number(reservationForm.adults),
+                    children: Number(reservationForm.children),
+                    guestId: reservationForm.guestId || undefined,
                 },
             });
             setAvailability(response.data);
@@ -363,6 +276,7 @@ const PmsOperationsWorkspace = ({
             : `/api/pms/properties/${property.id}/guests`;
         const payload = {
             ...guestForm,
+            ...profilePayload(guestForm),
             organizationId: guestForm.organizationId ? Number(guestForm.organizationId) : null,
         };
         const result = await runMutation(editingGuestId ? 'put' : 'post', url, payload, 'Gastprofil gespeichert.');
@@ -433,9 +347,12 @@ const PmsOperationsWorkspace = ({
                     guest.id === privacyGuestId
                         ? {
                             ...guest,
+                            ...profileDetails(),
                             firstName: 'Anonymisiert',
                             lastName: `GAST-${privacyGuestId}`,
                             email: null,
+                            dateOfBirth: null,
+                            nationalityCode: null,
                             phone: null,
                             addressLine1: null,
                             postalCode: null,
@@ -472,40 +389,6 @@ const PmsOperationsWorkspace = ({
         } finally {
             setBusy(false);
         }
-    };
-
-    const submitRate = async (event) => {
-        event.preventDefault();
-        const payload = {
-            ...rateForm,
-            roomTypeId: Number(rateForm.roomTypeId),
-            nightlyRate: Number(rateForm.nightlyRate),
-            minStay: Number(rateForm.minStay),
-        };
-        const url = editingRateId
-            ? `/api/pms/properties/${property.id}/rate-plans/${editingRateId}`
-            : `/api/pms/properties/${property.id}/rate-plans`;
-        const result = await runMutation(editingRateId ? 'put' : 'post', url, payload, 'Ratenplan gespeichert.');
-        if (result) {
-            setRateForm(emptyRate);
-            setEditingRateId(null);
-        }
-    };
-
-    const submitOverride = async (event) => {
-        event.preventDefault();
-        const payload = {
-            ...overrideForm,
-            price: Number(overrideForm.price),
-            minStay: Number(overrideForm.minStay),
-        };
-        const result = await runMutation(
-            'put',
-            `/api/pms/properties/${property.id}/rate-plans/${overrideForm.ratePlanId}/override`,
-            payload,
-            'Tagesrate gespeichert.',
-        );
-        if (result) setOverrideForm(emptyOverride);
     };
 
     const submitReservation = async (event) => {
@@ -736,26 +619,6 @@ const PmsOperationsWorkspace = ({
         if (result) setMoveItemForm({ sourceFolioId: '', targetFolioId: '', itemId: '' });
     };
 
-    const moveReservationToRoom = async (reservationId, room) => {
-        const reservation = reservations.find((entry) => String(entry.id) === String(reservationId));
-        if (!reservation || String(reservation.roomId) === String(room.id)) return;
-        const roomSalesState = getRoomSalesState(room, activeRoomBlocksByRoomId.get(room.id));
-        if (!roomSalesState.assignable) {
-            setError(`Zimmer ${room.number} ist am gewählten Betriebstag nicht zuweisbar.`);
-            return;
-        }
-        if (String(reservation.roomTypeId) !== String(room.roomTypeId)) {
-            setError('Die Reservierung kann nur auf ein Zimmer desselben Zimmertyps verschoben werden.');
-            return;
-        }
-        await runMutation(
-            'post',
-            `/api/pms/reservations/${reservation.id}/move-room`,
-            { roomId: Number(room.id), reason: 'Verschoben im Zimmerplan' },
-            `Reservierung auf Zimmer ${room.number} verschoben.`,
-        );
-    };
-
     if (!property) {
         return (
             <PmsTranslationBoundary>
@@ -828,6 +691,7 @@ const PmsOperationsWorkspace = ({
                 <div className="pms-workspace-body">
                     {activeSection === 'commerce' && (
                         <PmsExtensionsWorkspace
+                            canManageSettings={canManageSettings}
                             property={property}
                             operations={operations}
                             businessDate={businessDate}
@@ -837,6 +701,7 @@ const PmsOperationsWorkspace = ({
                     )}
                     {['portfolio', 'groups', 'events', 'organizations', 'invoices', 'audit', 'digital-check-in', 'communications', 'reports', 'integrations'].includes(activeSection) && (
                         <PmsAdvancedWorkspace
+                            canManageSettings={canManageSettings}
                             section={activeSection}
                             property={property}
                             operations={operations}
@@ -1115,68 +980,9 @@ const PmsOperationsWorkspace = ({
                     )}
 
                     {activeSection === 'room-plan' && (
-                        <section className="pms-work-card">
-                            <div className="pms-work-card-heading">
-                                <div>
-                                    <span className="pms-eyebrow">Aktueller Zimmerstatus</span>
-                                    <h3>Zimmerplan für {formatPmsDate(businessDate)}</h3>
-                                </div>
-                            </div>
-                            <div className="pms-room-plan-grid">
-                                {rooms.map((room) => {
-                                    const activeBlock = activeRoomBlocksByRoomId.get(room.id);
-                                    const roomSalesState = getRoomSalesState(room, activeBlock);
-                                    return (
-                                        <article
-                                            key={room.id}
-                                            className={`is-${room.housekeepingStatus.toLowerCase()} ${roomSalesState.tone}`.trim()}
-                                            onDragOver={(event) => {
-                                                if (roomSalesState.assignable) event.preventDefault();
-                                            }}
-                                            onDrop={(event) => {
-                                                if (!roomSalesState.assignable) return;
-                                                event.preventDefault();
-                                                moveReservationToRoom(event.dataTransfer.getData('text/reservation-id'), room);
-                                            }}
-                                        >
-                                            <span>Zimmer</span>
-                                            <strong>{room.number}</strong>
-                                            <small>{room.roomTypeName} · Etage {room.floor || '–'}</small>
-                                            {room.features && <small>Ausstattung: {room.features}</small>}
-                                            <div className="pms-room-plan-statuses">
-                                                <p>
-                                                    <span>Housekeeping</span>
-                                                    <strong>{getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, room.housekeepingStatus)}</strong>
-                                                </p>
-                                                <p>
-                                                    <span>Betriebs-/Verkaufsstatus</span>
-                                                    <strong>{roomSalesState.label}</strong>
-                                                </p>
-                                            </div>
-                                            {room.currentReservation ? (
-                                                <button
-                                                    type="button"
-                                                    draggable={canManage && ['TENTATIVE', 'CONFIRMED', 'CHECKED_IN'].includes(room.currentReservation.status)}
-                                                    onDragStart={(event) => event.dataTransfer.setData('text/reservation-id', String(room.currentReservation.id))}
-                                                    onClick={() => editReservation(room.currentReservation)}
-                                                    title="Zum Verschieben auf ein anderes passendes Zimmer ziehen"
-                                                >
-                                                    {room.currentReservation.guestName}
-                                                    <small>{getPmsEnumLabel(RESERVATION_STATUS_LABELS, room.currentReservation.status)}</small>
-                                                    {room.currentReservation.guestPreferenceSnapshot && <small>Wunsch: {room.currentReservation.guestPreferenceSnapshot}</small>}
-                                                </button>
-                                            ) : (
-                                                <em className={roomSalesState.assignable ? '' : 'is-unavailable'}>
-                                                    {roomSalesState.availabilityLabel}
-                                                </em>
-                                            )}
-                                        </article>
-                                    );
-                                })}
-                            </div>
-                        </section>
+                        <PmsRoomPlan property={property} canManage={canManage} businessDate={businessDate}
+                            refreshKey={operations} onSelectReservation={editReservation} onOperationsChange={onOperationsChange} />
                     )}
-
                     {activeSection === 'guests' && (
                         <div className="pms-operations-layout">
                             <section className="pms-work-card">
@@ -1198,6 +1004,7 @@ const PmsOperationsWorkspace = ({
                                     <label>Wohnsitzland<input maxLength="2" value={guestForm.countryCode} onChange={(event) => setGuestForm({ ...guestForm, countryCode: event.target.value.toUpperCase() })} /></label>
                                     <label>Kennzeichen<input maxLength="40" value={guestForm.vehiclePlate} onChange={(event) => setGuestForm({ ...guestForm, vehiclePlate: event.target.value.toUpperCase() })} /></label>
                                     <label className="is-wide">Zimmerwünsche<textarea placeholder="z. B. ruhig, hohe Etage, Badewanne, Parkett, King-Bett" value={guestForm.roomPreferences} onChange={(event) => setGuestForm({ ...guestForm, roomPreferences: event.target.value })} /></label>
+                                    <PmsGuestProfileDetails value={guestForm} onChange={setGuestForm} organizations={organizations} />
                                     <label className="is-wide">Notizen<textarea value={guestForm.notes} onChange={(event) => setGuestForm({ ...guestForm, notes: event.target.value })} /></label>
                                     <label className="pms-checkbox"><input type="checkbox" checked={guestForm.vip} onChange={(event) => setGuestForm({ ...guestForm, vip: event.target.checked })} /> VIP-Gast</label>
                                     <div className="pms-form-actions is-wide">
@@ -1224,6 +1031,7 @@ const PmsOperationsWorkspace = ({
                                                 <button type="button" onClick={() => {
                                                     setEditingGuestId(guest.id);
                                                     setGuestForm({
+                                                        ...profileDetails(guest),
                                                         firstName: guest.firstName,
                                                         lastName: guest.lastName,
                                                         email: guest.email ?? '',
@@ -1389,65 +1197,9 @@ const PmsOperationsWorkspace = ({
                     )}
 
                     {activeSection === 'rates' && (
-                        <div className="pms-operations-layout">
-                            <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Ratenverwaltung</span><h3>{editingRateId ? 'Ratenplan bearbeiten' : 'Ratenplan anlegen'}</h3></div></div>
-                                <form className="pms-form-grid" onSubmit={submitRate}>
-                                    <label>Zimmertyp<select value={rateForm.roomTypeId} onChange={(event) => setRateForm({ ...rateForm, roomTypeId: event.target.value })}>{property.roomTypes?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>
-                                    <label>Ratencode<input value={rateForm.code} onChange={(event) => setRateForm({ ...rateForm, code: event.target.value })} required /></label>
-                                    <label className="is-wide">Name<input value={rateForm.name} onChange={(event) => setRateForm({ ...rateForm, name: event.target.value })} required /></label>
-                                    <label>Standardpreis pro Zimmer/Nacht<input type="number" min="0" step="0.01" value={rateForm.nightlyRate} onChange={(event) => setRateForm({ ...rateForm, nightlyRate: event.target.value })} required /></label>
-                                    <label>Mindestaufenthalt (Nächte)<input type="number" min="1" value={rateForm.minStay} onChange={(event) => setRateForm({ ...rateForm, minStay: event.target.value })} required /></label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={rateForm.refundable} onChange={(event) => setRateForm({ ...rateForm, refundable: event.target.checked })} /> Stornierbar</label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={rateForm.breakfastIncluded} onChange={(event) => setRateForm({ ...rateForm, breakfastIncluded: event.target.checked })} /> Frühstück inklusive</label>
-                                    <div className="pms-form-actions is-wide">
-                                        {editingRateId && <button type="button" onClick={() => { setEditingRateId(null); setRateForm(emptyRate); }}>Abbrechen</button>}
-                                        <button type="submit" className="is-primary" disabled={!canManage || busy}>Ratenplan speichern</button>
-                                    </div>
-                                </form>
-                                <hr />
-                                <h4>Tagespreis und Restriktionen</h4>
-                                <form className="pms-form-grid" onSubmit={submitOverride}>
-                                    <label>Ratenplan<select value={overrideForm.ratePlanId} onChange={(event) => setOverrideForm({ ...overrideForm, ratePlanId: event.target.value })} required><option value="">Ratenplan wählen</option>{ratePlans.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
-                                    <label>Datum<input type="date" value={overrideForm.stayDate} onChange={(event) => setOverrideForm({ ...overrideForm, stayDate: event.target.value })} required /></label>
-                                    <label>Tagespreis<input type="number" min="0" step="0.01" value={overrideForm.price} onChange={(event) => setOverrideForm({ ...overrideForm, price: event.target.value })} required /></label>
-                                    <label>Mindestaufenthalt (Nächte)<input type="number" min="1" value={overrideForm.minStay} onChange={(event) => setOverrideForm({ ...overrideForm, minStay: event.target.value })} required /></label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closed} onChange={(event) => setOverrideForm({ ...overrideForm, closed: event.target.checked })} /> Verkauf geschlossen (Stop Sell)</label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedArrival} onChange={(event) => setOverrideForm({ ...overrideForm, closedArrival: event.target.checked })} /> Anreise gesperrt (CTA)</label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedDeparture} onChange={(event) => setOverrideForm({ ...overrideForm, closedDeparture: event.target.checked })} /> Abreise gesperrt (CTD)</label>
-                                    <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Tagesrate speichern</button></div>
-                                </form>
-                            </section>
-                            <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Verkauf</span><h3>{ratePlans.length} Ratenpläne</h3></div></div>
-                                <div className="pms-record-list">
-                                    {ratePlans.map((rate) => (
-                                        <article className="pms-record" key={rate.id}>
-                                            <div>
-                                                <span>{rate.code} · {rate.roomTypeName}</span>
-                                                <strong>{rate.name}</strong>
-                                                <small>{money(rate.nightlyRate, rate.currencyCode)} · mindestens {rate.minStay} {rate.minStay === 1 ? 'Nacht' : 'Nächte'}</small>
-                                            </div>
-                                            <button type="button" onClick={() => {
-                                                setEditingRateId(rate.id);
-                                                setRateForm({
-                                                    roomTypeId: rate.roomTypeId,
-                                                    code: rate.code,
-                                                    name: rate.name,
-                                                    nightlyRate: rate.nightlyRate,
-                                                    minStay: rate.minStay,
-                                                    breakfastIncluded: rate.breakfastIncluded,
-                                                    refundable: rate.refundable,
-                                                    active: rate.active,
-                                                });
-                                            }}>Bearbeiten</button>
-                                        </article>
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
+                        <PmsRatePlansWorkspace property={property} operations={operations} businessDate={businessDate}
+                            canManage={canManageSettings} onOperationsChange={onOperationsChange} />
                     )}
-
                     {activeSection === 'housekeeping' && (
                         <div className="pms-operations-layout pms-housekeeping-layout">
                             <section className="pms-work-card">

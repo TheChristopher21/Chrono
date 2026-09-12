@@ -25,7 +25,7 @@ describe('PmsExtensionsWorkspace', () => {
     it('activates the public booking engine with HTTPS policy links', async () => {
         render(<PmsExtensionsWorkspace property={{ id: 7, code: 'ZRH', currencyCode: 'CHF' }}
             operations={{ reservations: [], folios: [] }} businessDate="2026-08-07"
-            canManage onOperationsChange={vi.fn()} />);
+            canManage canManageSettings onOperationsChange={vi.fn()} />);
 
         await screen.findByText('Booking Engine');
         fireEvent.click(screen.getByLabelText('Onlinebuchung aktiv'));

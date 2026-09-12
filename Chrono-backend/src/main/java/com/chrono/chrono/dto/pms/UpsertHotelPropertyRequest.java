@@ -22,6 +22,20 @@ public record UpsertHotelPropertyRequest(
         @Email @Size(max = 190) String email,
         @NotNull LocalTime checkInTime,
         @NotNull LocalTime checkOutTime,
-        Boolean active
+        Boolean active,
+        @Size(max = 80) String taxNumber,
+        @Size(max = 40) String taxRegistrationLabel,
+        @Size(max = 100) String registrationNumber,
+        @Size(max = 180) String addressLine2,
+        @Size(max = 100) String region,
+        @Size(max = 2000) String invoiceFooter,
+        @Pattern(regexp = "[A-Za-z0-9_-]{1,24}") String invoicePrefix,
+        @jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(365) Integer invoiceDueDays
 ) {
+    public UpsertHotelPropertyRequest(String code, String name, String legalName, String countryCode,
+            String currencyCode, String timezone, String addressLine1, String postalCode, String city,
+            String phone, String email, LocalTime checkInTime, LocalTime checkOutTime, Boolean active) {
+        this(code, name, legalName, countryCode, currencyCode, timezone, addressLine1, postalCode, city,
+                phone, email, checkInTime, checkOutTime, active, null, null, null, null, null, null, null, null);
+    }
 }

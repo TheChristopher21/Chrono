@@ -47,19 +47,25 @@ public class PmsSetupService {
 
     @Transactional(readOnly = true)
     public PmsSetupResponse getSetup(Company company) {
+        return getSetup(company, true);
+    }
+
+    @Transactional(readOnly = true)
+    public PmsSetupResponse getSetup(Company company, boolean includeRooms) {
         requireCompany(company);
         List<PmsSetupResponse.PropertyView> properties = propertyRepository
                 .findAllByCompany_IdOrderByNameAsc(company.getId())
                 .stream()
-                .map(this::toPropertyView)
+                .map(property -> toPropertyView(property, includeRooms))
                 .toList();
 
         int totalRoomTypes = properties.stream().mapToInt(property -> property.roomTypes().size()).sum();
-        int totalRooms = properties.stream().mapToInt(property -> property.rooms().size()).sum();
+        int totalRooms = properties.stream().mapToInt(property -> (int) property.roomTypes().stream()
+                .mapToLong(PmsSetupResponse.RoomTypeView::roomCount).sum()).sum();
         boolean foundationComplete = properties.stream()
                 .anyMatch(property -> property.active()
                         && !property.roomTypes().isEmpty()
-                        && !property.rooms().isEmpty());
+                        && property.roomTypes().stream().anyMatch(type -> type.roomCount() > 0));
 
         return new PmsSetupResponse(
                 properties,
@@ -217,10 +223,14 @@ public class PmsSetupService {
         return getSetup(company);
     }
 
-    private PmsSetupResponse.PropertyView toPropertyView(HotelProperty property) {
+    private PmsSetupResponse.PropertyView toPropertyView(HotelProperty property, boolean includeRooms) {
         List<RoomType> roomTypes = roomTypeRepository
                 .findAllByProperty_IdOrderBySortOrderAscNameAsc(property.getId());
-        List<Room> rooms = roomRepository.findAllByProperty_IdOrderByFloorAscNumberAsc(property.getId());
+        List<Room> rooms = includeRooms ? roomRepository.findAllByProperty_IdOrderByFloorAscNumberAsc(property.getId()) : List.of();
+        java.util.Map<Long, Long> roomCounts = includeRooms
+                ? rooms.stream().collect(java.util.stream.Collectors.groupingBy(room -> room.getRoomType().getId(), java.util.stream.Collectors.counting()))
+                : roomRepository.countRoomsByType(property.getId()).stream().collect(java.util.stream.Collectors.toMap(
+                        RoomRepository.RoomTypeCount::getRoomTypeId, RoomRepository.RoomTypeCount::getRoomCount));
 
         List<PmsSetupResponse.RoomTypeView> roomTypeViews = roomTypes.stream()
                 .map(roomType -> new PmsSetupResponse.RoomTypeView(
@@ -235,7 +245,7 @@ public class PmsSetupService {
                         roomType.getBedType(),
                         roomType.getSortOrder(),
                         roomType.isActive(),
-                        rooms.stream().filter(room -> room.getRoomType().getId().equals(roomType.getId())).count()
+                        roomCounts.getOrDefault(roomType.getId(), 0L)
                 ))
                 .toList();
 
@@ -274,7 +284,10 @@ public class PmsSetupService {
                 property.getCheckOutTime(),
                 property.isActive(),
                 roomTypeViews,
-                roomViews
+                roomViews,
+                property.getTaxNumber(), property.getTaxRegistrationLabel(), property.getRegistrationNumber(),
+                property.getAddressLine2(), property.getRegion(), property.getInvoiceFooter(),
+                property.getInvoicePrefix(), property.getInvoiceDueDays()
         );
     }
 
@@ -299,6 +312,9 @@ public class PmsSetupService {
                                UpsertHotelPropertyRequest request,
                                boolean creating) {
         validateTimezoneAndCurrency(request.timezone(), request.currencyCode());
+        if (!Set.of(Locale.getISOCountries()).contains(request.countryCode().trim().toUpperCase(Locale.ROOT))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Das Land muss ein gültiger ISO-Ländercode sein.");
+        }
         property.setCode(normalizeCode(request.code()));
         property.setName(cleanRequired(request.name()));
         property.setLegalName(cleanNullable(request.legalName()));
@@ -312,6 +328,17 @@ public class PmsSetupService {
         property.setEmail(normalizeEmail(request.email()));
         property.setCheckInTime(request.checkInTime());
         property.setCheckOutTime(request.checkOutTime());
+        if (request.taxNumber() != null) property.setTaxNumber(cleanNullable(request.taxNumber()));
+        if (request.taxRegistrationLabel() != null) {
+            property.setTaxRegistrationLabel(cleanNullable(request.taxRegistrationLabel()) == null
+                    ? "VAT / Tax ID" : request.taxRegistrationLabel().trim());
+        }
+        if (request.registrationNumber() != null) property.setRegistrationNumber(cleanNullable(request.registrationNumber()));
+        if (request.addressLine2() != null) property.setAddressLine2(cleanNullable(request.addressLine2()));
+        if (request.region() != null) property.setRegion(cleanNullable(request.region()));
+        if (request.invoiceFooter() != null) property.setInvoiceFooter(cleanNullable(request.invoiceFooter()));
+        if (request.invoicePrefix() != null) property.setInvoicePrefix(request.invoicePrefix().trim().toUpperCase(Locale.ROOT));
+        if (request.invoiceDueDays() != null) property.setInvoiceDueDays(request.invoiceDueDays());
         if (request.active() != null) {
             property.setActive(request.active());
         } else if (creating) {

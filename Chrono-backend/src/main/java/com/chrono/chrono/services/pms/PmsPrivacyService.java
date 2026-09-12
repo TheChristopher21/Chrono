@@ -87,7 +87,9 @@ public class PmsPrivacyService {
                         guest.getOrganization() == null ? null : guest.getOrganization().getId(),
                         guest.getOrganization() == null ? null : guest.getOrganization().getName(),
                         guest.getNotes(), guest.isVip(),
-                        guest.getCreatedAt(), guest.getUpdatedAt()),
+                        guest.getCreatedAt(), guest.getUpdatedAt(), guest.getPrivateEmail(), guest.getBusinessEmail(),
+                        PmsProfileData.emails(guest.getAdditionalEmails()), guest.getDietaryNotes(), guest.getVatNumber(),
+                        guest.getOrganizationContactId(), guest.isBillingOverride(), PmsProfileData.billing(guest.getBillingProfile())),
                 reservations.stream().map(this::reservationData).toList(),
                 communications.stream().map(this::communicationData).toList(),
                 registrations.stream().map(this::registrationData).toList(),
@@ -119,9 +121,26 @@ public class PmsPrivacyService {
         }
 
         String anonymizedReference = "GAST-" + guestId;
+        if (guest.getOrganization() != null) {
+            PmsOrganization organization = guest.getOrganization();
+            organization.setContacts(PmsProfileData.encode(PmsProfileData.contacts(organization.getContacts()).stream()
+                    .filter(contact -> !java.util.Objects.equals(contact.linkedGuestId(), guestId)).toList()));
+            guestRepository.findAllByOrganization_Id(organization.getId()).stream()
+                    .filter(value -> value.getOrganizationContactId() != null && PmsProfileData.contacts(organization.getContacts())
+                            .stream().noneMatch(contact -> contact.id().equals(value.getOrganizationContactId())))
+                    .forEach(value -> value.setOrganizationContactId(null));
+        }
         guest.setFirstName("Anonymisiert");
         guest.setLastName(anonymizedReference);
         guest.setEmail(null);
+        guest.setPrivateEmail(null);
+        guest.setBusinessEmail(null);
+        guest.setAdditionalEmails(null);
+        guest.setDietaryNotes(null);
+        guest.setVatNumber(null);
+        guest.setBillingProfile(null);
+        guest.setBillingOverride(false);
+        guest.setOrganizationContactId(null);
         guest.setPhone(null);
         guest.setDateOfBirth(null);
         guest.setNationalityCode(null);

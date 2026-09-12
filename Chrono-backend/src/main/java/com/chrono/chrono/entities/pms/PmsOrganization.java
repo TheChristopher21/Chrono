@@ -62,6 +62,17 @@ public class PmsOrganization {
     @Column(length = 190)
     private String email;
 
+    @Column(name = "private_email", length = 190)
+    private String privateEmail;
+    @Column(name = "business_email", length = 190)
+    private String businessEmail;
+    @Column(name = "additional_emails", columnDefinition = "text")
+    private String additionalEmails;
+    @Column(name = "billing_profile", columnDefinition = "text")
+    private String billingProfile;
+    @Column(name = "contacts", columnDefinition = "mediumtext")
+    private String contacts;
+
     @Column(length = 60)
     private String phone;
 

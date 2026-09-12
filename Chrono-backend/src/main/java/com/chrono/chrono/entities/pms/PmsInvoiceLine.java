@@ -25,6 +25,11 @@ public class PmsInvoiceLine {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
 
+    @Column(name = "vat_rate", precision = 7, scale = 4)
+    private BigDecimal vatRate;
+    @Column(name = "service_date")
+    private java.time.LocalDate serviceDate;
+
     @Column(name = "net_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal netAmount;
 

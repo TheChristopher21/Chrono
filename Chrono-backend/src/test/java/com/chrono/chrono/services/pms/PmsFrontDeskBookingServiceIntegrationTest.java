@@ -26,6 +26,9 @@ import com.chrono.chrono.repositories.pms.RoomRepository;
 import com.chrono.chrono.repositories.pms.RoomTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
@@ -230,6 +233,49 @@ class PmsFrontDeskBookingServiceIntegrationTest {
         assertThat(guestRepository.findAllByCompany_IdOrderByLastNameAscFirstNameAsc(company.getId())).isEmpty();
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "explicit@example.com, BUSINESS@example.com, private@example.com, extra@example.com, explicit@example.com",
+            ", BUSINESS@example.com, private@example.com, extra@example.com, business@example.com",
+            ",, private@example.com, extra@example.com, private@example.com",
+            ",,, extra@example.com, extra@example.com"
+    })
+    void choosesPrimaryEmailFromAvailableGuestChannels(String email, String business, String privateEmail, String additional, String expected) {
+        var base = request("Contact channels",false,false);
+        var guest = guestWithChannels(base.newGuest(),email,business,privateEmail,java.util.List.of(additional));
+        var response = service.createBooking(company,property.getId(),"front-desk-contact-fallback",
+                copy(base,guest,base.roomId(),base.source(),false),"reception.one",today);
+        var stored = guestRepository.findById(response.guestId()).orElseThrow();
+        assertThat(stored.getEmail()).isEqualTo(expected);
+        assertThat(PmsProfileData.emails(stored.getAdditionalEmails())).containsExactly(additional);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"privateEmail", "businessEmail", "additionalEmails", "dietaryNotes", "vatNumber", "organizationContactId", "billingOverride", "billingProfile"})
+    void rejectsReplayWhenAnyExtendedGuestProfileFieldChanges(String changedField) throws Exception {
+        var base = request("Profile replay",false,false);
+        var guest = guestWithChannels(base.newGuest(),"primary@example.com","business@example.com","private@example.com",java.util.List.of("extra@example.com"));
+        var original = copy(base,guest,base.roomId(),base.source(),false);
+        var first = service.createBooking(company,property.getId(),"front-desk-profile-replay",original,"reception.one",today);
+        assertThat(service.createBooking(company,property.getId(),"front-desk-profile-replay",original,"reception.two",today).reservationId())
+                .isEqualTo(first.reservationId());
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        com.fasterxml.jackson.databind.node.ObjectNode changed = mapper.valueToTree(guest);
+        switch (changedField) {
+            case "additionalEmails" -> changed.putArray(changedField).add("changed@example.com");
+            case "billingOverride" -> changed.put(changedField,true);
+            case "billingProfile" -> changed.putObject(changedField).put("costCenter","EMPLOYEE-42");
+            case "dietaryNotes" -> changed.put(changedField,"Laktosefrei");
+            case "vatNumber" -> changed.put(changedField,"DE123456789");
+            case "organizationContactId" -> changed.put(changedField,"00000000-0000-0000-0000-000000000042");
+            default -> changed.put(changedField,"changed@example.com");
+        }
+        var modified = copy(base,mapper.treeToValue(changed,UpsertGuestRequest.class),base.roomId(),base.source(),false);
+        assertThatThrownBy(() -> service.createBooking(company,property.getId(),"front-desk-profile-replay",modified,"reception.one",today))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("andere Rezeptionsbuchung");
+        assertThat(guestRepository.findAllByCompany_IdOrderByLastNameAscFirstNameAsc(company.getId())).hasSize(1);
+    }
+
     @Test
     void couplesWalkInSourceExactlyToImmediateCheckIn() {
         CreateFrontDeskBookingRequest futureWalkInBase = request("Walk-in ohne Check-in", false, false);
@@ -320,6 +366,13 @@ class PmsFrontDeskBookingServiceIntegrationTest {
                 .isEmpty();
         assertThat(requestRepository.findByProperty_IdAndIdempotencyKey(
                 property.getId(), "front-desk-rollback-01")).isEmpty();
+    }
+
+    private UpsertGuestRequest guestWithChannels(UpsertGuestRequest guest, String email, String businessEmail, String privateEmail, java.util.List<String> additionalEmails) {
+        return new UpsertGuestRequest(guest.firstName(),guest.lastName(),email,null,guest.dateOfBirth(),
+                guest.nationalityCode(),guest.languageCode(),guest.notes(),guest.vip(),guest.addressLine1(),guest.postalCode(),guest.city(),
+                guest.countryCode(),guest.vehiclePlate(),guest.roomPreferences(),guest.organizationId(),privateEmail,businessEmail,additionalEmails,
+                guest.dietaryNotes(),guest.vatNumber(),guest.organizationContactId(),guest.billingOverride(),guest.billingProfile());
     }
 
     private CreateFrontDeskBookingRequest request(String notes, boolean withRegistration, boolean checkInNow) {

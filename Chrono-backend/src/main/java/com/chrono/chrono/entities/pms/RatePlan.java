@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -56,4 +57,52 @@ public class RatePlan {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    // Null means not configured; never infer a tax jurisdiction from the guest.
+    @Column(name = "vat_rate", precision = 7, scale = 4)
+    private BigDecimal vatRate;
+
+    @Column(name = "tax_included", nullable = false)
+    private boolean taxIncluded = true;
+
+    /** Allocated breakfast portion of nightlyRate, in the same gross/net basis. */
+    @Column(name = "breakfast_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal breakfastAmount = BigDecimal.ZERO;
+
+    @Column(name = "breakfast_vat_rate", precision = 7, scale = 4)
+    private BigDecimal breakfastVatRate;
+
+    private LocalDate validFrom;
+    private LocalDate validTo;
+    private LocalDate bookingFrom;
+    private LocalDate bookingTo;
+    private Integer maxStay;
+    private Integer minAdvanceDays;
+    private Integer maxAdvanceDays;
+
+    @Column(name = "included_adults", nullable = false)
+    private int includedAdults = 1;
+
+    @Column(name = "extra_adult_rate", nullable = false, precision = 12, scale = 2)
+    private BigDecimal extraAdultRate = BigDecimal.ZERO;
+
+    @Column(name = "child_rate", nullable = false, precision = 12, scale = 2)
+    private BigDecimal childRate = BigDecimal.ZERO;
+
+    private Integer cancellationDeadlineHours;
+    @Column(precision = 7, scale = 4)
+    private BigDecimal cancellationFeePercent;
+    @Column(precision = 7, scale = 4)
+    private BigDecimal depositPercent;
+    private Integer paymentDueDays;
+    @Column(length = 2000)
+    private String cancellationPolicy;
+    @Column(length = 2000)
+    private String paymentPolicy;
+    @Column(length = 4000)
+    private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private PmsOrganization organization;
 }

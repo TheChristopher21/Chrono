@@ -7,7 +7,7 @@ import { getFolioDisplayLabel } from './pmsTerminology.js';
 const errorMessage = (error) => error?.response?.data?.detail
     || error?.response?.data?.message || error?.message || 'Die Aktion konnte nicht abgeschlossen werden.';
 
-const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage, onOperationsChange }) => {
+const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage, canManageSettings = false, onOperationsChange }) => {
     const locale = usePmsLocale();
     const money = (value, currency = 'CHF') => new Intl.NumberFormat(locale, {
         style: 'currency', currency,
@@ -25,7 +25,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
     const [taxPosting, setTaxPosting] = useState({ reservationId: '', chargeableChildren: 0 });
     const [pos, setPos] = useState({
         folioId: '', outletCode: 'RESTAURANT', tableReference: '', paymentMethod: 'CASH',
-        description: '', quantity: 1, unitPrice: 0, taxRate: 8.1,
+        description: '', quantity: 1, unitPrice: 0, taxRate: '',
     });
     const [access, setAccess] = useState({
         reservationId: '', providerCode: '', externalReference: '',
@@ -103,12 +103,14 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
 
     const submitBooking = (event) => {
         event.preventDefault();
+        if (!canManageSettings) return;
         return mutate('put', `/api/pms/properties/${property.id}/booking-engine`, booking,
             booking.enabled ? `Onlinebuchung ist aktiv: /book/${booking.publicSlug}` : 'Onlinebuchung deaktiviert.');
     };
 
     const submitTax = (event) => {
         event.preventDefault();
+        if (!canManageSettings) return;
         return mutate('put', `/api/pms/properties/${property.id}/tourism-tax`, {
             ...tax, maximumNights: tax.maximumNights === '' ? null : Number(tax.maximumNights),
         }, 'Kurtaxenregel gespeichert.');
@@ -152,6 +154,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
 
     const importMigration = async (event) => {
         event.preventDefault();
+        if (!canManageSettings) return;
         let reservations;
         try { reservations = JSON.parse(migration.reservationsJson); } catch {
             setError('Die Migrationsdaten sind kein gültiges JSON-Array.');
@@ -199,7 +202,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
                         <label className="is-wide">AGB-Adresse<input type="url" value={booking.termsUrl} onChange={(e) => setBooking({ ...booking, termsUrl: e.target.value })} placeholder="https://…" /></label>
                         <label className="is-wide">Datenschutz-Adresse<input type="url" value={booking.privacyUrl} onChange={(e) => setBooking({ ...booking, privacyUrl: e.target.value })} placeholder="https://…" /></label>
                         <label className="is-wide">Bestätigungstext<textarea value={booking.confirmationMessage} onChange={(e) => setBooking({ ...booking, confirmationMessage: e.target.value })} /></label>
-                        <div className="pms-form-actions is-wide"><button className="is-primary" disabled={!canManage || busy}>Booking Engine speichern</button></div>
+                        <div className="pms-form-actions is-wide"><button className="is-primary" disabled={!canManageSettings || busy}>Booking Engine speichern</button></div>
                     </form>
                 </section>
 
@@ -212,7 +215,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
                         <label>Kinder/Nacht<input type="number" min="0" step="0.01" value={tax.childRate} onChange={(e) => setTax({ ...tax, childRate: e.target.value })} /></label>
                         <label>Kinder frei unter<input type="number" min="0" max="21" value={tax.childFreeUnder} onChange={(e) => setTax({ ...tax, childFreeUnder: e.target.value })} /></label>
                         <label>Max. Nächte<input type="number" min="1" value={tax.maximumNights} onChange={(e) => setTax({ ...tax, maximumNights: e.target.value })} /></label>
-                        <div className="pms-form-actions is-wide"><button disabled={!canManage || busy}>Regel speichern</button></div>
+                        <div className="pms-form-actions is-wide"><button disabled={!canManageSettings || busy}>Regel speichern</button></div>
                     </form>
                     <hr />
                     <form className="pms-form-grid" onSubmit={postTax}>
@@ -234,7 +237,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
                         <label className="is-wide">Leistung<input value={pos.description} onChange={(e) => setPos({ ...pos, description: e.target.value })} required /></label>
                         <label>Menge<input type="number" min="0.01" step="0.01" value={pos.quantity} onChange={(e) => setPos({ ...pos, quantity: e.target.value })} /></label>
                         <label>Einzelpreis<input type="number" min="0" step="0.01" value={pos.unitPrice} onChange={(e) => setPos({ ...pos, unitPrice: e.target.value })} /></label>
-                        <label>MWST %<input type="number" min="0" max="100" step="0.01" value={pos.taxRate} onChange={(e) => setPos({ ...pos, taxRate: e.target.value })} /></label>
+                        <label>MWST %<input type="number" min="0" max="100" step="0.01" required value={pos.taxRate} onChange={(e) => setPos({ ...pos, taxRate: e.target.value })} /></label>
                         <div className="pms-form-actions"><button className="is-primary" disabled={!canManage || busy}>Beleg abschliessen</button></div>
                     </form>
                     <div className="pms-record-list">{data?.posTickets?.slice(0, 10).map((ticket) => <article className="pms-record" key={ticket.id}><div><span>{ticket.ticketNumber} · {ticket.paymentMethod}</span><strong>{ticket.outletCode} · {money(ticket.grossAmount, ticket.currencyCode)}</strong><small>{ticket.guestName || ticket.tableReference || 'Direktverkauf'} · {formatPmsDateTime(ticket.createdAt)}</small></div></article>)}</div>
@@ -269,7 +272,7 @@ const PmsExtensionsWorkspace = ({ property, operations, businessDate, canManage,
                         <label>Quellsystem<input value={migration.sourceSystem} onChange={(e) => setMigration({ ...migration, sourceSystem: e.target.value })} required /></label>
                         <label>Idempotenzschlüssel<input value={migration.idempotencyKey} onChange={(e) => setMigration({ ...migration, idempotencyKey: e.target.value })} required /></label>
                         <label className="is-wide">Reservationen als JSON<textarea rows="8" value={migration.reservationsJson} onChange={(e) => setMigration({ ...migration, reservationsJson: e.target.value })} required /></label>
-                        <div className="pms-form-actions is-wide"><button className="is-primary" disabled={!canManage || busy}>Importieren & abstimmen</button></div>
+                        <div className="pms-form-actions is-wide"><button className="is-primary" disabled={!canManageSettings || busy}>Importieren & abstimmen</button></div>
                     </form>
                     <div className="pms-record-list">{data?.migrationBatches?.map((batch) => <article className="pms-record" key={batch.id}><div><span>{batch.status} · {batch.sourceSystem}</span><strong>{batch.importedReservations} Reservationen · {money(batch.totalOpeningBalance, property.currencyCode)} offen</strong><small>{batch.reconciliationMessage}</small></div></article>)}</div>
                 </section>

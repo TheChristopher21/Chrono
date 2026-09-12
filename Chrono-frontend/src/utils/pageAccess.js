@@ -104,6 +104,21 @@ export const PAGE_CATALOG = [
         icon: "PMS",
     },
     {
+        key: "pmsSettings",
+        label: "PMS Master-Einstellungen",
+        description: "Hotelstammdaten, Steuern, Raten und Schnittstellen verwalten.",
+        path: "/pms",
+        featureKey: "pms",
+        userAssignable: false,
+        audiences: ["admin"],
+        dashboardContexts: [],
+        mobileContexts: [],
+        order: 71,
+        supportsManage: true,
+        group: "Module",
+        icon: "PMS",
+    },
+    {
         key: "adminDashboard",
         label: "Admin-Start",
         description: "Teamübersicht, Inbox und Kennzahlen.",
@@ -395,6 +410,7 @@ const USER_DEFAULTS = {
 };
 
 const ADMIN_DEFAULTS = {
+    pmsSettings: ACCESS_MANAGE,
     adminDashboard: ACCESS_MANAGE,
     adminUsers: ACCESS_MANAGE,
     adminChangePassword: ACCESS_MANAGE,
@@ -434,6 +450,10 @@ export const isPayrollAdminUser = (user) => Boolean(user?.roles?.includes("ROLE_
 export const isAdminUser = (user) => Boolean(
     user?.roles?.includes("ROLE_ADMIN") || user?.roles?.includes("ROLE_SUPERADMIN")
 );
+
+export const canManagePmsSettings = (user) => isAdminUser(user)
+    && hasPageAccess(user, 'pms', ACCESS_MANAGE)
+    && hasPageAccess(user, 'pmsSettings', ACCESS_MANAGE);
 
 export const hasCompanyContext = (user) => (
     user?.company?.id != null || user?.companyId != null

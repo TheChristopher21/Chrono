@@ -45,6 +45,8 @@ class PmsOperationsServiceIntegrationTest {
     @Autowired
     private FolioRepository folioRepository;
     @Autowired
+    private FolioItemRepository folioItemRepository;
+    @Autowired
     private HousekeepingTaskRepository housekeepingTaskRepository;
     @Autowired
     private ReservationStatusHistoryRepository reservationStatusHistoryRepository;
@@ -826,6 +828,78 @@ class PmsOperationsServiceIntegrationTest {
         assertThat(guestRepository.searchForOperations(company.getId(), "%%",
                 org.springframework.data.domain.PageRequest.of(0, 20)))
                 .extracting(GuestProfile::getId).doesNotContain(duplicate.getId());
+    }
+
+    @Test
+    void netRateAndSeparateBreakfastTaxesHaveIdenticalQuoteReservationAndFolioTotals() {
+        ratePlan.setTaxIncluded(false);
+        ratePlan.setVatRate(new BigDecimal("7"));
+        ratePlan.setBreakfastIncluded(true);
+        ratePlan.setBreakfastAmount(new BigDecimal("20"));
+        ratePlan.setBreakfastVatRate(new BigDecimal("19"));
+        ratePlan.setExtraAdultRate(new BigDecimal("10"));
+        ratePlanRepository.save(ratePlan);
+        AvailabilityResponse availability = service.getAvailability(company, property.getId(), today, today.plusDays(2), 2, 0, guest.getId());
+        assertThat(availability.roomTypes().get(0).rates().get(0).totalAmount()).isEqualByComparingTo("283.00");
+
+        PmsOperationsResponse response = service.createReservation(company,
+                reservationRequest(today, today.plusDays(2), room.getId()), "Test", today);
+        assertThat(response.reservations().get(0).totalAmount()).isEqualByComparingTo("283.00");
+        assertThat(response.folios().get(0).charges()).isEqualByComparingTo("283.00");
+        var items = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(response.folios().get(0).id());
+        assertThat(items).hasSize(4).allMatch(FolioItem::isRateGenerated).allMatch(FolioItem::isTaxIncluded);
+        assertThat(items).filteredOn(item -> item.getType() == FolioItemType.ROOM)
+                .allSatisfy(item -> assertThat(item.getTaxRate()).isEqualByComparingTo("7"));
+        assertThat(items).filteredOn(item -> item.getType() == FolioItemType.BREAKFAST)
+                .allSatisfy(item -> assertThat(item.getTaxRate()).isEqualByComparingTo("19"));
+
+        service.postFolioItem(company, property.getId(), response.folios().get(0).id(),
+                new PostFolioItemRequest(today, FolioItemType.BREAKFAST, "Zusätzliches Frühstück", BigDecimal.ONE, new BigDecimal("25")), today);
+        PmsOperationsResponse updated = service.updateReservation(company, response.reservations().get(0).id(),
+                reservationRequest(today, today.plusDays(1), room.getId()), "Test", today);
+        assertThat(updated.folios().get(0).charges()).isEqualByComparingTo("166.50");
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(response.folios().get(0).id()))
+                .hasSize(3).filteredOn(item -> !item.isRateGenerated()).singleElement()
+                .satisfies(item -> assertThat(item.getDescription()).isEqualTo("Zusätzliches Frühstück"));
+    }
+
+    @Test
+    void negotiatedRateRequiresTheLinkedOrganizationAndRejectsAnotherTenant() {
+        PmsOrganization firm = new PmsOrganization();
+        firm.setCompany(company); firm.setName("Vertragsfirma"); firm.setType(OrganizationType.COMPANY);
+        organizationRepository.save(firm);
+        ratePlan.setOrganization(firm); ratePlanRepository.save(ratePlan);
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId())
+                .roomTypes().get(0).rates().get(0).available()).isFalse();
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, null, firm.getId())
+                .roomTypes().get(0).rates().get(0).available()).isTrue();
+        // A staff quote for a new guest may select a firm, but cannot override an existing guest's affiliation.
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId(), firm.getId())
+                .roomTypes().get(0).rates().get(0).available()).isFalse();
+        assertThatThrownBy(() -> service.createReservation(company,
+                reservationRequest(today, today.plusDays(1), room.getId()), "Test", today))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Firmenrate");
+        guest.setOrganization(firm); guestRepository.save(guest);
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId())
+                .roomTypes().get(0).rates().get(0).available()).isTrue();
+        GuestProfile outsider = new GuestProfile();
+        outsider.setCompany(companyRepository.save(new Company("Fremdes Unternehmen")));
+        outsider.setFirstName("Andere"); outsider.setLastName("Person"); guestRepository.save(outsider);
+        assertThatThrownBy(() -> service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, outsider.getId()))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Gast nicht gefunden");
+    }
+
+    @Test
+    void updatingAnAdvanceBookingUsesTheOriginalBookingDateForSalesRestrictions() {
+        PmsOperationsResponse initial = service.createReservation(company,
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Test", today);
+        Reservation booked = reservationRepository.findById(initial.reservations().get(0).id()).orElseThrow();
+        booked.setCreatedAt(today.minusDays(40).atStartOfDay()); reservationRepository.save(booked);
+        ratePlan.setBookingTo(today.minusDays(1)); ratePlan.setMinAdvanceDays(30); ratePlanRepository.save(ratePlan);
+        PmsOperationsResponse updated = service.updateReservation(company, booked.getId(),
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Test", today);
+        assertThat(updated.reservations()).singleElement()
+                .satisfies(value -> assertThat(value.totalAmount()).isEqualByComparingTo("120.00"));
     }
 
     private UpsertReservationRequest reservationRequest(LocalDate arrival,

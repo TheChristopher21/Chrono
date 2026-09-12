@@ -245,6 +245,8 @@ describe('PmsReceptionBookingFlow', () => {
             {
                 existingGuestId: null,
                 newGuest: {
+                    privateEmail: '', businessEmail: '', additionalEmails: [], dietaryNotes: '', vatNumber: '',
+                    organizationContactId: null, billingOverride: false, billingProfile: {},
                     firstName: 'Mara',
                     lastName: 'Muster',
                     email: 'mara@example.com',
@@ -378,7 +380,7 @@ describe('PmsReceptionBookingFlow', () => {
         await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(
             '/api/pms/properties/5/availability',
             expect.objectContaining({
-                params: { arrival: TODAY, departure: TOMORROW },
+                params: { arrival: TODAY, departure: TOMORROW, adults: 1, children: 0, guestId: undefined, organizationId: undefined },
                 signal: expect.any(AbortSignal),
             }),
         ));

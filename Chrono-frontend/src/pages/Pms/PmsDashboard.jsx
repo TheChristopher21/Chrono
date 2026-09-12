@@ -5,7 +5,7 @@ import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashbo
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation.js';
 import api from '../../utils/api.js';
-import { ACCESS_MANAGE, hasPageAccess, isAdminUser } from '../../utils/pageAccess.js';
+import { ACCESS_MANAGE, hasPageAccess, isAdminUser, canManagePmsSettings } from '../../utils/pageAccess.js';
 import { getUserDisplayName } from '../../utils/userDisplay.js';
 import PmsSetupWorkspace from './PmsSetupWorkspace.jsx';
 import PmsOperationsWorkspace from './PmsOperationsWorkspace.jsx';
@@ -166,6 +166,8 @@ const PmsDashboard = () => {
     const [setupLoading, setSetupLoading] = useState(true);
     const [setupError, setSetupError] = useState('');
     const [setupOpen, setSetupOpen] = useState(false);
+    const [settingsSetup, setSettingsSetup] = useState(null);
+    const [settingsSetupError, setSettingsSetupError] = useState('');
     const [activePropertyId, setActivePropertyId] = useState(null);
     const [operations, setOperations] = useState(emptyOperations);
     const [operationsLoading, setOperationsLoading] = useState(false);
@@ -193,6 +195,7 @@ const PmsDashboard = () => {
     const formattedDate = useMemo(() => formatBusinessDate(businessDate, locale), [businessDate, locale]);
     const displayName = getUserDisplayName(currentUser) || currentUser?.username || 'Gastgeber';
     const canManagePms = hasPageAccess(currentUser, 'pms', ACCESS_MANAGE);
+    const canManageSettings = canManagePmsSettings(currentUser);
     const canManageGuestPrivacy = canManagePms && isAdminUser(currentUser);
     const activeProperty = useMemo(
         () => setup.properties.find((property) => property.id === activePropertyId)
@@ -301,6 +304,18 @@ const PmsDashboard = () => {
         }
     }, [navigateToSection, requestedSection]);
 
+    useEffect(() => {
+        if (!setupOpen) { setSettingsSetup(null); return undefined; }
+        const controller = new AbortController();
+        setSettingsSetupError('');
+        api.get('/api/pms/setup', { signal: controller.signal }).then(({ data }) => {
+            if (!controller.signal.aborted) setSettingsSetup(data ?? emptySetup);
+        }).catch((error) => {
+            if (!controller.signal.aborted) setSettingsSetupError(error?.response?.data?.detail || 'Die Hoteleinrichtung konnte nicht geladen werden.');
+        });
+        return () => controller.abort();
+    }, [setupOpen]);
+
     const loadSetup = useCallback(async ({ background = false } = {}) => {
         setupRequestRef.current?.abort();
         const controller = new AbortController();
@@ -308,7 +323,7 @@ const PmsDashboard = () => {
         if (!background) setSetupLoading(true);
         setSetupError('');
         try {
-            const response = await api.get('/api/pms/setup', { signal: controller.signal });
+            const response = await api.get('/api/pms/setup', { params: { includeRooms: false }, signal: controller.signal });
             if (controller.signal.aborted || setupRequestRef.current !== controller) return;
             setSetup(response.data ?? emptySetup);
             const firstPropertyId = response.data?.properties?.[0]?.id ?? null;
@@ -973,12 +988,12 @@ const PmsDashboard = () => {
                     </div>
                 </aside>
 
-                <main className="pms-main">
-                    <header className="pms-topbar">
+                <main className={`pms-main${activeNavigation === 'room-plan' ? ' pms-main-room-plan' : ''}`}>
+                    <header className={`pms-topbar${activeNavigation !== 'overview' ? ' is-compact' : ''}`}>
                         <div>
                             <span className="pms-eyebrow">Chrono Hotel-PMS</span>
-                            <h1>Guten Tag, {displayName}</h1>
-                            <p>Deine operative Übersicht für den aktuellen Hotelbetrieb.</p>
+                            <h1>{activeNavigation === 'overview' ? `Guten Tag, ${displayName}` : activeProperty?.name ?? 'Hotelbetrieb'}</h1>
+                            {activeNavigation === 'overview' && <p>Deine operative Übersicht für den aktuellen Hotelbetrieb.</p>}
                         </div>
                         <div className="pms-topbar-tools">
                             <button
@@ -1133,6 +1148,7 @@ const PmsDashboard = () => {
                             property={activeProperty}
                             businessDate={toDateKey(businessDate)}
                             canManage={canManagePms}
+                            canManageSettings={canManageSettings}
                             canManageGuestPrivacy={canManageGuestPrivacy}
                             initialAction={initialOperationAction}
                             onSectionChange={openNavigation}
@@ -1149,13 +1165,20 @@ const PmsDashboard = () => {
                 </main>
             </div>
 
-            {setupOpen && (
+            {setupOpen && !settingsSetup && <div className="pms-command-backdrop">
+                <section className="pms-command-palette" role="dialog" aria-modal="true" aria-label="Hoteleinrichtung laden">
+                    <p role={settingsSetupError ? 'alert' : 'status'}>{settingsSetupError || 'Hoteleinrichtung wird geladen…'}</p>
+                    <button type="button" onClick={() => setSetupOpen(false)}>Schließen</button>
+                </section>
+            </div>}
+            {setupOpen && settingsSetup && (
                 <PmsSetupWorkspace
-                    setup={setup}
+                    setup={settingsSetup}
                     activePropertyId={activeProperty?.id ?? null}
-                    canManage={canManagePms}
+                    canManage={canManageSettings}
                     onSetupChange={(nextSetup) => {
                         setSetup(nextSetup ?? emptySetup);
+                        setSettingsSetup(nextSetup ?? emptySetup);
                         setSetupError('');
                     }}
                     onPropertyChange={setActivePropertyId}

@@ -42,7 +42,12 @@ public record PmsAdvancedResponse(
             boolean masterRecord,
             Long parentOrganizationId,
             String parentOrganizationName,
-            Long mergedIntoId
+            Long mergedIntoId,
+            String privateEmail,
+            String businessEmail,
+            List<String> additionalEmails,
+            List<OrganizationContact> contacts,
+            BillingProfile billingProfile
     ) {
     }
 

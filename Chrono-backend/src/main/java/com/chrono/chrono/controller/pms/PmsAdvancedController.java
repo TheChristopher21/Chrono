@@ -73,7 +73,7 @@ public class PmsAdvancedController {
             @RequestParam(required = false) LocalDate businessDate,
             @Valid @RequestBody UpsertHotelResourceRequest request,
             Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/resources"))
                 .body(advancedService.createHotelResource(
                         context.company(), propertyId, request, businessDate));
@@ -233,7 +233,7 @@ public class PmsAdvancedController {
             @RequestParam(required = false) LocalDate businessDate,
             @Valid @RequestBody UpsertCommunicationTemplateRequest request,
             Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/communication-templates"))
                 .body(advancedService.createTemplate(context.company(), propertyId, request, businessDate));
     }
@@ -245,7 +245,7 @@ public class PmsAdvancedController {
             @RequestParam(required = false) LocalDate businessDate,
             @Valid @RequestBody UpsertCommunicationTemplateRequest request,
             Principal principal) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.ok(advancedService.updateTemplate(
                 context.company(), propertyId, templateId, request, businessDate));
     }
@@ -334,7 +334,7 @@ public class PmsAdvancedController {
             @Valid @RequestBody CreateChannelConnectionRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/channel-connections"))
                 .body(advancedService.createChannelConnection(
                         context.company(), propertyId, request, businessDate));
@@ -377,6 +377,10 @@ public class PmsAdvancedController {
     }
 
     private AccessContext requireContext(Principal principal, String accessLevel) {
+        return requireContext(principal, accessLevel, false);
+    }
+
+    private AccessContext requireContext(Principal principal, String accessLevel, boolean masterOnly) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentifizierung erforderlich.");
         }
@@ -385,6 +389,10 @@ public class PmsAdvancedController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht gefunden."));
         userPermissionService.assertPageAccess(
                 user, UserPermissionService.PAGE_PMS, accessLevel, "Die erforderliche PMS-Berechtigung fehlt.");
+        if (masterOnly) {
+            userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
+                    UserPermissionService.ACCESS_MANAGE, "Für diese Einstellung ist ein PMS-Master erforderlich.");
+        }
         if (user.getCompany() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }

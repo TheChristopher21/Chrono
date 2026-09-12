@@ -56,6 +56,10 @@ public class PmsOperationsController {
             @PathVariable Long propertyId,
             @RequestParam LocalDate arrival,
             @RequestParam LocalDate departure,
+            @RequestParam(defaultValue = "1") int adults,
+            @RequestParam(defaultValue = "0") int children,
+            @RequestParam(required = false) Long guestId,
+            @RequestParam(required = false) Long organizationId,
             Principal principal
     ) {
         AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
@@ -63,7 +67,7 @@ public class PmsOperationsController {
                 context.company(),
                 propertyId,
                 arrival,
-                departure
+                departure, adults, children, guestId, organizationId
         ));
     }
 
@@ -127,7 +131,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRatePlanRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/rate-plans"))
                 .body(operationsService.createRatePlan(context.company(), propertyId, request, businessDate));
     }
@@ -140,7 +144,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRatePlanRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.ok(operationsService.updateRatePlan(
                 context.company(),
                 propertyId,
@@ -158,7 +162,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRateOverrideRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
         return ResponseEntity.ok(operationsService.upsertRateOverride(
                 context.company(),
                 propertyId,
@@ -446,6 +450,10 @@ public class PmsOperationsController {
     }
 
     private AccessContext requireContext(Principal principal, String accessLevel) {
+        return requireContext(principal, accessLevel, false);
+    }
+
+    private AccessContext requireContext(Principal principal, String accessLevel, boolean masterOnly) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentifizierung erforderlich.");
         }
@@ -458,6 +466,10 @@ public class PmsOperationsController {
                 accessLevel,
                 "Die erforderliche PMS-Berechtigung fehlt."
         );
+        if (masterOnly) {
+            userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
+                    UserPermissionService.ACCESS_MANAGE, "Für diese Einstellung ist ein PMS-Master erforderlich.");
+        }
         if (user.getCompany() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }

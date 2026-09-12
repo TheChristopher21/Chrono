@@ -53,6 +53,11 @@ const PmsBookingPage = () => {
         bookingKeyRef.current = null;
     }, [stay, guest, selectedRateId]);
 
+    useEffect(() => {
+        setAvailability(null);
+        setSelectedRateId('');
+    }, [stay]);
+
     const selectedRate = useMemo(() => availability?.roomTypes
         ?.flatMap((roomType) => roomType.rates.map((rate) => ({ ...rate, roomTypeName: roomType.name })))
         .find((rate) => String(rate.ratePlanId) === String(selectedRateId)), [availability, selectedRateId]);
@@ -64,7 +69,7 @@ const PmsBookingPage = () => {
         setConfirmation(null);
         try {
             const response = await api.get(`/api/public/pms/booking/${propertyCode}/availability`, {
-                params: { arrival: stay.arrival, departure: stay.departure },
+                params: { arrival: stay.arrival, departure: stay.departure, adults: Number(stay.adults), children: Number(stay.children) },
             });
             setAvailability(response.data);
             setSelectedRateId('');

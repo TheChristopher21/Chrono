@@ -27,6 +27,7 @@ public class UserPermissionService {
     public static final String PAGE_PRINT_REPORT = "printReport";
     public static final String PAGE_SUPPLY_CHAIN = "supplyChain";
     public static final String PAGE_PMS = "pms";
+    public static final String PAGE_PMS_SETTINGS = "pmsSettings";
     public static final String PAGE_ADMIN_DASHBOARD = "adminDashboard";
     public static final String PAGE_ADMIN_USERS = "adminUsers";
     public static final String PAGE_ADMIN_CHANGE_PASSWORD = "adminChangePassword";
@@ -56,6 +57,7 @@ public class UserPermissionService {
             PAGE_PRINT_REPORT,
             PAGE_SUPPLY_CHAIN,
             PAGE_PMS,
+            PAGE_PMS_SETTINGS,
             PAGE_ADMIN_DASHBOARD,
             PAGE_ADMIN_USERS,
             PAGE_ADMIN_CHANGE_PASSWORD,
@@ -79,6 +81,7 @@ public class UserPermissionService {
     );
 
     private static final Set<String> ADMIN_ONLY_PAGES = Set.of(
+            PAGE_PMS_SETTINGS,
             PAGE_ADMIN_DASHBOARD,
             PAGE_ADMIN_USERS,
             PAGE_ADMIN_CUSTOMERS,
@@ -99,6 +102,7 @@ public class UserPermissionService {
     private static final Map<String, String> FEATURE_PAGE_MAPPING = Map.ofEntries(
             Map.entry(PAGE_SUPPLY_CHAIN, "supplyChain"),
             Map.entry(PAGE_PMS, "pms"),
+            Map.entry(PAGE_PMS_SETTINGS, "pms"),
             Map.entry(PAGE_ADMIN_CUSTOMERS, "projects"),
             Map.entry(PAGE_ADMIN_PROJECTS, "projects"),
             Map.entry(PAGE_ADMIN_TASKS, "projects"),
@@ -236,6 +240,7 @@ public class UserPermissionService {
         defaults.put(PAGE_PRINT_REPORT, ACCESS_VIEW);
 
         if (isAdmin(user)) {
+            defaults.put(PAGE_PMS_SETTINGS, ACCESS_MANAGE);
             defaults.put(PAGE_ADMIN_DASHBOARD, ACCESS_MANAGE);
             defaults.put(PAGE_ADMIN_USERS, ACCESS_MANAGE);
             defaults.put(PAGE_ADMIN_CHANGE_PASSWORD, ACCESS_MANAGE);

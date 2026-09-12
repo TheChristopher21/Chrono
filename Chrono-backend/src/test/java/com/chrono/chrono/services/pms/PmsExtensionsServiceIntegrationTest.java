@@ -37,6 +37,7 @@ class PmsExtensionsServiceIntegrationTest {
     @Autowired private RoomRepository roomRepository;
     @Autowired private GuestProfileRepository guestRepository;
     @Autowired private RatePlanRepository ratePlanRepository;
+    @Autowired private PmsOrganizationRepository organizationRepository;
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private FolioRepository folioRepository;
     @Autowired private FolioItemRepository folioItemRepository;
@@ -120,6 +121,28 @@ class PmsExtensionsServiceIntegrationTest {
             assertThat(reservation.getGuaranteeStatus()).isEqualTo(ReservationGuaranteeStatus.DEPOSIT_REQUIRED);
             assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.TENTATIVE);
         });
+    }
+
+    @Test
+    void publicQuoteUsesActualOccupancyAndNeverDisclosesNegotiatedRates() {
+        service.updateBookingSettings(company, property.getId(), new PmsExtensionsRequests.BookingSettings(
+                "chrono-zuerich", true, false, "https://hotel.example/agb", "https://hotel.example/datenschutz", "Bis bald"));
+        ratePlan.setTaxIncluded(false); ratePlan.setVatRate(new BigDecimal("10"));
+        ratePlan.setExtraAdultRate(new BigDecimal("20")); ratePlanRepository.save(ratePlan);
+        PmsOrganization firm = new PmsOrganization(); firm.setCompany(company); firm.setName("Private firm");
+        firm.setType(OrganizationType.COMPANY); organizationRepository.save(firm);
+        RatePlan corporate = new RatePlan(); corporate.setProperty(property); corporate.setRoomType(roomType);
+        corporate.setCode("SECRET"); corporate.setName("Confidential agreement"); corporate.setCurrencyCode("CHF");
+        corporate.setNightlyRate(new BigDecimal("50")); corporate.setOrganization(firm); ratePlanRepository.save(corporate);
+        var options = service.publicAvailability("chrono-zuerich", arrival, arrival.plusDays(2), 2, 0)
+                .roomTypes().get(0).rates();
+        assertThat(options).singleElement().satisfies(option -> {
+            assertThat(option.code()).isEqualTo("BAR"); assertThat(option.totalAmount()).isEqualByComparingTo("264.00");
+        });
+        var response = service.createPublicBooking("chrono-zuerich", "booking-net-rate-00001",
+                new PmsExtensionsRequests.PublicBooking(arrival, arrival.plusDays(2), ratePlan.getId(), 2, 0,
+                        "Raja", "Siefert", "raja@example.com", null, true, true));
+        assertThat(response.totalAmount()).isEqualByComparingTo(options.get(0).totalAmount());
     }
 
     @Test
