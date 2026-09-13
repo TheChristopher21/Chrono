@@ -23,6 +23,12 @@ public class CashShift {
     @JoinColumn(name = "property_id", nullable = false)
     private HotelProperty property;
 
+    @Column(name = "register_code", nullable = false, length = 32)
+    private String registerCode = "FRONTDESK";
+
+    @Column(name = "outlet_code", nullable = false, length = 32)
+    private String outletCode = "FRONTDESK";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private CashShiftStatus status = CashShiftStatus.OPEN;
@@ -33,8 +39,7 @@ public class CashShift {
     @Column(name = "opened_at", nullable = false)
     private LocalDateTime openedAt;
 
-    @Column(name = "opening_float", nullable = false, precision = 12, scale = 2)
-    private BigDecimal openingFloat = BigDecimal.ZERO;
+    @Column(name = "opening_float", nullable = false, precision = 19, scale = 4) private BigDecimal openingFloat = BigDecimal.ZERO;
 
     @Column(name = "closed_by", length = 120)
     private String closedBy;
@@ -42,14 +47,11 @@ public class CashShift {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
-    @Column(name = "expected_cash", precision = 12, scale = 2)
-    private BigDecimal expectedCash;
+    @Column(name = "expected_cash", precision = 19, scale = 4) private BigDecimal expectedCash;
 
-    @Column(name = "actual_cash", precision = 12, scale = 2)
-    private BigDecimal actualCash;
+    @Column(name = "actual_cash", precision = 19, scale = 4) private BigDecimal actualCash;
 
-    @Column(precision = 12, scale = 2)
-    private BigDecimal variance;
+    @Column(precision = 19, scale = 4) private BigDecimal variance;
 
     @Column(length = 500)
     private String notes;

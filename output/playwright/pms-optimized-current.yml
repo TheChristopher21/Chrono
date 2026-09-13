@@ -1,0 +1,228 @@
+- generic [ref=f7e2]:
+  - generic [ref=f7e7]:
+    - generic [ref=f7e8]:
+      - navigation "Hauptnavigation" [ref=f7e9]:
+        - link "Chrono PMS" [ref=f7e11] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f7e12]
+        - list [ref=f7e13]:
+          - listitem [ref=f7e14]:
+            - link "Zu Chrono wechseln" [ref=f7e15] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f7e16]:
+            - button "Was ist neu?" [ref=f7e17] [cursor=pointer]
+          - listitem [ref=f7e21]:
+            - button "Light Mode" [ref=f7e22] [cursor=pointer]
+          - listitem [ref=f7e27]:
+            - button "🌐" [ref=f7e28] [cursor=pointer]
+          - listitem [ref=f7e31]:
+            - button "Default Admin" [ref=f7e32] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e33]: D
+        - button "PMS-Bereiche" [ref=f7e38] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f7e41]:
+        - generic [ref=f7e42]:
+          - tablist "Offene Arbeitsbereiche" [ref=f7e43]:
+            - generic [ref=f7e44]:
+              - tab "Hotelverwaltung (PMS)" [ref=f7e45] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e46]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f7e48] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f7e49] [cursor=pointer]'
+            - generic [ref=f7e50]:
+              - tab "PMS · Zimmerplan" [ref=f7e51] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e52]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f7e54] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f7e55] [cursor=pointer]'
+            - generic [ref=f7e56]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f7e57] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e58]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f7e60] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f7e61] [cursor=pointer]'
+            - generic [ref=f7e62]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f7e63] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e64]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f7e66] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f7e67] [cursor=pointer]'
+            - generic [ref=f7e68]:
+              - tab "PMS · Rechnungen" [ref=f7e69] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e70]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f7e72] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f7e73] [cursor=pointer]'
+            - generic [ref=f7e74]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f7e75] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e76]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f7e78] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f7e79] [cursor=pointer]'
+            - generic [ref=f7e80]:
+              - tab "PMS · Berichte & Kennzahlen" [ref=f7e81] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e82]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f7e84] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f7e85] [cursor=pointer]'
+            - generic [ref=f7e86]:
+              - tab "PMS · Hotelportfolio" [selected] [ref=f7e87] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e88]: PMS
+              - 'button "Tab anheften: PMS · Hotelportfolio" [ref=f7e90] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Hotelportfolio" [ref=f7e91] [cursor=pointer]'
+          - generic [ref=f7e92]:
+            - button "Arbeitsbereich öffnen" [ref=f7e93] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f7e94] [cursor=pointer]
+    - generic [ref=f7e95]:
+      - complementary "PMS-Navigation" [ref=f7e96]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f7e97] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f7e98]: CH
+          - generic [ref=f7e99]:
+            - generic [ref=f7e100]: Aktives Hotel
+            - strong [ref=f7e101]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f7e102]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f7e103]:
+          - generic [ref=f7e104]:
+            - generic [ref=f7e105]: Rezeption
+            - button "Übersicht" [ref=f7e106] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e107]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f7e108] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e109]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f7e110] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e111]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f7e112] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e113]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f7e114] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e115]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f7e116] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e117]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f7e118]:
+            - generic [ref=f7e119]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f7e120] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e121]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f7e122] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e123]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f7e124] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e125]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f7e126] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e127]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f7e128]:
+            - generic [ref=f7e129]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f7e130] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e131]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f7e132] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e133]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f7e134] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e135]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f7e136]:
+            - generic [ref=f7e137]: Steuerung & System
+            - button "Hotelportfolio" [ref=f7e138] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e139]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f7e140] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e141]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f7e142] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e143]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f7e144] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e145]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f7e146] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e147]: SYS
+              - text: Schnittstellen
+        - generic [ref=f7e150]:
+          - strong [ref=f7e151]: PMS betriebsbereit
+          - generic [ref=f7e152]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f7e153]:
+        - generic [ref=f7e154]:
+          - generic [ref=f7e155]:
+            - generic [ref=f7e156]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f7e157]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f7e159] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e160]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f7e161]: Ctrl K
+        - region [ref=f7e162]:
+          - generic [ref=f7e164]:
+            - generic [ref=f7e165]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Hotelportfolio" [level=2] [ref=f7e166]
+            - paragraph [ref=f7e167]: Mehrere Hotels vergleichen und zentral steuern. · Betriebstag 12.09.2026
+          - generic [ref=f7e168]:
+            - generic [ref=f7e169]:
+              - generic [ref=f7e170]:
+                - generic [ref=f7e171]:
+                  - generic [ref=f7e172]: Master-Verwaltung
+                  - heading "Mitarbeiter & Hotelrechte" [level=3] [ref=f7e173]
+                - generic [ref=f7e174]: Je Hotel
+              - paragraph [ref=f7e175]: Weise jedem Mitarbeiter die Hotels und Tätigkeiten zu, die er für seine Arbeit benötigt.
+              - generic [ref=f7e177]:
+                - text: Mitarbeiter
+                - combobox "Mitarbeiter" [ref=f7e178]:
+                  - option "Mitarbeiter auswählen" [selected]
+                  - option "Default Admin · Master"
+            - generic [ref=f7e179]:
+              - generic [ref=f7e180]:
+                - generic [ref=f7e181]:
+                  - generic [ref=f7e182]:
+                    - generic [ref=f7e183]: Hotelportfolio
+                    - heading "Betriebsvergleich am 12.09.2026" [level=3] [ref=f7e184]
+                  - button "Aktualisieren" [ref=f7e185] [cursor=pointer]
+                - generic [ref=f7e186]:
+                  - article [ref=f7e187]:
+                    - generic [ref=f7e188]: Hotels
+                    - strong [ref=f7e189]: "1"
+                    - generic [ref=f7e190]: Zentral sichtbar
+                  - article [ref=f7e191]:
+                    - generic [ref=f7e192]: Verkaufskapazität am Betriebstag
+                    - strong [ref=f7e193]: "1006"
+                    - generic [ref=f7e194]: 1007 Zimmer grundsätzlich im Verkauf
+                  - article [ref=f7e195]:
+                    - generic [ref=f7e196]: Portfolio-Auslastung
+                    - strong [ref=f7e197]: 0.30 %
+                    - generic [ref=f7e198]: 3 verkauft · 1003 noch frei
+                  - article [ref=f7e199]:
+                    - generic [ref=f7e200]: Anreisen
+                    - strong [ref=f7e201]: "1"
+                    - generic [ref=f7e202]: 0 Abreisen
+                - paragraph [ref=f7e203]: Finanzwerte bleiben absichtlich pro Hotel und Währung getrennt. Die Portfolio-Auslastung wird aus verkauften Zimmern und der Verkaufskapazität des Betriebstags berechnet.
+              - generic [ref=f7e204]:
+                - generic [ref=f7e206]:
+                  - generic [ref=f7e207]: Hotelvergleich
+                  - heading "Betriebe" [level=3] [ref=f7e208]
+                - table [ref=f7e210]:
+                  - rowgroup [ref=f7e211]:
+                    - row [ref=f7e212]:
+                      - columnheader "Hotel" [ref=f7e213]
+                      - columnheader "Ort" [ref=f7e214]
+                      - columnheader "Währung" [ref=f7e215]
+                      - columnheader "Zimmer im Betrieb" [ref=f7e216]
+                      - columnheader "Verkaufskapazität" [ref=f7e217]
+                      - columnheader "Verkauft" [ref=f7e218]
+                      - columnheader "Noch frei" [ref=f7e219]
+                      - columnheader "Auslastung" [ref=f7e220]
+                      - columnheader "An-/Abreisen" [ref=f7e221]
+                  - rowgroup [ref=f7e222]:
+                    - row [ref=f7e223]:
+                      - cell "Chrono Demo Hotel Zürich DEMO" [ref=f7e224]:
+                        - strong [ref=f7e225]: Chrono Demo Hotel Zürich
+                        - generic [ref=f7e226]: DEMO
+                      - cell "Zürich" [ref=f7e227]
+                      - cell "CHF" [ref=f7e228]
+                      - cell "1007" [ref=f7e229]
+                      - cell "1006" [ref=f7e230]
+                      - cell "3" [ref=f7e231]
+                      - cell "1003" [ref=f7e232]
+                      - cell "0.30 %" [ref=f7e233]
+                      - cell "1 / 0" [ref=f7e234]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

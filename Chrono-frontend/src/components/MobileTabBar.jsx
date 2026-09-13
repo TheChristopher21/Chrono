@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import WorkspaceLink from "./workspace/WorkspaceLink.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../context/LanguageContext.jsx";
 import { getMobilePagesForContext, isAdminUser } from "../utils/pageAccess.js";
@@ -16,7 +17,7 @@ const MobileTabBar = () => {
     const inKnownArea = navItems.some((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
         || pathname === "/workspace/supply-chain";
 
-    if (!inKnownArea || !navItems.length) {
+    if (/^\/pms(?:\/|$)/.test(pathname) || !inKnownArea || !navItems.length) {
         return null;
     }
 
@@ -25,17 +26,18 @@ const MobileTabBar = () => {
             <div className="mobile-tab-spacer" aria-hidden="true" />
             <nav className="mobile-tab-bar" aria-label={t("mobileTabBar.ariaLabel", "Mobile Navigation")}>
                 {navItems.map((item) => (
-                    <NavLink
+                    <WorkspaceLink
                         key={item.key}
                         to={item.path}
-                        className={({ isActive }) => `mobile-tab-link${isActive ? " is-active" : ""}`}
+                        className={`mobile-tab-link${pathname === item.path || pathname.startsWith(`${item.path}/`) ? " is-active" : ""}`}
+                        aria-current={pathname === item.path || pathname.startsWith(`${item.path}/`) ? 'page' : undefined}
                         aria-label={item.label}
                     >
                         <span className="mobile-tab-icon" aria-hidden="true">
                             {item.icon}
                         </span>
                         <span className="mobile-tab-label">{item.label}</span>
-                    </NavLink>
+                    </WorkspaceLink>
                 ))}
             </nav>
         </>

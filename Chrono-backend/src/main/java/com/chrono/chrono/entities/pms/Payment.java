@@ -20,8 +20,21 @@ public class Payment {
     @JoinColumn(name = "folio_id", nullable = false)
     private Folio folio;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal amount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_shift_id")
+    private CashShift cashShift;
+
+    @Column(name = "provider_status", length = 40)
+    private String providerStatus;
+
+    @Column(name = "merchant_context", length = 180)
+    private String merchantContext;
+    @Column(name = "provider_checked_at") private LocalDateTime providerCheckedAt;
+
+    @Column(name = "refund_request_id", length = 80, unique = true)
+    private String refundRequestId;
+
+    @Column(nullable = false, precision = 19, scale = 4) private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
@@ -50,6 +63,9 @@ public class Payment {
 
     @Column(name = "received_at", nullable = false)
     private LocalDateTime receivedAt;
+
+    @Column(name = "posting_date")
+    private java.time.LocalDate postingDate;
 
     @Column(name = "created_by", nullable = false, length = 120)
     private String createdBy;

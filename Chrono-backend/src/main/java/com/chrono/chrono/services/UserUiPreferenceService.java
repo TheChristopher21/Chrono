@@ -10,6 +10,8 @@ import com.chrono.chrono.entities.pms.HotelProperty;
 import com.chrono.chrono.exceptions.UiPreferenceRevisionConflictException;
 import com.chrono.chrono.repositories.UserUiPreferenceRepository;
 import com.chrono.chrono.repositories.pms.HotelPropertyRepository;
+import com.chrono.chrono.services.pms.PmsPropertyAccessService;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.OptimisticLockException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +42,10 @@ public class UserUiPreferenceService {
     private final AccessControlService accessControlService;
     private final UserPermissionService userPermissionService;
     private final UiPreferencePayloadValidator payloadValidator;
+    private PmsPropertyAccessService pmsPropertyAccess;
+
+    @Autowired
+    public void setPmsPropertyAccess(PmsPropertyAccessService pmsPropertyAccess) { this.pmsPropertyAccess = pmsPropertyAccess; }
 
     public UserUiPreferenceService(
             UserUiPreferenceRepository preferenceRepository,
@@ -198,6 +204,7 @@ public class UserUiPreferenceService {
             }
             HotelProperty property = propertyRepository.findByIdAndCompany_Id(propertyId, company.getId())
                     .orElseThrow(() -> new AccessDeniedException("PMS property is not available."));
+            if (pmsPropertyAccess != null) pmsPropertyAccess.require(pmsPropertyAccess.access(actor.getUsername()), propertyId, null, false);
             return new PreferenceContext(actor, company, property, tenantKey, "property:" + propertyId, area);
         }
 
@@ -270,6 +277,8 @@ public class UserUiPreferenceService {
         if (!UserPermissionService.PAGE_PMS.equals(viewKey)) {
             return true;
         }
+        var hotelAccess = pmsPropertyAccess == null ? null : pmsPropertyAccess.access(actor.getUsername());
+        if (hotelAccess != null && !hotelAccess.any()) return false;
         JsonNode propertyIdNode = tab.path("params").get("propertyId");
         if (propertyIdNode == null || propertyIdNode.isNull()) {
             return true;
@@ -281,6 +290,7 @@ public class UserUiPreferenceService {
                 || actor.getCompany().getId() == null) {
             return false;
         }
+        if (hotelAccess != null && !hotelAccess.any(propertyIdNode.longValue())) return false;
         return propertyRepository.findByIdAndCompany_Id(
                 propertyIdNode.longValue(),
                 actor.getCompany().getId()
@@ -296,6 +306,7 @@ public class UserUiPreferenceService {
             throw new AccessDeniedException("A company assignment is required for PMS tabs.");
         }
         for (Long propertyId : propertyIds) {
+            if (pmsPropertyAccess != null) pmsPropertyAccess.require(pmsPropertyAccess.access(actor.getUsername()), propertyId, null, false);
             propertyRepository.findByIdAndCompany_Id(propertyId, actor.getCompany().getId())
                     .orElseThrow(() -> new AccessDeniedException("PMS property is not available."));
         }

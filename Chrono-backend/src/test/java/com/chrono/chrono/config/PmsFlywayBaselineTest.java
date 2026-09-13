@@ -14,16 +14,20 @@ class PmsFlywayBaselineTest {
         String url = "jdbc:h2:mem:chrono_flyway_baseline;MODE=MySQL;"
                 + "DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
 
-        var result = Flyway.configure()
+        var flyway = Flyway.configure()
                 .dataSource(url, "sa", "")
                 .locations("classpath:db/migration")
-                .load()
-                .migrate();
+                .load();
+        var result = flyway.migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(13);
+        assertThat(result.migrationsExecuted).isPositive().isEqualTo(flyway.info().applied().length);
+        assertThat(flyway.info().pending()).isEmpty();
+        flyway.validate();
+        assertThat(flyway.migrate().migrationsExecuted).isZero();
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
+            assertEnterpriseSchema(connection);
             assertThat(tableExists(connection, "pms_profile_documents")).isTrue();
             assertThat(columnExists(connection, "pms_properties", "invoice_prefix")).isTrue();
             assertThat(columnExists(connection, "pms_properties", "tax_number")).isTrue();
@@ -74,19 +78,23 @@ class PmsFlywayBaselineTest {
             statement.execute("insert into legacy_marker (id, marker_value) values (1, 'preserved')");
         }
 
-        var result = Flyway.configure()
+        var flyway = Flyway.configure()
                 .dataSource(url, "sa", "")
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .baselineVersion("14")
-                .load()
-                .migrate();
+                .load();
+        var result = flyway.migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(12);
+        assertThat(result.migrationsExecuted).isPositive().isEqualTo(flyway.info().applied().length - 1);
+        assertThat(flyway.info().pending()).isEmpty();
+        flyway.validate();
+        assertThat(flyway.migrate().migrationsExecuted).isZero();
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
+            assertEnterpriseSchema(connection);
             assertThat(tableExists(connection, "pms_reservations")).isTrue();
             assertThat(tableExists(connection, "pms_integration_outbox")).isTrue();
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
@@ -123,6 +131,45 @@ class PmsFlywayBaselineTest {
                 assertThat(history.next()).isTrue();
                 assertThat(history.getString("version")).isEqualTo("14");
                 assertThat(history.getString("type")).isEqualTo("BASELINE");
+            }
+        }
+    }
+
+    private void assertEnterpriseSchema(java.sql.Connection connection) throws Exception {
+        assertThat(tableExists(connection, "pms_reservation_room_segments")).isTrue();
+        assertThat(tableExists(connection, "pms_reservation_guests")).isTrue();
+        assertThat(tableExists(connection, "pms_payment_requests")).isTrue();
+        assertThat(tableExists(connection, "pms_invoice_lines")).isTrue();
+        assertThat(columnExists(connection, "pms_payments", "posting_date")).isTrue();
+        assertThat(columnExists(connection, "pms_reservations", "policy_snapshot_at")).isTrue();
+        assertThat(foreignKeyExists(connection, "pms_payment_requests", "fk_pms_payment_request_folio", "pms_folios")).isTrue();
+        assertThat(uniqueIndexExists(connection, "pms_payment_requests", "uk_pms_payment_request_key")).isTrue();
+        for (String[] column : new String[][] {{"pms_folio_items", "total_amount"}, {"pms_payments", "amount"}, {"pms_invoices", "gross_amount"}, {"pms_rate_plans", "nightly_rate"}}) {
+            try (var metadata = connection.getMetaData().getColumns(null, null, column[0], column[1])) {
+                assertThat(metadata.next()).isTrue();
+                assertThat(metadata.getInt("DECIMAL_DIGITS")).as(column[0] + "." + column[1]).isEqualTo(4);
+            }
+        }
+        assertRefundStatusWrites(connection);
+    }
+
+    private void assertRefundStatusWrites(java.sql.Connection connection) throws Exception {
+        try(var statement=connection.createStatement()) {
+            // The isolated schema has no hotel fixtures; disable only FK checks, keeping real column types and constraints.
+            statement.execute("SET REFERENTIAL_INTEGRITY FALSE");
+            try {
+                statement.executeUpdate("INSERT INTO pms_payments(id,folio_id,amount,received_at,created_by,kind,method,status,refund_request_id) VALUES(990001,990000,-0.001,CURRENT_TIMESTAMP,'migration-test','REFUND','CARD','PENDING','migration-refund')");
+                try(var rows=statement.executeQuery("SELECT status,amount FROM pms_payments WHERE status='PENDING' AND id=990001")) {
+                    assertThat(rows.next()).isTrue();assertThat(rows.getString(1)).isEqualTo("PENDING");assertThat(rows.getBigDecimal(2)).isEqualByComparingTo("-0.001");
+                }
+                assertThat(statement.executeUpdate("UPDATE pms_payments SET status='FAILED' WHERE id=990001")).isEqualTo(1);
+                statement.executeUpdate("INSERT INTO pms_payments(id,folio_id,amount,received_at,created_by,kind,method,status) VALUES(990002,990000,1.123,CURRENT_TIMESTAMP,'migration-test','PAYMENT','DIRECT_BILL','POSTED')");
+                try(var rows=statement.executeQuery("SELECT COUNT(*) FROM pms_payments WHERE status='FAILED' OR method='DIRECT_BILL'")) {
+                    assertThat(rows.next()).isTrue();assertThat(rows.getLong(1)).isEqualTo(2);
+                }
+            } finally {
+                statement.executeUpdate("DELETE FROM pms_payments WHERE id IN (990001,990002)");
+                statement.execute("SET REFERENTIAL_INTEGRITY TRUE");
             }
         }
     }

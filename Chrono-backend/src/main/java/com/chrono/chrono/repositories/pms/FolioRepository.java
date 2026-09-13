@@ -16,7 +16,9 @@ public interface FolioRepository extends JpaRepository<Folio, Long> {
     Optional<Folio> findByIdAndReservation_Property_Company_Id(Long id, Long companyId);
     List<Folio> findAllByReservation_Property_IdOrderByCreatedAtDesc(Long propertyId);
     List<Folio> findAllByOrganization_Id(Long organizationId);
+    Optional<Folio> findByGroupBooking_IdAndGroupMasterTrue(Long groupId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"reservation", "reservation.guest", "organization", "groupBooking"})
     @Query("""
             select folio from Folio folio
             where folio.reservation.property.id = :propertyId

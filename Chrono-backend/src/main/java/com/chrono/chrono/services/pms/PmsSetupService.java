@@ -36,6 +36,9 @@ public class PmsSetupService {
     private final HotelPropertyRepository propertyRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
+    private org.springframework.beans.factory.ObjectProvider<PmsPropertyAccessService> accessProvider;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setAccessProvider(org.springframework.beans.factory.ObjectProvider<PmsPropertyAccessService> accessProvider) { this.accessProvider=accessProvider; }
 
     public PmsSetupService(HotelPropertyRepository propertyRepository,
                            RoomTypeRepository roomTypeRepository,
@@ -52,9 +55,28 @@ public class PmsSetupService {
 
     @Transactional(readOnly = true)
     public PmsSetupResponse getSetup(Company company, boolean includeRooms) {
+        var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if(auth!=null && auth.isAuthenticated() && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken))
+            return getSetupForUser(company,includeRooms,auth.getName());
+        return buildSetup(company,includeRooms,null);
+    }
+
+    @Transactional(readOnly=true)
+    public PmsSetupResponse getSetupForUser(Company company,boolean includeRooms,String username) {
         requireCompany(company);
-        List<PmsSetupResponse.PropertyView> properties = propertyRepository
-                .findAllByCompany_IdOrderByNameAsc(company.getId())
+        if(accessProvider==null || username==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Hotelrechte konnten nicht geprüft werden.");
+        var access=accessProvider.getIfAvailable();
+        if(access==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Hotelrechte konnten nicht geprüft werden.");
+        var actor=access.access(username);
+        if(!java.util.Objects.equals(actor.companyId(),company.getId())) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Hotelbetrieb nicht verfügbar.");
+        return buildSetup(company,includeRooms,actor);
+    }
+
+    private PmsSetupResponse buildSetup(Company company,boolean includeRooms,PmsPropertyAccessService.Access actor) {
+        requireCompany(company);
+        List<HotelProperty> visible=actor==null || actor.master() ? propertyRepository.findAllByCompany_IdOrderByNameAsc(company.getId())
+                : actor.grants().isEmpty() ? List.of() : propertyRepository.findAllByCompany_IdAndIdInOrderByNameAsc(company.getId(),actor.grants().keySet());
+        List<PmsSetupResponse.PropertyView> properties = visible
                 .stream()
                 .map(property -> toPropertyView(property, includeRooms))
                 .toList();
@@ -96,7 +118,8 @@ public class PmsSetupService {
                                            Long propertyId,
                                            UpsertHotelPropertyRequest request) {
         requireCompany(company);
-        HotelProperty property = requireProperty(company.getId(), propertyId);
+        HotelProperty property = propertyRepository.findByIdAndCompany_IdForUpdate(propertyId, company.getId())
+                .orElseThrow(() -> notFound("Hotelbetrieb nicht gefunden."));
         String code = normalizeCode(request.code());
         if (propertyRepository.existsByCompany_IdAndCodeIgnoreCaseAndIdNot(company.getId(), code, propertyId)) {
             throw conflict("Für diesen Hotelbetrieb ist der Code bereits vergeben.");
@@ -312,6 +335,11 @@ public class PmsSetupService {
                                UpsertHotelPropertyRequest request,
                                boolean creating) {
         validateTimezoneAndCurrency(request.timezone(), request.currencyCode());
+        PmsMoney.digits(request.currencyCode());
+        if (!creating && !property.getCurrencyCode().equalsIgnoreCase(request.currencyCode())
+                && propertyRepository.hasCurrencyDependentRecords(property.getId())) {
+            throw conflict("Die Hotelwährung kann nach Einrichtung von Raten, Aufenthalten oder Finanzdaten nicht mehr geändert werden.");
+        }
         if (!Set.of(Locale.getISOCountries()).contains(request.countryCode().trim().toUpperCase(Locale.ROOT))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Das Land muss ein gültiger ISO-Ländercode sein.");
         }

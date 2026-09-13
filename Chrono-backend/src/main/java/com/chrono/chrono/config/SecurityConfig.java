@@ -1,5 +1,6 @@
 package com.chrono.chrono.config;
 
+import jakarta.servlet.DispatcherType;
 import com.chrono.chrono.services.CustomUserDetailsService;
 import com.chrono.chrono.utils.JwtAuthenticationFilter;
 import com.chrono.chrono.utils.PasswordEncoderConfig;
@@ -47,7 +48,7 @@ public class SecurityConfig {
             String configuredOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(parseOrigins(configuredOrigins));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization", "Content-Type", "Origin", "Idempotency-Key",
                 "X-Agent-Token", "X-NFC-Agent-Request",
@@ -95,6 +96,12 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31_536_000)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
+                    // Only complete a stream that this server already authenticated and authorized.
+                    // Initial requests and all other routes still pass the usual JWT/permission checks.
+                    auth.requestMatchers(request -> request.getDispatcherType() == DispatcherType.ASYNC
+                            && "GET".equals(request.getMethod())
+                            && Boolean.TRUE.equals(request.getAttribute(PmsAccessPolicy.LIVE_AUTHORIZED))
+                            && PmsAccessPolicy.path(request).matches("/api/pms/properties/[1-9][0-9]*/live")).permitAll();
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
                     auth.requestMatchers("/api/auth/**").permitAll();
@@ -111,6 +118,8 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/public/analytics/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/pms/guest-registration/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/pms/webhooks/channels/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/pms/webhooks/stripe").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/pms/event-offers/*/decision").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/pms/booking/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/holidays/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import Link from "./workspace/WorkspaceLink.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../context/LanguageContext.jsx";
 import { getDashboardPagesForContext } from "../utils/pageAccess.js";

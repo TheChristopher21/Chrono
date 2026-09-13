@@ -13,7 +13,11 @@ public record PostFolioItemRequest(
         @NotNull LocalDate serviceDate,
         @NotNull FolioItemType type,
         @NotBlank @Size(max = 240) String description,
-        @NotNull @DecimalMin("0.01") BigDecimal quantity,
-        @NotNull BigDecimal unitPrice
+        @NotNull @DecimalMin("0.01") @jakarta.validation.constraints.Digits(integer = 8, fraction = 2) BigDecimal quantity,
+        @NotNull BigDecimal unitPrice,
+        @DecimalMin("0.00") @jakarta.validation.constraints.DecimalMax("100.00") BigDecimal taxRate
 ) {
+    public PostFolioItemRequest(LocalDate serviceDate, FolioItemType type, String description, BigDecimal quantity, BigDecimal unitPrice) {
+        this(serviceDate, type, description, quantity, unitPrice, BigDecimal.ZERO);
+    }
 }

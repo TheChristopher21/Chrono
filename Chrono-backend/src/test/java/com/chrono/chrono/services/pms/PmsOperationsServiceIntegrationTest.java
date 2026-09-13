@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import({PmsOperationsService.class, PmsAuditWriter.class})
+@Import({PmsOperationsService.class, com.chrono.chrono.services.pms.PmsGroupRoutingService.class, com.chrono.chrono.services.pms.PmsGroupInventoryService.class, com.chrono.chrono.services.pms.PmsHousekeepingService.class, com.chrono.chrono.services.pms.PmsReservationPolicyService.class, PmsDocumentFingerprintService.class, PmsRefundProcessor.class, PmsCashService.class, PmsFinancialPeriodService.class, PmsAuditWriter.class})
 @ActiveProfiles("test")
 class PmsOperationsServiceIntegrationTest {
 
@@ -64,6 +64,8 @@ class PmsOperationsServiceIntegrationTest {
     private PmsAuditEventRepository auditEventRepository;
     @Autowired
     private PmsAuditWriter auditWriter;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     private Company company;
     private HotelProperty property;
@@ -117,6 +119,46 @@ class PmsOperationsServiceIntegrationTest {
         ratePlan = ratePlanRepository.save(ratePlan);
 
         today = LocalDate.now(ZoneId.of("Europe/Zurich"));
+    }
+
+    @Test
+    void loadsOperationalSnapshotsWithoutQueriesPerReservation() {
+        for (int index = 0; index < 2; index++) {
+            service.createReservation(company,
+                    reservationRequest(today.plusDays(index + 1), today.plusDays(index + 2), room.getId()),
+                    "reception", today);
+        }
+        var statistics = entityManager.getEntityManagerFactory()
+                .unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        boolean wasEnabled = statistics.isStatisticsEnabled();
+        statistics.setStatisticsEnabled(true);
+        try {
+            entityManager.flush();
+            entityManager.clear();
+            statistics.clear();
+            var small = service.getOperations(company, property.getId(), today, null, null);
+            long smallQueryCount = statistics.getPrepareStatementCount();
+            assertThat(small.reservations()).hasSize(2);
+
+            for (int index = 2; index < 20; index++) {
+                service.createReservation(company,
+                        reservationRequest(today.plusDays(index + 1), today.plusDays(index + 2), room.getId()),
+                        "reception", today);
+            }
+            entityManager.flush();
+            entityManager.clear();
+            statistics.clear();
+            var large = service.getOperations(company, property.getId(), today, null, null);
+            long largeQueryCount = statistics.getPrepareStatementCount();
+            assertThat(large.reservations()).hasSize(20);
+            assertThat(large.folios()).hasSize(20);
+            assertThat(large.reservations()).allSatisfy(reservation ->
+                    assertThat(reservation.history()).hasSize(1));
+            assertThat(largeQueryCount).as("SQL query count for 20 stays versus 2 stays")
+                    .isLessThanOrEqualTo(smallQueryCount + 4);
+        } finally {
+            statistics.setStatisticsEnabled(wasEnabled);
+        }
     }
 
     @Test
@@ -902,6 +944,133 @@ class PmsOperationsServiceIntegrationTest {
                 .satisfies(value -> assertThat(value.totalAmount()).isEqualByComparingTo("120.00"));
     }
 
+    @Test
+    void repricesRoutedRoomChargesOnceAndKeepsTheirOriginalFolioAndIds() {
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Christopher", today);
+        Long id = created.reservations().get(0).id();
+        Reservation reservation = reservationRepository.findById(id).orElseThrow();
+        Folio second = new Folio(); second.setReservation(reservation); second.setCurrencyCode("CHF"); second.setLabel("Firma");
+        second = folioRepository.save(second);
+        FolioItem moved = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(created.folios().get(0).id()).get(0);
+        Long movedId = moved.getId(); moved.setFolio(second); folioItemRepository.save(moved);
+        service.updateReservation(company, id, reservationRequest(today.plusDays(1), today.plusDays(4), room.getId()), "Christopher", today);
+        var items = folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id);
+        assertThat(items).hasSize(3);
+        assertThat(items.stream().map(FolioItem::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("360.00");
+        assertThat(folioItemRepository.findById(movedId).orElseThrow().getFolio().getId()).isEqualTo(second.getId());
+        service.updateReservation(company, id, reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Christopher", today);
+        assertThat(folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id)).extracting(FolioItem::getId).containsExactly(movedId);
+    }
+
+    @Test
+    void plannedMoveUsesOnlyItsOwnDatesAndRetainsEarlierOccupancy() {
+        Room target = room("102");
+        service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), target.getId()), "Christopher", today);
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(5), room.getId()), "Christopher", today);
+        Long id = created.reservations().stream().filter(r -> r.roomId().equals(room.getId())).findFirst().orElseThrow().id();
+        service.moveReservationRoom(company, id, new MoveReservationRoomRequest(target.getId(), "Umzug", today.plusDays(3), null), "Christopher", today);
+        var details = service.getStayDetails(company, id);
+        assertThat(details.roomSegments()).hasSize(2);
+        assertThat(details.roomSegments().get(0).roomId()).isEqualTo(room.getId());
+        assertThat(details.roomSegments().get(0).endDate()).isEqualTo(today.plusDays(3));
+        assertThat(details.roomSegments().get(1).roomId()).isEqualTo(target.getId());
+        assertThat(reservationRepository.countOverlappingByRoom(room.getId(), today.plusDays(3), today.plusDays(5), java.util.Set.of(ReservationStatus.CANCELLED), null)).isZero();
+        assertThat(reservationRepository.countOverlappingByRoom(target.getId(), today.plusDays(3), today.plusDays(5), java.util.Set.of(ReservationStatus.CANCELLED), null)).isEqualTo(1);
+    }
+
+    @Test
+    void upgradePricesOnlyTheNewSegment() {
+        RoomType suite = new RoomType(); suite.setProperty(property); suite.setCode("SUITE"); suite.setName("Suite"); suite.setMaxOccupancy(3); suite = roomTypeRepository.save(suite);
+        Room target = new Room(); target.setProperty(property); target.setRoomType(suite); target.setNumber("301"); target.setHousekeepingStatus(HousekeepingStatus.CLEAN); target = roomRepository.save(target);
+        RatePlan suiteRate = new RatePlan(); suiteRate.setProperty(property); suiteRate.setRoomType(suite); suiteRate.setCode("SUITE"); suiteRate.setName("Suite"); suiteRate.setCurrencyCode("CHF"); suiteRate.setNightlyRate(new BigDecimal("200")); suiteRate = ratePlanRepository.save(suiteRate);
+        Long id = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(4), room.getId()), "Christopher", today).reservations().get(0).id();
+        service.moveReservationRoom(company, id, new MoveReservationRoomRequest(target.getId(), "Upgrade", today.plusDays(2), suiteRate.getId()), "Christopher", today);
+        var charges = folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id);
+        assertThat(charges).extracting(FolioItem::getTotalAmount).containsExactly(new BigDecimal("120.00"), new BigDecimal("200.00"), new BigDecimal("200.00"));
+    }
+
+    @Test
+    void registersNamedCoGuestsSeparatelyAndRejectsOccupancyOverflow() {
+        Long id = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Christopher", today).reservations().get(0).id();
+        GuestProfile companion = new GuestProfile(); companion.setCompany(company); companion.setFirstName("Anna"); companion.setLastName("Gast"); companion = guestRepository.save(companion);
+        var entry = new UpsertReservationGuestsRequest.GuestEntry(companion.getId(), today.plusDays(1), today.plusDays(2), false);
+        service.updateCoGuests(company, id, new UpsertReservationGuestsRequest(java.util.List.of(entry)), "Christopher");
+        var response = service.registerCoGuest(company, id, companion.getId(), new CompleteGuestRegistrationRequest("Strasse 1", "8000", "Zürich", "CH", "DE", "SECRET-DOC1234", null, "Anna Gast", true, null, null), "Christopher");
+        assertThat(response.coGuests()).hasSize(1);
+        assertThat(response.coGuests().get(0).registrationCompletedAt()).isNotNull();
+        assertThat(reservationRepository.findById(id).orElseThrow().getCoGuests().get(0).getDocumentHash()).doesNotContain("SECRET").hasSize(64);
+        assertThatThrownBy(() -> service.updateCoGuests(company, id, new UpsertReservationGuestsRequest(java.util.List.of(entry, entry)), "Christopher")).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void keepsConcurrentRegistersAndTheirCashMovementsSeparate() {
+        Long folio = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Christopher", today).folios().get(0).id();
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(new BigDecimal("100"), null, "DESK1", "RECEPTION"), "Alice", today);
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(new BigDecimal("50"), null, "BAR1", "BAR"), "Bob", today);
+        var shifts = service.getCashShifts(company, property.getId());
+        Long desk = shifts.stream().filter(s -> s.registerCode().equals("DESK1")).findFirst().orElseThrow().id();
+        Long bar = shifts.stream().filter(s -> s.registerCode().equals("BAR1")).findFirst().orElseThrow().id();
+        service.postPayment(company, property.getId(), folio, new PostPaymentRequest(new BigDecimal("30"), PaymentMethod.CASH, null, desk), "Alice", today);
+        service.postPayment(company, property.getId(), folio, new PostPaymentRequest(new BigDecimal("20"), PaymentMethod.CASH, null, bar), "Bob", today);
+        shifts = service.getCashShifts(company, property.getId());
+        assertThat(shifts.stream().filter(s -> s.id().equals(desk)).findFirst().orElseThrow().expectedCash()).isEqualByComparingTo("130");
+        assertThat(shifts.stream().filter(s -> s.id().equals(bar)).findFirst().orElseThrow().expectedCash()).isEqualByComparingTo("70");
+        service.closeCashShift(company, property.getId(), new CloseCashShiftRequest(new BigDecimal("130"), null, desk), "Alice", today);
+        assertThat(cashShiftRepository.findById(bar).orElseThrow().getStatus()).isEqualTo(CashShiftStatus.OPEN);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"JPY,123,246", "KWD,12.345,24.690", "CHF,12.35,24.70"})
+    void keepsHotelCurrencyMinorUnitsFromRateThroughFolioAndPayment(String currency, String nightly, String expected) {
+        property.setCurrencyCode(currency); propertyRepository.save(property);
+        service.updateRatePlan(company, property.getId(), ratePlan.getId(), new UpsertRatePlanRequest(
+                roomType.getId(), "BAR", "Currency rate", new BigDecimal(nightly), 1, false, true, true), today);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(2), room.getId()), "Alice", today);
+        Long folioId = created.folios().get(0).id();
+        assertThat(created.reservations().get(0).totalAmount()).isEqualByComparingTo(expected);
+        folioItemRepository.flush();
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId))
+                .allSatisfy(line -> assertThat(line.getTotalAmount()).isEqualByComparingTo(nightly));
+        service.postPayment(company, property.getId(), folioId, new PostPaymentRequest(new BigDecimal(expected), PaymentMethod.BANK_TRANSFER, "Currency"), "Alice", today);
+        assertThat(paymentRepository.findAllByFolio_IdOrderByReceivedAtAsc(folioId)).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualByComparingTo(expected));
+    }
+
+    @Test
+    void refusesFractionalSwissCentInsteadOfSilentlyChangingRateOrPayment() {
+        assertThatThrownBy(() -> service.updateRatePlan(company, property.getId(), ratePlan.getId(), new UpsertRatePlanRequest(
+                roomType.getId(), "BAR", "Currency rate", new BigDecimal("12.345"), 1, false, true, true), today))
+                .hasMessageContaining("kleinsten Einheit");
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        assertThatThrownBy(() -> service.postPayment(company, property.getId(), created.folios().get(0).id(),
+                new PostPaymentRequest(new BigDecimal("0.001"), PaymentMethod.BANK_TRANSFER, "Invalid"), "Alice", today))
+                .hasMessageContaining("kleinsten Einheit");
+    }
+
+    @Test
+    void refusesShiftClosingWhileAnEarlierCashOperationStillAwaitsReconciliation() {
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(BigDecimal.ZERO, "Shift"), "Alice", today);
+        CashShift shift = cashShiftRepository.findAllByProperty_IdOrderByOpenedAtDesc(property.getId()).get(0);
+        Payment pending = new Payment(); pending.setFolio(folioRepository.findById(created.folios().get(0).id()).orElseThrow());
+        pending.setMethod(PaymentMethod.CASH); pending.setKind(PaymentKind.REFUND); pending.setAmount(new BigDecimal("-10"));
+        pending.setStatus(PaymentStatus.PENDING); pending.setCashShift(shift); pending.setCreatedBy("Alice"); paymentRepository.saveAndFlush(pending);
+        assertThatThrownBy(() -> service.closeCashShift(company, property.getId(), new CloseCashShiftRequest(BigDecimal.ZERO, "Close", shift.getId()), "Alice", today))
+                .hasMessageContaining("offenen Zahlungsvorgang");
+    }
+
+    @Test
+    void accountingDateRangeUsesPostingBusinessDateWithACompatibilityFallbackForLegacyPayments() {
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        Payment p = new Payment(); p.setFolio(folioRepository.findById(created.folios().get(0).id()).orElseThrow()); p.setAmount(BigDecimal.TEN);
+        p.setMethod(PaymentMethod.BANK_TRANSFER); p.setCreatedBy("Alice"); p.setReceivedAt(today.atTime(23, 45)); p.setPostingDate(today.plusDays(1));
+        paymentRepository.saveAndFlush(p);
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today, today.plusDays(1))).isEmpty();
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today.plusDays(1), today.plusDays(2))).containsExactly(p);
+        p.setPostingDate(null); paymentRepository.saveAndFlush(p);
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today, today.plusDays(1))).containsExactly(p);
+    }
+
     private UpsertReservationRequest reservationRequest(LocalDate arrival,
                                                          LocalDate departure,
                                                          Long roomId) {
@@ -950,6 +1119,49 @@ class PmsOperationsServiceIntegrationTest {
         additionalRoom.setNumber(number);
         additionalRoom.setHousekeepingStatus(HousekeepingStatus.CLEAN);
         return roomRepository.save(additionalRoom);
+    }
+
+    @Test
+    void keepsAcceptedDepositPolicyWhenTheRateChangesAndRequiresActualDepositAtCheckIn() {
+        ratePlan.setDepositPercent(new BigDecimal("50")); ratePlan.setDepositDueDaysBeforeArrival(0); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id();
+        ratePlan.setDepositPercent(new BigDecimal("90")); ratePlanRepository.save(ratePlan);
+        assertThat(service.getReservationPolicy(company, id).depositRequiredAmount()).isEqualByComparingTo("60");
+        assertThatThrownBy(() -> service.checkIn(company, id, "Alice", today)).hasMessageContaining("Anzahlung");
+        service.postPayment(company, property.getId(), created.folios().get(0).id(),
+                new PostPaymentRequest(new BigDecimal("60"), PaymentMethod.BANK_TRANSFER, "Anzahlung"), "Alice", today);
+        assertThat(service.getReservationPolicy(company, id).depositOverdue()).isFalse();
+        service.checkIn(company, id, "Alice", today);
+        assertThat(reservationRepository.findById(id).orElseThrow().getStatus()).isEqualTo(ReservationStatus.CHECKED_IN);
+    }
+
+    @Test
+    void cancellationUsesAcceptedFeeAndLeavesARefundableDepositAsOpenCredit() {
+        ratePlan.setCancellationDeadlineHours(8760); ratePlan.setCancellationFeePercent(new BigDecimal("25"));
+        ratePlan.setPolicyFeeTaxRate(BigDecimal.ZERO); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id(); Long folioId = created.folios().get(0).id();
+        service.postPayment(company, property.getId(), folioId,
+                new PostPaymentRequest(new BigDecimal("100"), PaymentMethod.BANK_TRANSFER, "Deposit"), "Alice", today);
+        ratePlan.setCancellationFeePercent(new BigDecimal("100")); ratePlanRepository.save(ratePlan);
+        service.cancelReservation(company, id, null, "Alice", today);
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId)).singleElement().satisfies(line -> {
+            assertThat(line.getTotalAmount()).isEqualByComparingTo("60"); assertThat(line.isRateGenerated()).isFalse(); assertThat(line.getTaxRate()).isZero();
+        });
+        assertThat(folioRepository.findById(folioId).orElseThrow().getStatus()).isEqualTo(FolioStatus.OPEN);
+        assertThat(reservationRepository.findById(id).orElseThrow().getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+    }
+
+    @Test
+    void noShowReplacesEditableAccommodationWithConfiguredFeeAndDoesNotDoublePost() {
+        ratePlan.setNoShowFeePercent(new BigDecimal("50")); ratePlan.setPolicyFeeTaxRate(BigDecimal.ZERO); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(2), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id(); Long folioId = created.folios().get(0).id();
+        service.markNoShow(company, id, "Alice", today);
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId)).singleElement()
+                .satisfies(line -> assertThat(line.getTotalAmount()).isEqualByComparingTo("120"));
+        assertThatThrownBy(() -> service.markNoShow(company, id, "Alice", today)).hasMessageContaining("bestätigte");
     }
 
     private RoomBlock roomBlock(RoomBlockType type, LocalDate startDate, LocalDate endDate) {

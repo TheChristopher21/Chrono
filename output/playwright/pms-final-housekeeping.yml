@@ -1,0 +1,159 @@
+- generic [ref=f21e2]:
+  - generic [ref=f21e2507]:
+    - generic [ref=f21e2508]:
+      - navigation "Hauptnavigation" [ref=f21e2509]:
+        - link "Chrono PMS" [ref=f21e2511] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f21e2512]
+        - list [ref=f21e2513]:
+          - listitem [ref=f21e2514]:
+            - link "Zu Chrono wechseln" [ref=f21e2515] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f21e2516]:
+            - button "Was ist neu?" [ref=f21e2517] [cursor=pointer]
+          - listitem [ref=f21e2521]:
+            - button "Light Mode" [ref=f21e2522] [cursor=pointer]
+          - listitem [ref=f21e2527]:
+            - button "🌐" [ref=f21e2528] [cursor=pointer]
+          - listitem [ref=f21e2531]:
+            - button "Default Admin" [ref=f21e2532] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2533]: D
+        - button "PMS-Bereiche" [ref=f21e2538] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f21e2541]:
+        - generic [ref=f21e2542]:
+          - tablist "Offene Arbeitsbereiche" [ref=f21e2543]:
+            - generic [ref=f21e2544]:
+              - tab "Hotelverwaltung (PMS)" [ref=f21e2545] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2546]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f21e2548] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f21e2549] [cursor=pointer]'
+            - generic [ref=f21e2550]:
+              - tab "PMS · Zimmerplan" [ref=f21e2551] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2552]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f21e2554] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f21e2555] [cursor=pointer]'
+            - generic [ref=f21e2556]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f21e2557] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2558]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f21e2560] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f21e2561] [cursor=pointer]'
+            - generic [ref=f21e2562]:
+              - tab "PMS · Housekeeping & Reinigung" [selected] [ref=f21e2563] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2564]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f21e2566] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f21e2567] [cursor=pointer]'
+            - generic [ref=f21e2568]:
+              - tab "PMS · Rechnungen" [ref=f21e2569] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2570]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f21e2572] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f21e2573] [cursor=pointer]'
+            - generic [ref=f21e2574]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f21e2575] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2576]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f21e2578] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f21e2579] [cursor=pointer]'
+            - generic [ref=f21e2580]:
+              - tab "PMS · Berichte & Kennzahlen" [ref=f21e2581] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2582]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f21e2584] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f21e2585] [cursor=pointer]'
+            - generic [ref=f21e2586]:
+              - tab "PMS · Hotelportfolio" [ref=f21e2587] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2588]: PMS
+              - 'button "Tab anheften: PMS · Hotelportfolio" [ref=f21e2590] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Hotelportfolio" [ref=f21e2591] [cursor=pointer]'
+          - generic [ref=f21e2592]:
+            - button "Arbeitsbereich öffnen" [ref=f21e2593] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f21e2594] [cursor=pointer]
+    - generic [ref=f21e2595]:
+      - complementary "PMS-Navigation" [ref=f21e2596]:
+        - button "Aktives Hotel Hotel einrichten" [ref=f21e2597] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f21e2598]: CH
+          - generic [ref=f21e2599]:
+            - generic [ref=f21e2600]: Aktives Hotel
+            - strong [ref=f21e2601]: Hotel einrichten
+          - generic [aria-hidden] [ref=f21e2602]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f21e2603]:
+          - generic [ref=f21e2604]:
+            - generic [ref=f21e2605]: Rezeption
+            - button "Übersicht" [ref=f21e2606] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2607]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f21e2608] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2609]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f21e2610] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2611]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f21e2612] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2613]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f21e2614] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2615]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f21e2616] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2617]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f21e2618]:
+            - generic [ref=f21e2619]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f21e2620] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2621]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f21e2622] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2623]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f21e2624] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2625]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f21e2626] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2627]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f21e2628]:
+            - generic [ref=f21e2629]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f21e2630] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2631]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f21e2632] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2633]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f21e2634] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2635]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f21e2636]:
+            - generic [ref=f21e2637]: Steuerung & System
+            - button "Hotelportfolio" [ref=f21e2638] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2639]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f21e2640] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2641]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f21e2642] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2643]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f21e2644] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2645]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f21e2646] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2647]: SYS
+              - text: Schnittstellen
+        - generic [ref=f21e2650]:
+          - strong [ref=f21e2651]: PMS betriebsbereit
+          - generic [ref=f21e2652]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f21e2653]:
+        - generic [ref=f21e2654]:
+          - generic [ref=f21e2655]:
+            - generic [ref=f21e2656]: Chrono Hotel-PMS
+            - heading "Hotelbetrieb" [level=1] [ref=f21e2657]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f21e2659] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f21e2660]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f21e2661]: Ctrl K
+        - generic [ref=f21e2663]:
+          - heading "Zuerst ein Hotel einrichten" [level=2] [ref=f21e2664]
+          - paragraph [ref=f21e2665]: Reservierungen benötigen mindestens ein Hotel, einen Zimmertyp und ein Zimmer.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

@@ -79,16 +79,16 @@ public class PmsInvoice {
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
 
-    @Column(name = "net_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal netAmount;
+    @Column(name = "language_code", nullable = false, length = 5)
+    private String languageCode = "DE";
 
-    @Column(name = "vat_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal vatAmount;
+    @Column(name = "net_amount", nullable = false, precision = 19, scale = 4) private BigDecimal netAmount;
 
-    @Column(name = "gross_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal grossAmount;
+    @Column(name = "vat_amount", nullable = false, precision = 19, scale = 4) private BigDecimal vatAmount;
 
-    @Column(name = "vat_rate", nullable = false, precision = 5, scale = 2)
+    @Column(name = "gross_amount", nullable = false, precision = 19, scale = 4) private BigDecimal grossAmount;
+
+    @Column(name = "vat_rate", nullable = false, precision = 7, scale = 4)
     private BigDecimal vatRate;
 
     @Column(name = "creditor_iban", length = 34)
@@ -103,6 +103,9 @@ public class PmsInvoice {
 
     @Column(name = "correction_reason", length = 500)
     private String correctionReason;
+
+    @Column(name = "correction_mode", length = 24)
+    private String correctionMode;
 
     @Column(name = "corrected_at")
     private LocalDateTime correctedAt;

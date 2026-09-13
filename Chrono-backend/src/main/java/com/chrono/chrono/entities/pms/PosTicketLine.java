@@ -19,14 +19,10 @@ public class PosTicketLine {
     private String description;
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal unitPrice;
+    @Column(name = "unit_price", nullable = false, precision = 19, scale = 4) private BigDecimal unitPrice;
     @Column(name = "tax_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal taxRate;
-    @Column(name = "net_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal netAmount;
-    @Column(name = "tax_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal taxAmount;
-    @Column(name = "gross_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal grossAmount;
+    @Column(name = "net_amount", nullable = false, precision = 19, scale = 4) private BigDecimal netAmount;
+    @Column(name = "tax_amount", nullable = false, precision = 19, scale = 4) private BigDecimal taxAmount;
+    @Column(name = "gross_amount", nullable = false, precision = 19, scale = 4) private BigDecimal grossAmount;
 }

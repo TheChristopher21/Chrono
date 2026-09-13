@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import WorkspacePortal from "../../../components/workspace/WorkspacePortal.jsx";
 
 const POPUP_GAP = 10;
 const VIEWPORT_MARGIN = 12;
@@ -113,7 +113,7 @@ const InlineHelp = ({ title, description }) => {
             >
                 ?
             </span>
-            {open && typeof document !== "undefined" && createPortal(
+            {open && <WorkspacePortal>
                 <span
                     id={popupId}
                     role="dialog"
@@ -126,9 +126,8 @@ const InlineHelp = ({ title, description }) => {
                 >
                     <strong>{title}</strong>
                     <span>{description}</span>
-                </span>,
-                document.body
-            )}
+                </span>
+            </WorkspacePortal>}
         </span>
     );
 };

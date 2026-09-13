@@ -7,7 +7,10 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record RefundPaymentRequest(
-        @NotNull @DecimalMin("0.01") BigDecimal amount,
-        @Size(max = 500) String reason
+        @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal amount,
+        @Size(max = 500) String reason,
+        @Size(max = 80) String requestId,
+        Long cashShiftId
 ) {
+    public RefundPaymentRequest(BigDecimal amount, String reason) { this(amount, reason, java.util.UUID.randomUUID().toString(), null); }
 }

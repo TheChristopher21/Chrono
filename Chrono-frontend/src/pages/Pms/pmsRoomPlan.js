@@ -20,7 +20,7 @@ export const planDayDistance = (from, to) => Math.round((Date.parse(`${to}T12:00
 /** Clip at the viewport, keep departure exclusive, and preserve overlapping events in separate lanes. */
 export const layoutRoomEvents = (reservations, blocks, from, days) => {
     const events = [
-        ...reservations.map((entry) => ({ kind: 'reservation', entry, startDate: entry.arrivalDate, endDate: entry.departureDate })),
+        ...reservations.map((entry) => ({ kind: 'reservation', entry, startDate: entry.segmentStartDate || entry.arrivalDate, endDate: entry.segmentEndDate || entry.departureDate })),
         ...blocks.map((entry) => ({ kind: 'block', entry, startDate: entry.startDate, endDate: entry.endDate })),
     ].map((event) => ({ ...event, start: Math.max(0, planDayDistance(from, event.startDate)), end: Math.min(days, planDayDistance(from, event.endDate)) }))
         .filter((event) => event.end > event.start).sort((a, b) => a.start - b.start || a.end - b.end);

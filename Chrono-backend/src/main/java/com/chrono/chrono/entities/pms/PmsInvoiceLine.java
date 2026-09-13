@@ -19,6 +19,15 @@ public class PmsInvoiceLine {
     @JoinColumn(name = "invoice_id", nullable = false)
     private PmsInvoice invoice;
 
+    /** Original operational line remains linked even after a document correction. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_item_id")
+    private FolioItem sourceItem;
+
+    /** Nullable unique allocation: only one current document can bill a source line. */
+    @Column(name = "active_source_item_id", unique = true)
+    private Long activeSourceItemId;
+
     @Column(nullable = false, length = 240)
     private String description;
 
@@ -30,12 +39,9 @@ public class PmsInvoiceLine {
     @Column(name = "service_date")
     private java.time.LocalDate serviceDate;
 
-    @Column(name = "net_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal netAmount;
+    @Column(name = "net_amount", nullable = false, precision = 19, scale = 4) private BigDecimal netAmount;
 
-    @Column(name = "vat_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal vatAmount;
+    @Column(name = "vat_amount", nullable = false, precision = 19, scale = 4) private BigDecimal vatAmount;
 
-    @Column(name = "gross_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal grossAmount;
+    @Column(name = "gross_amount", nullable = false, precision = 19, scale = 4) private BigDecimal grossAmount;
 }

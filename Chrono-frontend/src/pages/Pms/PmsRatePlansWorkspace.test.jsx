@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const apiMock = vi.hoisted(() => ({ post: vi.fn(), put: vi.fn() }));
+const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }));
 vi.mock('../../utils/api.js', () => ({ default: apiMock }));
 import PmsRatePlansWorkspace, { ratePricePreview } from './PmsRatePlansWorkspace.jsx';
 
@@ -12,13 +12,35 @@ const rate = { id: 7, roomTypeId: 2, code: 'CORP', name: 'Firmenvereinbarung', n
     includedAdults: 1, extraAdultRate: 15, childRate: 8, active: true, refundable: true, validFrom: '2030-01-01',
     cancellationPolicy: '48 Stunden vor Anreise', depositPercent: 20, organizationId: 4, organizationName: 'Firma' };
 const operations = { ratePlans: [rate], organizations: [{ id: 4, name: 'Firma', active: true }], rateOverrides: [] };
-beforeEach(() => { vi.clearAllMocks(); apiMock.put.mockResolvedValue({ data: operations }); apiMock.post.mockResolvedValue({ data: operations }); });
+beforeEach(() => {
+    vi.clearAllMocks();
+    apiMock.get.mockImplementation(async (url) => ({ data: url.includes('/directory/organizations')
+        ? (url.endsWith('/4') ? operations.organizations[0] : { items: operations.organizations, totalElements: 1, totalPages: 1, page: 0, size: 50 })
+        : [] }));
+    apiMock.put.mockResolvedValue({ data: operations }); apiMock.post.mockResolvedValue({ data: operations });
+});
 afterEach(cleanup);
 
 describe('expanded rate plans', () => {
     it('preserves inclusive totals and splits two net tax bases', () => {
         expect(ratePricePreview({ ...rate, taxIncluded: true })).toEqual({ gross: 120, net: 110.27, tax: 9.73 });
         expect(ratePricePreview(rate)).toEqual({ gross: 130.8, net: 120, tax: 10.8 });
+        expect(ratePricePreview({ nightlyRate: 101, vatRate: 10, taxIncluded: false }, 'JPY')).toEqual({ gross: 111, net: 101, tax: 10 });
+        expect(ratePricePreview({ nightlyRate: 1.234, vatRate: 5, taxIncluded: false }, 'KWD')).toEqual({ gross: 1.296, net: 1.234, tax: 0.062 });
+    });
+
+    it('saves no-show, explicit fee tax and deposit due rules with currency precision', async () => {
+        render(<PmsRatePlansWorkspace property={{ ...property, currencyCode: 'KWD' }} operations={operations} canManage />);
+        fireEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        expect(screen.getByLabelText('Standardpreis pro Zimmer/Nacht').step).toBe('0.001');
+        expect(screen.getByLabelText('Tagespreis').step).toBe('0.001');
+        fireEvent.change(screen.getByLabelText('Gebühr bei Nichtanreise (%)'), { target: { value: '100' } });
+        fireEvent.submit(screen.getByRole('button', { name: 'Ratenplan speichern' }).closest('form'));
+        expect(apiMock.put).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByLabelText('Steuer auf Storno-/Nichtanreisegebühr (%)'), { target: { value: '0' } });
+        fireEvent.change(screen.getByLabelText('Anzahlung fällig Tage vor Anreise'), { target: { value: '7' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Ratenplan speichern' }));
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ noShowFeePercent: 100, policyFeeTaxRate: 0, depositDueDaysBeforeArrival: 7 }), expect.any(Object)));
     });
 
     it('loads and saves the full corporate tax and policy configuration', async () => {

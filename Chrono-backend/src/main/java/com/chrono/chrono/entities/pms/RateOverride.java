@@ -30,8 +30,7 @@ public class RateOverride {
     @Column(name = "stay_date", nullable = false)
     private LocalDate stayDate;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
+    @Column(nullable = false, precision = 19, scale = 4) private BigDecimal price;
 
     @Column(name = "min_stay", nullable = false)
     private int minStay = 1;
@@ -44,4 +43,7 @@ public class RateOverride {
 
     @Column(name = "closed_departure", nullable = false)
     private boolean closedDeparture;
+
+    @Column(name="revenue_managed",nullable=false)
+    private boolean revenueManaged;
 }

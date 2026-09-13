@@ -3,6 +3,7 @@ import {
     canOpenWorkspaceTab,
     deserializeWorkspacePreference,
     getWorkspaceLaunchItems,
+    getWorkspaceScope,
     mergeWorkspaceStates,
     resolveWorkspaceRoute,
     sanitizeStoredWorkspace,
@@ -39,6 +40,7 @@ describe('workspaceRoutes', () => {
         expect(resolveWorkspaceRoute('/percentage-punch', percentageUser)?.instanceKey).toBe('dashboard');
         expect(resolveWorkspaceRoute('/admin/accounting', user)).toBeNull();
         expect(resolveWorkspaceRoute('/login', user)).toBeNull();
+        expect(resolveWorkspaceRoute('https://external.example/dashboard', user)).toBeNull();
     });
 
     it('canonicalizes the legacy Supply Chain alias into the workspace route', () => {
@@ -125,9 +127,51 @@ describe('workspaceRoutes', () => {
             { tabs: [localTab], activeTabId: 'local', recentlyClosed: [] },
         );
         expect(merged.tabs).toHaveLength(1);
-        expect(merged.tabs[0].id).toBe('remote');
+        expect(merged.tabs[0].id).toBe('local');
         expect(merged.tabs[0].pinned).toBe(true);
-        expect(merged.activeTabId).toBe('remote');
+        expect(merged.activeTabId).toBe('local');
+    });
+
+    it('restores deliberately duplicated URLs from session and server storage by ID', () => {
+        const source = { activeTabId: 'second', tabs: [
+            { ...resolveWorkspaceRoute('/pms?section=reservations', user), id: 'first', pinned: false },
+            { ...resolveWorkspaceRoute('/pms?section=reservations', user), id: 'second', pinned: true },
+        ] };
+        const local = sanitizeStoredWorkspace(serializeWorkspace(source), user);
+        const remote = deserializeWorkspacePreference(serializeWorkspacePreference(source), user);
+        for (const restored of [local, remote]) {
+            expect(restored.tabs.map((tab) => tab.id)).toEqual(['first', 'second']);
+            expect(restored.activeTabId).toBe('second');
+        }
+        expect(mergeWorkspaceStates(remote, local).tabs).toHaveLength(2);
+    });
+
+    it('pairs remote instances once when merging independently restored duplicate tabs', () => {
+        const route = resolveWorkspaceRoute('/pms', user);
+        const merged = mergeWorkspaceStates(
+            { tabs: [{ ...route, id: 'remote', pinned: true }] },
+            { tabs: [{ ...route, id: 'first' }, { ...route, id: 'second' }], activeTabId: 'second' },
+        );
+        expect(merged.tabs.map((tab) => tab.id)).toEqual(['first', 'second']);
+        expect(merged.activeTabId).toBe('second');
+    });
+
+    it('filters launch items and enforces the twelve-tab capacity independently per workspace', () => {
+        expect(getWorkspaceLaunchItems(user, undefined, 'pms').every((tab) => tab.pageKey === 'pms')).toBe(true);
+        expect(getWorkspaceLaunchItems(user, undefined, 'chrono').every((tab) => tab.pageKey !== 'pms')).toBe(true);
+        expect(getWorkspaceScope('/pms?section=rooms')).toBe('pms');
+        expect(getWorkspaceScope('/pms-other')).toBe('chrono');
+        const pinned = Array.from({ length: 12 }, (_, index) => ({
+            ...resolveWorkspaceRoute('/dashboard', user), id: `chrono-${index}`, pinned: true,
+        }));
+        expect(canOpenWorkspaceTab(pinned, 'chrono')).toBe(false);
+        expect(canOpenWorkspaceTab(pinned, 'pms')).toBe(true);
+        const combined = [...pinned, ...Array.from({ length: 12 }, (_, index) => ({
+            ...resolveWorkspaceRoute('/pms', user), id: `pms-${index}`, pinned: true,
+        }))];
+        expect(withWorkspaceTabLimit(combined, 'pms-11')).toHaveLength(24);
+        expect(serializeWorkspacePreference({ tabs: combined, activeTabId: 'pms-11' }).tabs).toHaveLength(24);
+        expect(sanitizeStoredWorkspace(serializeWorkspace({ tabs: combined }), user).tabs).toHaveLength(24);
     });
 
     it('never evicts pinned tabs when the twelve-tab limit is reached', () => {

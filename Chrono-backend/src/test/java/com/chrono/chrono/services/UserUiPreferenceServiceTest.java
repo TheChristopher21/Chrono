@@ -231,6 +231,41 @@ class UserUiPreferenceServiceTest {
     }
 
     @Test
+    void savesAndRestoresPmsGridCoordinatesExactlyWithVersionOneAndOptimisticRevision() throws Exception {
+        Company company = company(10L, Set.of("pms"));
+        User actor = user(1L, "alice", company, "ROLE_USER",
+                Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
+        authenticate(actor);
+        HotelProperty property = new HotelProperty();
+        org.springframework.test.util.ReflectionTestUtils.setField(property, "id", 42L);
+        property.setCompany(company);
+        when(propertyRepository.findByIdAndCompany_Id(42L, 10L)).thenReturn(Optional.of(property));
+        UserUiPreference existing = preference(actor, UserUiPreferenceArea.PMS_DASHBOARD,
+                "property:42", dashboardPayload("property:42", "occupancy"), 4L, property);
+        when(preferenceRepository.findByUser_IdAndTenantKeyAndAreaAndContextKey(
+                1L, "company:10", UserUiPreferenceArea.PMS_DASHBOARD, "property:42"))
+                .thenReturn(Optional.of(existing));
+        when(preferenceRepository.saveAndFlush(existing)).thenAnswer(invocation -> {
+            existing.setRevision(5L);
+            return existing;
+        });
+        ObjectNode payload = dashboardPayload("property:42", "occupancy");
+        ((ObjectNode) payload.path("layouts").path("property:42").path("widgets").path(0))
+                .put("x", 7).put("y", 176).put("w", 5).put("h", 24);
+
+        UiPreferenceResponse saved = service.put(principal, UserUiPreferenceArea.PMS_DASHBOARD,
+                null, 42L, new UiPreferenceUpdateRequest(1, 4L, payload));
+        UiPreferenceResponse restored = service.get(principal, UserUiPreferenceArea.PMS_DASHBOARD, null, 42L);
+
+        assertEquals(payload, objectMapper.readTree(existing.getPayload()));
+        assertEquals(payload, saved.payload());
+        assertEquals(payload, restored.payload());
+        assertEquals(1, restored.schemaVersion());
+        assertEquals(5L, restored.revision());
+        assertEquals("property:42", restored.context());
+    }
+
+    @Test
     void pmsPreferenceRejectsStalePermissionWhenCompanyFeatureIsDisabled() {
         User actor = user(
                 1L,
@@ -352,6 +387,40 @@ class UserUiPreferenceServiceTest {
 
         assertEquals(1, response.payload().path("tabs").size());
         assertEquals("dashboard", response.payload().path("activeTabId").asText());
+    }
+
+    @Test
+    void restoresExplicitCopiesWithoutRestoringPmsTabsForForeignProperties() throws Exception {
+        User actor = user(1L, "alice", company(10L, Set.of("pms")), "ROLE_USER",
+                Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
+        authenticate(actor);
+        ObjectNode payload = objectMapper.createObjectNode();
+        ArrayNode tabs = payload.putArray("tabs");
+        tabs.add(tab("chrono-original", UserPermissionService.PAGE_DASHBOARD, null));
+        tabs.add(tab("chrono-copy", UserPermissionService.PAGE_DASHBOARD, null));
+        tabs.add(tab("pms-original", UserPermissionService.PAGE_PMS, 42L));
+        tabs.add(tab("pms-copy", UserPermissionService.PAGE_PMS, 42L));
+        tabs.add(tab("pms-foreign-copy", UserPermissionService.PAGE_PMS, 77L));
+        payload.put("activeTabId", "pms-copy");
+        UserUiPreference stored = preference(actor, UserUiPreferenceArea.APP_TABS,
+                "workspace", payload, 3L, null);
+        when(preferenceRepository.findByUser_IdAndTenantKeyAndAreaAndContextKey(
+                1L, "company:10", UserUiPreferenceArea.APP_TABS, "workspace"))
+                .thenReturn(Optional.of(stored));
+        when(propertyRepository.findByIdAndCompany_Id(42L, 10L))
+                .thenReturn(Optional.of(new HotelProperty()));
+        when(propertyRepository.findByIdAndCompany_Id(77L, 10L)).thenReturn(Optional.empty());
+
+        UiPreferenceResponse response = service.get(
+                principal, UserUiPreferenceArea.APP_TABS, "workspace", null);
+
+        assertEquals(4, response.payload().path("tabs").size());
+        assertEquals("chrono-original", response.payload().path("tabs").path(0).path("id").asText());
+        assertEquals("chrono-copy", response.payload().path("tabs").path(1).path("id").asText());
+        assertEquals("pms-original", response.payload().path("tabs").path(2).path("id").asText());
+        assertEquals("pms-copy", response.payload().path("tabs").path(3).path("id").asText());
+        assertEquals("pms-copy", response.payload().path("activeTabId").asText());
+        assertEquals(5, objectMapper.readTree(stored.getPayload()).path("tabs").size());
     }
 
     @Test

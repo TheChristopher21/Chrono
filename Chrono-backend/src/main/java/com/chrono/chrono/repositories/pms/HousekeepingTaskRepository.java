@@ -1,6 +1,7 @@
 package com.chrono.chrono.repositories.pms;
 
 import com.chrono.chrono.entities.pms.HousekeepingTask;
+import com.chrono.chrono.entities.pms.HousekeepingWorkType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -13,5 +14,8 @@ public interface HousekeepingTaskRepository extends JpaRepository<HousekeepingTa
             LocalDate serviceDate
     );
     Optional<HousekeepingTask> findByIdAndProperty_Company_Id(Long id, Long companyId);
-    Optional<HousekeepingTask> findByRoom_IdAndServiceDate(Long roomId, LocalDate serviceDate);
+    Optional<HousekeepingTask> findByRoom_IdAndServiceDateAndWorkType(Long roomId, LocalDate serviceDate, HousekeepingWorkType workType);
+    default Optional<HousekeepingTask> findByRoom_IdAndServiceDate(Long roomId, LocalDate serviceDate) {
+        return findByRoom_IdAndServiceDateAndWorkType(roomId, serviceDate, HousekeepingWorkType.CLEAN);
+    }
 }

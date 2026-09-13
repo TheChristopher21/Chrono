@@ -1,9 +1,24 @@
 # PMS commercial and hotel integrations
 
-Chrono PMS includes provider-neutral workflows for direct booking, POS,
-tourism tax, digital room access, accounting export and source-system
-migration. Provider credentials remain outside the PMS and all provider side
-effects use the signed integration outbox.
+Chrono PMS includes workflows for direct booking, POS, tourism tax, digital room
+access, accounting export and source-system migration. Provider credentials stay
+in server configuration or the external gateway; hotel records retain references.
+Provider-neutral integration events use the signed integration outbox. Other
+implemented provider workflows have their own persisted records:
+
+- Stripe uses account-bound payment/refund intents and a signed webhook inbox;
+  reconciliation verifies the provider state before financial posting. See
+  [payment automation](PMS_PAYMENT_AUTOMATION.md).
+- Beds24 uses its concrete API V2 client and a calendar-publication queue, with
+  booking comparison and verified links to existing reservations. See
+  [Beds24](PMS_BEDS24.md).
+- PMS invoices, deposit links, reminders and enabled guest communications use
+  persisted delivery jobs and the SMTP worker. Server acceptance is distinct
+  from recipient delivery. See [billing and SMTP](../pms-billing-automation.md).
+
+Worker switches and hotel opt-ins are documented in
+[runtime configuration](PMS_RUNTIME_CONFIGURATION.md). These implemented paths
+do not imply provider certification or an activated production connection.
 
 ## Direct booking engine
 
@@ -21,12 +36,14 @@ slug is globally unique and therefore cannot cross tenant boundaries.
 New public bookings remain `TENTATIVE` for 15 minutes and receive a one-time
 email verification link. An unguaranteed booking becomes `CONFIRMED` only after
 verification. When a guarantee is required, verification extends the hold for
-24 hours while the certified payment/guarantee workflow completes.
+24 hours while the configured payment/guarantee workflow completes.
 
-The guarantee flag creates a `DEPOSIT_REQUIRED` reservation. Payment capture
-is intentionally not simulated: a live hotel must complete the hosted checkout
-or terminal workflow with its certified payment provider before treating the
-reservation as financially guaranteed.
+The guarantee flag creates a `DEPOSIT_REQUIRED` reservation. A hotel must complete
+and verify the actual payment/guarantee workflow before treating the reservation
+as financially guaranteed. Chrono's Stripe adapter implements hosted card
+checkout and explicit authorization/capture; a physical terminal requires a
+separate provider integration. Neither the guarantee flag nor a browser return
+page is evidence of a completed payment.
 
 ## POS
 

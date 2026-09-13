@@ -142,11 +142,14 @@ export const PAYMENT_METHOD_LABELS = freezeLabels({
     CARD: 'Kartenzahlung',
     BANK_TRANSFER: 'Banküberweisung',
     VOUCHER: 'Gutschein',
+    DIRECT_BILL: 'Firmenkredit',
     OTHER: 'Sonstige Zahlungsart',
 });
 
 export const PAYMENT_STATUS_LABELS = freezeLabels({
     POSTED: 'Verbucht',
+    PENDING: 'Bestätigung ausstehend',
+    FAILED: 'Fehlgeschlagen',
     VOIDED: 'Storniert',
 });
 

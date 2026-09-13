@@ -54,6 +54,9 @@ const operations = {
     roomBlocks: [],
     housekeepingTasks: [{
         id: 40,
+        version: 0,
+        workType: 'CLEAN',
+        workStatus: 'OPEN',
         roomId: 30,
         roomNumber: '101',
         serviceDate: '2026-07-28',
@@ -105,9 +108,11 @@ const renderWorkspace = (overrides = {}) => {
 describe('PmsOperationsWorkspace', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        apiMock.get.mockResolvedValue({ data: { roomTypes: [] } });
-        apiMock.post.mockResolvedValue({ data: operations });
-        apiMock.put.mockResolvedValue({ data: operations });
+        apiMock.get.mockImplementation(async (path) => ({ data: path.includes('/housekeeping/work-orders')
+            ? path.endsWith('/history') ? { items: [], page: 0, size: 10, totalElements: 0, hasNext: false } : operations.housekeepingTasks
+            : path.includes('/operations') ? operations : { roomTypes: [] } }));
+        apiMock.post.mockImplementation(async (path, body) => ({ data: path.endsWith('/housekeeping/work-orders') ? { ...operations.housekeepingTasks[0], ...body } : operations }));
+        apiMock.put.mockImplementation(async (path, body) => ({ data: path.includes('/housekeeping/work-orders') ? { ...operations.housekeepingTasks[0], ...body, version: 1 } : operations }));
     });
 
     it('integrates the guided reception flow into the reservation workspace', async () => {
@@ -197,58 +202,62 @@ describe('PmsOperationsWorkspace', () => {
     it('updates housekeeping state with the complete task payload', async () => {
         renderWorkspace({ section: 'housekeeping' });
 
-        await userEvent.click(screen.getByRole('button', { name: 'Start' }));
+        await userEvent.click(await screen.findByRole('button', { name: /Zimmer 101 · Reinigung/ }));
+        await userEvent.selectOptions(screen.getByLabelText('Arbeitsstatus'), 'IN_PROGRESS');
+        await userEvent.click(screen.getByRole('button', { name: 'Aufgabe speichern' }));
 
         expect(apiMock.put).toHaveBeenCalledWith(
-            '/api/pms/properties/5/housekeeping/40?businessDate=2026-07-28',
+            '/api/pms/properties/5/housekeeping/work-orders/40',
             {
-                type: 'DEPARTURE',
-                status: 'IN_PROGRESS',
+                version: 0,
+                workStatus: 'IN_PROGRESS',
                 priority: 90,
                 estimatedMinutes: 35,
                 notes: null,
-                assignedTo: undefined,
+                assignedTo: null,
             },
         );
     });
 
     it('offers only backend-supported housekeeping task types and sends each exact enum value', async () => {
         renderWorkspace({ section: 'housekeeping' });
-        const planningCard = screen.getByRole('heading', { name: 'Aufgabe einplanen' })
+        const planningCard = screen.getByRole('heading', { name: 'Aufgabe anlegen' })
             .closest('section');
 
-        const typeSelect = within(planningCard).getByLabelText('Auftragsart');
+        const typeSelect = within(planningCard).getByLabelText('Anlass');
         expect(Array.from(typeSelect.options).map((option) => option.value)).toEqual([
+            'MANUAL',
             'ARRIVAL',
             'DEPARTURE',
             'STAYOVER',
             'INSPECTION',
-            'MANUAL',
         ]);
         expect(screen.queryByRole('option', { name: 'Grundreinigung' })).not.toBeInTheDocument();
         expect(screen.queryByRole('option', { name: 'Technik' })).not.toBeInTheDocument();
 
         for (const type of ['ARRIVAL', 'DEPARTURE', 'STAYOVER', 'INSPECTION', 'MANUAL']) {
             await userEvent.selectOptions(within(planningCard).getByLabelText('Zimmer'), '30');
-            await userEvent.selectOptions(within(planningCard).getByLabelText('Auftragsart'), type);
+            await userEvent.selectOptions(within(planningCard).getByLabelText('Anlass'), type);
             await userEvent.click(within(planningCard).getByRole('button', { name: 'Aufgabe speichern' }));
 
             await waitFor(() => expect(apiMock.post).toHaveBeenLastCalledWith(
-                '/api/pms/properties/5/housekeeping?businessDate=2026-07-28',
+                '/api/pms/properties/5/housekeeping/work-orders',
                 expect.objectContaining({
                     roomId: 30,
                     type,
+                    workType: 'CLEAN',
                     priority: 50,
                     estimatedMinutes: 30,
                 }),
             ));
+            await userEvent.click(await screen.findByRole('button', { name: 'Neue Aufgabe' }));
         }
     });
 
-    it('shows hotel terms instead of raw housekeeping and payment enum values', () => {
+    it('shows hotel terms instead of raw housekeeping and payment enum values', async () => {
         const { unmount } = renderWorkspace({ section: 'housekeeping' });
 
-        expect(screen.getAllByText(/Abreisereinigung/).length).toBeGreaterThan(0);
+        expect(await screen.findByRole('button', { name: /Zimmer 101 · Reinigung/ })).toBeInTheDocument();
         expect(screen.queryByText('DEPARTURE')).not.toBeInTheDocument();
 
         unmount();
@@ -517,7 +526,7 @@ describe('PmsOperationsWorkspace', () => {
 
         await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
             '/api/pms/reservations/60/move-room',
-            { roomId: 31, reason: 'Verschoben im fortlaufenden Zimmerplan' },
+            { roomId: 31, effectiveDate: today, reason: 'Verschoben im fortlaufenden Zimmerplan' },
             { params: { businessDate: '2026-07-28' } },
         ));
     });

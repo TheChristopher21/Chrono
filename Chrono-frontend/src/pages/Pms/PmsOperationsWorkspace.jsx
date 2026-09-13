@@ -1,5 +1,13 @@
+import PmsDirectoryPicker, { usePmsOrganizationDirectory } from './PmsDirectoryPicker.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import PmsFinancialActionDialog from './PmsFinancialActionDialog.jsx';
+import PmsStayDetailsPanel from './PmsStayDetailsPanel.jsx';
+import PmsCashierPanel from './PmsCashierPanel.jsx';
+import PmsPaymentRequestsPanel from './PmsPaymentRequestsPanel.jsx';
+import PmsHousekeepingWorkspace from './PmsHousekeepingWorkspace.jsx';
+import PmsAccessCredentialsPanel from './PmsAccessCredentialsPanel.jsx';
+import { currencyStep } from './pmsMoney.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
 import PmsRoomPlan from './PmsRoomPlan.jsx';
 import PmsRatePlansWorkspace from './PmsRatePlansWorkspace.jsx';
@@ -72,6 +80,15 @@ const PmsOperationsWorkspace = ({
     property,
     businessDate,
     canManage,
+    canRefund = canManage,
+    canFinance = canManage,
+    canViewFinance = true,
+    canViewFrontDesk = true,
+    canManageFrontDesk = canManage,
+    canManageRates = false,
+    canManageHousekeeping = false,
+    canViewReports = true,
+    canViewIntegrations = true,
     canManageSettings = false,
     canManageGuestPrivacy = false,
     initialAction,
@@ -89,6 +106,17 @@ const PmsOperationsWorkspace = ({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [refundTarget, setRefundTarget] = useState(null);
+    const [stayTarget, setStayTarget] = useState(null);
+    const [cashShifts, setCashShifts] = useState([]);
+    useEffect(() => {
+        if (!property?.id || !['folios', 'commerce'].includes(section)) return;
+        const controller = new AbortController();
+        api.get(`/api/pms/properties/${property.id}/cash-shifts`, { signal: controller.signal })
+            .then(({ data }) => { if (!controller.signal.aborted) setCashShifts(Array.isArray(data) ? data : []); })
+            .catch(() => { if (!controller.signal.aborted) setCashShifts([]); });
+        return () => controller.abort();
+    }, [property?.id, section, operations]);
     const [availability, setAvailability] = useState(null);
     const [editingReservationId, setEditingReservationId] = useState(null);
     const [editingGuestId, setEditingGuestId] = useState(null);
@@ -146,6 +174,7 @@ const PmsOperationsWorkspace = ({
         description: '',
         quantity: 1,
         unitPrice: '',
+        taxRate: '',
     });
     const [housekeepingForm, setHousekeepingForm] = useState({
         roomId: '',
@@ -197,7 +226,7 @@ const PmsOperationsWorkspace = ({
     }, [guestSearch, property?.id]);
 
     const guests = operations?.guests ?? [];
-    const organizations = operations?.organizations ?? [];
+    const [organizations, rememberOrganization] = usePmsOrganizationDirectory(property?.id, operations?.organizations ?? []);
     const guestOptions = useMemo(() => {
         const byId = new Map([...guests, ...guestMatches].map((guest) => [guest.id, guest]));
         return [...byId.values()].sort((left, right) => (
@@ -225,8 +254,9 @@ const PmsOperationsWorkspace = ({
         }
     }, [filteredRates, reservationForm.ratePlanId]);
 
-    const runMutation = async (method, url, payload, successMessage) => {
-        if (!canManage) return null;
+    const runMutation = async (method, url, payload, successMessage, options = {}) => {
+        const requiresRefund = /\/payments\/\d+\/(?:refund|void)$/.test(url.split('?')[0]);
+        if (busy || !(requiresRefund ? canRefund : canManage)) return null;
         setBusy(true);
         setError('');
         setNotice('');
@@ -241,6 +271,25 @@ const PmsOperationsWorkspace = ({
             return response.data;
         } catch (mutationError) {
             setError(errorMessage(mutationError));
+            if (requiresRefund && options.preserveRefundIntent) {
+                // An HTTP failure may follow a committed provider intent. Load
+                // that same request before allowing the refund dialog to close.
+                try {
+                    const { data } = await api.get('/api/pms/operations', { params: { propertyId: property.id, businessDate } });
+                    const saved = data?.folios?.flatMap((folio) => folio.paymentEntries || [])
+                        .find((payment) => payment.kind === 'REFUND' && payment.refundRequestId === payload?.requestId);
+                    if (saved) { onOperationsChange(data); return data; }
+                    const originalPaymentId = Number(url.split('?')[0].split('/').at(-2));
+                    const originalVisible = data?.propertyId === property.id && Array.isArray(data.folios)
+                        && data.folios.some((folio) => Array.isArray(folio.paymentEntries)
+                            && folio.paymentEntries.some((payment) => payment.id === originalPaymentId && payment.kind === 'PAYMENT'));
+                    // A first 409 can be a rejected amount/closed cash shift.
+                    // Only a successful, same-hotel read containing the original
+                    // payment can establish that this request was not recorded.
+                    if (mutationError?.response?.status === 409 && originalVisible) mutationError.pmsRefundIntentAbsent = true;
+                } catch { /* Retain the original error and the frozen request. */ }
+                throw mutationError;
+            }
             return null;
         } finally {
             setBusy(false);
@@ -467,6 +516,7 @@ const PmsOperationsWorkspace = ({
                 amount: Number(paymentForm.amount),
                 method: paymentForm.method,
                 reference: paymentForm.reference,
+                cashShiftId: paymentForm.cashShiftId ? Number(paymentForm.cashShiftId) : null,
             },
             'Zahlung verbucht.',
         );
@@ -494,12 +544,7 @@ const PmsOperationsWorkspace = ({
         if (result) setCashShiftForm({ openingFloat: '200.00', actualCash: '', notes: '' });
     };
 
-    const refundPayment = (payment) => runMutation(
-        'post',
-        `/api/pms/properties/${property.id}/payments/${payment.id}/refund`,
-        { amount: Math.abs(Number(payment.amount)), reason: 'Rückerstattung Rezeption' },
-        'Zahlung rückerstattet.',
-    );
+    const refundPayment = (payment) => setRefundTarget(payment);
 
     const voidPayment = (payment) => runMutation(
         'post',
@@ -517,6 +562,7 @@ const PmsOperationsWorkspace = ({
                 ...chargeForm,
                 quantity: Number(chargeForm.quantity),
                 unitPrice: Number(chargeForm.unitPrice),
+                taxRate: Number(chargeForm.taxRate),
             },
             'Gastkonto-Position verbucht.',
         );
@@ -687,11 +733,20 @@ const PmsOperationsWorkspace = ({
                 )}
                 {error && <div className="pms-inline-message is-error" role="alert">{error}</div>}
                 {notice && <div className="pms-inline-message is-success" role="status">{notice}</div>}
+                {stayTarget && <PmsStayDetailsPanel key={stayTarget.id} reservation={stayTarget} property={property} operations={operations} canManage={canManage} businessDate={businessDate} onOperationsChange={onOperationsChange} onClose={() => setStayTarget(null)} />}
+                {refundTarget && <PmsFinancialActionDialog propertyId={property.id} payment={refundTarget} canSubmit={canRefund} cashShifts={cashShifts} currency={property.currencyCode} busy={busy} onClose={() => setRefundTarget(null)} onSubmit={(payload) => runMutation('post', `/api/pms/properties/${property.id}/payments/${refundTarget.id}/refund`, payload, 'Erstattungsauftrag verarbeitet. Den Zahlungsstatus im Gastkonto prüfen.', { preserveRefundIntent: true })} />}
 
                 <div className="pms-workspace-body">
                     {activeSection === 'commerce' && (
                         <PmsExtensionsWorkspace
                             canManageSettings={canManageSettings}
+                            canFinance={canFinance}
+                            canRefund={canRefund}
+                            canViewReports={canViewReports}
+                            canViewIntegrations={canViewIntegrations}
+                            canViewFinance={canViewFinance}
+                            canViewFrontDesk={canViewFrontDesk}
+                            canManageFrontDesk={canManageFrontDesk}
                             property={property}
                             operations={operations}
                             businessDate={businessDate}
@@ -701,7 +756,12 @@ const PmsOperationsWorkspace = ({
                     )}
                     {['portfolio', 'groups', 'events', 'organizations', 'invoices', 'audit', 'digital-check-in', 'communications', 'reports', 'integrations'].includes(activeSection) && (
                         <PmsAdvancedWorkspace
+                            canManageRates={canManageRates}
                             canManageSettings={canManageSettings}
+                            canFinance={canFinance}
+                            canRefund={canRefund}
+                            canViewReports={canViewReports}
+                            canViewIntegrations={canViewIntegrations}
                             section={activeSection}
                             property={property}
                             operations={operations}
@@ -953,6 +1013,7 @@ const PmsOperationsWorkspace = ({
                                                 {['OFFERED', 'TENTATIVE', 'WAITLISTED', 'CONFIRMED'].includes(reservation.status) && (
                                                     <button type="button" onClick={() => editReservation(reservation)}>Bearbeiten</button>
                                                 )}
+                                                <button type="button" onClick={() => setStayTarget(reservation)}>Aufenthalt & Mitreisende</button>
                                                 {['OFFERED', 'TENTATIVE', 'WAITLISTED'].includes(reservation.status) && (
                                                     <button type="button" onClick={() => confirmReservation(reservation)} disabled={!canManage || busy}>Bestätigen</button>
                                                 )}
@@ -980,9 +1041,10 @@ const PmsOperationsWorkspace = ({
                     )}
 
                     {activeSection === 'room-plan' && (
-                        <PmsRoomPlan property={property} canManage={canManage} businessDate={businessDate}
-                            refreshKey={operations} onSelectReservation={editReservation} onOperationsChange={onOperationsChange} />
+                        <PmsRoomPlan property={property} canManage={canManage} canManageHousekeeping={canManageHousekeeping} businessDate={businessDate}
+                            refreshKey={operations} onSelectReservation={setStayTarget} onOperationsChange={onOperationsChange} />
                     )}
+                    {activeSection === 'reservations' && canViewFrontDesk && <PmsAccessCredentialsPanel key={property.id} property={property} operations={operations} businessDate={businessDate} canManage={canManageFrontDesk} />}
                     {activeSection === 'guests' && (
                         <div className="pms-operations-layout">
                             <section className="pms-work-card">
@@ -997,7 +1059,7 @@ const PmsOperationsWorkspace = ({
                                     <label>Geburtsdatum<input type="date" value={guestForm.dateOfBirth} onChange={(event) => setGuestForm({ ...guestForm, dateOfBirth: event.target.value })} /></label>
                                     <label>Nationalität (ISO-Ländercode, z. B. CH)<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={guestForm.nationalityCode} onChange={(event) => setGuestForm({ ...guestForm, nationalityCode: event.target.value.toUpperCase() })} /></label>
                                     <label>Sprache (Sprachcode, z. B. de)<input maxLength="8" value={guestForm.languageCode} onChange={(event) => setGuestForm({ ...guestForm, languageCode: event.target.value })} /></label>
-                                    <label>Firma / Rechnungskartei<select value={guestForm.organizationId} onChange={(event) => setGuestForm({ ...guestForm, organizationId: event.target.value })}><option value="">Privat</option>{organizations.filter((entry) => entry.active).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode ? `${entry.referenceCode} · ` : ''}{entry.name}</option>)}</select></label>
+                                    <PmsDirectoryPicker propertyId={property?.id} label="Firma / Rechnungskartei" value={guestForm.organizationId} initialOptions={organizations} onResolve={rememberOrganization} placeholder="Privat" onChange={(value) => setGuestForm((current) => ({ ...current, organizationId: value }))} />
                                     <label className="is-wide">Privatadresse<input value={guestForm.addressLine1} onChange={(event) => setGuestForm({ ...guestForm, addressLine1: event.target.value })} /></label>
                                     <label>PLZ<input value={guestForm.postalCode} onChange={(event) => setGuestForm({ ...guestForm, postalCode: event.target.value })} /></label>
                                     <label>Ort<input value={guestForm.city} onChange={(event) => setGuestForm({ ...guestForm, city: event.target.value })} /></label>
@@ -1198,47 +1260,11 @@ const PmsOperationsWorkspace = ({
 
                     {activeSection === 'rates' && (
                         <PmsRatePlansWorkspace property={property} operations={operations} businessDate={businessDate}
-                            canManage={canManageSettings} onOperationsChange={onOperationsChange} />
+                            canManage={canManage} isMaster={canManageSettings} onOperationsChange={onOperationsChange} />
                     )}
                     {activeSection === 'housekeeping' && (
                         <div className="pms-operations-layout pms-housekeeping-layout">
-                            <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Housekeeping</span><h3>Aufgaben am {formatPmsDate(businessDate)}</h3></div></div>
-                                <div className="pms-housekeeping-board">
-                                    {tasks.length ? tasks.map((task) => (
-                                        <article key={task.id}>
-                                            <div>
-                                                <span>Zimmer {task.roomNumber}</span>
-                                                <strong>{getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, task.status)}</strong>
-                                                <small>
-                                                    {getPmsEnumLabel(HOUSEKEEPING_TASK_TYPE_LABELS, task.type)}
-                                                    {' · '}{task.estimatedMinutes} Min.
-                                                    {' · '}{housekeepingPriorityLabel(task.priority)} ({task.priority}/100)
-                                                    {task.assignedTo ? ` · ${task.assignedTo}` : ''}
-                                                </small>
-                                            </div>
-                                            <div className="pms-record-actions">
-                                                <button type="button" onClick={() => updateTask(task, 'IN_PROGRESS')} disabled={!canManage || busy}>Start</button>
-                                                <button type="button" onClick={() => updateTask(task, 'INSPECTION')} disabled={!canManage || busy}>Kontrolle</button>
-                                                <button type="button" className="is-primary" onClick={() => updateTask(task, 'CLEAN')} disabled={!canManage || busy}>Sauber</button>
-                                            </div>
-                                        </article>
-                                    )) : <p className="pms-workspace-placeholder">Für diesen Betriebstag sind keine Housekeeping-Aufgaben offen.</p>}
-                                </div>
-                            </section>
-                            <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Planung</span><h3>Aufgabe einplanen</h3></div></div>
-                                <form className="pms-form-grid" onSubmit={submitHousekeepingTask}>
-                                    <label>Zimmer<select value={housekeepingForm.roomId} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, roomId: event.target.value })} required><option value="">Zimmer wählen</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.number} · {room.roomTypeName}</option>)}</select></label>
-                                    <label>Datum<input type="date" value={housekeepingForm.serviceDate} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, serviceDate: event.target.value })} required /></label>
-                                    <label>Auftragsart<select value={housekeepingForm.type} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, type: event.target.value })}>{getPmsEnumOptions(HOUSEKEEPING_TASK_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
-                                    <label>Zuständig<input value={housekeepingForm.assignedTo} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, assignedTo: event.target.value })} /></label>
-                                    <label>Dringlichkeit (0–100)<input type="number" min="0" max="100" value={housekeepingForm.priority} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, priority: event.target.value })} /></label>
-                                    <label>Minuten<input type="number" min="1" max="1440" value={housekeepingForm.estimatedMinutes} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, estimatedMinutes: event.target.value })} /></label>
-                                    <label className="is-wide">Notizen<textarea value={housekeepingForm.notes} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, notes: event.target.value })} /></label>
-                                    <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Aufgabe speichern</button></div>
-                                </form>
-                            </section>
+                            <PmsHousekeepingWorkspace key={property.id} property={property} rooms={rooms} businessDate={businessDate} canManage={canManage} onChanged={async () => { const { data } = await api.get('/api/pms/operations', { params: { propertyId: property.id, businessDate } }); onOperationsChange?.(data); }} />
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Technik</span><h3>Wartung & Zimmerverfügbarkeit</h3></div></div>
                                 <form className="pms-form-grid" onSubmit={submitMaintenance}>
@@ -1280,35 +1306,18 @@ const PmsOperationsWorkspace = ({
 
                     {activeSection === 'folios' && (
                         <div className="pms-operations-layout">
+                            <PmsCashierPanel property={property} shifts={cashShifts} canManage={canManage} onOperationsChange={onOperationsChange} />
+                            <PmsPaymentRequestsPanel key={property.id} property={property} folios={folios} canManage={canManage} onChanged={async () => { const { data } = await api.get('/api/pms/operations', { params: { propertyId: property.id, businessDate } }); onOperationsChange?.(data); }} />
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Kasse</span><h3>{operations?.cashShift ? 'Schicht geöffnet' : 'Schicht öffnen'}</h3></div></div>
-                                {operations?.cashShift ? (
-                                    <form className="pms-form-grid" onSubmit={closeCashShift}>
-                                        <p className="is-wide">
-                                            Geöffnet von {operations.cashShift.openedBy} · Anfang {money(operations.cashShift.openingFloat, currency)}
-                                            {' · '}Barbewegungen {money(operations.cashShift.cashMovements, currency)}
-                                            {' · '}Soll {money(operations.cashShift.expectedCash, currency)}
-                                        </p>
-                                        <label>Ist-Bargeld<input type="number" min="0" step="0.01" value={cashShiftForm.actualCash} onChange={(event) => setCashShiftForm({ ...cashShiftForm, actualCash: event.target.value })} required /></label>
-                                        <label>Notiz<input value={cashShiftForm.notes} onChange={(event) => setCashShiftForm({ ...cashShiftForm, notes: event.target.value })} /></label>
-                                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Kassenschicht abschliessen</button></div>
-                                    </form>
-                                ) : (
-                                    <form className="pms-form-grid" onSubmit={openCashShift}>
-                                        <label>Anfangsbestand<input type="number" min="0" step="0.01" value={cashShiftForm.openingFloat} onChange={(event) => setCashShiftForm({ ...cashShiftForm, openingFloat: event.target.value })} required /></label>
-                                        <label>Notiz<input value={cashShiftForm.notes} onChange={(event) => setCashShiftForm({ ...cashShiftForm, notes: event.target.value })} /></label>
-                                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Kasse öffnen</button></div>
-                                    </form>
-                                )}
-                                <hr />
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Abrechnung</span><h3>Zahlung erfassen</h3></div></div>
                                 <form className="pms-form-grid" onSubmit={submitPayment}>
                                     <label className="is-wide">Gastkonto (Folio)<select value={paymentForm.folioId} onChange={(event) => {
                                         const folio = folios.find((entry) => String(entry.id) === event.target.value);
                                         setPaymentForm({ ...paymentForm, folioId: event.target.value, amount: folio?.balance ?? '' });
                                     }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && Number(folio.balance) > 0).map((folio) => <option key={folio.id} value={folio.id}>{folio.confirmationCode} · {folio.guestName} · {money(folio.balance, folio.currencyCode)}</option>)}</select></label>
-                                    <label>Betrag<input type="number" min="0.01" step="0.01" value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} required /></label>
-                                    <label>Zahlungsart<select value={paymentForm.method} onChange={(event) => setPaymentForm({ ...paymentForm, method: event.target.value })}>{getPmsEnumOptions(PAYMENT_METHOD_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
+                                    <label>Betrag<input type="number" min={currencyStep(property.currencyCode)} step={currencyStep(property.currencyCode)} value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} required /></label>
+                                    <label>Zahlungsart<select value={paymentForm.method} onChange={(event) => setPaymentForm({ ...paymentForm, method: event.target.value })}>{getPmsEnumOptions(PAYMENT_METHOD_LABELS).filter(({ value }) => value !== 'DIRECT_BILL').map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
+                                    {paymentForm.method === 'CASH' && <label>Kasse<select value={paymentForm.cashShiftId || ''} onChange={(event) => setPaymentForm({ ...paymentForm, cashShiftId: event.target.value })} required><option value="">Kasse auswählen</option>{cashShifts.filter((shift) => shift.status === 'OPEN').map((shift) => <option key={shift.id} value={shift.id}>{shift.registerCode} · {shift.openedBy}</option>)}</select></label>}
                                     <label className="is-wide">Referenz<input value={paymentForm.reference} onChange={(event) => setPaymentForm({ ...paymentForm, reference: event.target.value })} /></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Zahlung verbuchen</button></div>
                                 </form>
@@ -1320,7 +1329,8 @@ const PmsOperationsWorkspace = ({
                                     <label>Art<select value={chargeForm.type} onChange={(event) => setChargeForm({ ...chargeForm, type: event.target.value })}>{getPmsEnumOptions(FOLIO_ITEM_TYPE_LABELS).filter(({ value }) => value !== 'ROOM').map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                                     <label className="is-wide">Beschreibung<input value={chargeForm.description} onChange={(event) => setChargeForm({ ...chargeForm, description: event.target.value })} required /></label>
                                     <label>Menge<input type="number" min="0.01" step="0.01" value={chargeForm.quantity} onChange={(event) => setChargeForm({ ...chargeForm, quantity: event.target.value })} required /></label>
-                                    <label>Einzelpreis<input type="number" step="0.01" value={chargeForm.unitPrice} onChange={(event) => setChargeForm({ ...chargeForm, unitPrice: event.target.value })} required /></label>
+                                    <label>Einzelpreis<input type="number" step={currencyStep(property.currencyCode)} value={chargeForm.unitPrice} onChange={(event) => setChargeForm({ ...chargeForm, unitPrice: event.target.value })} required /></label>
+                                    <label>Enthaltene MwSt. (%)<input type="number" min="0" max="100" step="0.0001" value={chargeForm.taxRate ?? ''} onChange={(event) => setChargeForm({ ...chargeForm, taxRate: event.target.value })} placeholder="0 für steuerfreie Leistungen" required /></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Position verbuchen</button></div>
                                 </form>
                                 <hr />
@@ -1332,7 +1342,7 @@ const PmsOperationsWorkspace = ({
                                 </form>
                                 <form className="pms-form-grid" onSubmit={submitMoveFolioItem}>
                                     <label>Ausgangskonto<select value={moveItemForm.sourceFolioId} onChange={(event) => setMoveItemForm({ sourceFolioId: event.target.value, targetFolioId: '', itemId: '' })} required><option value="">Ausgangskonto wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && folio.items.length > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode}</option>)}</select></label>
-                                    <label>Position<select value={moveItemForm.itemId} onChange={(event) => setMoveItemForm({ ...moveItemForm, itemId: event.target.value })} required><option value="">Position wählen</option>{folios.find((folio) => String(folio.id) === String(moveItemForm.sourceFolioId))?.items.map((item) => <option key={item.id} value={item.id}>{item.description} · {money(item.totalAmount, currency)}</option>)}</select></label>
+                                    <label>Position<select value={moveItemForm.itemId} onChange={(event) => setMoveItemForm({ ...moveItemForm, itemId: event.target.value })} required><option value="">Position wählen</option>{folios.find((folio) => String(folio.id) === String(moveItemForm.sourceFolioId))?.items.filter((item) => !item.invoiced).map((item) => <option key={item.id} value={item.id}>{item.description} · {money(item.totalAmount, currency)}</option>)}</select></label>
                                     <label className="is-wide">Zielkonto<select value={moveItemForm.targetFolioId} onChange={(event) => setMoveItemForm({ ...moveItemForm, targetFolioId: event.target.value })} required><option value="">Zielkonto wählen</option>{folios.filter((folio) => {
                                         const source = folios.find((entry) => String(entry.id) === String(moveItemForm.sourceFolioId));
                                         return source && folio.status === 'OPEN' && folio.id !== source.id && folio.reservationId === source.reservationId;
@@ -1355,10 +1365,11 @@ const PmsOperationsWorkspace = ({
                                                         {' · '}{getPmsEnumLabel(PAYMENT_METHOD_LABELS, payment.method)}
                                                         {' · '}{money(payment.amount, folio.currencyCode)}
                                                         {' · '}{getPmsEnumLabel(PAYMENT_STATUS_LABELS, payment.status)}
+                                                        {payment.kind === 'REFUND' && payment.status === 'PENDING' && payment.refundRequestId && <button type="button" disabled={!canRefund || busy} onClick={() => runMutation('post', `/api/pms/properties/${property.id}/payments/${payment.originalPaymentId}/refund`, { amount: Math.abs(Number(payment.amount)), reason: payment.reason || 'Bestehenden Erstattungsauftrag abgleichen', requestId: payment.refundRequestId, cashShiftId: payment.cashShiftId }, 'Erstattungsstatus mit dem Zahlungsanbieter abgeglichen.')}>Erstattungsstatus prüfen</button>}
                                                         {payment.status === 'POSTED' && (
                                                             <span className="pms-record-actions">
-                                                                {payment.kind === 'PAYMENT' && <button type="button" onClick={() => refundPayment(payment)} disabled={!canManage || busy}>Erstatten</button>}
-                                                                <button type="button" onClick={() => voidPayment(payment)} disabled={!canManage || busy}>Stornieren</button>
+                                                                {payment.kind === 'PAYMENT' && <button type="button" onClick={() => refundPayment(payment)} disabled={!canRefund || busy || folio.paymentEntries.some((entry) => entry.kind === 'REFUND' && entry.status === 'PENDING' && entry.originalPaymentId === payment.id)}>Erstatten</button>}
+                                                                <button type="button" onClick={() => voidPayment(payment)} disabled={!canRefund || busy || folio.paymentEntries.some((entry) => entry.kind === 'REFUND' && entry.status === 'PENDING' && entry.originalPaymentId === payment.id)}>Stornieren</button>
                                                             </span>
                                                         )}
                                                     </small>

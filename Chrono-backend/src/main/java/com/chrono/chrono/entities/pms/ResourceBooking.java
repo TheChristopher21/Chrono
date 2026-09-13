@@ -41,6 +41,11 @@ public class ResourceBooking {
     @Column(name = "end_at", nullable = false)
     private LocalDateTime endAt;
 
+    @Column(name="occupied_from",nullable=false)
+    private LocalDateTime occupiedFrom;
+    @Column(name="occupied_until",nullable=false)
+    private LocalDateTime occupiedUntil;
+
     @Column(nullable = false)
     private int attendees = 1;
 
@@ -48,8 +53,7 @@ public class ResourceBooking {
     @Column(nullable = false, length = 20)
     private ResourceBookingStatus status = ResourceBookingStatus.CONFIRMED;
 
-    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @Column(name = "total_amount", nullable = false, precision = 19, scale = 4) private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(length = 2000)
     private String notes;
@@ -62,6 +66,8 @@ public class ResourceBooking {
 
     @PrePersist
     void prePersist() {
+        if(occupiedFrom==null) occupiedFrom=startAt;
+        if(occupiedUntil==null) occupiedUntil=endAt;
         createdAt = LocalDateTime.now();
     }
 }

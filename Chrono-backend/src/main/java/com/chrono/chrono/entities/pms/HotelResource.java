@@ -36,8 +36,7 @@ public class HotelResource {
     @Column(nullable = false)
     private int capacity = 1;
 
-    @Column(name = "hourly_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal hourlyRate = BigDecimal.ZERO;
+    @Column(name = "hourly_rate", nullable = false, precision = 19, scale = 4) private BigDecimal hourlyRate = BigDecimal.ZERO;
 
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;

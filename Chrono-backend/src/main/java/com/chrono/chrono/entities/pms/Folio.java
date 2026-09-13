@@ -19,6 +19,13 @@ public class Folio {
     @JoinColumn(name = "reservation_id", nullable = false)
     private Reservation reservation;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_booking_id", unique = true)
+    private GroupBooking groupBooking;
+
+    @Column(name = "group_master", nullable = false)
+    private boolean groupMaster;
+
     @Column(nullable = false, length = 120)
     private String label = "Hauptkonto";
 

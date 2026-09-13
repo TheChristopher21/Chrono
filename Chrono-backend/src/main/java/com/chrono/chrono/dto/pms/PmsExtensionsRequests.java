@@ -43,8 +43,15 @@ public final class PmsExtensionsRequests {
             @Size(max = 60) String tableReference,
             @NotNull LocalDate serviceDate,
             PaymentMethod paymentMethod,
-            @NotEmpty @Size(max = 100) List<@Valid PosLine> lines
-    ) {}
+            @NotEmpty @Size(max = 100) List<@Valid PosLine> lines,
+            Long cashShiftId,
+            @Size(max = 190) String paymentReference
+    ) {
+        public CreatePosTicket(Long folioId, String outletCode, String tableReference,
+                               LocalDate serviceDate, PaymentMethod paymentMethod, List<PosLine> lines) {
+            this(folioId, outletCode, tableReference, serviceDate, paymentMethod, lines, null, null);
+        }
+    }
 
     public record IssueAccessCredential(
             @NotNull Long reservationId,

@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
+@org.springframework.context.annotation.Import({PmsAccountingSettingsService.class,PmsHistoryService.class})
 public class PmsExtensionsService {
     private final HotelPropertyRepository propertyRepository;
     private final BookingEngineSettingsRepository bookingSettingsRepository;
@@ -41,9 +42,15 @@ public class PmsExtensionsService {
     private final FolioRepository folioRepository;
     private final FolioItemRepository folioItemRepository;
     private final PaymentRepository paymentRepository;
+    private final PmsReceivableSettlementRepository receivableSettlementRepository;
     private final ExternalBookingReferenceRepository externalBookingReferenceRepository;
     private final IntegrationOutboxRepository outboxRepository;
     private final PmsOperationsService operationsService;
+    private final PmsFinancialPeriodService financialPeriodService;
+    private final PmsCashService cashService;
+    private final PmsGroupRoutingService groupRoutingService;
+    private final PmsHistoryService historyService;
+    private final PmsAccountingSettingsService accountingSettings;
     private final PmsAuditWriter auditWriter;
     private final ApplicationEventPublisher eventPublisher;
     private final Duration verificationTtl;
@@ -65,14 +72,21 @@ public class PmsExtensionsService {
             FolioRepository folioRepository,
             FolioItemRepository folioItemRepository,
             PaymentRepository paymentRepository,
+            PmsReceivableSettlementRepository receivableSettlementRepository,
             ExternalBookingReferenceRepository externalBookingReferenceRepository,
             IntegrationOutboxRepository outboxRepository,
             PmsOperationsService operationsService,
+            PmsFinancialPeriodService financialPeriodService,
+            PmsCashService cashService,
+            PmsGroupRoutingService groupRoutingService,
+            PmsHistoryService historyService,
             PmsAuditWriter auditWriter,
             ApplicationEventPublisher eventPublisher,
             @Value("${app.pms.booking-verification.ttl:PT15M}") Duration verificationTtl,
-            @Value("${app.pms.public-booking.max-stay-nights:30}") int publicMaxStayNights) {
+            @Value("${app.pms.public-booking.max-stay-nights:30}") int publicMaxStayNights,
+            PmsAccountingSettingsService accountingSettings) {
         this.propertyRepository = propertyRepository;
+        this.accountingSettings = accountingSettings;
         this.bookingSettingsRepository = bookingSettingsRepository;
         this.tourismTaxRuleRepository = tourismTaxRuleRepository;
         this.tourismTaxPostingRepository = tourismTaxPostingRepository;
@@ -87,9 +101,14 @@ public class PmsExtensionsService {
         this.folioRepository = folioRepository;
         this.folioItemRepository = folioItemRepository;
         this.paymentRepository = paymentRepository;
+        this.receivableSettlementRepository = receivableSettlementRepository;
         this.externalBookingReferenceRepository = externalBookingReferenceRepository;
         this.outboxRepository = outboxRepository;
         this.operationsService = operationsService;
+        this.financialPeriodService = financialPeriodService;
+        this.cashService = cashService;
+        this.groupRoutingService = groupRoutingService;
+        this.historyService = historyService;
         this.auditWriter = auditWriter;
         this.eventPublisher = eventPublisher;
         this.verificationTtl = verificationTtl;
@@ -136,8 +155,8 @@ public class PmsExtensionsService {
         rule.setProperty(property);
         rule.setEnabled(request.enabled());
         rule.setName(required(request.name()));
-        rule.setAdultRate(money(request.adultRate()));
-        rule.setChildRate(money(request.childRate()));
+        rule.setAdultRate(PmsMoney.require(request.adultRate(), property.getCurrencyCode()));
+        rule.setChildRate(PmsMoney.require(request.childRate(), property.getCurrencyCode()));
         rule.setChildFreeUnder(request.childFreeUnder());
         rule.setMaximumNights(request.maximumNights());
         tourismTaxRuleRepository.save(rule);
@@ -150,11 +169,13 @@ public class PmsExtensionsService {
     public PmsExtensionsResponse postTourismTax(Company company, Long propertyId,
                                                 PmsExtensionsRequests.PostTourismTax request,
                                                 String username) {
-        HotelProperty property = requireProperty(company, propertyId);
+        HotelProperty property = propertyRepository.findByIdAndCompany_IdForUpdate(propertyId, company.getId())
+                .orElseThrow(() -> notFound("Hotelbetrieb nicht gefunden."));
         TourismTaxRule rule = tourismTaxRuleRepository.findByProperty_Id(propertyId)
                 .filter(TourismTaxRule::isEnabled)
                 .orElseThrow(() -> conflict("Die Kurtaxe ist für dieses Hotel nicht aktiviert."));
         Reservation reservation = requireReservation(company, propertyId, request.reservationId());
+        financialPeriodService.assertPostingOpen(property, reservation.getArrivalDate());
         if (tourismTaxPostingRepository.existsByReservation_Id(reservation.getId())) {
             throw conflict("Die Kurtaxe wurde für diese Reservierung bereits verbucht.");
         }
@@ -166,7 +187,7 @@ public class PmsExtensionsService {
                 rule.getMaximumNights() == null ? stayNights : rule.getMaximumNights());
         BigDecimal perNight = rule.getAdultRate().multiply(BigDecimal.valueOf(reservation.getAdults()))
                 .add(rule.getChildRate().multiply(BigDecimal.valueOf(request.chargeableChildren())));
-        BigDecimal amount = money(perNight.multiply(BigDecimal.valueOf(nights)));
+        BigDecimal amount = PmsMoney.round(perNight.multiply(BigDecimal.valueOf(nights)), property.getCurrencyCode());
         if (amount.signum() <= 0) {
             throw badRequest("Der berechnete Kurtaxenbetrag ist null.");
         }
@@ -175,12 +196,15 @@ public class PmsExtensionsService {
                 .orElseThrow(() -> conflict("Für die Kurtaxe wird ein offenes Gastkonto benötigt."));
         FolioItem item = new FolioItem();
         item.setFolio(folio);
+        item.setSourceReservation(reservation);
         item.setServiceDate(reservation.getArrivalDate());
         item.setType(FolioItemType.TAX);
         item.setDescription(rule.getName() + " · " + nights + " Nächte");
         item.setQuantity(BigDecimal.ONE);
         item.setUnitPrice(amount);
         item.setTotalAmount(amount);
+        item.setTaxRate(BigDecimal.ZERO);
+        item.setTaxIncluded(true);
         folioItemRepository.save(item);
         TourismTaxPosting posting = new TourismTaxPosting();
         posting.setProperty(property);
@@ -190,6 +214,7 @@ public class PmsExtensionsService {
         posting.setAmount(amount);
         posting.setNights(nights);
         posting.setPostedBy(actor(username));
+        groupRoutingService.route(reservation);
         tourismTaxPostingRepository.save(posting);
         auditWriter.append(property, "tourism_tax.posted", "reservation",
                 reservation.getId().toString(), "{\"amount\":" + amount.toPlainString() + "}");
@@ -200,7 +225,9 @@ public class PmsExtensionsService {
     public PmsExtensionsResponse createPosTicket(Company company, Long propertyId,
                                                   PmsExtensionsRequests.CreatePosTicket request,
                                                   String username) {
-        HotelProperty property = requireProperty(company, propertyId);
+        HotelProperty property = propertyRepository.findByIdAndCompany_IdForUpdate(propertyId, company.getId())
+                .orElseThrow(() -> notFound("Hotelbetrieb nicht gefunden."));
+        financialPeriodService.assertPostingOpen(property, request.serviceDate());
         Folio folio = null;
         if (request.folioId() != null) {
             folio = folioRepository.findByIdAndReservation_Property_Company_Id(request.folioId(), company.getId())
@@ -209,6 +236,9 @@ public class PmsExtensionsService {
                     .orElseThrow(() -> notFound("Offenes Gastkonto nicht gefunden."));
         } else if (request.paymentMethod() == null) {
             throw badRequest("Ein direkt bezahlter POS-Beleg benötigt eine Zahlungsart.");
+        }
+        if (folio == null && request.paymentMethod() == PaymentMethod.DIRECT_BILL) {
+            throw badRequest("Firmenkredit wird über eine ausgestellte Rechnung und ein freigegebenes Kreditkonto gebucht.");
         }
         PosTicket ticket = new PosTicket();
         ticket.setProperty(property);
@@ -220,6 +250,12 @@ public class PmsExtensionsService {
         ticket.setCurrencyCode(property.getCurrencyCode());
         ticket.setCreatedBy(actor(username));
         ticket.setPaymentMethod(folio == null ? request.paymentMethod() : null);
+        if (folio == null && request.paymentMethod() == PaymentMethod.CASH) {
+            ticket.setCashShift(cashService.requireOpenShift(property, request.cashShiftId(), username));
+        }
+        if (folio == null && request.paymentMethod() == PaymentMethod.CARD) {
+            ticket.setPaymentReference(required(request.paymentReference()));
+        }
 
         BigDecimal netTotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;
@@ -228,10 +264,10 @@ public class PmsExtensionsService {
             line.setTicket(ticket);
             line.setDescription(required(input.description()));
             line.setQuantity(input.quantity().setScale(2, RoundingMode.HALF_UP));
-            line.setUnitPrice(money(input.unitPrice()));
-            line.setTaxRate(input.taxRate().setScale(2, RoundingMode.HALF_UP));
-            BigDecimal net = money(line.getQuantity().multiply(line.getUnitPrice()));
-            BigDecimal tax = money(net.multiply(line.getTaxRate()).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            line.setUnitPrice(PmsMoney.require(input.unitPrice(), property.getCurrencyCode()));
+            line.setTaxRate(input.taxRate().setScale(4, RoundingMode.HALF_UP));
+            BigDecimal net = PmsMoney.round(line.getQuantity().multiply(line.getUnitPrice()), property.getCurrencyCode());
+            BigDecimal tax = PmsMoney.round(net.multiply(line.getTaxRate()).movePointLeft(2), property.getCurrencyCode());
             line.setNetAmount(net);
             line.setTaxAmount(tax);
             line.setGrossAmount(net.add(tax));
@@ -239,9 +275,9 @@ public class PmsExtensionsService {
             netTotal = netTotal.add(net);
             taxTotal = taxTotal.add(tax);
         }
-        ticket.setNetAmount(money(netTotal));
-        ticket.setTaxAmount(money(taxTotal));
-        ticket.setGrossAmount(money(netTotal.add(taxTotal)));
+        ticket.setNetAmount(PmsMoney.round(netTotal, property.getCurrencyCode()));
+        ticket.setTaxAmount(PmsMoney.round(taxTotal, property.getCurrencyCode()));
+        ticket.setGrossAmount(PmsMoney.round(netTotal.add(taxTotal), property.getCurrencyCode()));
         ticket.setStatus(PosTicketStatus.SETTLED);
         ticket.setSettledAt(LocalDateTime.now());
         posTicketRepository.save(ticket);
@@ -250,6 +286,7 @@ public class PmsExtensionsService {
             for (PosTicketLine line : ticket.getLines()) {
                 FolioItem item = new FolioItem();
                 item.setFolio(folio);
+                item.setSourceReservation(folio.getReservation());
                 item.setServiceDate(request.serviceDate());
                 item.setType(FolioItemType.SERVICE);
                 String description = "POS " + ticket.getOutletCode() + " · " + ticket.getTicketNumber() + " · " + line.getDescription();
@@ -261,6 +298,7 @@ public class PmsExtensionsService {
                 item.setTaxIncluded(true);
                 folioItemRepository.save(item);
             }
+            groupRoutingService.route(folio.getReservation());
         }
         auditWriter.append(property, "pos.ticket_settled", "pos_ticket", ticket.getId().toString(),
                 "{\"gross\":" + ticket.getGrossAmount().toPlainString() + "}");
@@ -468,7 +506,9 @@ public class PmsExtensionsService {
     public PmsExtensionsResponse importMigration(Company company, Long propertyId,
                                                  PmsExtensionsRequests.MigrationImport request,
                                                  String username) {
-        HotelProperty property = requireProperty(company, propertyId);
+        HotelProperty property = propertyRepository.findByIdAndCompany_IdForUpdate(propertyId, company.getId())
+                .orElseThrow(() -> notFound("Hotelbetrieb nicht gefunden."));
+        request.reservations().forEach(row -> financialPeriodService.assertPostingOpen(property, row.arrivalDate()));
         String key = required(request.idempotencyKey());
         if (migrationBatchRepository.findByProperty_IdAndIdempotencyKey(propertyId, key).isPresent()) {
             return response(property);
@@ -509,8 +549,8 @@ public class PmsExtensionsService {
             reference.setChannelCode(sourceCode);
             reference.setExternalId(required(row.externalReference()));
             externalBookingReferenceRepository.save(reference);
-            if (reservation.getTotalAmount().compareTo(money(row.expectedGrossAmount())) != 0) {
-                differences.add(row.externalReference() + ": erwartet " + money(row.expectedGrossAmount())
+            if (reservation.getTotalAmount().compareTo(PmsMoney.require(row.expectedGrossAmount(), property.getCurrencyCode())) != 0) {
+                differences.add(row.externalReference() + ": erwartet " + PmsMoney.require(row.expectedGrossAmount(), property.getCurrencyCode())
                         + ", berechnet " + reservation.getTotalAmount());
             }
             Folio folio = folioRepository.findFirstByReservation_IdOrderByIdAsc(reservation.getId()).orElseThrow();
@@ -520,7 +560,8 @@ public class PmsExtensionsService {
                 }
                 Payment payment = new Payment();
                 payment.setFolio(folio);
-                payment.setAmount(money(row.depositAmount()));
+                payment.setAmount(PmsMoney.require(row.depositAmount(), property.getCurrencyCode()));
+                payment.setPostingDate(financialPeriodService.currentBusinessDate(property));
                 payment.setMethod(PaymentMethod.BANK_TRANSFER);
                 payment.setStatus(PaymentStatus.POSTED);
                 payment.setKind(PaymentKind.PAYMENT);
@@ -529,7 +570,7 @@ public class PmsExtensionsService {
                 paymentRepository.save(payment);
                 payments++;
             }
-            openingBalance = openingBalance.add(money(row.expectedGrossAmount()).subtract(money(row.depositAmount())));
+            openingBalance = openingBalance.add(PmsMoney.require(row.expectedGrossAmount(), property.getCurrencyCode()).subtract(PmsMoney.require(row.depositAmount(), property.getCurrencyCode())));
         }
         MigrationBatch batch = new MigrationBatch();
         batch.setProperty(property);
@@ -538,7 +579,7 @@ public class PmsExtensionsService {
         batch.setImportedGuests(guests);
         batch.setImportedReservations(reservations);
         batch.setImportedPayments(payments);
-        batch.setTotalOpeningBalance(money(openingBalance));
+        batch.setTotalOpeningBalance(PmsMoney.round(openingBalance, property.getCurrencyCode()));
         batch.setStatus(differences.isEmpty() ? MigrationBatchStatus.COMPLETED
                 : MigrationBatchStatus.RECONCILIATION_REQUIRED);
         batch.setReconciliationMessage(differences.isEmpty() ? "Counts und Eröffnungssalden stimmen."
@@ -554,31 +595,41 @@ public class PmsExtensionsService {
     @Transactional(readOnly = true)
     public byte[] accountingExport(Company company, Long propertyId, LocalDate from, LocalDate toExclusive) {
         HotelProperty property = requireProperty(company, propertyId);
+        PmsAccountingSettingsDto accounts=accountingSettings.forProperty(property);
         if (from == null || toExclusive == null || !toExclusive.isAfter(from)) {
             throw badRequest("Der Exportzeitraum ist ungültig.");
         }
-        StringBuilder csv = new StringBuilder("date;document;debitAccount;creditAccount;description;debitAmount;creditAmount;currency;taxRate\n");
+        StringBuilder csv = new StringBuilder("date;document;debitAccount;creditAccount;description;debitAmount;creditAmount;currency;taxRate;netAmount;taxAmount\n");
         folioItemRepository
                 .findAllByFolio_Reservation_Property_IdAndServiceDateGreaterThanEqualAndServiceDateLessThanOrderByServiceDateAscIdAsc(
                         propertyId, from, toExclusive)
-                .forEach(item -> appendPosting(csv, item.getServiceDate().toString(), "FOLIO-" + item.getFolio().getId()
-                                + "-" + item.getId(), "1100", revenueAccount(item.getType()), item.getDescription(),
-                        item.getTotalAmount(), property.getCurrencyCode(), BigDecimal.ZERO));
+                .forEach(item -> {
+                    if(item.getTaxRate()==null) throw conflict("Leistung "+item.getId()+" hat keinen bestätigten Steuersatz. Vor dem Export den Steuersatz im Rechnungsprozess klären.");
+                    appendPosting(csv, item.getServiceDate().toString(), "FOLIO-" + item.getFolio().getId()
+                                + "-" + item.getId(), accounts.guestReceivableAccount(), accounts.revenueAccounts().get(item.getType().name()), item.getDescription(),
+                        item.getTotalAmount(), item.getFolio().getCurrencyCode(), item.getTaxRate());
+                });
         paymentRepository
-                .findAllByFolio_Reservation_Property_IdAndReceivedAtGreaterThanEqualAndReceivedAtLessThanOrderByReceivedAtAsc(
-                        propertyId, from.atStartOfDay(), toExclusive.atStartOfDay())
+                .findByPostingDateRange(propertyId, from, toExclusive)
                 .stream().filter(payment -> payment.getStatus() == PaymentStatus.POSTED)
-                .forEach(payment -> appendPosting(csv, payment.getReceivedAt().toLocalDate().toString(),
-                        "PAY-" + payment.getId(), paymentAccount(payment.getMethod()), "1100",
+                .forEach(payment -> appendPosting(csv, (payment.getPostingDate() == null ? payment.getReceivedAt().toLocalDate() : payment.getPostingDate()).toString(),
+                        "PAY-" + payment.getId(), PmsAccountingSettingsService.paymentAccount(accounts,payment.getMethod()), accounts.guestReceivableAccount(),
                         "Zahlung " + payment.getFolio().getReservation().getConfirmationCode(),
                         payment.getAmount(), property.getCurrencyCode(), BigDecimal.ZERO));
+        receivableSettlementRepository
+                .findAllByProperty_IdAndPostingDateGreaterThanEqualAndPostingDateLessThanOrderByPostingDateAscIdAsc(
+                        propertyId, from, toExclusive)
+                .forEach(settlement -> appendPosting(csv, settlement.getPostingDate().toString(),
+                        "AR-PAY-" + settlement.getId(), accounts.bankAccount(), accounts.corporateReceivableAccount(), settlement.getBankReference(),
+                        settlement.getAmount(), settlement.getReceivable().getInvoice().getCurrencyCode(), BigDecimal.ZERO));
         posTicketRepository
                 .findAllByProperty_IdAndServiceDateGreaterThanEqualAndServiceDateLessThanOrderByServiceDateAscCreatedAtAsc(
                         propertyId, from, toExclusive)
-                .stream().filter(ticket -> ticket.getFolio() == null && ticket.getPaymentMethod() != null)
+                .stream().filter(ticket -> ticket.getStatus() == PosTicketStatus.SETTLED
+                        && ticket.getFolio() == null && ticket.getPaymentMethod() != null)
                 .forEach(ticket -> ticket.getLines().forEach(line -> appendPosting(csv,
                         ticket.getServiceDate().toString(), ticket.getTicketNumber(),
-                        paymentAccount(ticket.getPaymentMethod()), "3220", line.getDescription(),
+                        PmsAccountingSettingsService.paymentAccount(accounts,ticket.getPaymentMethod()), accounts.posRevenueAccount(), line.getDescription(),
                         line.getGrossAmount(), ticket.getCurrencyCode(), line.getTaxRate())));
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
@@ -596,11 +647,11 @@ public class PmsExtensionsService {
                         BigDecimal.ZERO, BigDecimal.ZERO, 16, null)
                         : new PmsExtensionsResponse.TourismTaxRuleView(tax.getId(), tax.isEnabled(), tax.getName(),
                         tax.getAdultRate(), tax.getChildRate(), tax.getChildFreeUnder(), tax.getMaximumNights()),
-                posTicketRepository.findAllByProperty_IdOrderByCreatedAtDesc(property.getId()).stream()
+                historyService.newest(PosTicket.class, "property", property.getId(), 50).stream()
                         .limit(100).map(this::toPosTicket).toList(),
-                accessCredentialRepository.findAllByProperty_IdOrderByIssuedAtDesc(property.getId()).stream()
+                historyService.newest(AccessCredential.class, "property", property.getId(), 50).stream()
                         .limit(100).map(this::toAccessCredential).toList(),
-                migrationBatchRepository.findAllByProperty_IdOrderByCreatedAtDesc(property.getId()).stream()
+                historyService.newest(MigrationBatch.class, "property", property.getId(), 50).stream()
                         .limit(50).map(this::toMigrationBatch).toList());
     }
 
@@ -732,34 +783,16 @@ public class PmsExtensionsService {
     private void appendPosting(StringBuilder csv, String date, String document, String debitAccount,
                                String creditAccount, String description, BigDecimal signedAmount,
                                String currency, BigDecimal taxRate) {
-        BigDecimal amount = signedAmount.abs().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = PmsMoney.round(signedAmount.abs(), currency);
+        BigDecimal net = amount.divide(BigDecimal.ONE.add(taxRate.movePointLeft(2)), PmsMoney.digits(currency), RoundingMode.HALF_UP);
         String effectiveDebit = signedAmount.signum() < 0 ? creditAccount : debitAccount;
         String effectiveCredit = signedAmount.signum() < 0 ? debitAccount : creditAccount;
         csv.append(csv(date)).append(';').append(csv(document)).append(';').append(csv(effectiveDebit)).append(';')
                 .append(csv(effectiveCredit)).append(';').append(csv(description)).append(';')
                 .append(amount.toPlainString()).append(';').append(amount.toPlainString()).append(';')
-                .append(csv(currency)).append(';').append(taxRate.setScale(2, RoundingMode.HALF_UP).toPlainString())
+                .append(csv(currency)).append(';').append(taxRate.stripTrailingZeros().toPlainString())
+                .append(';').append(net.toPlainString()).append(';').append(amount.subtract(net).toPlainString())
                 .append('\n');
-    }
-
-    private String revenueAccount(FolioItemType type) {
-        return switch (type) {
-            case ROOM -> "3200";
-            case BREAKFAST -> "3210";
-            case SERVICE, OTHER -> "3220";
-            case TAX -> "3600";
-            case DISCOUNT -> "3290";
-        };
-    }
-
-    private String paymentAccount(PaymentMethod method) {
-        return switch (method) {
-            case CASH -> "1000";
-            case CARD -> "1020";
-            case BANK_TRANSFER -> "1021";
-            case VOUCHER -> "1090";
-            case OTHER -> "1099";
-        };
     }
 
     private String csv(String value) {
@@ -780,7 +813,6 @@ public class PmsExtensionsService {
 
     private String json(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\""); }
     private String actor(String value) { return clean(value) == null ? "system" : clean(value); }
-    private BigDecimal money(BigDecimal value) { return value.setScale(2, RoundingMode.HALF_UP); }
     private String clean(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private String required(String value) {
         String result = clean(value);

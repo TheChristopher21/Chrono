@@ -34,6 +34,7 @@ public class PmsPrivacyService {
     private final GuestRegistrationRepository registrationRepository;
     private final PmsAuditEventRepository auditRepository;
     private final PmsAuditWriter auditWriter;
+    private final ReservationGuestRepository accompanyingGuestRepository;
 
     public PmsPrivacyService(GuestProfileRepository guestRepository,
                              HotelPropertyRepository propertyRepository,
@@ -43,7 +44,7 @@ public class PmsPrivacyService {
                              GuestCommunicationRepository communicationRepository,
                              GuestRegistrationRepository registrationRepository,
                              PmsAuditEventRepository auditRepository,
-                             PmsAuditWriter auditWriter) {
+                             PmsAuditWriter auditWriter, ReservationGuestRepository accompanyingGuestRepository) {
         this.guestRepository = guestRepository;
         this.propertyRepository = propertyRepository;
         this.reservationRepository = reservationRepository;
@@ -53,6 +54,7 @@ public class PmsPrivacyService {
         this.registrationRepository = registrationRepository;
         this.auditRepository = auditRepository;
         this.auditWriter = auditWriter;
+        this.accompanyingGuestRepository = accompanyingGuestRepository;
     }
 
     @Transactional
@@ -60,6 +62,7 @@ public class PmsPrivacyService {
         GuestProfile guest = requireGuest(company, guestId);
         List<Reservation> reservations =
                 reservationRepository.findAllByGuest_IdOrderByArrivalDateDesc(guestId);
+        List<ReservationGuest> accompanying = accompanyingGuestRepository.findAllByGuest_Id(guestId);
         List<GuestCommunication> communications =
                 communicationRepository.findAllByGuest_IdOrderByCreatedAtDesc(guestId);
         List<GuestRegistration> registrations = reservations.stream()
@@ -71,7 +74,7 @@ public class PmsPrivacyService {
                 auditRepository.findTop100ByCompany_IdAndAggregateTypeAndAggregateIdOrderByCreatedAtDesc(
                         company.getId(), "guest", String.valueOf(guestId));
 
-        for (HotelProperty property : auditProperties(company, reservations)) {
+        for (HotelProperty property : auditProperties(company, allStays(reservations, accompanying))) {
             auditWriter.append(property, "privacy.guest_exported", "guest", String.valueOf(guestId),
                     "{\"requestedBy\":\"" + safe(username) + "\"}");
         }
@@ -95,7 +98,7 @@ public class PmsPrivacyService {
                 registrations.stream().map(this::registrationData).toList(),
                 invoices.stream().map(this::invoiceData).toList(),
                 auditEvents.stream().map(this::auditData).toList(),
-                RETENTION_NOTICE);
+                RETENTION_NOTICE, accompanying.stream().map(this::accompanyingData).toList());
     }
 
     @Transactional
@@ -104,13 +107,15 @@ public class PmsPrivacyService {
         GuestProfile guest = requireGuest(company, guestId);
         List<Reservation> reservations =
                 reservationRepository.findAllByGuest_IdOrderByArrivalDateDesc(guestId);
-        if (reservations.stream()
+        List<ReservationGuest> accompanying = accompanyingGuestRepository.findAllByGuest_Id(guestId);
+        List<Reservation> allStays = allStays(reservations, accompanying);
+        if (allStays.stream()
                 .anyMatch(reservation -> !ANONYMIZABLE_RESERVATION_STATUSES.contains(reservation.getStatus()))) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Gast kann wegen aktiver oder zukünftiger Reservierungen nicht anonymisiert werden.");
         }
-        List<Folio> folios = reservations.stream()
+        List<Folio> folios = allStays.stream()
                 .flatMap(reservation -> folioRepository
                         .findAllByReservation_IdOrderByIdAsc(reservation.getId()).stream())
                 .toList();
@@ -159,6 +164,11 @@ public class PmsPrivacyService {
             reservation.setNotes(null);
             reservation.setGuestPreferenceSnapshot(null);
         });
+        accompanying.forEach(stay -> {
+            stay.setAddressLine(null); stay.setPostalCode(null); stay.setCity(null);
+            stay.setCountryCode(null); stay.setNationalityCode(null); stay.setDocumentHash(null);
+            stay.setDocumentLastFour(null); stay.setSignatureName(null);
+        });
         communicationRepository.findAllByGuest_IdOrderByCreatedAtDesc(guestId).forEach(communication -> {
             communication.setRecipient(anonymizedReference);
             communication.setSender(null);
@@ -182,7 +192,7 @@ public class PmsPrivacyService {
                 }));
 
         LocalDateTime anonymizedAt = LocalDateTime.now().withNano(0);
-        for (HotelProperty property : auditProperties(company, reservations)) {
+        for (HotelProperty property : auditProperties(company, allStays)) {
             auditWriter.append(property, "privacy.guest_anonymized", "guest", String.valueOf(guestId),
                     "{\"reason\":\"" + jsonSafe(reason) + "\",\"actor\":\"" + jsonSafe(username) + "\"}");
         }
@@ -197,6 +207,22 @@ public class PmsPrivacyService {
             }
         }
         return result;
+    }
+
+    private List<Reservation> allStays(List<Reservation> primary, List<ReservationGuest> accompanying) {
+        java.util.Map<Long, Reservation> distinct = new java.util.LinkedHashMap<>();
+        primary.forEach(stay -> distinct.put(stay.getId(), stay));
+        accompanying.forEach(stay -> distinct.put(stay.getReservation().getId(), stay.getReservation()));
+        return List.copyOf(distinct.values());
+    }
+
+    private PmsGuestDataExport.AccompanyingStayData accompanyingData(ReservationGuest stay) {
+        Reservation reservation = stay.getReservation();
+        return new PmsGuestDataExport.AccompanyingStayData(stay.getId(), reservation.getId(),
+                reservation.getProperty().getId(), reservation.getProperty().getName(), reservation.getConfirmationCode(),
+                stay.getArrivalDate(), stay.getDepartureDate(), stay.isChild(), reservation.getStatus().name(),
+                stay.getAddressLine(), stay.getPostalCode(), stay.getCity(), stay.getCountryCode(),
+                stay.getNationalityCode(), stay.getDocumentLastFour(), stay.getSignatureName(), stay.getRegistrationCompletedAt());
     }
 
     private Set<HotelProperty> properties(List<Reservation> reservations) {

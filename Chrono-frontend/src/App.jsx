@@ -1,5 +1,5 @@
 import "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // NEU: Imports für Auth-Status und ActionButtons
@@ -57,11 +57,14 @@ import WorkTimeCalculatorPage from "./pages/WorkTimeCalculator/WorkTimeCalculato
 import PmsDashboard from "./pages/Pms/PmsDashboard.jsx";
 import PmsGuestCheckInPage from "./pages/Pms/PmsGuestCheckInPage.jsx";
 import PmsBookingPage from "./pages/Pms/PmsBookingPage.jsx";
+import PmsEventOfferPage from "./pages/Pms/PmsEventOfferPage.jsx";
+import PmsPaymentReturnPage from "./pages/Pms/PmsPaymentReturnPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import DataRefreshQueryBridge from "./components/DataRefreshQueryBridge.jsx";
+import WorkspaceRouteViews from "./components/workspace/WorkspaceRouteViews.jsx";
 // Absichtlich zuletzt: ausschließlich mobile Browser-Korrekturen (Desktop bleibt unberührt).
 import "./styles/mobile-browser.css";
 
@@ -84,7 +87,7 @@ function App() {
             <ErrorBoundary>
                 <div className="App">
                     <AnalyticsTracker />
-                    <Routes>
+                    <WorkspaceRouteViews>
                         {/* Öffentliche Routen */}
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/ueber-chrono-logisch" element={<AboutChrono />} />
@@ -98,6 +101,8 @@ function App() {
                         <Route path="/guest-registration/:token" element={<PmsGuestCheckInPage />} />
                         <Route path="/guest-check-in/:token" element={<PmsGuestCheckInPage />} />
                         <Route path="/book/:propertyCode" element={<PmsBookingPage />} />
+                        <Route path="/pms-event-offer/:token" element={<PmsEventOfferPage />} />
+                        <Route path="/pms-payment-return" element={<PmsPaymentReturnPage />} />
 
                         {/* Geschützte Benutzer-Routen */}
                         <Route path="/dashboard" element={<PrivateRoute requiredPagePermission="dashboard"><UserDashboard /></PrivateRoute>} />
@@ -310,7 +315,7 @@ function App() {
                         <Route path="/whats-new" element={<PrivateRoute><WhatsNewPage /></PrivateRoute>} />
                         <Route path="/print-report" element={<PrivateRoute requiredPagePermission="printReport"><PrintReport /></PrivateRoute>} />
                         <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
+                    </WorkspaceRouteViews>
 
                     {/* NEU: Fügt den Chatbot nur als freigeschaltetes Firmen-Feature hinzu */}
                     {authToken && <>

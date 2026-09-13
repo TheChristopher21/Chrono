@@ -44,7 +44,7 @@ public class PmsSetupController {
     @GetMapping("/setup")
     public ResponseEntity<PmsSetupResponse> getSetup(
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "true") boolean includeRooms, Principal principal) {
-        return ResponseEntity.ok(pmsSetupService.getSetup(requireCompany(principal, UserPermissionService.ACCESS_VIEW), includeRooms));
+        return ResponseEntity.ok(pmsSetupService.getSetupForUser(requireCompany(principal, UserPermissionService.ACCESS_VIEW), includeRooms, principal.getName()));
     }
 
     @PostMapping("/properties")

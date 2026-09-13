@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import PmsDirectoryPicker, { usePmsOrganizationDirectory } from './PmsDirectoryPicker.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../utils/api.js';
+import { currencyDigits, currencyStep, formatPmsMoney } from './pmsMoney.js';
+import PmsCentralRatesPanel from './PmsCentralRatesPanel.jsx';
+import PmsRateInheritancePanel from './PmsRateInheritancePanel.jsx';
 import './PmsRatePlansWorkspace.css';
 
 const blankRate = (property) => ({
@@ -8,16 +12,16 @@ const blankRate = (property) => ({
     vatRate: '', taxIncluded: true, breakfastAmount: 0, breakfastVatRate: '',
     validFrom: '', validTo: '', bookingFrom: '', bookingTo: '', minAdvanceDays: '', maxAdvanceDays: '',
     includedAdults: 1, extraAdultRate: 0, childRate: 0, cancellationDeadlineHours: '',
-    cancellationFeePercent: '', depositPercent: '', paymentDueDays: '', cancellationPolicy: '',
+    cancellationFeePercent: '', noShowFeePercent: '', policyFeeTaxRate: '', depositPercent: '', depositDueDaysBeforeArrival: '', paymentDueDays: '', cancellationPolicy: '',
     paymentPolicy: '', notes: '', organizationId: '',
 });
 const optionalNumbers = ['vatRate', 'breakfastVatRate', 'maxStay', 'minAdvanceDays', 'maxAdvanceDays',
-    'cancellationDeadlineHours', 'cancellationFeePercent', 'depositPercent', 'paymentDueDays', 'organizationId'];
+    'cancellationDeadlineHours', 'cancellationFeePercent', 'noShowFeePercent', 'policyFeeTaxRate', 'depositPercent', 'depositDueDaysBeforeArrival', 'paymentDueDays', 'organizationId'];
 const optionalStrings = ['validFrom', 'validTo', 'bookingFrom', 'bookingTo', 'cancellationPolicy', 'paymentPolicy', 'notes'];
 const errorText = (error) => error?.response?.data?.detail || error?.response?.data?.message || error.message;
-const rounded = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
-
-export function ratePricePreview(form) {
+export function ratePricePreview(form, currency = form.currencyCode || 'CHF') {
+    const factor = 10 ** currencyDigits(currency);
+    const rounded = (value) => Math.round((value + Number.EPSILON) * factor) / factor;
     const breakfast = form.breakfastIncluded ? Number(form.breakfastAmount || 0) : 0;
     const accommodation = Number(form.nightlyRate || 0) - breakfast;
     const lodgingTax = Number(form.vatRate || 0) / 100;
@@ -29,7 +33,7 @@ export function ratePricePreview(form) {
     return { gross, net, tax: rounded(gross - net) };
 }
 
-export default function PmsRatePlansWorkspace({ property, operations, canManage, businessDate, onOperationsChange }) {
+export default function PmsRatePlansWorkspace({ property, operations, canManage, isMaster = false, businessDate, onOperationsChange }) {
     const [form, setForm] = useState(() => blankRate(property));
     const [editingId, setEditingId] = useState(null);
     const [search, setSearch] = useState('');
@@ -38,18 +42,22 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [override, setOverride] = useState({ ratePlanId: '', stayDate: businessDate ?? '', price: '', minStay: 1, closed: false, closedArrival: false, closedDeparture: false });
+    const formProperty = useRef(property.id);
     useEffect(() => {
+        if (formProperty.current === property.id) return;
+        formProperty.current = property.id;
         setEditingId(null); setForm(blankRate(property)); setError(''); setNotice('');
         setOverride({ ratePlanId: '', stayDate: businessDate ?? '', price: '', minStay: 1, closed: false, closedArrival: false, closedDeparture: false });
     }, [property.id]);
     const rates = operations?.ratePlans ?? [];
-    const organizations = operations?.organizations ?? [];
+    const [organizations, rememberOrganization] = usePmsOrganizationDirectory(property.id, operations?.organizations ?? []);
     const visibleRates = useMemo(() => rates.filter((rate) =>
         (status === 'all' || rate.active === (status === 'active'))
         && [rate.name, rate.code, rate.roomTypeName, rate.organizationName].some((value) => String(value ?? '').toLocaleLowerCase().includes(search.toLocaleLowerCase()))
     ), [rates, status, search]);
-    const preview = ratePricePreview(form);
-    const money = (value) => new Intl.NumberFormat('de-CH', { style: 'currency', currency: property.currencyCode || 'CHF' }).format(value);
+    const preview = ratePricePreview(form, property.currencyCode || 'CHF');
+    const money = (value) => formatPmsMoney(value, property.currencyCode || 'CHF');
+    const amountStep = currencyStep(property.currencyCode || 'CHF');
     const change = (key, value) => setForm((current) => ({ ...current, [key]: value }));
     const input = (key, label, options = {}) => <label key={key}>{label}<input value={form[key] ?? ''} onChange={(event) => change(key, event.target.value)} {...options} /></label>;
     const number = (key, label, options = {}) => input(key, label, { type: 'number', min: 0, step: 1, ...options });
@@ -63,6 +71,7 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
         setError(''); setNotice('');
         const breakfast = form.breakfastIncluded ? Number(form.breakfastAmount || 0) : 0;
         if (breakfast > Number(form.nightlyRate)) { setError('Der Frühstücksanteil darf den Nachtpreis nicht übersteigen.'); return; }
+        if ((Number(form.cancellationFeePercent) > 0 || Number(form.noShowFeePercent) > 0) && form.policyFeeTaxRate === '') { setError('Bitte den lokalen Steuersatz für Storno- und Nichtanreisegebühren angeben, auch 0 bei Steuerfreiheit.'); return; }
         if (form.maxStay !== '' && Number(form.maxStay) < Number(form.minStay)) { setError('Der Höchstaufenthalt muss mindestens dem Mindestaufenthalt entsprechen.'); return; }
         if ((form.validFrom && form.validTo && form.validFrom > form.validTo) || (form.bookingFrom && form.bookingTo && form.bookingFrom > form.bookingTo)) { setError('Bitte die Reihenfolge der Gültigkeitsdaten prüfen.'); return; }
         const payload = { ...form, roomTypeId: Number(form.roomTypeId), nightlyRate: Number(form.nightlyRate), minStay: Number(form.minStay),
@@ -98,7 +107,7 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
     return <div className="pms-rate-workspace">
         <div className="pms-rate-intro"><div><span className="pms-eyebrow">Revenue Management · {property.name}</span><h3>Raten, Steuern und Verkaufsregeln</h3>
             <p>Preise gelten pro Zimmer und Nacht in {property.currencyCode}. Steuerregeln richten sich nach dem Hotel und der Leistung.</p></div>
-            {!canManage && <span>Änderungen nur mit Master-Berechtigung</span>}
+            {!canManage && <span>Für Änderungen ist das Raten-Bearbeitungsrecht erforderlich</span>}
         </div>
         {error && <div className="pms-error" role="alert">{error}</div>}
         {notice && <p role="status">{notice}</p>}
@@ -111,17 +120,17 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
                             <label>Zimmertyp<select required value={form.roomTypeId} onChange={(event) => change('roomTypeId', event.target.value)}>{property.roomTypes?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>
                             {input('code', 'Ratencode', { required: true, maxLength: 32 })}
                             {input('name', 'Name', { required: true, maxLength: 120 })}
-                            <label>Firmenrate für<select value={form.organizationId} onChange={(event) => change('organizationId', event.target.value)}><option value="">Alle Gäste / öffentliche Rate</option>{organizations.filter((company) => company.active !== false).map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select></label>
+                            <PmsDirectoryPicker propertyId={property.id} label="Firmenrate für" value={form.organizationId} initialOptions={organizations} onResolve={rememberOrganization} placeholder="Alle Gäste / öffentliche Rate" onChange={(value) => change('organizationId', value)} />
                             {checkbox('active', 'Aktiv und verkaufbar')}
                             {checkbox('refundable', 'Stornierbar')}
                         </div>
                         <h4>Preis und Steueraufteilung</h4>
                         <div className="pms-form-grid">
-                            {number('nightlyRate', 'Standardpreis pro Zimmer/Nacht', { required: true, step: '0.01' })}
+                            {number('nightlyRate', 'Standardpreis pro Zimmer/Nacht', { required: true, step: amountStep })}
                             <label>Preiseingabe<select value={form.taxIncluded ? 'gross' : 'net'} onChange={(event) => change('taxIncluded', event.target.value === 'gross')}><option value="gross">Brutto · inklusive Steuer</option><option value="net">Netto · zuzüglich Steuer</option></select></label>
                             {percent('vatRate', 'Steuer Beherbergung (%)', { required: true })}
                             {checkbox('breakfastIncluded', 'Frühstück inklusive')}
-                            {form.breakfastIncluded && number('breakfastAmount', 'Frühstücksanteil im Nachtpreis', { step: '0.01', required: true, max: form.nightlyRate || undefined })}
+                            {form.breakfastIncluded && number('breakfastAmount', 'Frühstücksanteil im Nachtpreis', { step: amountStep, required: true, max: form.nightlyRate || undefined })}
                             {form.breakfastIncluded && percent('breakfastVatRate', 'Steuer Frühstück (%)', { required: Number(form.breakfastAmount) > 0 })}
                         </div>
                         <p className="pms-rate-help">Frühstück ist ein zugeordneter Anteil des Preises pro Zimmer/Nacht. Für eine getrennte Besteuerung den Anteil und dessen Steuersatz erfassen. Weitere Leistungen und lokale Abgaben werden separat gebucht.</p>
@@ -132,8 +141,8 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
                         <h4>Belegung und Zuschläge</h4>
                         <div className="pms-form-grid">
                             {number('includedAdults', 'Enthaltene Erwachsene', { min: 1, max: 100, required: true })}
-                            {number('extraAdultRate', 'Je weiterer Erwachsener/Nacht', { step: '0.01' })}
-                            {number('childRate', 'Je Kind/Nacht', { step: '0.01' })}
+                            {number('extraAdultRate', 'Je weiterer Erwachsener/Nacht', { step: amountStep })}
+                            {number('childRate', 'Je Kind/Nacht', { step: amountStep })}
                         </div>
                         <p className="pms-rate-help">Zuschläge folgen der gewählten Brutto-/Nettobasis und dem Beherbergungssteuersatz. Der Frühstücksanteil bleibt pro Zimmer gleich.</p>
                         <h4>Gültigkeit und Buchungsregeln</h4>
@@ -151,13 +160,16 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
                         <div className="pms-form-grid">
                             {number('cancellationDeadlineHours', 'Kostenfrei bis Stunden vor Anreise', { max: 8760 })}
                             {percent('cancellationFeePercent', 'Vereinbarte Stornogebühr (%)')}
+                            {percent('noShowFeePercent', 'Gebühr bei Nichtanreise (%)')}
+                            {percent('policyFeeTaxRate', 'Steuer auf Storno-/Nichtanreisegebühr (%)', { required: Number(form.cancellationFeePercent) > 0 || Number(form.noShowFeePercent) > 0 })}
                             {percent('depositPercent', 'Vereinbarte Anzahlung (%)')}
+                            {number('depositDueDaysBeforeArrival', 'Anzahlung fällig Tage vor Anreise', { max: 365 })}
                             {number('paymentDueDays', 'Vereinbartes Zahlungsziel (Tage)', { max: 365 })}
                             <label className="is-wide">Stornobedingungen<textarea maxLength={2000} value={form.cancellationPolicy} onChange={(event) => change('cancellationPolicy', event.target.value)} /></label>
                             <label className="is-wide">Zahlungsbedingungen<textarea maxLength={2000} value={form.paymentPolicy} onChange={(event) => change('paymentPolicy', event.target.value)} /></label>
                             <label className="is-wide">Interne Ratennotizen<textarea maxLength={4000} value={form.notes} onChange={(event) => change('notes', event.target.value)} /></label>
                         </div>
-                        <p className="pms-rate-help">Bedingungen dokumentieren die Vereinbarung; Stornogebühren und Anzahlungen werden im Gastkonto erfasst.</p>
+                        <p className="pms-rate-help">Gebühren werden beim Storno oder bei Nichtanreise anhand der bei Buchung vereinbarten Regeln gebucht. Die Anzahlungsfrist wird im Aufenthalt angezeigt; 0 Tage bedeutet den Anreisetag.</p>
                         <div className="pms-form-actions">{editingId && <button type="button" onClick={reset}>Abbrechen</button>}<button className="is-primary" type="submit">Ratenplan speichern</button></div>
                     </fieldset>
                 </form>
@@ -179,7 +191,7 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
                     <form onSubmit={saveOverride}><fieldset className="pms-rate-fieldset" disabled={!canManage || pending}><div className="pms-form-grid">
                         <label>Ratenplan<select required value={override.ratePlanId} onChange={(event) => setOverride({ ...override, ratePlanId: event.target.value })}><option value="">Ratenplan wählen</option>{rates.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
                         <label>Datum<input type="date" required value={override.stayDate} onChange={(event) => setOverride({ ...override, stayDate: event.target.value })} /></label>
-                        <label>Tagespreis<input type="number" min="0" step="0.01" required value={override.price} onChange={(event) => setOverride({ ...override, price: event.target.value })} /></label>
+                        <label>Tagespreis<input type="number" min="0" step={amountStep} required value={override.price} onChange={(event) => setOverride({ ...override, price: event.target.value })} /></label>
                         <label>Tages-Mindestaufenthalt<input type="number" min="1" max="365" required value={override.minStay} onChange={(event) => setOverride({ ...override, minStay: event.target.value })} /></label>
                         {[['closed', 'Verkauf geschlossen (Stop Sell)'], ['closedArrival', 'Anreise gesperrt (CTA)'], ['closedDeparture', 'Abreise gesperrt (CTD)']].map(([key, label]) => <label key={key} className="pms-checkbox"><input type="checkbox" checked={override[key]} onChange={(event) => setOverride({ ...override, [key]: event.target.checked })} />{label}</label>)}
                         <div className="pms-form-actions is-wide"><button className="is-primary" type="submit">Tagesrate speichern</button></div>
@@ -188,5 +200,7 @@ export default function PmsRatePlansWorkspace({ property, operations, canManage,
                 </section>
             </div>
         </div>
+        {isMaster && <PmsCentralRatesPanel key={property.id} property={property} rates={rates} />}
+        <PmsRateInheritancePanel key={`inheritance-${property.id}`} property={property} rates={rates} canManage={canManage} isMaster={isMaster} />
     </div>;
 }

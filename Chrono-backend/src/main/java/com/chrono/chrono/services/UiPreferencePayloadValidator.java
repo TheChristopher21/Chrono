@@ -37,6 +37,10 @@ public class UiPreferencePayloadValidator {
     private static final Set<String> DASHBOARD_ROOT_FIELDS = Set.of("type", "schemaVersion", "layouts");
     private static final Set<String> DASHBOARD_LAYOUT_FIELDS = Set.of("widgets");
     private static final Set<String> DASHBOARD_WIDGET_FIELDS = Set.of("id", "visible", "order", "size");
+    private static final Set<String> PMS_DASHBOARD_WIDGET_FIELDS = Set.of(
+            "id", "visible", "order", "size", "x", "y", "w", "h"
+    );
+    private static final Set<String> PMS_GRID_FIELDS = Set.of("x", "y", "w", "h");
     private static final Set<String> DASHBOARD_WIDGET_SIZES = Set.of("S", "M", "L", "full");
     private static final Set<String> ADMIN_DASHBOARD_SCOPES = Set.of(
             "overview", "time", "requests", "calendar", "modules"
@@ -280,7 +284,7 @@ public class UiPreferencePayloadValidator {
             if (!SAFE_KEY.matcher(scope.getKey()).matches() || !allowedScopes.contains(scope.getKey())) {
                 throw new IllegalArgumentException("Dashboard layout scope is not supported for this area.");
             }
-            validateDashboardLayout(scope.getValue());
+            validateDashboardLayout(area, scope.getValue());
         }
     }
 
@@ -298,7 +302,7 @@ public class UiPreferencePayloadValidator {
         };
     }
 
-    private void validateDashboardLayout(JsonNode layout) {
+    private void validateDashboardLayout(UserUiPreferenceArea area, JsonNode layout) {
         if (layout == null || !layout.isObject()) {
             throw new IllegalArgumentException("Dashboard layout must be a JSON object.");
         }
@@ -315,7 +319,8 @@ public class UiPreferencePayloadValidator {
             if (!widget.isObject()) {
                 throw new IllegalArgumentException("Dashboard widget must be a JSON object.");
             }
-            requireOnlyFields(widget, DASHBOARD_WIDGET_FIELDS, "dashboard widget");
+            requireOnlyFields(widget, area == UserUiPreferenceArea.PMS_DASHBOARD
+                    ? PMS_DASHBOARD_WIDGET_FIELDS : DASHBOARD_WIDGET_FIELDS, "dashboard widget");
 
             String id = requiredSafeKey(widget, "id");
             if (!widgetIds.add(id)) {
@@ -341,7 +346,35 @@ public class UiPreferencePayloadValidator {
             if (size == null || !size.isTextual() || !DASHBOARD_WIDGET_SIZES.contains(size.textValue())) {
                 throw new IllegalArgumentException("Dashboard widget size is invalid.");
             }
+            if (area == UserUiPreferenceArea.PMS_DASHBOARD) {
+                validatePmsGrid(widget);
+            }
         }
+    }
+
+    private void validatePmsGrid(JsonNode widget) {
+        // Legacy layouts keep their original size/order contract until a grid position is saved.
+        if (PMS_GRID_FIELDS.stream().noneMatch(widget::has)) {
+            return;
+        }
+        int x = requiredGridInteger(widget, "x", 0, 11);
+        int y = requiredGridInteger(widget, "y", 0, 199);
+        int w = requiredGridInteger(widget, "w", 1, 12);
+        int h = requiredGridInteger(widget, "h", 1, 24);
+        if (x + w > 12 || y + h > 200) {
+            throw new IllegalArgumentException("PMS dashboard widget exceeds the 12-column, 200-row grid.");
+        }
+    }
+
+    private int requiredGridInteger(JsonNode widget, String field, int minimum, int maximum) {
+        JsonNode value = widget.get(field);
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()
+                || value.intValue() < minimum || value.intValue() > maximum) {
+            throw new IllegalArgumentException("PMS dashboard widget " + field
+                    + " must be an integer from " + minimum + " to " + maximum
+                    + "; grid fields x/y/w/h must be supplied together.");
+        }
+        return value.intValue();
     }
 
     private void requireOnlyFields(JsonNode object, Set<String> allowedFields, String objectName) {

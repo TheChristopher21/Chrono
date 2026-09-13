@@ -21,6 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@org.springframework.context.annotation.Import({PmsGroupInventoryService.class,PmsGroupRoutingService.class})
 public class PmsOperationsService {
 
     private static final Set<ReservationStatus> NON_INVENTORY_STATUSES =
@@ -64,9 +65,24 @@ public class PmsOperationsService {
     private final RoomBlockRepository roomBlockRepository;
     private final MaintenanceWorkOrderRepository maintenanceWorkOrderRepository;
     private final HousekeepingTaskRepository housekeepingTaskRepository;
+    private final PmsHousekeepingService housekeepingWork;
     private final IntegrationOutboxRepository outboxRepository;
     private final PmsAuditWriter auditWriter;
     private final List<PmsPaymentGateway> paymentGateways;
+    private final PmsFinancialPeriodService financialPeriods;
+    private final PmsInvoiceLineRepository invoiceLineRepository;
+    private final PmsCashService cashService;
+    private final PmsRefundProcessor refundProcessor;
+    private final PmsReservationPolicyService reservationPolicies;
+    private final PosTicketRepository posTickets;
+    private final PmsDocumentFingerprintService documentFingerprints;
+    private final PmsGroupInventoryService groupInventory;
+    private final PmsGroupRoutingService groupRouting;
+    private final org.springframework.transaction.support.TransactionTemplate readTransaction;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager lifecycleEntityManager;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private PmsRateInheritanceService rateInheritance;
 
     public PmsOperationsService(HotelPropertyRepository propertyRepository,
                                 RoomTypeRepository roomTypeRepository,
@@ -86,10 +102,19 @@ public class PmsOperationsService {
                                 RoomBlockRepository roomBlockRepository,
                                 MaintenanceWorkOrderRepository maintenanceWorkOrderRepository,
                                 HousekeepingTaskRepository housekeepingTaskRepository,
+                                PmsHousekeepingService housekeepingWork,
                                 IntegrationOutboxRepository outboxRepository,
                                 PmsAuditWriter auditWriter,
-                                List<PmsPaymentGateway> paymentGateways) {
+                                List<PmsPaymentGateway> paymentGateways,
+                                PmsFinancialPeriodService financialPeriods,
+                                PmsInvoiceLineRepository invoiceLineRepository,
+                                PmsCashService cashService, PmsRefundProcessor refundProcessor, PosTicketRepository posTickets,
+                                PmsDocumentFingerprintService documentFingerprints,
+                                org.springframework.transaction.PlatformTransactionManager transactions,
+                                PmsGroupInventoryService groupInventory, PmsGroupRoutingService groupRouting, PmsReservationPolicyService reservationPolicies) {
         this.propertyRepository = propertyRepository;
+        this.groupInventory = groupInventory;
+        this.groupRouting = groupRouting;
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.guestRepository = guestRepository;
@@ -107,9 +132,19 @@ public class PmsOperationsService {
         this.roomBlockRepository = roomBlockRepository;
         this.maintenanceWorkOrderRepository = maintenanceWorkOrderRepository;
         this.housekeepingTaskRepository = housekeepingTaskRepository;
+        this.housekeepingWork = housekeepingWork;
         this.outboxRepository = outboxRepository;
         this.auditWriter = auditWriter;
         this.paymentGateways = List.copyOf(paymentGateways);
+        this.financialPeriods = financialPeriods;
+        this.invoiceLineRepository = invoiceLineRepository;
+        this.cashService = cashService;
+        this.refundProcessor = refundProcessor;
+        this.reservationPolicies = reservationPolicies;
+        this.posTickets = posTickets;
+        this.documentFingerprints = documentFingerprints;
+        this.readTransaction = new org.springframework.transaction.support.TransactionTemplate(transactions);
+        this.readTransaction.setReadOnly(true);
     }
 
     @Transactional(readOnly = true)
@@ -130,9 +165,16 @@ public class PmsOperationsService {
                         rangeEnd,
                         rangeStart
                 );
+        Map<Long, List<ReservationStatusHistory>> historiesByReservation = reservations.isEmpty() ? Map.of()
+                : reservationStatusHistoryRepository.findAllByReservation_IdInOrderByChangedAtDescIdDesc(
+                        reservations.stream().map(Reservation::getId).toList()).stream()
+                        .collect(Collectors.groupingBy(history -> history.getReservation().getId()));
         List<PmsOperationsResponse.ReservationView> reservationViews = reservations.stream()
-                .map(this::toReservationView)
+                .map(reservation -> toReservationView(reservation,
+                        historiesByReservation.getOrDefault(reservation.getId(), List.of())))
                 .toList();
+        Map<Long, PmsOperationsResponse.ReservationView> viewsByReservation = reservationViews.stream()
+                .collect(Collectors.toMap(PmsOperationsResponse.ReservationView::id, Function.identity()));
         List<PmsOperationsResponse.ReservationView> arrivals = reservationViews.stream()
                 .filter(view -> view.arrivalDate().equals(safeDate))
                 .filter(view -> OPERATIONAL_ARRIVAL_STATUSES.contains(view.status()))
@@ -160,10 +202,12 @@ public class PmsOperationsService {
         Map<Long, List<Payment>> paymentsByFolio = folioIds.isEmpty() ? Map.of()
                 : paymentRepository.findAllByFolio_IdInOrderByReceivedAtAsc(folioIds).stream()
                 .collect(Collectors.groupingBy(payment -> payment.getFolio().getId()));
+        Set<Long> invoicedIds = folioIds.isEmpty() ? Set.of()
+                : new HashSet<>(invoiceLineRepository.findAllocatedSourceIdsByFolioIds(folioIds));
         List<PmsOperationsResponse.FolioView> folioViews = folios.stream()
                 .map(folio -> toFolioView(folio,
                         itemsByFolio.getOrDefault(folio.getId(), List.of()),
-                        paymentsByFolio.getOrDefault(folio.getId(), List.of())))
+                        paymentsByFolio.getOrDefault(folio.getId(), List.of()), invoicedIds))
                 .toList();
         List<RoomBlock> roomBlocks = roomBlockRepository
                 .findAllByProperty_IdAndStartDateLessThanAndEndDateGreaterThanOrderByStartDateAsc(
@@ -223,7 +267,7 @@ public class PmsOperationsService {
                 departures.size(),
                 dirtyRooms,
                 openFolios,
-                money(openBalance)
+                PmsMoney.round(openBalance, property.getCurrencyCode())
         );
 
         return new PmsOperationsResponse(
@@ -236,13 +280,14 @@ public class PmsOperationsService {
                 arrivals,
                 departures,
                 guests.stream().map(this::toGuestView).toList(),
-                organizationRepository.findAllByCompany_IdOrderByNameAsc(company.getId()).stream()
+                organizationRepository.searchDirectory(company.getId(),"",true,false,org.springframework.data.domain.PageRequest.of(0,50)).stream()
                         .filter(PmsOrganization::isActive)
                         .map(this::toOrganizationSummaryView)
                         .toList(),
                 ratePlans.stream().map(this::toRatePlanView).toList(),
                 rateOverrides.stream().map(this::toRateOverrideView).toList(),
-                rooms.stream().map(room -> toRoomStateView(room, currentByRoom.get(room.getId()))).toList(),
+                rooms.stream().map(room -> toRoomStateView(room, currentByRoom.containsKey(room.getId())
+                        ? viewsByReservation.get(currentByRoom.get(room.getId()).getId()) : null)).toList(),
                 housekeepingTaskRepository
                         .findAllByProperty_IdAndServiceDateOrderByPriorityDescRoom_NumberAsc(propertyId, safeDate)
                         .stream()
@@ -333,10 +378,7 @@ public class PmsOperationsService {
                             .filter(Room::isActive)
                             .filter(room -> room.getOperationalStatus() == RoomOperationalStatus.IN_SERVICE)
                             .filter(room -> room.getRoomType().getId().equals(roomType.getId()))
-                            .filter(room -> overlappingReservations.stream().noneMatch(reservation ->
-                                    reservation.getRoom() != null
-                                            && reservation.getRoom().getId().equals(room.getId())
-                                            && !NON_INVENTORY_STATUSES.contains(reservation.getStatus())))
+                            .filter(room -> reservationRepository.countOverlappingByRoom(room.getId(), arrival, departure, NON_INVENTORY_STATUSES, null) == 0)
                             .filter(room -> overlappingBlocks.stream().noneMatch(block ->
                                     block.getRoom().getId().equals(room.getId())
                                             && block.getStatus() == RoomBlockStatus.ACTIVE
@@ -498,6 +540,7 @@ public class PmsOperationsService {
         }
         ratePlan.setRoomType(requireRoomType(company, propertyId, request.roomTypeId()));
         applyRatePlan(ratePlan, request, property, false);
+        if (rateInheritance != null) rateInheritance.freezeOnManualEdit(ratePlanId);
         ratePlanRepository.save(ratePlan);
         return getOperations(company, propertyId, businessDate, null, null);
     }
@@ -518,8 +561,9 @@ public class PmsOperationsService {
                 .findByRatePlan_IdAndStayDate(ratePlanId, request.stayDate())
                 .orElseGet(RateOverride::new);
         override.setRatePlan(ratePlan);
+        override.setRevenueManaged(false);
         override.setStayDate(request.stayDate());
-        override.setPrice(money(request.price()));
+        override.setPrice(PmsMoney.require(request.price(), ratePlan.getCurrencyCode()));
         override.setMinStay(request.minStay());
         override.setClosed(request.closed());
         override.setClosedArrival(request.closedArrival());
@@ -540,9 +584,15 @@ public class PmsOperationsService {
     Reservation createReservationRecord(Company company,
                                         UpsertReservationRequest request,
                                         String username) {
+        return createReservationRecord(company,request,username,null);
+    }
+
+    @Transactional
+    Reservation createReservationRecord(Company company,UpsertReservationRequest request,String username,GroupBooking group) {
         HotelProperty property = lockProperty(company, request.propertyId());
         Reservation reservation = new Reservation();
         reservation.setProperty(property);
+        reservation.setGroupBooking(group);
         reservation.setConfirmationCode(generateConfirmationCode());
         reservation.setCreatedBy(clean(username) == null ? "system" : clean(username));
         applyReservation(company, reservation, request, null);
@@ -597,6 +647,13 @@ public class PmsOperationsService {
             throw conflict("Abgeschlossene oder stornierte Reservierungen können nicht geändert werden.");
         }
         ReservationStatus previousStatus = reservation.getStatus();
+        if (!reservation.getRoomSegments().isEmpty()) {
+            if (!request.arrivalDate().equals(reservation.getArrivalDate()) || !request.departureDate().equals(reservation.getDepartureDate())
+                    || !Objects.equals(request.roomId(), reservation.getRoom() == null ? null : reservation.getRoom().getId())
+                    || !request.ratePlanId().equals(reservation.getRatePlan().getId()) || !request.roomTypeId().equals(reservation.getRoomType().getId())) {
+                throw conflict("Bei einem aufgeteilten Aufenthalt Zimmer und Raten über die Aufenthaltsabschnitte ändern.");
+            }
+        }
         applyReservation(company, reservation, request, reservationId);
         reservationRepository.save(reservation);
         if (previousStatus != reservation.getStatus()) {
@@ -619,17 +676,23 @@ public class PmsOperationsService {
                                          Long reservationId,
                                          String username,
                                          LocalDate businessDate) {
-        Reservation reservation = requireReservation(company, reservationId);
+        Reservation reservation = requireLockedReservation(company, reservationId);
         HotelProperty property = lockProperty(company, reservation.getProperty().getId());
         List<String> blockers = checkInBlockers(reservation);
         if (!blockers.isEmpty()) {
             throw conflict(blockers.get(0));
         }
         transition(reservation, ReservationStatus.CHECKED_IN, username, "Check-in");
+        reservation.setRoom(roomOn(reservation, today(property)));
         reservation.setCheckedInAt(LocalDateTime.now());
         reservationRepository.save(reservation);
         emit(reservation, "reservation.checked_in");
         return getOperations(company, property.getId(), businessDate, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ReservationPolicyView getReservationPolicy(Company company, Long reservationId) {
+        return reservationPolicies.view(requireReservation(company, reservationId));
     }
 
     List<String> checkInBlockers(Reservation reservation) {
@@ -638,10 +701,13 @@ public class PmsOperationsService {
             blockers.add("Nur bestätigte Reservierungen können eingecheckt werden.");
         }
         LocalDate now = today(reservation.getProperty());
+        ReservationPolicyView policy = reservationPolicies.view(reservation);
+        if (policy.depositOverdue()) blockers.add("Die fällige Anzahlung ist noch nicht vollständig eingegangen: "
+                + policy.depositOutstandingAmount().toPlainString() + " " + reservation.getCurrencyCode() + ".");
         if (now.isBefore(reservation.getArrivalDate()) || !now.isBefore(reservation.getDepartureDate())) {
             blockers.add("Der Check-in liegt ausserhalb des gebuchten Aufenthalts.");
         }
-        Room room = reservation.getRoom();
+        Room room = roomOn(reservation, today(reservation.getProperty()));
         if (room == null) {
             blockers.add("Vor dem Check-in muss ein Zimmer zugewiesen werden.");
             return blockers;
@@ -652,10 +718,12 @@ public class PmsOperationsService {
         if (room.getHousekeepingStatus() != HousekeepingStatus.CLEAN) {
             blockers.add("Das Zimmer muss vor dem Check-in als sauber markiert sein.");
         }
+        ReservationRoomSegment currentSegment = reservation.getRoomSegments().stream()
+                .filter(segment -> !now.isBefore(segment.getStartDate()) && now.isBefore(segment.getEndDate())).findFirst().orElse(null);
         if (reservationRepository.countOverlappingByRoom(
                 room.getId(),
-                reservation.getArrivalDate(),
-                reservation.getDepartureDate(),
+                currentSegment == null ? reservation.getArrivalDate() : currentSegment.getStartDate(),
+                currentSegment == null ? reservation.getDepartureDate() : currentSegment.getEndDate(),
                 NON_INVENTORY_STATUSES,
                 reservation.getId()
         ) > 0) {
@@ -664,6 +732,7 @@ public class PmsOperationsService {
         return blockers;
     }
 
+    @Transactional
     public PmsOperationsResponse checkIn(Company company,
                                          Long reservationId,
                                          LocalDate businessDate) {
@@ -675,17 +744,22 @@ public class PmsOperationsService {
                                           Long reservationId,
                                           String username,
                                           LocalDate businessDate) {
-        Reservation reservation = requireReservation(company, reservationId);
+        Reservation reservation = requireLockedReservation(company, reservationId);
         if (reservation.getStatus() != ReservationStatus.CHECKED_IN) {
             throw conflict("Nur eingecheckte Aufenthalte können ausgecheckt werden.");
         }
-        List<Folio> folios = folioRepository.findAllByReservation_IdOrderByIdAsc(reservationId);
+        List<Folio> folios = folioRepository.findAllByReservation_IdOrderByIdAsc(reservationId).stream()
+                .filter(folio -> !folio.isGroupMaster()).toList();
         if (folios.isEmpty()) {
             throw conflict("Zur Reservierung fehlt das Gastkonto.");
         }
+        if (paymentRepository.findAllByFolio_IdInOrderByReceivedAtAsc(folios.stream().map(Folio::getId).toList())
+                .stream().anyMatch(payment -> payment.getStatus() == PaymentStatus.PENDING)) {
+            throw conflict("Vor dem Check-out müssen offene Rückerstattungen beim Zahlungsanbieter geklärt werden.");
+        }
         boolean unbalanced = folios.stream()
                 .map(this::toFolioView)
-                .anyMatch(view -> view.balance().abs().compareTo(new BigDecimal("0.01")) >= 0);
+                .anyMatch(view -> view.balance().signum() != 0);
         if (unbalanced) {
             throw conflict("Vor dem Check-out muss das Gastkonto vollständig ausgeglichen werden.");
         }
@@ -698,12 +772,13 @@ public class PmsOperationsService {
             folioRepository.save(folio);
         });
         if (reservation.getRoom() != null) {
-            markRoomDirty(reservation.getProperty(), reservation.getRoom(), today(reservation.getProperty()));
+            markRoomDirty(reservation.getProperty(), roomOn(reservation, today(reservation.getProperty())), today(reservation.getProperty()));
         }
         emit(reservation, "reservation.checked_out");
         return getOperations(company, reservation.getProperty().getId(), businessDate, null, null);
     }
 
+    @Transactional
     public PmsOperationsResponse checkOut(Company company,
                                           Long reservationId,
                                           LocalDate businessDate) {
@@ -716,7 +791,7 @@ public class PmsOperationsService {
                                                    ReservationLifecycleRequest request,
                                                    String username,
                                                    LocalDate businessDate) {
-        Reservation reservation = requireReservation(company, reservationId);
+        Reservation reservation = requireLockedReservation(company, reservationId);
         if (reservation.getStatus() != ReservationStatus.OFFERED
                 && reservation.getStatus() != ReservationStatus.TENTATIVE
                 && reservation.getStatus() != ReservationStatus.WAITLISTED
@@ -724,15 +799,8 @@ public class PmsOperationsService {
             throw conflict("Nur offene Reservierungen können storniert werden.");
         }
         List<Folio> folios = folioRepository.findAllByReservation_IdOrderByIdAsc(reservationId);
-        boolean hasPayments = folios.stream().anyMatch(folio ->
-                paymentRepository.existsByFolio_IdAndStatusAndAmountGreaterThan(
-                        folio.getId(),
-                        PaymentStatus.POSTED,
-                        BigDecimal.ZERO
-                ));
-        if (hasPayments) {
-            throw conflict("Vor der Stornierung müssen bestehende Zahlungen rückerstattet oder storniert werden.");
-        }
+        reservationPolicies.applyCancellation(reservation, false);
+        groupRouting.route(reservation);
         String reason = request == null ? null : clean(request.reason());
         transition(reservation, ReservationStatus.CANCELLED, username,
                 reason == null ? "Stornierung" : reason);
@@ -740,15 +808,16 @@ public class PmsOperationsService {
         reservation.setCancelledAt(LocalDateTime.now());
         reservation.setHoldUntil(null);
         reservationRepository.save(reservation);
-        folios.forEach(folio -> {
-            folio.setStatus(FolioStatus.CLOSED);
-            folio.setClosedAt(LocalDateTime.now());
-            folioRepository.save(folio);
+        folios.stream().filter(folio -> !folio.isGroupMaster()).forEach(folio -> {
+            if (toFolioView(folio).balance().signum() == 0) {
+                folio.setStatus(FolioStatus.CLOSED); folio.setClosedAt(LocalDateTime.now()); folioRepository.save(folio);
+            }
         });
         emit(reservation, "reservation.cancelled");
         return getOperations(company, reservation.getProperty().getId(), businessDate, null, null);
     }
 
+    @Transactional
     public PmsOperationsResponse cancelReservation(Company company,
                                                    Long reservationId,
                                                    LocalDate businessDate) {
@@ -760,13 +829,15 @@ public class PmsOperationsService {
                                             Long reservationId,
                                             String username,
                                             LocalDate businessDate) {
-        Reservation reservation = requireReservation(company, reservationId);
+        Reservation reservation = requireLockedReservation(company, reservationId);
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw conflict("Nur bestätigte Reservierungen können als nicht angereist (No-Show) markiert werden.");
         }
         if (today(reservation.getProperty()).isBefore(reservation.getArrivalDate())) {
             throw conflict("Eine Reservierung kann nicht vor dem Anreisetag als nicht angereist (No-Show) markiert werden.");
         }
+        reservationPolicies.applyCancellation(reservation, true);
+        groupRouting.route(reservation);
         transition(reservation, ReservationStatus.NO_SHOW, username, "Nicht angereist (No-Show)");
         reservation.setNoShowAt(LocalDateTime.now());
         reservationRepository.save(reservation);
@@ -774,6 +845,7 @@ public class PmsOperationsService {
         return getOperations(company, reservation.getProperty().getId(), businessDate, null, null);
     }
 
+    @Transactional
     public PmsOperationsResponse markNoShow(Company company,
                                             Long reservationId,
                                             LocalDate businessDate) {
@@ -859,6 +931,7 @@ public class PmsOperationsService {
                                                      String username,
                                                      LocalDate businessDate) {
         Reservation reservation = requireReservation(company, reservationId);
+        lockProperty(company, reservation.getProperty().getId());
         if (reservation.getStatus() == ReservationStatus.CHECKED_OUT
                 || reservation.getStatus() == ReservationStatus.CANCELLED
                 || reservation.getStatus() == ReservationStatus.NO_SHOW) {
@@ -866,23 +939,60 @@ public class PmsOperationsService {
         }
         Room target = roomRepository.findByIdAndProperty_Company_Id(request.roomId(), company.getId())
                 .orElseThrow(() -> notFound("Zimmer nicht gefunden."));
-        if (!target.getProperty().getId().equals(reservation.getProperty().getId())
-                || !target.getRoomType().getId().equals(reservation.getRoomType().getId())) {
-            throw badRequest("Das Zielzimmer muss zum Hotel und Zimmertyp der Reservierung passen.");
+        if (!target.getProperty().getId().equals(reservation.getProperty().getId()) || !target.isActive()
+                || target.getOperationalStatus() != RoomOperationalStatus.IN_SERVICE) {
+            throw badRequest("Das Zielzimmer muss im Hotel aktiv und in Betrieb sein.");
         }
-        ensureAssignedRoomAvailable(reservation, target, reservation.getId());
-        Room previous = reservation.getRoom();
-        if (previous != null && previous.getId().equals(target.getId())) {
-            return getOperations(company, reservation.getProperty().getId(), businessDate, null, null);
+        LocalDate effective = request.effectiveDate() == null
+                ? (reservation.getStatus() == ReservationStatus.CHECKED_IN ? today(reservation.getProperty()) : reservation.getArrivalDate())
+                : request.effectiveDate();
+        if (effective.isBefore(reservation.getArrivalDate()) || !effective.isBefore(reservation.getDepartureDate())
+                || reservation.getStatus() == ReservationStatus.CHECKED_IN && effective.isBefore(today(reservation.getProperty()))) {
+            throw badRequest("Der Wechsel muss innerhalb des Aufenthalts liegen; belegte Vergangenheit darf nicht umgeschrieben werden.");
         }
-        if (reservation.getStatus() == ReservationStatus.CHECKED_IN) {
+        financialPeriods.assertPostingOpen(reservation.getProperty(), effective);
+        if (reservation.getRoomSegments().isEmpty()) {
+            if (reservation.getRoom() == null) {
+                if (!effective.equals(reservation.getArrivalDate())) throw badRequest("Ein noch nicht zugewiesener Aufenthalt muss ab Anreise zugewiesen werden.");
+                reservation.setRoom(target);
+            }
+            ReservationRoomSegment initial = new ReservationRoomSegment();
+            initial.setReservation(reservation); initial.setRoom(reservation.getRoom()); initial.setRatePlan(reservation.getRatePlan());
+            initial.setStartDate(reservation.getArrivalDate()); initial.setEndDate(reservation.getDepartureDate());
+            initial.setCreatedBy(username); reservation.getRoomSegments().add(initial);
+        }
+        ReservationRoomSegment segment = reservation.getRoomSegments().stream()
+                .filter(s -> !effective.isBefore(s.getStartDate()) && effective.isBefore(s.getEndDate())).findFirst()
+                .orElseThrow(() -> conflict("Für das Wechseldatum fehlt ein Aufenthaltsabschnitt."));
+        Room previous = segment.getRoom();
+        RatePlan rate = request.ratePlanId() == null ? segment.getRatePlan()
+                : ratePlanRepository.findByIdAndProperty_Company_Id(request.ratePlanId(), company.getId()).orElseThrow(() -> notFound("Ratenplan nicht gefunden."));
+        if (!rate.getProperty().getId().equals(reservation.getProperty().getId()) || !rate.getRoomType().getId().equals(target.getRoomType().getId())
+                || !rate.isActive() || !eligibleForRate(rate, reservation.getGuest())) throw badRequest("Für den Ziel-Zimmertyp einen gültigen Ratenplan auswählen.");
+        if (reservation.getAdults() + reservation.getChildren() > target.getRoomType().getMaxOccupancy()) throw badRequest("Das Zielzimmer ist für die Belegung zu klein.");
+        Quote segmentQuote = quote(rate, effective, segment.getEndDate(), reservation.getAdults(), reservation.getChildren(), reservation.getCreatedAt().toLocalDate());
+        if (segmentQuote.restriction() != null) throw conflict(segmentQuote.restriction());
+        ensureCapacity(reservation.getProperty().getId(), target.getRoomType().getId(), effective, segment.getEndDate(), reservation.getId());
+        if (reservationRepository.countOverlappingByRoom(target.getId(), effective, segment.getEndDate(), NON_INVENTORY_STATUSES, reservation.getId()) > 0) throw conflict("Das Zielzimmer ist im Wechselzeitraum belegt.");
+        ensureRoomNotBlocked(target, effective, segment.getEndDate());
+        if (reservation.getStatus() == ReservationStatus.CHECKED_IN && !effective.isAfter(today(reservation.getProperty()))) {
             ensureRoomReady(target);
-            if (previous != null) {
+            if (previous != null && !previous.getId().equals(target.getId())) {
                 markRoomDirty(reservation.getProperty(), previous, today(reservation.getProperty()));
             }
         }
-        reservation.setRoom(target);
+        if (effective.isAfter(segment.getStartDate())) {
+            ReservationRoomSegment next = new ReservationRoomSegment();
+            next.setReservation(reservation); next.setStartDate(effective); next.setEndDate(segment.getEndDate());
+            next.setCreatedBy(username); reservation.getRoomSegments().add(next);
+            segment.setEndDate(effective); segment = next;
+        }
+        segment.setRoom(target); segment.setRatePlan(rate); segment.setReason(clean(request.reason()));
+        reservation.setRoom(roomOn(reservation, today(reservation.getProperty())));
         reservationRepository.save(reservation);
+        refreshRoomCharges(reservation);
+        reservation.setTotalAmount(folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(reservationId)
+                .stream().map(FolioItem::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         String reason = clean(request.reason());
         String description = "Zimmerwechsel "
                 + (previous == null ? "ohne Zuweisung" : previous.getNumber())
@@ -891,6 +1001,65 @@ public class PmsOperationsService {
         recordHistory(reservation, reservation.getStatus(), reservation.getStatus(), username, description);
         emit(reservation, "reservation.room_moved");
         return getOperations(company, reservation.getProperty().getId(), businessDate, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ReservationStayDetails getStayDetails(Company company, Long reservationId) {
+        Reservation r = requireReservation(company, reservationId);
+        List<ReservationStayDetails.RoomSegment> segments = r.getRoomSegments().stream().sorted(Comparator.comparing(ReservationRoomSegment::getStartDate))
+                .map(s -> new ReservationStayDetails.RoomSegment(s.getId(), s.getRoom().getId(), s.getRoom().getNumber(), s.getRoom().getRoomType().getId(),
+                        s.getRoom().getRoomType().getName(), s.getRatePlan().getId(), s.getStartDate(), s.getEndDate(), s.getReason())).toList();
+        if (segments.isEmpty() && r.getRoom() != null) segments = List.of(new ReservationStayDetails.RoomSegment(null, r.getRoom().getId(), r.getRoom().getNumber(),
+                r.getRoomType().getId(), r.getRoomType().getName(), r.getRatePlan().getId(), r.getArrivalDate(), r.getDepartureDate(), null));
+        return new ReservationStayDetails(r.getId(), segments, r.getCoGuests().stream().map(g -> new ReservationStayDetails.CoGuest(g.getId(), g.getGuest().getId(),
+                g.getGuest().getFirstName() + " " + g.getGuest().getLastName(), g.getArrivalDate(), g.getDepartureDate(), g.isChild(), g.getRegistrationCompletedAt())).toList());
+    }
+
+    @Transactional
+    public ReservationStayDetails updateCoGuests(Company company, Long reservationId, UpsertReservationGuestsRequest request, String username) {
+        Reservation r = requireReservation(company, reservationId); lockProperty(company, r.getProperty().getId());
+        if (NON_INVENTORY_STATUSES.contains(r.getStatus())) throw conflict("Mitreisende können nur für aktive Aufenthalte geändert werden.");
+        Set<Long> seen = new HashSet<>();
+        Map<Long, ReservationGuest> existing = r.getCoGuests().stream().collect(Collectors.toMap(g -> g.getGuest().getId(), Function.identity()));
+        List<ReservationGuest> selected = new ArrayList<>();
+        for (var entry : request.guests()) {
+            if (!seen.add(entry.guestId()) || entry.guestId().equals(r.getGuest().getId())) throw badRequest("Jede mitreisende Person einmal erfassen; der Hauptgast ist bereits zugeordnet.");
+            if (entry.arrivalDate().isBefore(r.getArrivalDate()) || entry.departureDate().isAfter(r.getDepartureDate()) || !entry.departureDate().isAfter(entry.arrivalDate())) throw badRequest("Reisedaten der Mitreisenden müssen innerhalb des Aufenthalts liegen.");
+            GuestProfile guest = guestRepository.findByIdAndCompany_Id(entry.guestId(), company.getId()).filter(GuestProfile::isActive).orElseThrow(() -> notFound("Gast nicht gefunden."));
+            ReservationGuest value = existing.getOrDefault(entry.guestId(), new ReservationGuest());
+            value.setReservation(r); value.setGuest(guest); value.setArrivalDate(entry.arrivalDate()); value.setDepartureDate(entry.departureDate()); value.setChild(entry.child());
+            selected.add(value);
+        }
+        for (LocalDate date = r.getArrivalDate(); date.isBefore(r.getDepartureDate()); date = date.plusDays(1)) {
+            LocalDate day = date;
+            long adults = 1 + selected.stream().filter(g -> !g.isChild() && !day.isBefore(g.getArrivalDate()) && day.isBefore(g.getDepartureDate())).count();
+            long children = selected.stream().filter(g -> g.isChild() && !day.isBefore(g.getArrivalDate()) && day.isBefore(g.getDepartureDate())).count();
+            if (adults > r.getAdults() || children > r.getChildren()) throw badRequest("Die Mitreisenden überschreiten die gebuchte Erwachsenen-/Kinderzahl.");
+        }
+        r.getCoGuests().removeIf(g -> !seen.contains(g.getGuest().getId()));
+        selected.stream().filter(g -> g.getId() == null).forEach(r.getCoGuests()::add);
+        reservationRepository.saveAndFlush(r); recordHistory(r, r.getStatus(), r.getStatus(), username, "Mitreisende aktualisiert");
+        return getStayDetails(company, reservationId);
+    }
+
+    @Transactional
+    public ReservationStayDetails registerCoGuest(Company company, Long reservationId, Long guestId, CompleteGuestRegistrationRequest request, String username) {
+        Reservation r = requireReservation(company, reservationId); lockProperty(company, r.getProperty().getId());
+        ReservationGuest guest = r.getCoGuests().stream().filter(g -> g.getGuest().getId().equals(guestId)).findFirst().orElseThrow(() -> notFound("Mitreisender nicht gefunden."));
+        if (!request.privacyConsent()) throw badRequest("Die erforderliche Bestätigung fehlt.");
+        guest.setAddressLine(request.addressLine()); guest.setPostalCode(request.postalCode()); guest.setCity(request.city());
+        guest.setCountryCode(request.countryCode().toUpperCase(Locale.ROOT)); guest.setNationalityCode(request.nationalityCode().toUpperCase(Locale.ROOT));
+        guest.setDocumentHash(documentFingerprints.fingerprint(request.documentNumber()));
+        guest.setDocumentLastFour(request.documentNumber().substring(request.documentNumber().length() - 4));
+        guest.setSignatureName(request.signatureName()); guest.setRegistrationCompletedAt(LocalDateTime.now());
+        reservationRepository.save(r); recordHistory(r, r.getStatus(), r.getStatus(), username, "Mitreisenden-Anmeldung abgeschlossen");
+        return getStayDetails(company, reservationId);
+    }
+
+    private Room roomOn(Reservation r, LocalDate date) {
+        if (r.getRoomSegments().isEmpty()) return r.getRoom();
+        LocalDate day = date.isBefore(r.getArrivalDate()) ? r.getArrivalDate() : !date.isBefore(r.getDepartureDate()) ? r.getDepartureDate().minusDays(1) : date;
+        return r.getRoomSegments().stream().filter(s -> !day.isBefore(s.getStartDate()) && day.isBefore(s.getEndDate())).map(ReservationRoomSegment::getRoom).findFirst().orElse(r.getRoom());
     }
 
     @Transactional
@@ -902,7 +1071,7 @@ public class PmsOperationsService {
             reservation.setCancellationReason("Haltefrist abgelaufen");
             reservation.setHoldUntil(null);
             reservationRepository.save(reservation);
-            folioRepository.findAllByReservation_IdOrderByIdAsc(reservation.getId()).forEach(folio -> {
+            folioRepository.findAllByReservation_IdOrderByIdAsc(reservation.getId()).stream().filter(folio -> !folio.isGroupMaster()).forEach(folio -> {
                 folio.setStatus(FolioStatus.CLOSED);
                 folio.setClosedAt(now);
                 folioRepository.save(folio);
@@ -920,15 +1089,21 @@ public class PmsOperationsService {
                                                LocalDate businessDate) {
         HotelProperty property = lockProperty(company, propertyId);
         Folio folio = requireOpenFolio(company, propertyId, folioId);
+        financialPeriods.assertPostingOpen(property, request.serviceDate());
+        if (request.taxRate() == null) throw badRequest("Für die Leistung ist ein expliziter Steuersatz erforderlich (0 bei steuerfrei).");
         FolioItem item = new FolioItem();
         item.setFolio(folio);
         item.setServiceDate(request.serviceDate());
         item.setType(request.type());
         item.setDescription(required(request.description()));
-        item.setQuantity(request.quantity().setScale(2, RoundingMode.HALF_UP));
-        item.setUnitPrice(money(request.unitPrice()));
-        item.setTotalAmount(money(request.quantity().multiply(request.unitPrice())));
+        try { item.setQuantity(request.quantity().setScale(2, RoundingMode.UNNECESSARY)); }
+        catch (ArithmeticException error) { throw badRequest("Die Menge darf höchstens zwei Nachkommastellen enthalten."); }
+        item.setUnitPrice(PmsMoney.require(request.unitPrice(), property.getCurrencyCode()));
+        item.setTotalAmount(PmsMoney.round(item.getQuantity().multiply(item.getUnitPrice()), property.getCurrencyCode()));
+        item.setTaxRate(request.taxRate());
+        item.setTaxIncluded(true);
         folioItemRepository.save(item);
+        groupRouting.route(folio.getReservation());
         return getOperations(company, propertyId, businessDate, null, null);
     }
 
@@ -941,15 +1116,21 @@ public class PmsOperationsService {
                                              LocalDate businessDate) {
         HotelProperty property = lockProperty(company, propertyId);
         Folio folio = requireOpenFolio(company, propertyId, folioId);
+        if ("DIRECT_BILL".equals(request.method().name())) throw badRequest("Firmenforderungen müssen über die Debitorenfreigabe gebucht werden.");
         BigDecimal balance = toFolioView(folio).balance();
+        financialPeriods.assertPostingOpen(property, financialPeriods.currentBusinessDate(property));
         if (request.amount().compareTo(balance) > 0) {
             throw badRequest("Die Zahlung darf den offenen Betrag nicht überschreiten.");
         }
         String paymentReference = clean(request.reference());
+        Payment knownCardPayment = request.method() == PaymentMethod.CARD && paymentReference != null
+                ? paymentRepository.findByProviderTransactionId(paymentReference).filter(p -> p.getFolio().getId().equals(folioId)).orElse(null) : null;
+        String merchantContext = request.method() == PaymentMethod.CARD ? knownCardPayment == null
+                ? gatewayFor(PaymentMethod.CARD).merchantContext(property) : knownCardPayment.getMerchantContext() : null;
         if (request.method() == PaymentMethod.CARD) {
             try {
                 paymentReference = gatewayFor(PaymentMethod.CARD).verifyCapturedPayment(
-                        property, folio, money(request.amount()), paymentReference);
+                        property, folio, PmsMoney.require(request.amount(), property.getCurrencyCode()), paymentReference, merchantContext);
             } catch (ResponseStatusException exception) {
                 throw exception;
             } catch (Exception exception) {
@@ -958,8 +1139,9 @@ public class PmsOperationsService {
             Payment existing = paymentRepository.findByProviderTransactionId(paymentReference).orElse(null);
             if (existing != null) {
                 boolean exactRetry = existing.getFolio().getId().equals(folioId)
-                        && existing.getAmount().compareTo(money(request.amount())) == 0
+                        && existing.getAmount().compareTo(PmsMoney.require(request.amount(), property.getCurrencyCode())) == 0
                         && existing.getMethod() == PaymentMethod.CARD
+                        && java.util.Objects.equals(existing.getMerchantContext(), merchantContext)
                         && existing.getKind() == PaymentKind.PAYMENT;
                 if (!exactRetry) {
                     throw conflict("Diese Provider-Zahlung wurde bereits anderweitig verbucht.");
@@ -969,82 +1151,28 @@ public class PmsOperationsService {
         }
         Payment payment = new Payment();
         payment.setFolio(folio);
-        payment.setAmount(money(request.amount()));
+        payment.setAmount(PmsMoney.require(request.amount(), property.getCurrencyCode()));
         payment.setMethod(request.method());
         payment.setStatus(PaymentStatus.POSTED);
         payment.setKind(PaymentKind.PAYMENT);
         payment.setReference(paymentReference);
         payment.setProviderTransactionId(request.method() == PaymentMethod.CARD ? paymentReference : null);
+        payment.setMerchantContext(merchantContext);
         payment.setCreatedBy(clean(username) == null ? "system" : clean(username));
+        payment.setPostingDate(financialPeriods.currentBusinessDate(property));
         if (request.method() == PaymentMethod.CASH) {
-            cashShiftRepository
-                    .findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(propertyId, CashShiftStatus.OPEN)
-                    .orElseThrow(() -> conflict("Vor einer Barzahlung muss eine Kassenschicht geöffnet werden."));
+            payment.setCashShift(cashService.requireOpenShift(property, request.cashShiftId(), username));
         }
         paymentRepository.save(payment);
         emit(folio.getReservation(), "payment.posted");
         return getOperations(company, propertyId, businessDate, null, null);
     }
 
-    @Transactional
-    public PmsOperationsResponse refundPayment(Company company,
-                                               Long propertyId,
-                                               Long paymentId,
-                                               RefundPaymentRequest request,
-                                               String username,
-                                               LocalDate businessDate) {
-        lockProperty(company, propertyId);
-        Payment original = paymentRepository.findByIdForUpdate(paymentId, propertyId, company.getId())
-                .orElseThrow(() -> notFound("Zahlung nicht gefunden."));
-        if (original.getStatus() != PaymentStatus.POSTED || original.getKind() != PaymentKind.PAYMENT) {
-            throw conflict("Nur gebuchte Originalzahlungen können rückerstattet werden.");
-        }
-        if (original.getFolio().getStatus() != FolioStatus.OPEN) {
-            throw conflict("Rückerstattungen benötigen ein offenes Gastkonto.");
-        }
-        BigDecimal refunded = paymentRepository
-                .findAllByOriginalPayment_IdAndStatus(original.getId(), PaymentStatus.POSTED)
-                .stream()
-                .map(Payment::getAmount)
-                .map(BigDecimal::abs)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal amount = money(request.amount());
-        if (refunded.add(amount).compareTo(original.getAmount()) > 0) {
-            throw badRequest("Die Rückerstattung überschreitet den noch erstattbaren Betrag.");
-        }
-        if (original.getMethod() == PaymentMethod.CASH) {
-            cashShiftRepository
-                    .findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(propertyId, CashShiftStatus.OPEN)
-                    .orElseThrow(() -> conflict("Für eine Bar-Rückerstattung muss eine Kassenschicht geöffnet sein."));
-        }
-        if (original.getMethod() == PaymentMethod.CARD) {
-            try {
-                gatewayFor(PaymentMethod.CARD).refund(
-                        original,
-                        amount,
-                        clean(request.reason()),
-                        "chrono-pms-refund-" + original.getId() + "-" + amount.toPlainString());
-            } catch (ResponseStatusException exception) {
-                throw exception;
-            } catch (Exception exception) {
-                throw badGateway("Die Kartenrückerstattung ist beim Zahlungsprovider fehlgeschlagen.");
-            }
-        }
-        Payment refund = new Payment();
-        refund.setFolio(original.getFolio());
-        refund.setOriginalPayment(original);
-        refund.setAmount(amount.negate());
-        refund.setMethod(original.getMethod());
-        refund.setStatus(PaymentStatus.POSTED);
-        refund.setKind(PaymentKind.REFUND);
-        refund.setReference(original.getReference());
-        refund.setReason(clean(request.reason()));
-        refund.setCreatedBy(clean(username) == null ? "system" : clean(username));
-        paymentRepository.save(refund);
-        emit(original.getFolio().getReservation(), "payment.refunded");
-        return getOperations(company, propertyId, businessDate, null, null);
+    public PmsOperationsResponse refundPayment(Company company, Long propertyId, Long paymentId,
+                                               RefundPaymentRequest request, String username, LocalDate businessDate) {
+        refundProcessor.process(company.getId(), propertyId, paymentId, request, username);
+        return readTransaction.execute(status -> getOperations(company, propertyId, businessDate, null, null));
     }
-
     @Transactional
     public PmsOperationsResponse voidPayment(Company company,
                                              Long propertyId,
@@ -1055,6 +1183,14 @@ public class PmsOperationsService {
         lockProperty(company, propertyId);
         Payment payment = paymentRepository.findByIdForUpdate(paymentId, propertyId, company.getId())
                 .orElseThrow(() -> notFound("Zahlung nicht gefunden."));
+        if(payment.getFolio().getStatus()!=FolioStatus.OPEN)
+            throw conflict("Auf einem geschlossenen Gastkonto Zahlungen über Gutschrift und Rückerstattung korrigieren.");
+        if ("DIRECT_BILL".equals(payment.getMethod().name())) throw conflict("Firmenforderungen über die Debitorenkorrektur bearbeiten.");
+        if (payment.getMethod() == PaymentMethod.CARD || payment.getKind() == PaymentKind.REFUND) {
+            throw conflict("Bereits eingezogene Kartenzahlungen mit einem eindeutigen Rückerstattungsvorgang korrigieren; gebuchte Rückerstattungen können nicht storniert werden.");
+        }
+        financialPeriods.assertPostingOpen(payment.getFolio().getReservation().getProperty(), payment.getPostingDate() == null ? payment.getReceivedAt().toLocalDate() : payment.getPostingDate());
+        if (payment.getCashShift() != null && payment.getCashShift().getStatus() != CashShiftStatus.OPEN) throw conflict("Die Kassenschicht ist abgeschlossen; eine Rückerstattung in einer offenen Schicht verwenden.");
         if (payment.getStatus() != PaymentStatus.POSTED) {
             throw conflict("Die Zahlung wurde bereits storniert.");
         }
@@ -1090,15 +1226,16 @@ public class PmsOperationsService {
                                                String username,
                                                LocalDate businessDate) {
         HotelProperty property = lockProperty(company, propertyId);
-        if (cashShiftRepository
-                .findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(propertyId, CashShiftStatus.OPEN)
-                .isPresent()) {
-            throw conflict("Für dieses Hotel ist bereits eine Kassenschicht geöffnet.");
+        String register = clean(request.registerCode()) == null ? "FRONTDESK" : request.registerCode().trim().toUpperCase(Locale.ROOT);
+        if (cashShiftRepository.existsByProperty_IdAndRegisterCodeAndStatus(propertyId, register, CashShiftStatus.OPEN)) {
+            throw conflict("Für diese Kasse ist bereits eine Kassenschicht geöffnet.");
         }
         CashShift shift = new CashShift();
         shift.setProperty(property);
+        shift.setRegisterCode(register);
+        shift.setOutletCode(clean(request.outletCode()) == null ? "FRONTDESK" : request.outletCode().trim().toUpperCase(Locale.ROOT));
         shift.setStatus(CashShiftStatus.OPEN);
-        shift.setOpeningFloat(money(request.openingFloat()));
+        shift.setOpeningFloat(PmsMoney.require(request.openingFloat(), property.getCurrencyCode()));
         shift.setOpenedBy(clean(username) == null ? "system" : clean(username));
         shift.setNotes(clean(request.notes()));
         cashShiftRepository.save(shift);
@@ -1111,17 +1248,17 @@ public class PmsOperationsService {
                                                 CloseCashShiftRequest request,
                                                 String username,
                                                 LocalDate businessDate) {
-        lockProperty(company, propertyId);
-        CashShift shift = cashShiftRepository
-                .findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(propertyId, CashShiftStatus.OPEN)
-                .orElseThrow(() -> conflict("Es ist keine Kassenschicht geöffnet."));
+        HotelProperty property = lockProperty(company, propertyId);
+        CashShift shift = cashService.requireOpenShift(property, request.cashShiftId(), username);
+        if (paymentRepository.existsByCashShift_IdAndStatus(shift.getId(), PaymentStatus.PENDING))
+            throw conflict("Die Kasse enthält noch einen offenen Zahlungsvorgang. Vor dem Abschluss abgleichen.");
         BigDecimal movements = cashMovements(shift);
-        BigDecimal expected = money(shift.getOpeningFloat().add(movements));
-        BigDecimal actual = money(request.actualCash());
+        BigDecimal expected = PmsMoney.round(shift.getOpeningFloat().add(movements), shift.getProperty().getCurrencyCode());
+        BigDecimal actual = PmsMoney.require(request.actualCash(), property.getCurrencyCode());
         shift.setStatus(CashShiftStatus.CLOSED);
         shift.setExpectedCash(expected);
         shift.setActualCash(actual);
-        shift.setVariance(money(actual.subtract(expected)));
+        shift.setVariance(PmsMoney.round(actual.subtract(expected), property.getCurrencyCode()));
         shift.setClosedBy(clean(username) == null ? "system" : clean(username));
         shift.setClosedAt(LocalDateTime.now());
         if (clean(request.notes()) != null) {
@@ -1228,27 +1365,7 @@ public class PmsOperationsService {
                                                         Long taskId,
                                                         UpdateHousekeepingTaskRequest request,
                                                         LocalDate businessDate) {
-        requireProperty(company, propertyId);
-        HousekeepingTask task = housekeepingTaskRepository.findByIdAndProperty_Company_Id(taskId, company.getId())
-                .orElseThrow(() -> notFound("Housekeeping-Aufgabe nicht gefunden."));
-        if (!task.getProperty().getId().equals(propertyId)) {
-            throw notFound("Housekeeping-Aufgabe nicht gefunden.");
-        }
-        task.setType(request.type());
-        task.setStatus(request.status());
-        task.setPriority(request.priority());
-        task.setEstimatedMinutes(request.estimatedMinutes());
-        task.setNotes(clean(request.notes()));
-        task.setAssignedTo(clean(request.assignedTo()));
-        if (request.status() == HousekeepingStatus.CLEAN) {
-            task.setCompletedAt(LocalDateTime.now());
-        } else {
-            task.setCompletedAt(null);
-        }
-        Room room = task.getRoom();
-        room.setHousekeepingStatus(request.status());
-        roomRepository.save(room);
-        housekeepingTaskRepository.save(task);
+        housekeepingWork.legacyUpdate(company, propertyId, taskId, request);
         return getOperations(company, propertyId, businessDate, null, null);
     }
 
@@ -1294,7 +1411,7 @@ public class PmsOperationsService {
         ratePlan.setCode(code(request.code()));
         ratePlan.setName(required(request.name()));
         ratePlan.setCurrencyCode(property.getCurrencyCode());
-        ratePlan.setNightlyRate(money(request.nightlyRate()));
+        ratePlan.setNightlyRate(PmsMoney.require(request.nightlyRate(), property.getCurrencyCode()));
         ratePlan.setMinStay(request.minStay());
         ratePlan.setBreakfastIncluded(request.breakfastIncluded());
         ratePlan.setRefundable(request.refundable());
@@ -1309,7 +1426,7 @@ public class PmsOperationsService {
                 || request.bookingFrom() != null && request.bookingTo() != null && request.bookingFrom().isAfter(request.bookingTo())) {
             throw badRequest("Das Ende eines Ratenzeitraums muss am oder nach dem Beginn liegen.");
         }
-        BigDecimal breakfast = request.breakfastAmount() == null ? BigDecimal.ZERO : money(request.breakfastAmount());
+        BigDecimal breakfast = request.breakfastAmount() == null ? BigDecimal.ZERO : PmsMoney.require(request.breakfastAmount(), property.getCurrencyCode());
         if (breakfast.signum() < 0 || breakfast.compareTo(ratePlan.getNightlyRate()) > 0
                 || !request.breakfastIncluded() && breakfast.signum() > 0) {
             throw badRequest("Der Frühstücksanteil muss im Nachtpreis enthalten sein und Frühstück eingeschaltet sein.");
@@ -1337,11 +1454,18 @@ public class PmsOperationsService {
         ratePlan.setMinAdvanceDays(request.minAdvanceDays());
         ratePlan.setMaxAdvanceDays(request.maxAdvanceDays());
         ratePlan.setIncludedAdults(includedAdults);
-        ratePlan.setExtraAdultRate(request.extraAdultRate() == null ? BigDecimal.ZERO : money(request.extraAdultRate()));
-        ratePlan.setChildRate(request.childRate() == null ? BigDecimal.ZERO : money(request.childRate()));
+        ratePlan.setExtraAdultRate(request.extraAdultRate() == null ? BigDecimal.ZERO : PmsMoney.require(request.extraAdultRate(), property.getCurrencyCode()));
+        ratePlan.setChildRate(request.childRate() == null ? BigDecimal.ZERO : PmsMoney.require(request.childRate(), property.getCurrencyCode()));
         ratePlan.setCancellationDeadlineHours(request.cancellationDeadlineHours());
         ratePlan.setCancellationFeePercent(request.cancellationFeePercent());
         ratePlan.setDepositPercent(request.depositPercent());
+        ratePlan.setNoShowFeePercent(request.noShowFeePercent());
+        ratePlan.setPolicyFeeTaxRate(request.policyFeeTaxRate());
+        ratePlan.setDepositDueDaysBeforeArrival(request.depositDueDaysBeforeArrival());
+        if ((request.cancellationFeePercent() != null && request.cancellationFeePercent().signum() > 0
+                || request.noShowFeePercent() != null && request.noShowFeePercent().signum() > 0) && request.policyFeeTaxRate() == null) {
+            throw badRequest("Für Storno-/No-Show-Gebühren muss der Steuersatz ausdrücklich angegeben werden (0 bei steuerfrei).");
+        }
         ratePlan.setPaymentDueDays(request.paymentDueDays());
         ratePlan.setCancellationPolicy(clean(request.cancellationPolicy()));
         ratePlan.setPaymentPolicy(clean(request.paymentPolicy()));
@@ -1392,7 +1516,8 @@ public class PmsOperationsService {
                     roomType.getId(),
                     request.arrivalDate(),
                     request.departureDate(),
-                    excludeReservationId
+                    excludeReservationId,
+                    reservation.getGroupBooking()==null?null:reservation.getGroupBooking().getId()
             );
         }
         Room room = null;
@@ -1428,6 +1553,9 @@ public class PmsOperationsService {
         reservation.setGuest(guest);
         reservation.setRoomType(roomType);
         reservation.setRoom(room);
+        if (reservation.getId() == null || reservation.getRatePlan() == null || !Objects.equals(reservation.getRatePlan().getId(), ratePlan.getId())) {
+            PmsReservationPolicyService.snapshot(reservation, ratePlan);
+        }
         reservation.setRatePlan(ratePlan);
         reservation.setArrivalDate(request.arrivalDate());
         reservation.setDepartureDate(request.departureDate());
@@ -1471,6 +1599,14 @@ public class PmsOperationsService {
                                 LocalDate arrival,
                                 LocalDate departure,
                                 Long excludeReservationId) {
+        Long groupId=excludeReservationId==null?null:reservationRepository.findById(excludeReservationId)
+                .map(Reservation::getGroupBooking).map(GroupBooking::getId).orElse(null);
+        ensureCapacity(propertyId,roomTypeId,arrival,departure,excludeReservationId,groupId);
+    }
+
+    private void ensureCapacity(Long propertyId,Long roomTypeId,LocalDate arrival,LocalDate departure,
+                                Long excludeReservationId,Long groupId) {
+        Map<LocalDate,Long> heldByDate=groupInventory.heldByNight(propertyId,roomTypeId,arrival,departure,groupId);
         long capacity = countSellableRooms(propertyId, roomTypeId);
         if (capacity == 0) {
             throw conflict("Für diesen Zimmertyp sind keine verkaufbaren Zimmer eingerichtet.");
@@ -1493,6 +1629,7 @@ public class PmsOperationsService {
                     NON_INVENTORY_STATUSES,
                     excludeReservationId
             );
+            sold += heldByDate.getOrDefault(date,0L);
             if (sold >= capacityForDate) {
                 throw conflict("Der Zimmertyp ist am " + date + " ausgebucht.");
             }
@@ -1610,7 +1747,7 @@ public class PmsOperationsService {
         if (nights < requiredStay) {
             return new Quote(BigDecimal.ZERO, "Der Mindestaufenthalt beträgt " + requiredStay + " Nächte.");
         }
-        return new Quote(money(total), null);
+        return new Quote(PmsMoney.round(total, ratePlan.getCurrencyCode()), null);
     }
 
     private InventorySummary summarizeInventory(Long roomTypeId,
@@ -1627,10 +1764,14 @@ public class PmsOperationsService {
                 .collect(Collectors.toSet());
         long maximumSold = 0;
         long minimumAvailable = sellableRoomIds.size();
+        Map<LocalDate,Long> heldByDate=rooms.isEmpty()?Map.of():groupInventory.heldByNight(rooms.get(0).getProperty().getId(),roomTypeId,arrival,departure,null);
         for (LocalDate date = arrival; date.isBefore(departure); date = date.plusDays(1)) {
             LocalDate stayDate = date;
             long sold = reservations.stream()
-                    .filter(reservation -> reservation.getRoomType().getId().equals(roomTypeId))
+                    .filter(reservation -> reservation.getRoomSegments().isEmpty()
+                            ? reservation.getRoomType().getId().equals(roomTypeId)
+                            : reservation.getRoomSegments().stream().anyMatch(s -> s.getRoom().getRoomType().getId().equals(roomTypeId)
+                                && !stayDate.isBefore(s.getStartDate()) && stayDate.isBefore(s.getEndDate())))
                     .filter(reservation -> !NON_INVENTORY_STATUSES.contains(reservation.getStatus()))
                     .filter(reservation -> reservation.getArrivalDate().isBefore(stayDate.plusDays(1))
                             && reservation.getDepartureDate().isAfter(stayDate))
@@ -1644,9 +1785,10 @@ public class PmsOperationsService {
                     .map(block -> block.getRoom().getId())
                     .distinct()
                     .count();
+            long held=heldByDate.getOrDefault(date,0L);
             maximumSold = Math.max(maximumSold, sold);
             minimumAvailable = Math.min(minimumAvailable,
-                    Math.max(0, sellableRoomIds.size() - blocked - sold));
+                    Math.max(0, sellableRoomIds.size() - blocked - sold - held));
         }
         return new InventorySummary(sellableRoomIds.size(), maximumSold, minimumAvailable);
     }
@@ -1660,16 +1802,66 @@ public class PmsOperationsService {
         folio.setOrganization(reservation.getGuest().getOrganization());
         folioRepository.save(folio);
         saveRoomChargeItems(folio, reservation);
+        groupRouting.route(reservation);
     }
 
     private void refreshRoomCharges(Reservation reservation) {
         Folio folio = folioRepository.findFirstByReservation_IdOrderByIdAsc(reservation.getId())
                 .orElseThrow(() -> conflict("Zur Reservierung fehlt das Gastkonto."));
-        if (folio.getStatus() != FolioStatus.OPEN) {
-            throw conflict("Ein geschlossenes Gastkonto kann nicht aktualisiert werden.");
+        List<FolioItem> existing = folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(reservation.getId());
+        Map<String, FolioItem> byKey = new LinkedHashMap<>();
+        for (FolioItem item : existing) {
+            String key = item.getServiceDate() + ":" + item.getType();
+            if (byKey.putIfAbsent(key, item) != null) {
+                throw conflict("Doppelte automatisch erzeugte Leistungen müssen vor der Aufenthaltsänderung korrigiert werden.");
+            }
         }
-        folioItemRepository.deleteAllByFolio_IdAndRateGeneratedTrue(folio.getId());
-        saveRoomChargeItems(folio, reservation);
+        Map<Long, Map<LocalDate, RateOverride>> overridesByRate = new HashMap<>();
+        for (LocalDate date = reservation.getArrivalDate(); date.isBefore(reservation.getDepartureDate()); date = date.plusDays(1)) {
+            LocalDate day = date;
+            RatePlan rate = reservation.getRoomSegments().stream().filter(s -> !day.isBefore(s.getStartDate()) && day.isBefore(s.getEndDate()))
+                    .map(ReservationRoomSegment::getRatePlan).findFirst().orElse(reservation.getRatePlan());
+            Map<LocalDate, RateOverride> overrides = overridesByRate.computeIfAbsent(rate.getId(), id -> rateOverrideRepository
+                    .findAllByRatePlan_IdAndStayDateBetweenOrderByStayDateAsc(id, reservation.getArrivalDate(), reservation.getDepartureDate())
+                    .stream().collect(Collectors.toMap(RateOverride::getStayDate, Function.identity())));
+            BigDecimal nightly = Optional.ofNullable(overrides.get(date)).map(RateOverride::getPrice).orElse(rate.getNightlyRate());
+            PmsRatePricing.NightPrice price = PmsRatePricing.night(rate, nightly, reservation.getAdults(), reservation.getChildren());
+            reconcileRateCharge(folio, byKey.remove(date + ":" + FolioItemType.ROOM), date, FolioItemType.ROOM,
+                    "Übernachtung " + rate.getRoomType().getName(), price.accommodation(), rate.getVatRate());
+            if (price.breakfast().signum() > 0) reconcileRateCharge(folio, byKey.remove(date + ":" + FolioItemType.BREAKFAST), date,
+                    FolioItemType.BREAKFAST, "Frühstück · " + rate.getName(), price.breakfast(), rate.getBreakfastVatRate());
+        }
+        for (FolioItem obsolete : byKey.values()) {
+            assertRateChargeMutable(obsolete);
+            folioItemRepository.delete(obsolete);
+        }
+        groupRouting.route(reservation);
+    }
+
+    private void assertRateChargeMutable(FolioItem item) {
+        if (item.getFolio().getStatus() != FolioStatus.OPEN || invoiceLineRepository.existsBySourceItem_Id(item.getId())) {
+            throw conflict("Bereits fakturierte oder abgeschlossene Leistungen benötigen eine Rechnungskorrektur.");
+        }
+        financialPeriods.assertPostingOpen(item.getFolio().getReservation().getProperty(), item.getServiceDate());
+    }
+
+    private void reconcileRateCharge(Folio defaultFolio, FolioItem item, LocalDate date, FolioItemType type,
+                                     String description, BigDecimal gross, BigDecimal taxRate) {
+        if (item == null) {
+            if (defaultFolio.getStatus() != FolioStatus.OPEN) throw conflict("Ein geschlossenes Gastkonto kann nicht erweitert werden.");
+            financialPeriods.assertPostingOpen(defaultFolio.getReservation().getProperty(), date);
+            saveRateChargeItem(defaultFolio, date, type, description, gross, taxRate);
+            return;
+        }
+        boolean sameTax = item.getTaxRate() == null ? taxRate == null : taxRate != null && item.getTaxRate().compareTo(taxRate) == 0;
+        if (item.getTotalAmount().compareTo(gross) == 0 && sameTax) return;
+        assertRateChargeMutable(item);
+        item.setDescription(description);
+        item.setQuantity(BigDecimal.ONE);
+        item.setUnitPrice(gross);
+        item.setTotalAmount(gross);
+        item.setTaxRate(taxRate);
+        folioItemRepository.save(item);
     }
 
     private void saveRoomChargeItems(Folio folio, Reservation reservation) {
@@ -1717,17 +1909,7 @@ public class PmsOperationsService {
     private void markRoomDirty(HotelProperty property, Room room, LocalDate serviceDate) {
         room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
         roomRepository.save(room);
-        HousekeepingTask task = housekeepingTaskRepository.findByRoom_IdAndServiceDate(room.getId(), serviceDate)
-                .orElseGet(HousekeepingTask::new);
-        task.setProperty(property);
-        task.setRoom(room);
-        task.setServiceDate(serviceDate);
-        task.setType(HousekeepingTaskType.DEPARTURE);
-        task.setStatus(HousekeepingStatus.DIRTY);
-        task.setPriority(90);
-        task.setEstimatedMinutes(35);
-        task.setCompletedAt(null);
-        housekeepingTaskRepository.save(task);
+        housekeepingWork.departure(property, room, serviceDate);
     }
 
     private PmsOperationsResponse.GuestView toGuestView(GuestProfile guest) {
@@ -1788,7 +1970,8 @@ public class PmsOperationsService {
                 ratePlan.getCancellationFeePercent(), ratePlan.getDepositPercent(), ratePlan.getPaymentDueDays(),
                 ratePlan.getCancellationPolicy(), ratePlan.getPaymentPolicy(), ratePlan.getNotes(),
                 ratePlan.getOrganization() == null ? null : ratePlan.getOrganization().getId(),
-                ratePlan.getOrganization() == null ? null : ratePlan.getOrganization().getName()
+                ratePlan.getOrganization() == null ? null : ratePlan.getOrganization().getName(),
+                ratePlan.getNoShowFeePercent(), ratePlan.getPolicyFeeTaxRate(), ratePlan.getDepositDueDaysBeforeArrival()
         );
     }
 
@@ -1806,6 +1989,13 @@ public class PmsOperationsService {
     }
 
     private PmsOperationsResponse.ReservationView toReservationView(Reservation reservation) {
+        return toReservationView(reservation,
+                reservationStatusHistoryRepository.findAllByReservation_IdOrderByChangedAtDesc(reservation.getId()));
+    }
+
+    private PmsOperationsResponse.ReservationView toReservationView(Reservation reservation,
+                                                                  List<ReservationStatusHistory> histories) {
+        Room displayedRoom = roomOn(reservation, today(reservation.getProperty()));
         return new PmsOperationsResponse.ReservationView(
                 reservation.getId(),
                 reservation.getVersion(),
@@ -1817,8 +2007,8 @@ public class PmsOperationsService {
                 reservation.getGuest().getEmail(),
                 reservation.getRoomType().getId(),
                 reservation.getRoomType().getName(),
-                reservation.getRoom() == null ? null : reservation.getRoom().getId(),
-                reservation.getRoom() == null ? null : reservation.getRoom().getNumber(),
+                displayedRoom == null ? null : displayedRoom.getId(),
+                displayedRoom == null ? null : displayedRoom.getNumber(),
                 reservation.getRatePlan().getId(),
                 reservation.getRatePlan().getName(),
                 reservation.getArrivalDate(),
@@ -1839,8 +2029,7 @@ public class PmsOperationsService {
                 reservation.getCancelledAt(),
                 reservation.getNoShowAt(),
                 reservation.getCancellationReason(),
-                reservationStatusHistoryRepository.findAllByReservation_IdOrderByChangedAtDesc(reservation.getId())
-                        .stream()
+                histories.stream()
                         .map(history -> new PmsOperationsResponse.ReservationHistoryView(
                                 history.getId(),
                                 history.getFromStatus(),
@@ -1853,7 +2042,7 @@ public class PmsOperationsService {
         );
     }
 
-    private PmsOperationsResponse.RoomStateView toRoomStateView(Room room, Reservation currentReservation) {
+    private PmsOperationsResponse.RoomStateView toRoomStateView(Room room, PmsOperationsResponse.ReservationView currentReservation) {
         return new PmsOperationsResponse.RoomStateView(
                 room.getId(),
                 room.getRoomType().getId(),
@@ -1863,7 +2052,7 @@ public class PmsOperationsService {
                 room.getFeatures(),
                 room.getOperationalStatus(),
                 room.getHousekeepingStatus(),
-                currentReservation == null ? null : toReservationView(currentReservation)
+                currentReservation
         );
     }
 
@@ -1879,7 +2068,8 @@ public class PmsOperationsService {
                 task.getEstimatedMinutes(),
                 task.getNotes(),
                 task.getAssignedTo(),
-                task.getCompletedAt()
+                task.getCompletedAt(),
+                task.getVersion(), task.getWorkType(), task.getWorkStatus()
         );
     }
 
@@ -1891,6 +2081,12 @@ public class PmsOperationsService {
 
     private PmsOperationsResponse.FolioView toFolioView(Folio folio, List<FolioItem> items,
                                                          List<Payment> payments) {
+        Set<Long> invoicedIds = items.isEmpty() ? Set.of() : new HashSet<>(invoiceLineRepository.findAllocatedSourceIds(items.stream().map(FolioItem::getId).toList()));
+        return toFolioView(folio, items, payments, invoicedIds);
+    }
+
+    private PmsOperationsResponse.FolioView toFolioView(Folio folio, List<FolioItem> items,
+                                                      List<Payment> payments, Set<Long> invoicedIds) {
         BigDecimal charges = items.stream()
                 .map(FolioItem::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -1909,9 +2105,9 @@ public class PmsOperationsService {
                 folio.getOrganization() == null ? null : folio.getOrganization().getName(),
                 folio.getCurrencyCode(),
                 folio.getStatus(),
-                money(charges),
-                money(paid),
-                money(charges.subtract(paid)),
+                PmsMoney.round(charges, folio.getReservation().getCurrencyCode()),
+                PmsMoney.round(paid, folio.getReservation().getCurrencyCode()),
+                PmsMoney.round(charges.subtract(paid), folio.getReservation().getCurrencyCode()),
                 items.stream().map(item -> new PmsOperationsResponse.FolioItemView(
                         item.getId(),
                         item.getServiceDate(),
@@ -1919,7 +2115,9 @@ public class PmsOperationsService {
                         item.getDescription(),
                         item.getQuantity(),
                         item.getUnitPrice(),
-                        item.getTotalAmount()
+                        item.getTotalAmount(),
+                        item.getTaxRate(),
+                        invoicedIds.contains(item.getId())
                 )).toList(),
                 payments.stream().map(payment -> new PmsOperationsResponse.PaymentView(
                         payment.getId(),
@@ -1933,15 +2131,18 @@ public class PmsOperationsService {
                         payment.getReceivedAt(),
                         payment.getCreatedBy(),
                         payment.getVoidedAt(),
-                        payment.getVoidedBy()
-                )).toList()
+                        payment.getVoidedBy(),
+                        payment.getCashShift() == null ? null : payment.getCashShift().getId(),
+                        payment.getProviderTransactionId(), payment.getProviderStatus(), payment.getRefundRequestId()
+                )).toList(),
+                folio.isGroupMaster(),folio.getGroupBooking()==null?null:folio.getGroupBooking().getId()
         );
     }
 
     private PmsOperationsResponse.CashShiftView toCashShiftView(CashShift shift) {
         BigDecimal movements = cashMovements(shift);
         BigDecimal expected = shift.getExpectedCash() == null
-                ? money(shift.getOpeningFloat().add(movements))
+                ? PmsMoney.round(shift.getOpeningFloat().add(movements), shift.getProperty().getCurrencyCode())
                 : shift.getExpectedCash();
         return new PmsOperationsResponse.CashShiftView(
                 shift.getId(),
@@ -1955,7 +2156,7 @@ public class PmsOperationsService {
                 shift.getVariance(),
                 shift.getClosedBy(),
                 shift.getClosedAt(),
-                shift.getNotes()
+                shift.getNotes(), shift.getRegisterCode(), shift.getOutletCode()
         );
     }
 
@@ -1976,18 +2177,22 @@ public class PmsOperationsService {
     }
 
     private BigDecimal cashMovements(CashShift shift) {
-        LocalDateTime from = shift.getOpenedAt() == null ? LocalDateTime.now() : shift.getOpenedAt();
-        return money(paymentRepository
-                .findAllByFolio_Reservation_Property_IdAndMethodAndStatusAndReceivedAtGreaterThanEqual(
-                        shift.getProperty().getId(),
-                        PaymentMethod.CASH,
-                        PaymentStatus.POSTED,
-                        from
-                )
+        // Before V28 only one shift existed per hotel and payments had no shift FK.
+        BigDecimal legacy = paymentRepository.findAllByFolio_Reservation_Property_IdAndMethodAndStatusAndReceivedAtGreaterThanEqual(
+                shift.getProperty().getId(), PaymentMethod.CASH, PaymentStatus.POSTED, shift.getOpenedAt()).stream()
+                .filter(p -> p.getCashShift() == null && (shift.getClosedAt() == null || !p.getReceivedAt().isAfter(shift.getClosedAt())))
+                .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return PmsMoney.round(paymentRepository
+                .findAllByCashShift_IdAndMethodAndStatus(shift.getId(), PaymentMethod.CASH, PaymentStatus.POSTED)
                 .stream()
-                .filter(payment -> shift.getClosedAt() == null || !payment.getReceivedAt().isAfter(shift.getClosedAt()))
                 .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+                .reduce(BigDecimal.ZERO, BigDecimal::add).add(posTickets.sumCashByShift(shift.getId())).add(legacy), shift.getProperty().getCurrencyCode());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PmsOperationsResponse.CashShiftView> getCashShifts(Company company, Long propertyId) {
+        requireProperty(company, propertyId);
+        return cashShiftRepository.findAllByProperty_IdOrderByOpenedAtDesc(propertyId).stream().limit(100).map(this::toCashShiftView).toList();
     }
 
     private HotelProperty requireProperty(Company company, Long propertyId) {
@@ -2015,6 +2220,16 @@ public class PmsOperationsService {
         requireCompany(company);
         return reservationRepository.findByIdAndProperty_Company_Id(reservationId, company.getId())
                 .orElseThrow(() -> notFound("Reservierung nicht gefunden."));
+    }
+
+    private Reservation requireLockedReservation(Company company,Long reservationId) {
+        Long propertyId=reservationRepository.findPropertyIdForTenant(reservationId,company.getId())
+                .orElseThrow(()->notFound("Reservierung nicht gefunden."));
+        lockProperty(company,propertyId);
+        Reservation reservation=requireReservation(company,reservationId);
+        // Bulk callers may have loaded the member before waiting for the hotel lock.
+        lifecycleEntityManager.refresh(reservation,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return reservation;
     }
 
     private Folio requireOpenFolio(Company company, Long propertyId, Long folioId) {
@@ -2208,9 +2423,6 @@ public class PmsOperationsService {
         }
     }
 
-    private BigDecimal money(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO.setScale(2) : value.setScale(2, RoundingMode.HALF_UP);
-    }
 
     private void requireCompany(Company company) {
         if (company == null || company.getId() == null) {

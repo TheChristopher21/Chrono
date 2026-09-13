@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @Table(
         name = "pms_housekeeping_tasks",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_pms_housekeeping_room_date",
-                columnNames = {"room_id", "service_date"}
+                name = "uk_pms_housekeeping_room_date_work",
+                columnNames = {"room_id", "service_date", "work_type"}
         ),
         indexes = @Index(name = "idx_pms_housekeeping_property_date", columnList = "property_id,service_date")
 )
@@ -22,6 +22,12 @@ public class HousekeepingTask {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version @Column(nullable = false) private long version;
+    @Enumerated(EnumType.STRING) @Column(name = "work_type", nullable = false, length = 24)
+    private HousekeepingWorkType workType = HousekeepingWorkType.CLEAN;
+    @Enumerated(EnumType.STRING) @Column(name = "work_status", nullable = false, length = 24)
+    private HousekeepingWorkStatus workStatus = HousekeepingWorkStatus.OPEN;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "property_id", nullable = false)

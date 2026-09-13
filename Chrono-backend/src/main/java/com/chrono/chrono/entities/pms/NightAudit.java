@@ -42,8 +42,7 @@ public class NightAudit {
     @Column(name = "no_show_count", nullable = false)
     private long noShowCount;
 
-    @Column(name = "open_balance", nullable = false, precision = 12, scale = 2)
-    private BigDecimal openBalance;
+    @Column(name = "open_balance", nullable = false, precision = 19, scale = 4) private BigDecimal openBalance;
 
     @Column(name = "closed_by", nullable = false, length = 120)
     private String closedBy;

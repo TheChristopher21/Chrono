@@ -194,8 +194,8 @@ public class PmsFrontDeskBookingService {
                 reservation.getId(),
                 folio.getId(),
                 reservation.getConfirmationCode(),
-                money(reservation.getTotalAmount()),
-                money(charges.subtract(payments)),
+                PmsMoney.round(reservation.getTotalAmount(), reservation.getCurrencyCode()),
+                PmsMoney.round(charges.subtract(payments), reservation.getCurrencyCode()),
                 registrationStatus,
                 reservation.getStatus(),
                 checkInBlockers.isEmpty(),
@@ -337,9 +337,6 @@ public class PmsFrontDeskBookingService {
                 guest.additionalEmails(),guest.dietaryNotes(),guest.vatNumber(),guest.organizationContactId(),guest.billingOverride(),guest.billingProfile());
     }
 
-    private BigDecimal money(BigDecimal value) {
-        return (value == null ? BigDecimal.ZERO : value).setScale(2, RoundingMode.HALF_UP);
-    }
 
     private String actor(String value) {
         String cleaned = clean(value);

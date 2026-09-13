@@ -18,4 +18,7 @@ public interface PmsAuditEventRepository extends JpaRepository<PmsAuditEvent, Lo
 
     @Query("select max(event.sequenceNumber) from PmsAuditEvent event where event.property.id = :propertyId")
     Long findMaximumSequence(@Param("propertyId") Long propertyId);
+
+    @Query("select event.property.id, max(event.sequenceNumber) from PmsAuditEvent event where event.company.id = :companyId and event.property.id in :propertyIds group by event.property.id")
+    List<Object[]> liveSequences(@Param("companyId") Long companyId, @Param("propertyIds") java.util.Collection<Long> propertyIds);
 }

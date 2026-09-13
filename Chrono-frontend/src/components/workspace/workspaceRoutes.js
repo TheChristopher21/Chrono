@@ -8,6 +8,15 @@ import {
 import { PMS_SECTIONS } from '../../pages/Pms/pmsNavigation.js';
 
 export const MAX_WORKSPACE_TABS = 12;
+export const WORKSPACE_SCOPES = ['chrono', 'pms'];
+export const WORKSPACE_TAB_STATE_KEY = 'workspaceTabId';
+
+export const getWorkspaceScope = (tabOrUrl) => {
+    if (typeof tabOrUrl === 'object' && tabOrUrl !== null) {
+        return tabOrUrl.pageKey === 'pms' || tabOrUrl.scope === 'pms' ? 'pms' : 'chrono';
+    }
+    return /^\/pms(?:[/?#]|$)/.test(String(tabOrUrl || '')) ? 'pms' : 'chrono';
+};
 
 const EXCLUDED_PAGE_KEYS = new Set(['printReport']);
 const EXCLUDED_PATH_PREFIXES = [
@@ -83,6 +92,7 @@ const pmsSectionDefinition = (sectionKey) => (
 export const resolveWorkspaceRoute = (urlLike, user, t) => {
     const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://chrono.local';
     const parsed = new URL(urlLike || '/', fallbackOrigin);
+    if (parsed.origin !== new URL(fallbackOrigin).origin) return null;
     const requestedPathname = parsed.pathname;
     const pathname = WORKSPACE_PATH_ALIASES[requestedPathname] ?? requestedPathname;
     const { searchParams } = parsed;
@@ -129,6 +139,7 @@ export const resolveWorkspaceRoute = (urlLike, user, t) => {
 
     return {
         pageKey: page.key,
+        scope: page.key === 'pms' ? 'pms' : 'chrono',
         instanceKey,
         pathname,
         search: parsed.search,
@@ -141,7 +152,7 @@ export const resolveWorkspaceRoute = (urlLike, user, t) => {
     };
 };
 
-export const getWorkspaceLaunchItems = (user, t) => {
+export const getWorkspaceLaunchItems = (user, t, scope) => {
     const baseItems = PAGE_CATALOG
         .filter((page) => canUsePage(user, page))
         .filter((page) => !EXCLUDED_PAGE_KEYS.has(page.key))
@@ -188,7 +199,7 @@ export const getWorkspaceLaunchItems = (user, t) => {
             }));
     }
 
-    return baseItems;
+    return scope ? baseItems.filter((item) => getWorkspaceScope(item) === scope) : baseItems;
 };
 
 export const sanitizeStoredWorkspace = (candidate, user, t) => {
@@ -196,22 +207,24 @@ export const sanitizeStoredWorkspace = (candidate, user, t) => {
     const seen = new Set();
     const tabs = [];
 
-    rawTabs.slice(0, MAX_WORKSPACE_TABS * 2).forEach((stored) => {
+    rawTabs.slice(0, MAX_WORKSPACE_TABS * WORKSPACE_SCOPES.length * 2).forEach((stored, index) => {
         const route = resolveWorkspaceRoute(stored?.url, user, t);
-        if (!route || route.persist === false || seen.has(route.instanceKey)) return;
-        seen.add(route.instanceKey);
+        const id = typeof stored?.id === 'string' && stored.id ? stored.id : `tab:${index + 1}`;
+        if (!route || route.persist === false || seen.has(id)) return;
+        seen.add(id);
         tabs.push({
             ...route,
-            id: typeof stored.id === 'string' && stored.id ? stored.id : route.instanceKey,
+            id,
             pinned: Boolean(stored.pinned),
             scrollY: Number.isFinite(stored.scrollY) ? Math.max(0, stored.scrollY) : 0,
             lastVisitedAt: Number.isFinite(stored.lastVisitedAt) ? stored.lastVisitedAt : Date.now(),
         });
     });
 
+    const limitedTabs = withWorkspaceTabLimit(tabs, candidate?.activeTabId);
     return {
-        tabs: tabs.slice(0, MAX_WORKSPACE_TABS),
-        activeTabId: tabs.some((tab) => tab.id === candidate?.activeTabId) ? candidate.activeTabId : tabs[0]?.id ?? null,
+        tabs: limitedTabs,
+        activeTabId: limitedTabs.some((tab) => tab.id === candidate?.activeTabId) ? candidate.activeTabId : limitedTabs[0]?.id ?? null,
         recentlyClosed: [],
     };
 };
@@ -219,9 +232,8 @@ export const sanitizeStoredWorkspace = (candidate, user, t) => {
 export const serializeWorkspace = (state) => ({
     version: 2,
     activeTabId: state.activeTabId,
-    tabs: state.tabs
+    tabs: withWorkspaceTabLimit(state.tabs, state.activeTabId)
         .filter((tab) => tab.persist !== false)
-        .slice(0, MAX_WORKSPACE_TABS)
         .map(({ id, url, pinned, scrollY, lastVisitedAt }) => ({ id, url, pinned, scrollY, lastVisitedAt })),
 });
 
@@ -263,9 +275,8 @@ const createUniqueServerTabId = (rawId, index, usedIds) => {
 export const serializeWorkspacePreference = (state) => {
     const usedIds = new Set();
     const idMap = new Map();
-    const tabs = (state?.tabs || [])
+    const tabs = withWorkspaceTabLimit(state?.tabs || [], state?.activeTabId)
         .filter((tab) => tab.persist !== false && tab.pageKey)
-        .slice(0, MAX_WORKSPACE_TABS)
         .map((tab, index) => {
             const id = createUniqueServerTabId(tab.id, index, usedIds);
             idMap.set(tab.id, id);
@@ -307,16 +318,14 @@ const getServerTabUrl = (serverTab, user) => {
 
 export const deserializeWorkspacePreference = (payload, user, t) => {
     const tabs = [];
-    const seenInstances = new Set();
     const seenIds = new Set();
     (Array.isArray(payload?.tabs) ? payload.tabs : [])
-        .slice(0, MAX_WORKSPACE_TABS)
+        .slice(0, MAX_WORKSPACE_TABS * WORKSPACE_SCOPES.length)
         .forEach((serverTab, index) => {
             const url = getServerTabUrl(serverTab, user);
             const route = url ? resolveWorkspaceRoute(url, user, t) : null;
-            if (!route || route.persist === false || seenInstances.has(route.instanceKey)) return;
+            if (!route || route.persist === false) return;
             const id = createUniqueServerTabId(serverTab?.id, index, seenIds);
-            seenInstances.add(route.instanceKey);
             tabs.push({
                 ...route,
                 id,
@@ -327,11 +336,12 @@ export const deserializeWorkspacePreference = (payload, user, t) => {
         });
 
     const requestedActiveId = typeof payload?.activeTabId === 'string' ? payload.activeTabId : null;
+    const limitedTabs = withWorkspaceTabLimit(tabs, requestedActiveId);
     return {
-        tabs,
-        activeTabId: tabs.some((tab) => tab.id === requestedActiveId)
+        tabs: limitedTabs,
+        activeTabId: limitedTabs.some((tab) => tab.id === requestedActiveId)
             ? requestedActiveId
-            : tabs[0]?.id ?? null,
+            : limitedTabs[0]?.id ?? null,
         recentlyClosed: [],
     };
 };
@@ -341,21 +351,31 @@ export const mergeWorkspaceStates = (remoteState, localState, { preferLocalPinne
     const localTabs = Array.isArray(localState?.tabs) ? localState.tabs : [];
     const tabs = [...remoteTabs];
     let activeTabId = remoteState?.activeTabId ?? null;
+    const localIds = new Set(localTabs.map((tab) => tab.id));
+    const consumedRemoteIds = new Set();
 
     localTabs.forEach((localTab) => {
-        const matchingIndex = tabs.findIndex((tab) => tab.instanceKey === localTab.instanceKey);
+        let matchingIndex = tabs.findIndex((tab) => tab.id === localTab.id);
+        if (matchingIndex < 0) {
+            // Match each remotely restored instance at most once. Deliberate duplicate
+            // routes remain separate, while a just-opened deep link joins its saved tab.
+            matchingIndex = tabs.findIndex((tab) => tab.instanceKey === localTab.instanceKey
+                && !localIds.has(tab.id) && !consumedRemoteIds.has(tab.id));
+        }
         if (matchingIndex >= 0) {
             const remoteTab = tabs[matchingIndex];
+            consumedRemoteIds.add(remoteTab.id);
             tabs[matchingIndex] = {
                 ...remoteTab,
                 ...localTab,
-                id: remoteTab.id,
+                // Keep the browser-history identity of tabs already in this session.
+                id: localTab.id,
                 pinned: preferLocalPinned ? localTab.pinned : (remoteTab.pinned || localTab.pinned),
             };
-            if (localState?.activeTabId === localTab.id) activeTabId = remoteTab.id;
+            if (localState?.activeTabId === localTab.id) activeTabId = localTab.id;
             return;
         }
-        if (tabs.length >= MAX_WORKSPACE_TABS && tabs.every((tab) => tab.pinned)) return;
+        if (!canOpenWorkspaceTab(tabs, getWorkspaceScope(localTab))) return;
         tabs.push(localTab);
         if (localState?.activeTabId === localTab.id) activeTabId = localTab.id;
     });
@@ -372,16 +392,25 @@ export const mergeWorkspaceStates = (remoteState, localState, { preferLocalPinne
 };
 
 export const withWorkspaceTabLimit = (tabs, activeTabId) => {
-    if (tabs.length <= MAX_WORKSPACE_TABS) return tabs;
-    const byOldestVisit = (left, right) => left.lastVisitedAt - right.lastVisitedAt;
-    const removable = [
-        ...tabs.filter((tab) => !tab.pinned && tab.id !== activeTabId).sort(byOldestVisit),
-        ...tabs.filter((tab) => !tab.pinned && tab.id === activeTabId).sort(byOldestVisit),
-    ];
-    const removeIds = new Set(removable.slice(0, tabs.length - MAX_WORKSPACE_TABS).map((tab) => tab.id));
+    const removeIds = new Set();
+    const byOldestVisit = (left, right) => (left.lastVisitedAt || 0) - (right.lastVisitedAt || 0);
+    WORKSPACE_SCOPES.forEach((scope) => {
+        const scoped = tabs.filter((tab) => getWorkspaceScope(tab) === scope);
+        if (scoped.length <= MAX_WORKSPACE_TABS) return;
+        const removable = [
+            ...scoped.filter((tab) => !tab.pinned && tab.id !== activeTabId).sort(byOldestVisit),
+            ...scoped.filter((tab) => !tab.pinned && tab.id === activeTabId).sort(byOldestVisit),
+        ];
+        removable.slice(0, scoped.length - MAX_WORKSPACE_TABS).forEach((tab) => removeIds.add(tab.id));
+        // Malformed/restored payloads can exceed the cap with pinned tabs alone.
+        const remaining = scoped.filter((tab) => !removeIds.has(tab.id));
+        remaining.filter((tab) => tab.id !== activeTabId).slice(MAX_WORKSPACE_TABS - (remaining.some((tab) => tab.id === activeTabId) ? 1 : 0))
+            .forEach((tab) => removeIds.add(tab.id));
+    });
     return tabs.filter((tab) => !removeIds.has(tab.id));
 };
 
-export const canOpenWorkspaceTab = (tabs = []) => (
-    tabs.length < MAX_WORKSPACE_TABS || tabs.some((tab) => !tab.pinned)
-);
+export const canOpenWorkspaceTab = (tabs = [], scope) => {
+    const scoped = scope ? tabs.filter((tab) => getWorkspaceScope(tab) === scope) : tabs;
+    return scoped.length < MAX_WORKSPACE_TABS || scoped.some((tab) => !tab.pinned);
+};

@@ -23,8 +23,7 @@ public class TourismTaxPosting {
     private Folio folio;
     @OneToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "folio_item_id", nullable = false)
     private FolioItem folioItem;
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal amount;
+    @Column(nullable = false, precision = 19, scale = 4) private BigDecimal amount;
     @Column(nullable = false)
     private int nights;
     @Column(name = "posted_at", nullable = false)

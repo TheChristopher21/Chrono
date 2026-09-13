@@ -15,6 +15,10 @@ final class PmsRatePricing {
     }
 
     static NightPrice night(RatePlan rate, BigDecimal enteredNightly, int adults, int children) {
+        PmsMoney.require(enteredNightly, rate.getCurrencyCode());
+        PmsMoney.require(zero(rate.getBreakfastAmount()), rate.getCurrencyCode());
+        PmsMoney.require(zero(rate.getExtraAdultRate()), rate.getCurrencyCode());
+        PmsMoney.require(zero(rate.getChildRate()), rate.getCurrencyCode());
         BigDecimal breakfast = rate.isBreakfastIncluded() ? zero(rate.getBreakfastAmount()) : BigDecimal.ZERO;
         if (breakfast.compareTo(enteredNightly) > 0) {
             throw new IllegalArgumentException("Der Frühstücksanteil übersteigt den Tagespreis.");
@@ -22,8 +26,8 @@ final class PmsRatePricing {
         BigDecimal supplements = zero(rate.getExtraAdultRate())
                 .multiply(BigDecimal.valueOf(Math.max(0, adults - rate.getIncludedAdults())))
                 .add(zero(rate.getChildRate()).multiply(BigDecimal.valueOf(children)));
-        return new NightPrice(gross(enteredNightly.subtract(breakfast).add(supplements), rate.getVatRate(), rate.isTaxIncluded()),
-                gross(breakfast, rate.getBreakfastVatRate(), rate.isTaxIncluded()));
+        return new NightPrice(gross(enteredNightly.subtract(breakfast).add(supplements), rate.getVatRate(), rate.isTaxIncluded(), rate.getCurrencyCode()),
+                gross(breakfast, rate.getBreakfastVatRate(), rate.isTaxIncluded(), rate.getCurrencyCode()));
     }
 
     static String restriction(RatePlan rate, LocalDate arrival, LocalDate departure, LocalDate bookingDate) {
@@ -49,10 +53,9 @@ final class PmsRatePricing {
         return null;
     }
 
-    static BigDecimal gross(BigDecimal amount, BigDecimal taxRate, boolean included) {
-        return (included || taxRate == null ? amount
-                : amount.multiply(BigDecimal.ONE.add(taxRate.movePointLeft(2))))
-                .setScale(2, RoundingMode.HALF_UP);
+    static BigDecimal gross(BigDecimal amount, BigDecimal taxRate, boolean included, String currencyCode) {
+        return PmsMoney.round(included || taxRate == null ? amount
+                : amount.multiply(BigDecimal.ONE.add(taxRate.movePointLeft(2))), currencyCode);
     }
 
     private static BigDecimal zero(BigDecimal amount) { return amount == null ? BigDecimal.ZERO : amount; }

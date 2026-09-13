@@ -116,6 +116,12 @@ Copy-Item -LiteralPath (Join-Path $repoRootFull "update.sh") -Destination $stage
 Copy-Item -LiteralPath (Join-Path $repoRootFull "prometheus.yml") -Destination $stageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRootFull "SECURITY.md") -Destination $stageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRootFull "ops") -Destination $stageDirectory -Recurse
+# The isolated restore derives its expected schema from this exact release's
+# migration filenames, never from the database being verified.
+$migrationTarget = Join-Path $stageDirectory "Chrono-backend/src/main/resources/db/migration"
+New-Item -ItemType Directory -Path $migrationTarget -Force | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $repoRootFull "Chrono-backend/src/main/resources/db/migration") -File |
+    Copy-Item -Destination $migrationTarget
 New-Item -ItemType Directory -Path (Join-Path $stageDirectory "docs") -Force | Out-Null
 Copy-Item `
     -LiteralPath (Join-Path $repoRootFull "docs\operations") `

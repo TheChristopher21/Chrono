@@ -22,10 +22,8 @@ public class TourismTaxRule {
     private boolean enabled;
     @Column(nullable = false, length = 120)
     private String name = "Kurtaxe";
-    @Column(name = "adult_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal adultRate = BigDecimal.ZERO;
-    @Column(name = "child_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal childRate = BigDecimal.ZERO;
+    @Column(name = "adult_rate", nullable = false, precision = 19, scale = 4) private BigDecimal adultRate = BigDecimal.ZERO;
+    @Column(name = "child_rate", nullable = false, precision = 19, scale = 4) private BigDecimal childRate = BigDecimal.ZERO;
     @Column(name = "child_free_under", nullable = false)
     private int childFreeUnder = 16;
     @Column(name = "maximum_nights")

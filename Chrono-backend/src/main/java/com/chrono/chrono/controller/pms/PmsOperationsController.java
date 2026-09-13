@@ -131,7 +131,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRatePlanRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
         return ResponseEntity.created(URI.create("/api/pms/properties/" + propertyId + "/rate-plans"))
                 .body(operationsService.createRatePlan(context.company(), propertyId, request, businessDate));
     }
@@ -144,7 +144,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRatePlanRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
         return ResponseEntity.ok(operationsService.updateRatePlan(
                 context.company(),
                 propertyId,
@@ -162,7 +162,7 @@ public class PmsOperationsController {
             @Valid @RequestBody UpsertRateOverrideRequest request,
             Principal principal
     ) {
-        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE, true);
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
         return ResponseEntity.ok(operationsService.upsertRateOverride(
                 context.company(),
                 propertyId,
@@ -318,6 +318,26 @@ public class PmsOperationsController {
                 context.company(), reservationId, request, context.username(), businessDate));
     }
 
+    @GetMapping("/reservations/{reservationId}/stay-details")
+    public ResponseEntity<ReservationStayDetails> getStayDetails(@PathVariable Long reservationId, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(operationsService.getStayDetails(context.company(), reservationId));
+    }
+
+    @PutMapping("/reservations/{reservationId}/co-guests")
+    public ResponseEntity<ReservationStayDetails> updateCoGuests(@PathVariable Long reservationId,
+            @Valid @RequestBody UpsertReservationGuestsRequest request, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(operationsService.updateCoGuests(context.company(), reservationId, request, context.username()));
+    }
+
+    @PostMapping("/reservations/{reservationId}/co-guests/{guestId}/registration")
+    public ResponseEntity<ReservationStayDetails> registerCoGuest(@PathVariable Long reservationId, @PathVariable Long guestId,
+            @Valid @RequestBody CompleteGuestRegistrationRequest request, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(operationsService.registerCoGuest(context.company(), reservationId, guestId, request, context.username()));
+    }
+
     @PostMapping("/properties/{propertyId}/folios/{folioId}/items")
     public ResponseEntity<PmsOperationsResponse> postFolioItem(
             @PathVariable Long propertyId,
@@ -393,6 +413,12 @@ public class PmsOperationsController {
                 context.company(), propertyId, request, context.username(), businessDate));
     }
 
+    @GetMapping("/properties/{propertyId}/cash-shifts")
+    public ResponseEntity<List<PmsOperationsResponse.CashShiftView>> getCashShifts(@PathVariable Long propertyId, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(operationsService.getCashShifts(context.company(), propertyId));
+    }
+
     @PostMapping("/properties/{propertyId}/cash-shifts/close")
     public ResponseEntity<PmsOperationsResponse> closeCashShift(
             @PathVariable Long propertyId,
@@ -447,6 +473,12 @@ public class PmsOperationsController {
                 request,
                 businessDate
         ));
+    }
+
+    @GetMapping("/reservations/{reservationId}/policy")
+    public ReservationPolicyView getReservationPolicy(@PathVariable Long reservationId, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
+        return operationsService.getReservationPolicy(context.company(), reservationId);
     }
 
     private AccessContext requireContext(Principal principal, String accessLevel) {

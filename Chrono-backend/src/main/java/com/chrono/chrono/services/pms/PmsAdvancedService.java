@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@org.springframework.context.annotation.Import({PmsFinancialPeriodService.class, PmsReceivablesService.class,PmsGroupService.class,PmsHousekeepingService.class,PmsHistoryService.class})
 public class PmsAdvancedService {
 
     private static final String CH_REGISTRATION_RULE = "CH-MELDESCHEIN";
@@ -81,6 +82,17 @@ public class PmsAdvancedService {
     private final PmsOperationsService operationsService;
     private final PmsDocumentFingerprintService documentFingerprintService;
     private final PmsProfileDocumentRepository profileDocumentRepository;
+    private final PmsFinancialPeriodService financialPeriods;
+    private final PmsReceivablesService receivables;
+    private final PmsGroupService groupOperations;
+    private final PmsHousekeepingService housekeepingWork;
+    private final PmsHistoryService history;
+    private final PmsInvoiceDocumentRepository invoiceDocuments;
+    private final org.springframework.beans.factory.ObjectProvider<PmsBillingSettingsService> billingSettings;
+    private final org.springframework.beans.factory.ObjectProvider<PmsDeliveryService> deliveries;
+    private org.springframework.beans.factory.ObjectProvider<PmsInternationalSettingsService> internationalSettings;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setInternationalSettings(org.springframework.beans.factory.ObjectProvider<PmsInternationalSettingsService> provider){this.internationalSettings=provider;}
 
     public PmsAdvancedService(HotelPropertyRepository propertyRepository,
                               PmsOrganizationRepository organizationRepository,
@@ -110,7 +122,12 @@ public class PmsAdvancedService {
                               PmsAuditWriter auditWriter,
                               PmsOperationsService operationsService,
                               PmsDocumentFingerprintService documentFingerprintService,
-                              PmsProfileDocumentRepository profileDocumentRepository) {
+                              PmsProfileDocumentRepository profileDocumentRepository,
+                              PmsFinancialPeriodService financialPeriods, PmsReceivablesService receivables,
+                              PmsGroupService groupOperations,PmsHousekeepingService housekeepingWork,PmsHistoryService history,
+                              PmsInvoiceDocumentRepository invoiceDocuments,
+                              org.springframework.beans.factory.ObjectProvider<PmsBillingSettingsService> billingSettings,
+                              org.springframework.beans.factory.ObjectProvider<PmsDeliveryService> deliveries) {
         this.propertyRepository = propertyRepository;
         this.organizationRepository = organizationRepository;
         this.groupRepository = groupRepository;
@@ -140,6 +157,17 @@ public class PmsAdvancedService {
         this.operationsService = operationsService;
         this.documentFingerprintService = documentFingerprintService;
         this.profileDocumentRepository = profileDocumentRepository;
+        this.financialPeriods = financialPeriods;
+        this.receivables = receivables;
+        this.groupOperations = groupOperations;
+        this.housekeepingWork = housekeepingWork;
+        this.history = history;
+        this.invoiceDocuments = invoiceDocuments; this.billingSettings = billingSettings; this.deliveries = deliveries;
+    }
+
+    @Transactional
+    public PmsFinancialDayResponse financialDay(Company company, Long propertyId) {
+        return financialPeriods.status(requireProperty(company, propertyId));
     }
 
     @Transactional(readOnly = true)
@@ -165,10 +193,10 @@ public class PmsAdvancedService {
         resource.setName(required(request.name()));
         resource.setLocation(clean(request.location()));
         resource.setCapacity(request.capacity());
-        resource.setHourlyRate(request.hourlyRate().setScale(2, RoundingMode.HALF_UP));
         resource.setCurrencyCode(clean(request.currencyCode()) == null
                 ? property.getCurrencyCode()
                 : request.currencyCode().toUpperCase(Locale.ROOT));
+        resource.setHourlyRate(PmsMoney.require(request.hourlyRate(),resource.getCurrencyCode()));
         resource.setActive(request.active());
         hotelResourceRepository.save(resource);
         return response(company, property, effectiveDate(property, businessDate));
@@ -218,7 +246,7 @@ public class PmsAdvancedService {
         booking.setEndAt(request.endAt());
         booking.setAttendees(request.attendees());
         booking.setStatus(request.status());
-        booking.setTotalAmount(request.totalAmount().setScale(2, RoundingMode.HALF_UP));
+        booking.setTotalAmount(PmsMoney.require(request.totalAmount(),resource.getCurrencyCode()));
         booking.setNotes(clean(request.notes()));
         booking.setCreatedBy(clean(username) == null ? "system" : clean(username));
         resourceBookingRepository.save(booking);
@@ -325,6 +353,8 @@ public class PmsAdvancedService {
                                                   LocalDate businessDate) {
         HotelProperty property = lockProperty(company, request.propertyId());
         validateStay(request.arrivalDate(), request.departureDate());
+        if(request.status()!=null && request.status()!=GroupBookingStatus.OPTION && request.status()!=GroupBookingStatus.CONFIRMED)
+            throw badRequest("Neue Gruppen können als Option oder bestätigt angelegt werden.");
         String groupCode = required(request.groupCode()).toUpperCase(Locale.ROOT);
         if (groupRepository.existsByProperty_IdAndGroupCodeIgnoreCase(property.getId(), groupCode)) {
             throw conflict("Der Gruppencode ist bereits vergeben.");
@@ -346,19 +376,8 @@ public class PmsAdvancedService {
         group.setNotes(clean(request.notes()));
         groupRepository.save(group);
 
-        ReservationStatus reservationStatus = group.getStatus() == GroupBookingStatus.OPTION
-                ? ReservationStatus.TENTATIVE
-                : ReservationStatus.CONFIRMED;
         for (CreateGroupBookingRequest.RoomingEntry room : request.rooms()) {
-            UpsertReservationRequest reservationRequest = new UpsertReservationRequest(
-                    property.getId(), room.guestId(), room.roomTypeId(), room.roomId(), room.ratePlanId(),
-                    request.arrivalDate(), request.departureDate(), room.adults(), room.children(),
-                    reservationStatus, room.source() == null ? ReservationSource.DIRECT : room.source(),
-                    clean(room.notes()), null, null, room.childAges()
-            );
-            Reservation reservation = operationsService.createReservationRecord(company, reservationRequest, username);
-            reservation.setGroupBooking(group);
-            reservationRepository.save(reservation);
+            groupOperations.addMember(company,group,room,username);
         }
         emit(property, "group_booking.created", "group_booking", group.getId().toString(),
                 "{\"groupCode\":\"" + json(group.getGroupCode()) + "\",\"roomCount\":" + request.rooms().size() + "}");
@@ -393,22 +412,29 @@ public class PmsAdvancedService {
                                                 Long sourceFolioId,
                                                 MoveFolioItemsRequest request,
                                                 LocalDate businessDate) {
-        requireProperty(company, propertyId);
+        lockProperty(company, propertyId);
         Folio source = requireFolio(company, sourceFolioId);
         Folio target = requireFolio(company, request.targetFolioId());
         if (!source.getReservation().getProperty().getId().equals(propertyId)
                 || !target.getReservation().getProperty().getId().equals(propertyId)
-                || !source.getReservation().getId().equals(target.getReservation().getId())) {
-            throw badRequest("Gastkonto-Positionen können nur innerhalb derselben Reservierung verschoben werden.");
+                || (!source.getReservation().getId().equals(target.getReservation().getId())
+                    && !(source.getReservation().getGroupBooking()!=null && target.getReservation().getGroupBooking()!=null
+                         && source.getReservation().getGroupBooking().getId().equals(target.getReservation().getGroupBooking().getId())))) {
+            throw badRequest("Gastkonto-Positionen können nur innerhalb derselben Reservierung oder Gruppe verschoben werden.");
         }
         if (source.getStatus() != FolioStatus.OPEN || target.getStatus() != FolioStatus.OPEN) {
             throw conflict("Nur offene Gastkonten können aufgeteilt werden.");
         }
+        if(!source.getCurrencyCode().equals(target.getCurrencyCode())) throw conflict("Positionen können nur zwischen Konten derselben Währung verschoben werden.");
         for (Long itemId : request.itemIds()) {
             FolioItem item = folioItemRepository.findById(itemId)
                     .orElseThrow(() -> notFound("Gastkonto-Position nicht gefunden."));
             if (!item.getFolio().getId().equals(source.getId())) {
                 throw badRequest("Mindestens eine Position gehört nicht zum gewählten Ausgangskonto.");
+            }
+            financialPeriods.assertPostingOpen(source.getReservation().getProperty(), item.getServiceDate());
+            if (invoiceLineRepository.existsBySourceItem_Id(item.getId())) {
+                throw conflict("Bereits fakturierte Positionen können nicht verschoben werden. Leistungen gegebenenfalls gutschreiben und auf dem richtigen Konto neu buchen.");
             }
             item.setFolio(target);
             folioItemRepository.save(item);
@@ -426,11 +452,17 @@ public class PmsAdvancedService {
         if (!folio.getReservation().getProperty().getId().equals(propertyId)) {
             throw notFound("Gastkonto nicht gefunden.");
         }
-        List<FolioItem> items = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folio.getId());
-        if (items.isEmpty()) {
-            throw conflict("Eine Rechnung benötigt mindestens eine Gastkonto-Position.");
+        if (invoiceRepository.countUnlinkedIssuedInvoices(folio.getId()) > 0) {
+            throw conflict("Für dieses Gastkonto existiert eine Altrechnung ohne Leistungszuordnung. Vor einer Neuausstellung muss sie geprüft und zur Neuausstellung gutgeschrieben werden.");
         }
-        LocalDate issueDate = effectiveDate(property, businessDate);
+        List<FolioItem> allItems = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folio.getId());
+        Set<Long> allocated = allItems.isEmpty() ? Set.of() : Set.copyOf(invoiceLineRepository.findAllocatedSourceIds(allItems.stream().map(FolioItem::getId).toList()));
+        List<FolioItem> items = allItems.stream().filter(item -> !allocated.contains(item.getId())).toList();
+        if (items.isEmpty()) {
+            throw conflict("Es gibt keine noch nicht fakturierten Leistungen. Eine bestehende Rechnung kann im Rechnungsjournal nachgedruckt werden.");
+        }
+        LocalDate issueDate = documentDate(property,businessDate);
+        financialPeriods.assertPostingOpen(property, issueDate);
         if (request.dueDate().isBefore(issueDate)) {
             throw badRequest("Das Fälligkeitsdatum darf nicht vor dem Rechnungsdatum liegen.");
         }
@@ -441,20 +473,29 @@ public class PmsAdvancedService {
                 || !Set.of("CH", "LI").contains(property.getCountryCode()))) {
             throw badRequest("Der Swiss-QR-Zahlteil benötigt CHF oder EUR und einen Zahlungsempfänger in CH oder LI.");
         }
-        BigDecimal gross = money(items.stream().map(FolioItem::getTotalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        String currency=folio.getCurrencyCode();
+        BigDecimal gross = PmsMoney.require(items.stream().map(FolioItem::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add),currency);
         if (gross.signum() <= 0) {
             throw conflict("Der Rechnungsbetrag muss positiv sein.");
         }
-        BigDecimal net = items.stream().map(item -> money(item.getTotalAmount().divide(
+        BigDecimal net = items.stream().map(item -> PmsMoney.round(item.getTotalAmount().divide(
                 BigDecimal.ONE.add((item.getTaxRate() == null ? request.vatRate() : item.getTaxRate()).movePointLeft(2)),
-                8, RoundingMode.HALF_UP))).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal vat = money(gross.subtract(net));
+                8, RoundingMode.HALF_UP),currency)).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal vat = PmsMoney.round(gross.subtract(net),currency);
 
         PmsInvoice invoice = new PmsInvoice();
         invoice.setProperty(property);
         invoice.setFolio(folio);
         invoice.setType(InvoiceType.INVOICE);
+        String language = clean(request.languageCode());
+        if (language == null) language = folio.getReservation().getGuest().getLanguageCode();
+        if (language != null) language = language.toUpperCase(Locale.ROOT).split("[-_]")[0];
+        if (language == null || !Set.of("DE","EN","FR","IT","ES").contains(language)) {
+            PmsBillingSettingsService configuration = billingSettings.getIfAvailable();
+            language = configuration == null ? "DE" : configuration.effective(property).getInvoiceLanguage();
+        }
+        invoice.setLanguageCode(language);
         invoice.setInvoiceNumber((clean(property.getInvoicePrefix()) == null ? "INV" : property.getInvoicePrefix()) + "-" + issueDate.getYear() + "-"
                 + String.format(Locale.ROOT, "%05d", invoiceRepository.countByProperty_Id(propertyId) + 1));
         invoice.setIssueDate(issueDate);
@@ -479,27 +520,35 @@ public class PmsAdvancedService {
         invoice.setNetAmount(net);
         invoice.setVatAmount(vat);
         invoice.setGrossAmount(gross);
-        invoice.setVatRate(request.vatRate().setScale(2, RoundingMode.HALF_UP));
+        invoice.setVatRate(request.vatRate());
         invoice.setCreditorIban(iban);
         invoice.setQrReference(reference);
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoiceRepository.save(invoice);
+        receivables.bindReplacement(invoice, items);
 
         for (FolioItem item : items) {
-            BigDecimal lineGross = money(item.getTotalAmount());
+            BigDecimal lineGross = PmsMoney.require(item.getTotalAmount(),currency);
             BigDecimal lineRate = item.getTaxRate() == null ? request.vatRate() : item.getTaxRate();
-            BigDecimal lineNet = money(lineGross.divide(BigDecimal.ONE.add(lineRate.movePointLeft(2)), 8, RoundingMode.HALF_UP));
+            if(item.getTaxRate()==null) item.setTaxRate(lineRate);
+            BigDecimal lineNet = PmsMoney.round(lineGross.divide(BigDecimal.ONE.add(lineRate.movePointLeft(2)), 8, RoundingMode.HALF_UP),currency);
             PmsInvoiceLine line = new PmsInvoiceLine();
             line.setInvoice(invoice);
-            line.setDescription(item.getDescription());
+            line.setSourceItem(item);
+            line.setActiveSourceItemId(item.getId());
+            String description=item.getDescription();
+            if(folio.isGroupMaster() && item.getSourceReservation()!=null)
+                description=item.getSourceReservation().getConfirmationCode()+" · "+guestName(item.getSourceReservation().getGuest())+" · "+description;
+            line.setDescription(description.substring(0,Math.min(description.length(),240)));
             line.setVatRate(lineRate);
             line.setServiceDate(item.getServiceDate());
             line.setQuantity(item.getQuantity());
             line.setGrossAmount(lineGross);
             line.setNetAmount(lineNet);
-            line.setVatAmount(money(lineGross.subtract(lineNet)));
+            line.setVatAmount(PmsMoney.round(lineGross.subtract(lineNet),currency));
             invoiceLineRepository.save(line);
         }
+        deliveries.ifAvailable(service -> service.automaticallyQueueInvoice(invoice));
         emit(property, "invoice.issued", "invoice", invoice.getId().toString(),
                 "{\"invoiceNumber\":\"" + json(invoice.getInvoiceNumber()) + "\",\"grossAmount\":\""
                         + invoice.getGrossAmount() + "\"}");
@@ -519,16 +568,20 @@ public class PmsAdvancedService {
         if (!original.getProperty().getId().equals(propertyId)) {
             throw notFound("Rechnung nicht gefunden.");
         }
-        if (original.getType() != InvoiceType.INVOICE || original.getStatus() != InvoiceStatus.ISSUED) {
+        if (original.getType() != InvoiceType.INVOICE || !Set.of(InvoiceStatus.ISSUED, InvoiceStatus.PAID).contains(original.getStatus())) {
             throw conflict("Nur eine ausgestellte, noch nicht korrigierte Rechnung kann gutgeschrieben werden.");
         }
         String reason = required(request.reason());
-        LocalDate issueDate = effectiveDate(property, businessDate);
+        String correctionMode = request.effectiveMode();
+        if (!Set.of("REISSUE", "CANCEL_SERVICES").contains(correctionMode)) throw badRequest("Unbekannte Korrekturart.");
+        LocalDate issueDate = documentDate(property,businessDate);
+        financialPeriods.assertPostingOpen(property, issueDate);
 
         PmsInvoice credit = new PmsInvoice();
         credit.setProperty(property);
         credit.setFolio(original.getFolio());
         credit.setType(InvoiceType.CREDIT_NOTE);
+        credit.setLanguageCode(original.getLanguageCode());
         credit.setOriginalInvoice(original);
         credit.setInvoiceNumber("CN-" + issueDate.getYear() + "-"
                 + String.format(Locale.ROOT, "%05d", invoiceRepository.countByProperty_Id(propertyId) + 1));
@@ -552,6 +605,7 @@ public class PmsAdvancedService {
         credit.setVatRate(original.getVatRate());
         credit.setStatus(InvoiceStatus.ISSUED);
         credit.setCorrectionReason(reason);
+        credit.setCorrectionMode(correctionMode);
         credit.setCorrectedAt(LocalDateTime.now());
         credit.setCorrectedBy(clean(username) == null ? "system" : clean(username));
         invoiceRepository.save(credit);
@@ -559,7 +613,29 @@ public class PmsAdvancedService {
         for (PmsInvoiceLine source : invoiceLineRepository.findAllByInvoice_IdOrderByIdAsc(original.getId())) {
             PmsInvoiceLine line = new PmsInvoiceLine();
             line.setInvoice(credit);
-            line.setDescription("Korrektur: " + source.getDescription());
+            if ("REISSUE".equals(correctionMode)) {
+                source.setActiveSourceItemId(null);
+                invoiceLineRepository.save(source);
+                line.setSourceItem(source.getSourceItem());
+            } else {
+                FolioItem reversal = new FolioItem();
+                reversal.setSourceReservation(source.getSourceItem()==null?null:source.getSourceItem().getSourceReservation());
+                reversal.setFolio(original.getFolio());
+                reversal.setServiceDate(issueDate);
+                reversal.setType(source.getSourceItem() == null ? FolioItemType.OTHER : source.getSourceItem().getType());
+                String description = "Gutschrift " + credit.getInvoiceNumber() + " · " + source.getDescription();
+                reversal.setDescription(description.substring(0, Math.min(240, description.length())));
+                reversal.setQuantity(source.getQuantity());
+                reversal.setUnitPrice(PmsMoney.round(source.getGrossAmount().negate().divide(source.getQuantity(), 8, RoundingMode.HALF_UP),original.getCurrencyCode()));
+                reversal.setTotalAmount(source.getGrossAmount().negate());
+                reversal.setTaxRate(source.getVatRate());
+                reversal.setTaxIncluded(true);
+                reversal = folioItemRepository.save(reversal);
+                line.setSourceItem(reversal);
+                line.setActiveSourceItemId(reversal.getId());
+            }
+            String correctedDescription=PmsInvoiceLanguage.text(credit.getLanguageCode(),1)+": " + source.getDescription();
+            line.setDescription(correctedDescription.substring(0,Math.min(240,correctedDescription.length())));
             line.setVatRate(source.getVatRate());
             line.setServiceDate(source.getServiceDate());
             line.setQuantity(source.getQuantity());
@@ -570,20 +646,30 @@ public class PmsAdvancedService {
         }
         original.setStatus(InvoiceStatus.CREDITED);
         original.setCorrectionReason(reason);
+        original.setCorrectionMode(correctionMode);
+        if ("CANCEL_SERVICES".equals(correctionMode)) receivables.creditForCancelledServices(original, issueDate, username);
         original.setCorrectedAt(LocalDateTime.now());
         original.setCorrectedBy(clean(username) == null ? "system" : clean(username));
         invoiceRepository.save(original);
+        deliveries.ifAvailable(service -> service.automaticallyQueueInvoice(credit));
         emit(property, "invoice.credited", "invoice", original.getId().toString(),
                 "{\"invoiceNumber\":\"" + json(original.getInvoiceNumber())
                         + "\",\"creditNoteNumber\":\"" + json(credit.getInvoiceNumber()) + "\"}");
         return response(company, property, issueDate);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public byte[] generateInvoicePdf(Company company, Long invoiceId) {
         PmsInvoice invoice = invoiceRepository.findByIdAndProperty_Company_Id(invoiceId, company.getId())
                 .orElseThrow(() -> notFound("Rechnung nicht gefunden."));
-        return renderInvoice(invoice, invoiceLineRepository.findAllByInvoice_IdOrderByIdAsc(invoiceId));
+        lockProperty(company, invoice.getProperty().getId());
+        PmsInvoiceDocument existing = invoiceDocuments.findById(invoiceId).orElse(null);
+        if (existing != null) return existing.getContent().clone();
+        byte[] pdf = renderInvoice(invoice, invoiceLineRepository.findAllByInvoice_IdOrderByIdAsc(invoiceId));
+        PmsInvoiceDocument stored = new PmsInvoiceDocument(); stored.setInvoice(invoice);
+        stored.setContent(pdf); stored.setSha256(PmsDeliveryService.sha256(pdf)); stored.setCreatedAt(LocalDateTime.now());
+        invoiceDocuments.saveAndFlush(stored);
+        return pdf.clone();
     }
 
     @Transactional
@@ -592,6 +678,7 @@ public class PmsAdvancedService {
                                                CloseNightAuditRequest request,
                                                String username) {
         HotelProperty property = lockProperty(company, propertyId);
+        financialPeriods.assertCanClose(property, request.businessDate(), request.markPendingArrivalsAsNoShow());
         if (request.businessDate().isAfter(effectiveDate(property, null))) {
             throw badRequest("Ein zukünftiger Betriebstag kann nicht abgeschlossen werden.");
         }
@@ -602,15 +689,8 @@ public class PmsAdvancedService {
                 .findAllByProperty_IdAndArrivalDateLessThanAndDepartureDateGreaterThanOrderByArrivalDateAsc(
                         propertyId, request.businessDate().plusDays(1), request.businessDate().minusDays(1));
         if (request.markPendingArrivalsAsNoShow()) {
-            reservations.stream()
-                    .filter(reservation -> reservation.getArrivalDate().equals(request.businessDate()))
-                    .filter(reservation -> reservation.getStatus() == ReservationStatus.CONFIRMED)
-                    .forEach(reservation -> {
-                        reservation.setStatus(ReservationStatus.NO_SHOW);
-                        reservationRepository.save(reservation);
-                        emit(property, "reservation.no_show", "reservation", reservation.getId().toString(),
-                                "{\"confirmationCode\":\"" + json(reservation.getConfirmationCode()) + "\"}");
-                    });
+            financialPeriods.pendingArrivals(property, request.businessDate()).stream()
+                    .forEach(reservation -> operationsService.markNoShow(company,reservation.getId(),username,request.businessDate()));
         }
         long arrivals = reservations.stream()
                 .filter(reservation -> reservation.getArrivalDate().equals(request.businessDate()))
@@ -634,10 +714,11 @@ public class PmsAdvancedService {
         audit.setDeparturesCount(departures);
         audit.setInHouseCount(inHouse);
         audit.setNoShowCount(noShows);
-        audit.setOpenBalance(money(openBalance));
+        audit.setOpenBalance(PmsMoney.round(openBalance,property.getCurrencyCode()));
         audit.setClosedBy(clean(username) == null ? "system" : clean(username));
         audit.setClosedAt(LocalDateTime.now());
         nightAuditRepository.save(audit);
+        financialPeriods.completeClose(property, request.businessDate());
         emit(property, "night_audit.closed", "night_audit", audit.getId().toString(),
                 "{\"businessDate\":\"" + audit.getBusinessDate() + "\"}");
         return response(company, property, request.businessDate());
@@ -649,23 +730,7 @@ public class PmsAdvancedService {
                                                         CreateHousekeepingTaskRequest request,
                                                         LocalDate businessDate) {
         requireProperty(company, propertyId);
-        Room room = roomRepository.findByIdAndProperty_Company_Id(request.roomId(), company.getId())
-                .orElseThrow(() -> notFound("Zimmer nicht gefunden."));
-        if (!room.getProperty().getId().equals(propertyId)) {
-            throw notFound("Zimmer nicht gefunden.");
-        }
-        HousekeepingTask task = housekeepingRepository.findByRoom_IdAndServiceDate(room.getId(), request.serviceDate())
-                .orElseGet(HousekeepingTask::new);
-        task.setProperty(room.getProperty());
-        task.setRoom(room);
-        task.setServiceDate(request.serviceDate());
-        task.setType(request.type());
-        task.setStatus(room.getHousekeepingStatus());
-        task.setPriority(request.priority());
-        task.setEstimatedMinutes(request.estimatedMinutes());
-        task.setNotes(clean(request.notes()));
-        task.setAssignedTo(clean(request.assignedTo()));
-        housekeepingRepository.save(task);
+        housekeepingWork.legacyCreate(company,propertyId,request);
         return operationsService.getOperations(company, propertyId, businessDate, null, null);
     }
 
@@ -736,6 +801,7 @@ public class PmsAdvancedService {
         communication.setBody(render(template.getBody(), property, guest, reservation));
         communication.setStatus(CommunicationStatus.QUEUED);
         communicationRepository.save(communication);
+        deliveries.ifAvailable(service -> service.queueCommunicationIfEnabled(communication));
         emit(property, "communication.queued", "guest_communication", communication.getId().toString(),
                 "{\"recipient\":\"" + json(recipient) + "\"}");
         return response(company, property, effectiveDate(property, businessDate));
@@ -793,6 +859,7 @@ public class PmsAdvancedService {
         communication.setExternalThreadId(clean(request.externalThreadId()));
         communication.setStatus(CommunicationStatus.QUEUED);
         communicationRepository.save(communication);
+        deliveries.ifAvailable(service -> service.queueCommunicationIfEnabled(communication));
         emit(property, "communication.reply_queued", "guest_communication", communication.getId().toString(),
                 "{\"channel\":\"" + communication.getChannel() + "\"}");
         return response(company, property, effectiveDate(property, businessDate));
@@ -1026,10 +1093,12 @@ public class PmsAdvancedService {
         if (!reservation.getProperty().getId().equals(property.getId())) {
             throw notFound("Reservierung nicht gefunden.");
         }
-        String documentNumber = required(request.documentNumber());
+        String documentNumber = clean(request.documentNumber());
         GuestRegistration registration = guestRegistrationRepository.findByReservation_Id(reservationId)
                 .orElseGet(GuestRegistration::new);
         registration.setReservation(reservation);
+        if(registration.getId()==null && internationalSettings!=null && internationalSettings.getIfAvailable()!=null)
+            internationalSettings.getObject().snapshot(registration);
         applyCompletedRegistration(registration, request, documentNumber, username);
         registration.setTokenHash(null);
         guestRegistrationRepository.save(registration);
@@ -1071,6 +1140,8 @@ public class PmsAdvancedService {
         registration.setExpiresAt(now.plusDays(7));
         registration.setRuleCode(registrationRuleCode(property));
         registration.setRuleVersion(REGISTRATION_RULE_VERSION);
+        registration.setRequiredFieldsSnapshot(null);
+        if(internationalSettings!=null && internationalSettings.getIfAvailable()!=null) internationalSettings.getObject().snapshot(registration);
         guestRegistrationRepository.save(registration);
         emit(property, "guest.registration_invited", "guest_registration",
                 registration.getId().toString(), "{\"reservationId\":" + reservationId + "}");
@@ -1091,7 +1162,7 @@ public class PmsAdvancedService {
             CompleteGuestRegistrationRequest request) {
         GuestRegistration registration = requireValidRegistrationToken(token, true);
         validateAcknowledgedRegistrationRule(registration, request);
-        String documentNumber = required(request.documentNumber());
+        String documentNumber = clean(request.documentNumber());
         applyCompletedRegistration(registration, request, documentNumber, "guest-portal");
         registration.setTokenHash(null);
         guestRegistrationRepository.save(registration);
@@ -1106,17 +1177,23 @@ public class PmsAdvancedService {
                                             String documentNumber,
                                             String username) {
         HotelProperty property = registration.getReservation().getProperty();
+        var international=internationalSettings==null?null:internationalSettings.getIfAvailable();
+        if(international!=null) international.validate(registration,request);
+        else {
+            required(request.addressLine());required(request.postalCode());required(request.city());required(request.countryCode());required(request.nationalityCode());required(request.signatureName());
+            if(documentNumber==null || documentNumber.length()<4 || !request.privacyConsent()) throw badRequest("Ausweisnummer, Pflichtfelder und Zustimmung für die Gästeanmeldung erforderlich.");
+        }
         registration.setStatus(GuestRegistrationStatus.COMPLETED);
-        registration.setAddressLine(required(request.addressLine()));
-        registration.setPostalCode(required(request.postalCode()));
-        registration.setCity(required(request.city()));
-        registration.setCountryCode(country(request.countryCode()));
-        registration.setNationalityCode(country(request.nationalityCode()));
-        registration.setDocumentHash(documentFingerprintService.fingerprint(documentNumber));
-        registration.setDocumentLastFour(documentNumber.substring(documentNumber.length() - 4));
+        registration.setAddressLine(clean(request.addressLine()));
+        registration.setPostalCode(clean(request.postalCode()));
+        registration.setCity(clean(request.city()));
+        registration.setCountryCode(clean(request.countryCode())==null?null:country(request.countryCode()));
+        registration.setNationalityCode(clean(request.nationalityCode())==null?null:country(request.nationalityCode()));
+        registration.setDocumentHash(documentNumber==null?null:documentFingerprintService.fingerprint(documentNumber));
+        registration.setDocumentLastFour(documentNumber==null?null:documentNumber.substring(documentNumber.length() - 4));
         registration.setVehiclePlate(clean(request.vehiclePlate()));
-        registration.setSignatureName(required(request.signatureName()));
-        registration.setPrivacyConsentAt(LocalDateTime.now());
+        registration.setSignatureName(clean(request.signatureName()));
+        registration.setPrivacyConsentAt(request.privacyConsent()?LocalDateTime.now():null);
         registration.setCompletedAt(LocalDateTime.now());
         registration.setCompletedBy(clean(username) == null ? "system" : clean(username));
         if (clean(registration.getRuleCode()) == null) {
@@ -1161,7 +1238,8 @@ public class PmsAdvancedService {
                 guestName(reservation.getGuest()), reservation.getConfirmationCode(),
                 reservation.getArrivalDate(), reservation.getDepartureDate(),
                 registration.getRuleCode(), registration.getRuleVersion(),
-                registrationRequiredFields(registration.getRuleCode()), registration.getExpiresAt());
+                internationalSettings!=null && internationalSettings.getIfAvailable()!=null
+                        ?internationalSettings.getObject().requiredFields(registration):registrationRequiredFields(registration.getRuleCode()), registration.getExpiresAt());
     }
 
     private String registrationRuleCode(HotelProperty property) {
@@ -1187,35 +1265,34 @@ public class PmsAdvancedService {
     private PmsAdvancedResponse response(Company company, HotelProperty property, LocalDate businessDate) {
         return new PmsAdvancedResponse(
                 property.getId(), businessDate,
-                organizationRepository.findAllByCompany_IdOrderByNameAsc(company.getId()).stream()
+                organizationRepository.searchDirectory(company.getId(),"",false,false,org.springframework.data.domain.PageRequest.of(0,50)).stream()
                         .map(this::organizationView).toList(),
-                groupRepository.findAllByProperty_IdOrderByArrivalDateDesc(property.getId()).stream()
+                groupRepository.searchDirectory(property.getId(),"",org.springframework.data.domain.PageRequest.of(0,50)).stream()
                         .map(this::groupView).toList(),
-                invoiceRepository.findAllByProperty_IdOrderByIssueDateDescIdDesc(property.getId()).stream()
+                history.newest(PmsInvoice.class,"property",property.getId(),50).stream()
                         .map(this::invoiceView).toList(),
-                nightAuditRepository.findAllByProperty_IdOrderByBusinessDateDesc(property.getId()).stream()
+                history.newest(NightAudit.class,"property",property.getId(),50).stream()
                         .map(this::nightAuditView).toList(),
                 templateRepository.findAllByProperty_IdOrderByNameAsc(property.getId()).stream()
                         .map(this::templateView).toList(),
-                communicationRepository.findAllByProperty_IdOrderByCreatedAtDesc(property.getId()).stream()
+                history.newest(GuestCommunication.class,"property",property.getId(),50).stream()
                         .map(this::communicationView).toList(),
-                outboxRepository.findAllByProperty_IdOrderByCreatedAtDesc(property.getId()).stream().limit(100)
+                history.newest(IntegrationOutboxEvent.class,"property",property.getId(),50).stream()
                         .map(this::outboxView).toList(),
                 channelConnectionRepository.findAllByProperty_IdOrderByDisplayNameAsc(property.getId()).stream()
                         .map(this::channelConnectionView).toList(),
-                guestRegistrationRepository
-                        .findAllByReservation_Property_IdOrderByCompletedAtDesc(property.getId()).stream()
+                history.newest(GuestRegistration.class,"reservation.property",property.getId(),50).stream()
                         .map(this::guestRegistrationView).toList(),
                 hotelResourceRepository.findAllByProperty_IdOrderByTypeAscNameAsc(property.getId()).stream()
                         .map(this::hotelResourceView).toList(),
-                resourceBookingRepository.findAllByProperty_IdOrderByStartAtDesc(property.getId()).stream()
+                history.newest(ResourceBooking.class,"property",property.getId(),50).stream()
                         .map(this::resourceBookingView).toList(),
-                auditEventRepository.findTop100ByProperty_IdOrderByCreatedAtDesc(property.getId()).stream()
+                history.newest(PmsAuditEvent.class,"property",property.getId(),50).stream()
                         .map(this::auditEventView).toList()
         );
     }
 
-    private PmsAdvancedResponse.OrganizationView organizationView(PmsOrganization value) {
+    PmsAdvancedResponse.OrganizationView organizationView(PmsOrganization value) {
         return new PmsAdvancedResponse.OrganizationView(
                 value.getId(), value.getReferenceCode(), value.getType(), value.getName(), value.getVatNumber(), value.getAddressLine1(),
                 value.getPostalCode(), value.getCity(), value.getCountryCode(), value.getEmail(), value.getPhone(),
@@ -1228,7 +1305,7 @@ public class PmsAdvancedService {
                 PmsProfileData.contacts(value.getContacts()), PmsProfileData.billing(value.getBillingProfile()));
     }
 
-    private PmsAdvancedResponse.GroupBookingView groupView(GroupBooking group) {
+    PmsAdvancedResponse.GroupBookingView groupView(GroupBooking group) {
         return new PmsAdvancedResponse.GroupBookingView(
                 group.getId(), group.getGroupCode(), group.getName(), group.getArrivalDate(), group.getDepartureDate(),
                 group.getStatus(), group.getContactGuest().getId(), guestName(group.getContactGuest()),
@@ -1241,7 +1318,7 @@ public class PmsAdvancedService {
                                 reservation.getRoomType().getName(),
                                 reservation.getRoom() == null ? null : reservation.getRoom().getId(),
                                 reservation.getRoom() == null ? null : reservation.getRoom().getNumber(),
-                                reservation.getStatus(), money(reservation.getTotalAmount()))).toList());
+                                reservation.getStatus(), PmsMoney.round(reservation.getTotalAmount(),reservation.getCurrencyCode()),reservation.getArrivalDate(),reservation.getDepartureDate())).toList());
     }
 
     private PmsAdvancedResponse.InvoiceView invoiceView(PmsInvoice invoice) {
@@ -1510,6 +1587,7 @@ public class PmsAdvancedService {
     }
 
     private byte[] renderInvoice(PmsInvoice invoice, List<PmsInvoiceLine> lines) {
+        java.util.function.IntFunction<String> label = key -> PmsInvoiceLanguage.text(invoice.getLanguageCode(), key);
         Document document = new Document(PageSize.A4, 40, 40, 40, 40);
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PdfWriter.getInstance(document, output);
@@ -1526,34 +1604,34 @@ public class PmsAdvancedService {
                     supplier.postalCode(),supplier.city(),supplier.region(),supplier.countryCode(),null,null,null,null,null,supplier.addressFormat(),null))));
             if (supplier != null && clean(supplier.vatNumber()) != null) document.add(invoiceParagraph(
                     or(invoice.getSupplierTaxLabel(), "VAT / Tax ID") + ": " + supplier.vatNumber()));
-            if (clean(invoice.getSupplierRegistrationNumber()) != null) document.add(invoiceParagraph("Register: " + invoice.getSupplierRegistrationNumber()));
+            if (clean(invoice.getSupplierRegistrationNumber()) != null) document.add(invoiceParagraph(label.apply(5) + ": " + invoice.getSupplierRegistrationNumber()));
             document.add(Chunk.NEWLINE);
-            String documentLabel = invoice.getType() == InvoiceType.CREDIT_NOTE ? "Gutschrift" : "Rechnung";
+            String documentLabel = invoice.getType() == InvoiceType.CREDIT_NOTE ? label.apply(1) : label.apply(0);
             document.add(invoiceParagraph(documentLabel + " " + invoice.getInvoiceNumber(), title));
             if (invoice.getOriginalInvoice() != null) {
-                document.add(invoiceParagraph("Korrektur zu Rechnung "
+                document.add(invoiceParagraph(label.apply(2) + " "
                         + invoice.getOriginalInvoice().getInvoiceNumber()));
             }
-            document.add(invoiceParagraph("Dokumentdatum: " + invoice.getIssueDate() + "    Fällig: " + invoice.getDueDate()));
+            document.add(invoiceParagraph(label.apply(3) + ": " + invoice.getIssueDate() + "    " + label.apply(4) + ": " + invoice.getDueDate()));
             document.add(Chunk.NEWLINE);
             document.add(invoiceParagraph(recipient == null ? invoice.getRecipientName() + "\n" + address(invoice.getRecipientAddress(),
                     invoice.getRecipientPostalCode(), invoice.getRecipientCity()) : PmsProfileData.recipientBlock(recipient), heading));
             if (recipient != null) {
                 if (clean(recipient.vatNumber()) != null) document.add(invoiceParagraph("VAT / Tax ID: " + recipient.vatNumber()));
-                if (clean(recipient.reference()) != null) document.add(invoiceParagraph("Referenz / PO: " + recipient.reference()));
-                if (clean(recipient.costCenter()) != null) document.add(invoiceParagraph("Kostenstelle: " + recipient.costCenter()));
-                if (clean(recipient.billingEmail()) != null) document.add(invoiceParagraph("Rechnungs-E-Mail: " + recipient.billingEmail()));
+                if (clean(recipient.reference()) != null) document.add(invoiceParagraph(label.apply(6) + ": " + recipient.reference()));
+                if (clean(recipient.costCenter()) != null) document.add(invoiceParagraph(label.apply(7) + ": " + recipient.costCenter()));
+                if (clean(recipient.billingEmail()) != null) document.add(invoiceParagraph(label.apply(8) + ": " + recipient.billingEmail()));
             }
-            if (invoice.getServiceFrom() != null) document.add(invoiceParagraph("Leistungszeitraum: " + invoice.getServiceFrom() + " bis " + invoice.getServiceTo()));
+            if (invoice.getServiceFrom() != null) document.add(invoiceParagraph(label.apply(9) + ": " + invoice.getServiceFrom() + " " + label.apply(10) + " " + invoice.getServiceTo()));
             document.add(Chunk.NEWLINE);
             PdfPTable table = new PdfPTable(new float[]{4f, 1.5f, 1f, 1.3f, 1.3f, 1.3f});
             table.setWidthPercentage(100);
-            addCell(table, "Leistung", true);
-            addCell(table, "Datum", true);
-            addCell(table, "Menge", true);
-            addCell(table, "Steuer %", true);
-            addCell(table, "Netto", true);
-            addCell(table, "Brutto", true);
+            addCell(table, label.apply(11), true);
+            addCell(table, label.apply(12), true);
+            addCell(table, label.apply(13), true);
+            addCell(table, label.apply(14), true);
+            addCell(table, label.apply(15), true);
+            addCell(table, label.apply(16), true);
             for (PmsInvoiceLine line : lines) {
                 addCell(table, line.getDescription(), false);
                 addCell(table, line.getServiceDate() == null ? "" : line.getServiceDate().toString(), false);
@@ -1564,22 +1642,22 @@ public class PmsAdvancedService {
             }
             document.add(table);
             document.add(Chunk.NEWLINE);
-            document.add(invoiceParagraph("Netto: " + amount(invoice.getNetAmount(), invoice.getCurrencyCode())));
+            document.add(invoiceParagraph(label.apply(15) + ": " + amount(invoice.getNetAmount(), invoice.getCurrencyCode())));
             java.util.Map<BigDecimal, BigDecimal> taxGroups = new java.util.TreeMap<>();
             for (PmsInvoiceLine line : lines) taxGroups.merge(line.getVatRate() == null ? invoice.getVatRate() : line.getVatRate(), line.getVatAmount(), BigDecimal::add);
-            for (var group : taxGroups.entrySet()) document.add(invoiceParagraph("MWST / Tax " + group.getKey().stripTrailingZeros().toPlainString()
+            for (var group : taxGroups.entrySet()) document.add(invoiceParagraph(label.apply(17) + " " + group.getKey().stripTrailingZeros().toPlainString()
                     + "%: " + amount(group.getValue(), invoice.getCurrencyCode())));
             if (supplier != null && clean(supplier.footer()) != null) document.add(invoiceParagraph(supplier.footer()));
             if (recipient != null && clean(recipient.footer()) != null) document.add(invoiceParagraph(recipient.footer()));
-            document.add(invoiceParagraph("Total: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode()), heading));
+            document.add(invoiceParagraph(label.apply(18) + ": " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode()), heading));
             if (invoice.getType() == InvoiceType.INVOICE && clean(invoice.getCreditorIban()) != null) {
                 document.add(Chunk.NEWLINE);
-                document.add(invoiceParagraph("Swiss QR-Zahlteil", heading));
+                document.add(invoiceParagraph(label.apply(19), heading));
                 Image qrImage = swissQrImage(invoice);
                 qrImage.scaleAbsolute(145, 145);
                 document.add(qrImage);
                 document.add(invoiceParagraph("IBAN: " + invoice.getCreditorIban()));
-                document.add(invoiceParagraph("Betrag: " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode())));
+                document.add(invoiceParagraph(label.apply(20) + ": " + amount(invoice.getGrossAmount(), invoice.getCurrencyCode())));
             }
             document.close();
             return output.toByteArray();
@@ -1625,7 +1703,7 @@ public class PmsAdvancedService {
                 invoice.getCurrencyCode(), "S", qr(invoice.getRecipientName()), debtorAddress.street(),
                 debtorAddress.buildingNumber(), qr(invoice.getRecipientPostalCode()), qr(invoice.getRecipientCity()),
                 invoice.getRecipientCountryCode(), clean(invoice.getQrReference()) == null ? "NON" : "SCOR",
-                qr(invoice.getQrReference()), "Rechnung " + invoice.getInvoiceNumber(), "EPD", "", "", "");
+                qr(invoice.getQrReference()), PmsInvoiceLanguage.text(invoice.getLanguageCode(), 0) + " " + invoice.getInvoiceNumber(), "EPD", "", "", "");
     }
 
     private Image swissQrImage(PmsInvoice invoice) throws BadElementException, java.io.IOException {
@@ -1699,7 +1777,7 @@ public class PmsAdvancedService {
         BigDecimal payments = paymentRepository.findAllByFolio_IdOrderByReceivedAtAsc(folio.getId()).stream()
                 .filter(payment -> payment.getStatus() == PaymentStatus.POSTED)
                 .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return money(charges.subtract(payments));
+        return PmsMoney.round(charges.subtract(payments),folio.getCurrencyCode());
     }
 
     private void emit(HotelProperty property, String eventType, String aggregateType, String aggregateId, String payload) {
@@ -1752,6 +1830,13 @@ public class PmsAdvancedService {
         return date == null ? LocalDate.now(ZoneId.of(property.getTimezone())) : date;
     }
 
+    private LocalDate documentDate(HotelProperty property,LocalDate requestedDate) {
+        LocalDate date=financialPeriods.currentBusinessDate(property);
+        if(requestedDate!=null && !requestedDate.equals(date))
+            throw conflict("Rechnungen und Gutschriften müssen auf dem offenen Betriebstag "+date+" ausgestellt werden. Bitte den Betriebstag aktualisieren.");
+        return date;
+    }
+
     private void validateStay(LocalDate arrival, LocalDate departure) {
         if (arrival == null || departure == null || !departure.isAfter(arrival)) {
             throw badRequest("Das Abreisedatum muss nach dem Anreisedatum liegen.");
@@ -1778,7 +1863,7 @@ public class PmsAdvancedService {
     }
 
     private String amount(BigDecimal value, String currency) {
-        return currency + " " + money(value).toPlainString();
+        return currency + " " + PmsMoney.round(value,currency).toPlainString();
     }
 
     private String qr(String value) {
@@ -1803,10 +1888,6 @@ public class PmsAdvancedService {
         }
         String result = value.trim();
         return result.isEmpty() ? null : result;
-    }
-
-    private BigDecimal money(BigDecimal value) {
-        return (value == null ? BigDecimal.ZERO : value).setScale(2, RoundingMode.HALF_UP);
     }
 
     private ResponseStatusException notFound(String message) {

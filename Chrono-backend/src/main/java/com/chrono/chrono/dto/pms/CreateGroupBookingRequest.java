@@ -24,7 +24,7 @@ public record CreateGroupBookingRequest(
         @NotNull LocalDate departureDate,
         GroupBookingStatus status,
         @Size(max = 2000) String notes,
-        @NotEmpty @Size(max = 100) List<@Valid RoomingEntry> rooms
+        @NotNull @Size(max = 1000) List<@Valid RoomingEntry> rooms
 ) {
     public record RoomingEntry(
             @NotNull Long guestId,
@@ -35,11 +35,18 @@ public record CreateGroupBookingRequest(
             @Min(0) @Max(20) int children,
             ReservationSource source,
             @Size(max = 2000) String notes,
-            @Size(max = 20) List<@Min(0) @Max(17) Integer> childAges
+            @Size(max = 20) List<@Min(0) @Max(17) Integer> childAges,
+            LocalDate arrivalDate,
+            LocalDate departureDate
     ) {
         public RoomingEntry(Long guestId, Long roomTypeId, Long roomId, Long ratePlanId,
                             int adults, int children, ReservationSource source, String notes) {
-            this(guestId, roomTypeId, roomId, ratePlanId, adults, children, source, notes, null);
+            this(guestId, roomTypeId, roomId, ratePlanId, adults, children, source, notes, null, null, null);
+        }
+
+        public RoomingEntry(Long guestId, Long roomTypeId, Long roomId, Long ratePlanId,
+                            int adults, int children, ReservationSource source, String notes, List<Integer> childAges) {
+            this(guestId,roomTypeId,roomId,ratePlanId,adults,children,source,notes,childAges,null,null);
         }
 
         @AssertTrue(message = "Wenn Kinderalter angegeben sind, muss für jedes Kind genau ein Alter erfasst sein.")

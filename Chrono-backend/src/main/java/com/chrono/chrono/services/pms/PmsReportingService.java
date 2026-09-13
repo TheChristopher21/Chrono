@@ -8,6 +8,7 @@ import com.chrono.chrono.repositories.pms.HotelPropertyRepository;
 import com.chrono.chrono.repositories.pms.ReservationRepository;
 import com.chrono.chrono.repositories.pms.RoomBlockRepository;
 import com.chrono.chrono.repositories.pms.RoomRepository;
+import com.chrono.chrono.repositories.pms.FolioItemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,15 +37,18 @@ public class PmsReportingService {
     private final RoomRepository roomRepository;
     private final RoomBlockRepository roomBlockRepository;
     private final ReservationRepository reservationRepository;
+    private final FolioItemRepository folioItemRepository;
 
     public PmsReportingService(HotelPropertyRepository propertyRepository,
                                RoomRepository roomRepository,
                                RoomBlockRepository roomBlockRepository,
-                               ReservationRepository reservationRepository) {
+                               ReservationRepository reservationRepository,
+                               FolioItemRepository folioItemRepository) {
         this.propertyRepository = propertyRepository;
         this.roomRepository = roomRepository;
         this.roomBlockRepository = roomBlockRepository;
         this.reservationRepository = reservationRepository;
+        this.folioItemRepository = folioItemRepository;
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +75,16 @@ public class PmsReportingService {
                 .findAllByProperty_IdAndArrivalDateLessThanAndDepartureDateGreaterThanOrderByArrivalDateAsc(
                         propertyId, toDateExclusive, fromDate);
 
+        // Room revenue follows the actual service date and tax snapshot, including corrections.
+        // Breakfast, POS and other package components have their own revenue categories.
+        List<FolioItem> roomCharges = folioItemRepository
+                .findAllByFolio_Reservation_Property_IdAndServiceDateGreaterThanEqualAndServiceDateLessThanOrderByServiceDateAscIdAsc(
+                        propertyId, fromDate, toDateExclusive).stream()
+                .filter(item -> item.getType() == FolioItemType.ROOM)
+                .filter(item -> !Set.of(ReservationStatus.OFFERED,ReservationStatus.TENTATIVE,ReservationStatus.WAITLISTED)
+                        .contains(sourceReservation(item).getStatus()))
+                .toList();
+
         List<PmsPerformanceReportResponse.DailyPerformance> daily = new ArrayList<>();
         EnumMap<ReservationSource, SourceAccumulator> sourceTotals = new EnumMap<>(ReservationSource.class);
         long availableRoomNights = 0;
@@ -91,14 +105,20 @@ public class PmsReportingService {
                     .filter(reservation -> overlaps(reportDate, reservation.getArrivalDate(), reservation.getDepartureDate()))
                     .toList();
             long soldRooms = sold.size();
-            BigDecimal dailyRevenue = sold.stream()
-                    .map(this::nightlyRevenue)
+            List<FolioItem> dailyCharges = roomCharges.stream()
+                    .filter(item -> reportDate.equals(item.getServiceDate())).toList();
+            BigDecimal dailyRevenue = dailyCharges.stream()
+                    .map(this::netRoomRevenue)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             for (Reservation reservation : sold) {
                 SourceAccumulator source = sourceTotals.computeIfAbsent(
                         reservation.getSource(), ignored -> new SourceAccumulator());
                 source.roomNights++;
-                source.revenue = source.revenue.add(nightlyRevenue(reservation));
+            }
+            for (FolioItem item : dailyCharges) {
+                SourceAccumulator source = sourceTotals.computeIfAbsent(
+                        sourceReservation(item).getSource(), ignored -> new SourceAccumulator());
+                source.revenue = source.revenue.add(netRoomRevenue(item));
             }
 
             availableRoomNights += available;
@@ -106,7 +126,7 @@ public class PmsReportingService {
             roomRevenue = roomRevenue.add(dailyRevenue);
             daily.add(new PmsPerformanceReportResponse.DailyPerformance(
                     reportDate, available, soldRooms, percent(soldRooms, available),
-                    money(dailyRevenue), ratio(dailyRevenue, soldRooms), ratio(dailyRevenue, available)
+                    PmsMoney.round(dailyRevenue, property.getCurrencyCode()), ratio(dailyRevenue, soldRooms, property.getCurrencyCode()), ratio(dailyRevenue, available, property.getCurrencyCode())
             ));
         }
 
@@ -125,17 +145,19 @@ public class PmsReportingService {
         List<PmsPerformanceReportResponse.SourcePerformance> sources = sourceTotals.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> new PmsPerformanceReportResponse.SourcePerformance(
-                        entry.getKey(), entry.getValue().roomNights, money(entry.getValue().revenue),
+                        entry.getKey(), entry.getValue().roomNights, PmsMoney.round(entry.getValue().revenue, property.getCurrencyCode()),
                         percent(entry.getValue().roomNights, totalSoldRoomNights)))
                 .toList();
 
         return new PmsPerformanceReportResponse(
                 propertyId, property.getName(), property.getCurrencyCode(), fromDate, toDateExclusive,
                 availableRoomNights, soldRoomNights, percent(soldRoomNights, availableRoomNights),
-                money(roomRevenue), ratio(roomRevenue, soldRoomNights), ratio(roomRevenue, availableRoomNights),
+                PmsMoney.round(roomRevenue, property.getCurrencyCode()), ratio(roomRevenue, soldRoomNights, property.getCurrencyCode()), ratio(roomRevenue, availableRoomNights, property.getCurrencyCode()),
                 arrivals, cancellations, noShows,
                 "Auswertung nach Aufenthaltsdatum; der Abreisetag zählt nicht als Übernachtung. "
-                        + "Umsatz wird gleichmässig auf gebuchte Nächte verteilt; "
+                        + "Zimmerumsatz folgt den gespeicherten Netto-Zimmerleistungen je Leistungsdatum einschließlich Korrekturen; "
+                        + "Bereits verbuchte Leistungen stornierter Aufenthalte bleiben bis zur Leistungskorrektur im Umsatz enthalten. "
+                        + "Frühstück, andere Zusatzleistungen und Steuern sind ausgeschlossen. Zukünftige Werte sind gebuchte Vorschauwerte; "
                         + "stornierte, nicht angereiste (No-Show), Angebots-, Options- und Wartelistenbuchungen zählen nicht als verkauft.",
                 daily, sources
         );
@@ -214,10 +236,14 @@ public class PmsReportingService {
         return !date.isBefore(start) && date.isBefore(endExclusive);
     }
 
-    private BigDecimal nightlyRevenue(Reservation reservation) {
-        long nights = Math.max(1, ChronoUnit.DAYS.between(
-                reservation.getArrivalDate(), reservation.getDepartureDate()));
-        return reservation.getTotalAmount().divide(BigDecimal.valueOf(nights), 8, RoundingMode.HALF_UP);
+    private BigDecimal netRoomRevenue(FolioItem item) {
+        if(item.getTaxRate()==null) throw new ResponseStatusException(HttpStatus.CONFLICT,"Leistung "+item.getId()+" hat keinen bestätigten Steuersatz. Vor der Netto-Umsatzauswertung den Steuersatz im Rechnungsprozess klären.");
+        BigDecimal rate = item.getTaxRate();
+        return item.getTotalAmount().divide(BigDecimal.ONE.add(rate.movePointLeft(2)), PmsMoney.digits(item.getFolio().getCurrencyCode()), RoundingMode.HALF_UP);
+    }
+
+    private Reservation sourceReservation(FolioItem item) {
+        return item.getSourceReservation() == null ? item.getFolio().getReservation() : item.getSourceReservation();
     }
 
     private BigDecimal percent(long numerator, long denominator) {
@@ -227,14 +253,11 @@ public class PmsReportingService {
                 .divide(BigDecimal.valueOf(denominator), 2, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal ratio(BigDecimal numerator, long denominator) {
-        if (denominator <= 0) return BigDecimal.ZERO.setScale(2);
-        return numerator.divide(BigDecimal.valueOf(denominator), 2, RoundingMode.HALF_UP);
+    private BigDecimal ratio(BigDecimal numerator, long denominator, String currency) {
+        if (denominator <= 0) return PmsMoney.round(BigDecimal.ZERO, currency);
+        return numerator.divide(BigDecimal.valueOf(denominator), PmsMoney.digits(currency), RoundingMode.HALF_UP);
     }
 
-    private BigDecimal money(BigDecimal value) {
-        return value.setScale(2, RoundingMode.HALF_UP);
-    }
 
     private static class SourceAccumulator {
         private long roomNights;

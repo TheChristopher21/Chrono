@@ -19,7 +19,8 @@ public record PmsRoomPlanResponse(
                                   LocalDate arrivalDate, LocalDate departureDate, int adults, int children,
                                   List<Integer> childAges, ReservationStatus status, ReservationSource source,
                                   ReservationGuaranteeStatus guaranteeStatus, LocalDateTime holdUntil,
-                                  String notes, String guestPreferenceSnapshot) { }
+                                  String notes, String guestPreferenceSnapshot,
+                                  Long segmentId, LocalDate segmentStartDate, LocalDate segmentEndDate) { }
     public record BlockView(Long id, Long roomId, RoomBlockType type, LocalDate startDate,
                             LocalDate endDate, String reason) { }
     public record TypeOption(Long id, String name) { }

@@ -15,6 +15,12 @@ const api = axios.create({
 
 /* JWT automatisch anhängen */
 api.interceptors.request.use((cfg) => {
+    // Chrono inactivity ends only this browser tab; another tab may still run
+    // an unattended PMS using the shared finite token.
+    if (sessionStorage.getItem('chrono:tabIdleSignOut')) {
+        delete cfg.headers.Authorization;
+        return cfg;
+    }
     const t = localStorage.getItem("token");
     if (t) cfg.headers.Authorization = `Bearer ${t}`;
     return cfg;

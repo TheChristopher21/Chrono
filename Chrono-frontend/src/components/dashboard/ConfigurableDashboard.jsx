@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { ACCESS_VIEW, hasFeatureAccess, hasPageAccess } from '../../utils/pageAccess.js';
 import useDashboardPreferences, { DASHBOARD_WIDGET_SIZES } from '../../hooks/useDashboardPreferences.js';
+import FreeDashboardLayout from './FreeDashboardLayout.jsx';
 import './ConfigurableDashboard.css';
 
 const DEFAULT_LABELS = {
@@ -19,6 +20,7 @@ const DEFAULT_LABELS = {
     serverSaved: 'Mit dem Benutzerkonto synchronisiert',
     localSaved: 'Lokal auf diesem Gerät gespeichert',
     loading: 'Einstellungen werden geladen',
+    saving: 'Wird gespeichert …',
     empty: 'Für dieses Dashboard sind keine Bereiche verfügbar.',
 };
 
@@ -83,6 +85,7 @@ const renderRegistryWidget = (widget) => {
 const getPersistenceLabel = (status, labels) => {
     if (status === 'server') return labels.serverSaved;
     if (status === 'local') return labels.localSaved;
+    if (status === 'saving') return labels.saving;
     return labels.loading;
 };
 
@@ -100,6 +103,8 @@ const ConfigurableDashboard = ({
     className = '',
     editable = true,
     emptyState,
+    layoutMode = 'ordered',
+    gridRowHeight = 72,
 }) => {
     const labels = { ...DEFAULT_LABELS, ...(customLabels || {}) };
     const editorId = useId();
@@ -133,6 +138,7 @@ const ConfigurableDashboard = ({
         preferenceEndpoint,
         preferenceParams,
         remoteEnabled,
+        layoutMode,
     });
 
     const orderedLayout = useMemo(
@@ -212,6 +218,14 @@ const ConfigurableDashboard = ({
         setIsEditing((current) => !current);
         setAnnouncement('');
     };
+
+    if (layoutMode === 'free') {
+        return <FreeDashboardLayout key={`${context}:${scope}:${storageIdentity}`}
+            context={context} scope={scope} className={className} editable={editable}
+            registry={availableRegistry} layout={layout} updateLayout={updateLayout} resetLayout={resetLayout}
+            persistenceStatus={persistenceStatus} persistenceLabel={getPersistenceLabel(persistenceStatus, labels)}
+            labels={labels} emptyState={emptyState} renderWidget={renderRegistryWidget} gridRowHeight={gridRowHeight} />;
+    }
 
     return (
         <section
@@ -422,6 +436,9 @@ ConfigurableDashboard.propTypes = {
         allowedContexts: PropTypes.arrayOf(PropTypes.string),
         defaultVisible: PropTypes.bool,
         defaultSize: PropTypes.string,
+        defaultRect: PropTypes.shape({ x: PropTypes.number, y: PropTypes.number, w: PropTypes.number, h: PropTypes.number }),
+        minW: PropTypes.number,
+        minH: PropTypes.number,
         sizes: PropTypes.arrayOf(PropTypes.string),
         locked: PropTypes.bool,
         lockedVisibility: PropTypes.bool,
@@ -440,6 +457,8 @@ ConfigurableDashboard.propTypes = {
     className: PropTypes.string,
     editable: PropTypes.bool,
     emptyState: PropTypes.node,
+    layoutMode: PropTypes.oneOf(['ordered', 'free']),
+    gridRowHeight: PropTypes.number,
 };
 
 export default ConfigurableDashboard;

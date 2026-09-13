@@ -52,15 +52,28 @@ public class PmsRoomPlanService {
                 .orderBy(cb.asc(room.get("floor")), cb.asc(cb.length(room.get("number"))), cb.asc(room.get("number")), cb.asc(room.get("id")));
         List<Room> pageRooms = em.createQuery(query).setFirstResult(page * f.size()).setMaxResults(f.size()).getResultList();
         List<Long> ids = pageRooms.stream().map(Room::getId).toList();
-        List<ReservationView> reservations = ids.isEmpty() ? List.of() : em.createQuery("""
+        List<ReservationView> reservations = new ArrayList<>(ids.isEmpty() ? List.of() : em.createQuery("""
                 select r from Reservation r join fetch r.guest
                 where r.property.id = :propertyId and r.property.company.id = :companyId
                 and r.room.id in :ids and r.status in :statuses
+                and r.roomSegments is empty
                 and r.arrivalDate < :to and r.departureDate > :from
                 order by r.arrivalDate, r.id
                 """, Reservation.class).setParameter("propertyId", propertyId).setParameter("companyId", company.getId())
                 .setParameter("ids", ids).setParameter("statuses", VISIBLE).setParameter("to", to).setParameter("from", from)
-                .getResultList().stream().map(this::reservationView).toList();
+                .getResultList().stream().map(this::reservationView).toList());
+        if (!ids.isEmpty()) {
+            reservations.addAll(em.createQuery("""
+                    select s from ReservationRoomSegment s join fetch s.reservation r join fetch r.guest
+                    join fetch s.room room join fetch room.roomType join fetch s.ratePlan
+                    where r.property.id = :propertyId and r.property.company.id = :companyId
+                    and s.room.id in :ids and r.status in :statuses
+                    and s.startDate < :to and s.endDate > :from order by s.startDate, s.id
+                    """, ReservationRoomSegment.class).setParameter("propertyId", propertyId)
+                    .setParameter("companyId", company.getId()).setParameter("ids", ids)
+                    .setParameter("statuses", VISIBLE).setParameter("to", to).setParameter("from", from)
+                    .getResultList().stream().map(s -> reservationView(s.getReservation(), s)).toList());
+        }
         List<BlockView> blocks = ids.isEmpty() ? List.of() : em.createQuery("""
                 select b from RoomBlock b where b.property.id = :propertyId and b.property.company.id = :companyId
                 and b.room.id in :ids and b.status = :status and b.startDate < :to and b.endDate > :from
@@ -107,9 +120,17 @@ public class PmsRoomPlanService {
             Subquery<Long> occupied = query.subquery(Long.class);
             Root<Reservation> stay = occupied.from(Reservation.class);
             occupied.select(stay.get("id")).where(cb.equal(stay.get("room").get("id"), r.get("id")),
+                    cb.isEmpty(stay.get("roomSegments")),
                     cb.equal(stay.get("property").get("id"), propertyId), stay.get("status").in(OCCUPYING),
                     cb.lessThan(stay.get("arrivalDate"), to), cb.greaterThan(stay.get("departureDate"), from));
             terms.add(cb.not(cb.exists(occupied)));
+            Subquery<Long> segmented = query.subquery(Long.class);
+            Root<ReservationRoomSegment> segment = segmented.from(ReservationRoomSegment.class);
+            segmented.select(segment.get("id")).where(cb.equal(segment.get("room").get("id"), r.get("id")),
+                    cb.equal(segment.get("reservation").get("property").get("id"), propertyId),
+                    segment.get("reservation").get("status").in(OCCUPYING),
+                    cb.lessThan(segment.get("startDate"), to), cb.greaterThan(segment.get("endDate"), from));
+            terms.add(cb.not(cb.exists(segmented)));
             Subquery<Long> blocked = query.subquery(Long.class);
             Root<RoomBlock> block = blocked.from(RoomBlock.class);
             blocked.select(block.get("id")).where(cb.equal(block.get("room").get("id"), r.get("id")),
@@ -147,11 +168,20 @@ public class PmsRoomPlanService {
     }
 
     private ReservationView reservationView(Reservation r) {
+        return reservationView(r, null);
+    }
+
+    private ReservationView reservationView(Reservation r, ReservationRoomSegment segment) {
         List<Integer> ages = !hasText(r.getChildAges()) ? List.of() : Arrays.stream(r.getChildAges().split(",")).map(String::trim).map(Integer::valueOf).toList();
         return new ReservationView(r.getId(), r.getVersion(), r.getConfirmationCode(), r.getGuest().getId(),
-                r.getGuest().getFirstName() + " " + r.getGuest().getLastName(), r.getRoom().getId(), r.getRoomType().getId(), r.getRatePlan().getId(),
+                r.getGuest().getFirstName() + " " + r.getGuest().getLastName(),
+                segment == null ? r.getRoom().getId() : segment.getRoom().getId(),
+                segment == null ? r.getRoomType().getId() : segment.getRoom().getRoomType().getId(),
+                segment == null ? r.getRatePlan().getId() : segment.getRatePlan().getId(),
                 r.getArrivalDate(), r.getDepartureDate(), r.getAdults(), r.getChildren(), ages, r.getStatus(), r.getSource(),
-                r.getGuaranteeStatus(), r.getHoldUntil(), r.getNotes(), r.getGuestPreferenceSnapshot());
+                r.getGuaranteeStatus(), r.getHoldUntil(), r.getNotes(), r.getGuestPreferenceSnapshot(),
+                segment == null ? null : segment.getId(), segment == null ? r.getArrivalDate() : segment.getStartDate(),
+                segment == null ? r.getDepartureDate() : segment.getEndDate());
     }
 
     private Expression<String> replace(CriteriaBuilder cb, Expression<String> value, String from, String to) {

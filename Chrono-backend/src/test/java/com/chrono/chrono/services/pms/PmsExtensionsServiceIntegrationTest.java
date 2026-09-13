@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import({PmsExtensionsService.class, PmsOperationsService.class, PmsAuditWriter.class})
+@Import({PmsExtensionsService.class, PmsAccountingSettingsService.class, PmsOperationsService.class, com.chrono.chrono.services.pms.PmsGroupRoutingService.class, com.chrono.chrono.services.pms.PmsGroupInventoryService.class, com.chrono.chrono.services.pms.PmsHousekeepingService.class, com.chrono.chrono.services.pms.PmsReservationPolicyService.class, PmsDocumentFingerprintService.class, PmsRefundProcessor.class, PmsCashService.class, PmsFinancialPeriodService.class, PmsAuditWriter.class})
 @ActiveProfiles("test")
 @RecordApplicationEvents
 class PmsExtensionsServiceIntegrationTest {
@@ -45,6 +45,7 @@ class PmsExtensionsServiceIntegrationTest {
     @Autowired private AccessCredentialRepository accessCredentialRepository;
     @Autowired private MigrationBatchRepository migrationBatchRepository;
     @Autowired private ApplicationEvents applicationEvents;
+    @Autowired private PmsAccountingSettingsService accountingSettings;
 
     private Company company;
     private HotelProperty property;
@@ -83,6 +84,7 @@ class PmsExtensionsServiceIntegrationTest {
         ratePlan.setName("Beste Rate");
         ratePlan.setCurrencyCode("CHF");
         ratePlan.setNightlyRate(new BigDecimal("100.00"));
+        ratePlan.setVatRate(new BigDecimal("8.10"));
         ratePlan.setMinStay(1);
         ratePlan = ratePlanRepository.save(ratePlan);
         guest = new GuestProfile();
@@ -178,6 +180,38 @@ class PmsExtensionsServiceIntegrationTest {
     }
 
     @Test
+    void hotelAccountingMappingsDriveExportAndPreserveDirectBillClearing() {
+        var defaults=accountingSettings.get(company,property.getId());
+        var revenue=new java.util.LinkedHashMap<>(defaults.revenueAccounts());revenue.put("ROOM","4400");
+        var tender=new java.util.LinkedHashMap<>(defaults.paymentAccounts());tender.put("CARD","1200");
+        var configured=new com.chrono.chrono.dto.pms.PmsAccountingSettingsDto("1400","1410","1210","4490",revenue,tender);
+        accountingSettings.update(company,property.getId(),configured,"master");
+        Reservation reservation=operationsService.createReservationRecord(company,new UpsertReservationRequest(property.getId(),guest.getId(),roomType.getId(),room.getId(),
+                ratePlan.getId(),arrival,arrival.plusDays(1),1,0,ReservationStatus.CONFIRMED,ReservationSource.DIRECT,null),"desk");
+        String export=new String(service.accountingExport(company,property.getId(),arrival,arrival.plusDays(2)),StandardCharsets.UTF_8);
+        assertThat(export).contains(";\"1400\";\"4400\";").doesNotContain(";\"1100\";\"3200\";");
+        assertThat(PmsAccountingSettingsService.paymentAccount(accountingSettings.get(company,property.getId()),PaymentMethod.DIRECT_BILL)).isEqualTo("1410");
+        assertThat(PmsAccountingSettingsService.paymentAccount(accountingSettings.get(company,property.getId()),PaymentMethod.CARD)).isEqualTo("1200");
+        assertThat(reservation.getId()).isNotNull();
+    }
+
+    @Test
+    void accountingRejectsUnknownTaxesUnsafeAccountCodesAndOtherCompany() {
+        var defaults=accountingSettings.get(company,property.getId());
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->accountingSettings.update(company,property.getId(),
+                new com.chrono.chrono.dto.pms.PmsAccountingSettingsDto("1100;DROP","1105","1021","3220",defaults.revenueAccounts(),defaults.paymentAccounts()),"master"))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Kontonummern");
+        Company outside=companyRepository.save(new Company("Outside Accounting"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->accountingSettings.get(outside,property.getId())).isInstanceOf(ResponseStatusException.class).hasMessageContaining("404");
+        Reservation reservation=operationsService.createReservationRecord(company,new UpsertReservationRequest(property.getId(),guest.getId(),roomType.getId(),room.getId(),
+                ratePlan.getId(),arrival,arrival.plusDays(1),1,0,ReservationStatus.CONFIRMED,ReservationSource.DIRECT,null),"desk");
+        Folio folio=folioRepository.findFirstByReservation_IdOrderByIdAsc(reservation.getId()).orElseThrow();
+        folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folio.getId()).forEach(item->item.setTaxRate(null));
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->service.accountingExport(company,property.getId(),arrival,arrival.plusDays(2)))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("keinen bestätigten Steuersatz");
+    }
+
+    @Test
     void postsTourismTaxPosChargesAndProviderNeutralRoomAccess() {
         Reservation reservation = operationsService.createReservationRecord(company,
                 new UpsertReservationRequest(property.getId(), guest.getId(), roomType.getId(), room.getId(),
@@ -204,6 +238,7 @@ class PmsExtensionsServiceIntegrationTest {
         String export = new String(service.accountingExport(company, property.getId(), LocalDate.now(),
                 arrival.plusDays(3)), StandardCharsets.UTF_8);
         assertThat(export).contains("debitAccount;creditAccount", "Kurtaxe Zürich", "POS BAR");
+        assertThat(export).contains("taxRate;netAmount;taxAmount", ";8.1;40.00;3.24");
         export.lines().skip(1).filter(line -> !line.isBlank()).forEach(line -> {
             String[] fields = line.split(";", -1);
             assertThat(fields[5]).isEqualTo(fields[6]);

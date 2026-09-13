@@ -22,6 +22,8 @@ public class PosTicket {
     private HotelProperty property;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "folio_id")
     private Folio folio;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "cash_shift_id")
+    private CashShift cashShift;
     @Column(name = "ticket_number", nullable = false, length = 50)
     private String ticketNumber;
     @Column(name = "outlet_code", nullable = false, length = 32)
@@ -34,14 +36,13 @@ public class PosTicket {
     private PosTicketStatus status = PosTicketStatus.OPEN;
     @Enumerated(EnumType.STRING) @Column(name = "payment_method", length = 24)
     private PaymentMethod paymentMethod;
+    @Column(name = "payment_reference", length = 190)
+    private String paymentReference;
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
-    @Column(name = "net_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal netAmount = BigDecimal.ZERO;
-    @Column(name = "tax_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal taxAmount = BigDecimal.ZERO;
-    @Column(name = "gross_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal grossAmount = BigDecimal.ZERO;
+    @Column(name = "net_amount", nullable = false, precision = 19, scale = 4) private BigDecimal netAmount = BigDecimal.ZERO;
+    @Column(name = "tax_amount", nullable = false, precision = 19, scale = 4) private BigDecimal taxAmount = BigDecimal.ZERO;
+    @Column(name = "gross_amount", nullable = false, precision = 19, scale = 4) private BigDecimal grossAmount = BigDecimal.ZERO;
     @Column(name = "created_by", nullable = false, length = 120)
     private String createdBy;
     @Column(name = "created_at", nullable = false)

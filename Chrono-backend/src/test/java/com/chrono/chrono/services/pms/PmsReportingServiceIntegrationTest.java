@@ -34,6 +34,8 @@ class PmsReportingServiceIntegrationTest {
     @Autowired private GuestProfileRepository guestRepository;
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private RoomBlockRepository roomBlockRepository;
+    @Autowired private FolioRepository folioRepository;
+    @Autowired private FolioItemRepository folioItemRepository;
 
     private Company company;
     private HotelProperty property;
@@ -100,6 +102,13 @@ class PmsReportingServiceIntegrationTest {
         reservation.setCurrencyCode("CHF");
         reservation.setCreatedBy("Christopher");
         reservationRepository.save(reservation);
+        Folio folio = new Folio();
+        folio.setReservation(reservation);
+        folio.setCurrencyCode("CHF");
+        folioRepository.save(folio);
+        charge(folio, from, FolioItemType.ROOM, "95.20", "19");
+        charge(folio, from.plusDays(1), FolioItemType.ROOM, "142.80", "19");
+        charge(folio, from, FolioItemType.BREAKFAST, "23.80", "19");
 
         roomBlock(room102, RoomBlockType.OUT_OF_ORDER, from.plusDays(1), from.plusDays(2));
     }
@@ -113,6 +122,8 @@ class PmsReportingServiceIntegrationTest {
         assertThat(report.soldRoomNights()).isEqualTo(2);
         assertThat(report.occupancyPercent()).isEqualByComparingTo("66.67");
         assertThat(report.roomRevenue()).isEqualByComparingTo("200.00");
+        assertThat(report.daily().get(0).roomRevenue()).isEqualByComparingTo("80.00");
+        assertThat(report.daily().get(1).roomRevenue()).isEqualByComparingTo("120.00");
         assertThat(report.adr()).isEqualByComparingTo("100.00");
         assertThat(report.revPar()).isEqualByComparingTo("66.67");
         assertThat(report.daily()).extracting(PmsPerformanceReportResponse.DailyPerformance::availableRooms)
@@ -182,6 +193,53 @@ class PmsReportingServiceIntegrationTest {
                 .extracting(PmsPerformanceReportResponse.DailyPerformance::availableRooms)
                 .containsExactly(1L, 2L);
         assertThat(portfolioAfterEnd.availableRooms()).isEqualTo(2);
+    }
+
+    private void charge(Folio folio, LocalDate day, FolioItemType type, String gross, String tax) {
+        FolioItem item = new FolioItem();
+        item.setFolio(folio); item.setServiceDate(day); item.setType(type);
+        item.setDescription(type.name()); item.setQuantity(BigDecimal.ONE);
+        item.setUnitPrice(new BigDecimal(gross)); item.setTotalAmount(new BigDecimal(gross));
+        item.setTaxRate(new BigDecimal(tax)); item.setTaxIncluded(true);
+        folioItemRepository.save(item);
+    }
+
+    @Test
+    void includesRoomCreditsButDoesNotInventRevenueForUnchargedBookings() {
+        Folio folio = folioRepository.findAll().get(0);
+        charge(folio, from.plusDays(1), FolioItemType.ROOM, "-23.80", "19");
+        assertThat(service.performance(company, property.getId(), from, from.plusDays(2)).roomRevenue())
+                .isEqualByComparingTo("180.00");
+        folioItemRepository.deleteAll();
+        var report = service.performance(company, property.getId(), from, from.plusDays(2));
+        assertThat(report.soldRoomNights()).isEqualTo(2);
+        assertThat(report.roomRevenue()).isZero();
+    }
+
+    @Test
+    void refusesToReportGrossAsNetWhenLegacyTaxIsUnknown() {
+        folioItemRepository.findAll().stream().filter(i->i.getType()==FolioItemType.ROOM).findFirst().orElseThrow().setTaxRate(null);
+        assertThatThrownBy(()->service.performance(company,property.getId(),from,from.plusDays(2)))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("keinen bestätigten Steuersatz");
+    }
+
+    @Test
+    void cancellationPreservesRetainedLedgerRevenueAndCreditsByOriginalSourceAfterGroupRouting() {
+        Reservation source=reservationRepository.findAll().get(0);source.setStatus(ReservationStatus.CANCELLED);
+        Reservation anchor=new Reservation();anchor.setProperty(property);anchor.setGuest(source.getGuest());anchor.setRoomType(source.getRoomType());
+        anchor.setRatePlan(source.getRatePlan());anchor.setArrivalDate(from.plusDays(10));anchor.setDepartureDate(from.plusDays(12));
+        anchor.setConfirmationCode("GROUP-ANCHOR");anchor.setStatus(ReservationStatus.TENTATIVE);anchor.setSource(ReservationSource.WALK_IN);
+        anchor.setTotalAmount(BigDecimal.ZERO);anchor.setCurrencyCode("CHF");anchor.setCreatedBy("test");reservationRepository.save(anchor);
+        Folio master=new Folio();master.setReservation(anchor);master.setGroupMaster(true);master.setCurrencyCode("CHF");folioRepository.save(master);
+        folioItemRepository.findAll().forEach(i->{i.setSourceReservation(source);i.setFolio(master);});
+        var original=service.performance(company,property.getId(),from,from.plusDays(2));
+        assertThat(original.soldRoomNights()).isZero();assertThat(original.roomRevenue()).isEqualByComparingTo("200");
+        assertThat(original.sources()).singleElement().satisfies(s->{assertThat(s.source()).isEqualTo(ReservationSource.DIRECT);assertThat(s.roomRevenue()).isEqualByComparingTo("200");});
+        charge(master,from.plusDays(2),FolioItemType.ROOM,"-238.00","19");
+        FolioItem reversal=folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(master.getId()).stream()
+                .filter(i->i.getTotalAmount().signum()<0).findFirst().orElseThrow();reversal.setSourceReservation(source);
+        var corrected=service.performance(company,property.getId(),from,from.plusDays(3));
+        assertThat(corrected.roomRevenue()).isZero();assertThat(corrected.daily().get(2).roomRevenue()).isEqualByComparingTo("-200");
     }
 
     private Room room(RoomType type, String number) {

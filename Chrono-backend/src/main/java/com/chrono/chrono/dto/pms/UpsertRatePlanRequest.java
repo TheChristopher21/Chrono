@@ -41,8 +41,24 @@ public record UpsertRatePlanRequest(
         @Size(max = 2000) String cancellationPolicy,
         @Size(max = 2000) String paymentPolicy,
         @Size(max = 4000) String notes,
-        Long organizationId
+        Long organizationId,
+        @DecimalMin("0") @DecimalMax("100") BigDecimal noShowFeePercent,
+        @DecimalMin("0") @DecimalMax("100") BigDecimal policyFeeTaxRate,
+        @Min(0) @Max(365) Integer depositDueDaysBeforeArrival
 ) {
+    public UpsertRatePlanRequest(Long roomTypeId, String code, String name, BigDecimal nightlyRate,
+            int minStay, boolean breakfastIncluded, boolean refundable, Boolean active, BigDecimal vatRate,
+            Boolean taxIncluded, BigDecimal breakfastAmount, BigDecimal breakfastVatRate, LocalDate validFrom,
+            LocalDate validTo, LocalDate bookingFrom, LocalDate bookingTo, Integer maxStay, Integer minAdvanceDays,
+            Integer maxAdvanceDays, Integer includedAdults, BigDecimal extraAdultRate, BigDecimal childRate,
+            Integer cancellationDeadlineHours, BigDecimal cancellationFeePercent, BigDecimal depositPercent,
+            Integer paymentDueDays, String cancellationPolicy, String paymentPolicy, String notes, Long organizationId) {
+        this(roomTypeId, code, name, nightlyRate, minStay, breakfastIncluded, refundable, active, vatRate,
+                taxIncluded, breakfastAmount, breakfastVatRate, validFrom, validTo, bookingFrom, bookingTo,
+                maxStay, minAdvanceDays, maxAdvanceDays, includedAdults, extraAdultRate, childRate,
+                cancellationDeadlineHours, cancellationFeePercent, depositPercent, paymentDueDays,
+                cancellationPolicy, paymentPolicy, notes, organizationId, null, null, null);
+    }
     public UpsertRatePlanRequest(Long roomTypeId, String code, String name, BigDecimal nightlyRate,
                                  int minStay, boolean breakfastIncluded, boolean refundable, Boolean active) {
         this(roomTypeId, code, name, nightlyRate, minStay, breakfastIncluded, refundable, active,

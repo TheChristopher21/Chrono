@@ -1,3 +1,4 @@
+import PmsDirectoryPicker, { usePmsOrganizationDirectory } from './PmsDirectoryPicker.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../utils/api.js';
 import PmsGuestProfileDetails, { profileDetails, profilePayload, preferredProfileEmail } from './PmsGuestProfileDetails.jsx';
@@ -211,7 +212,7 @@ const PmsReceptionBookingFlow = ({
     const registrationEnabled = walkIn || collectRegistration;
     const checkInNow = walkIn;
     const operationGuests = operations?.guests ?? EMPTY_LIST;
-    const organizations = operations?.organizations ?? EMPTY_LIST;
+    const [organizations, rememberOrganization] = usePmsOrganizationDirectory(property.id, operations?.organizations ?? EMPTY_LIST);
 
     useEffect(() => {
         if (!didMountRef.current) {
@@ -939,7 +940,7 @@ const PmsReceptionBookingFlow = ({
                                 <label>E-Mail<input type="email" autoComplete="email" value={newGuest.email} onChange={(event) => setNewGuest((current) => ({ ...current, email: event.target.value }))} /></label>
                                 <label>Telefon<input type="tel" inputMode="tel" autoComplete="tel" value={newGuest.phone} onChange={(event) => setNewGuest((current) => ({ ...current, phone: event.target.value }))} /></label>
                                 <label>Sprache<input maxLength="8" value={newGuest.languageCode} onChange={(event) => setNewGuest((current) => ({ ...current, languageCode: event.target.value }))} /></label>
-                                <label>Firma<select value={newGuest.organizationId} onChange={(event) => setNewGuest((current) => ({ ...current, organizationId: event.target.value }))}><option value="">Privat</option>{organizations.filter((entry) => entry.active).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode ? `${entry.referenceCode} · ` : ''}{entry.name}</option>)}</select></label>
+                                <PmsDirectoryPicker propertyId={property.id} label="Firma" value={newGuest.organizationId} initialOptions={organizations} onResolve={rememberOrganization} placeholder="Privat" onChange={(value) => setNewGuest((current) => ({ ...current, organizationId: value }))} />
                                 <label className="is-wide">Privatadresse<input autoComplete="street-address" value={newGuest.addressLine1} onChange={(event) => setNewGuest((current) => ({ ...current, addressLine1: event.target.value }))} /></label>
                                 <label>PLZ<input autoComplete="postal-code" value={newGuest.postalCode} onChange={(event) => setNewGuest((current) => ({ ...current, postalCode: event.target.value }))} /></label>
                                 <label>Ort<input autoComplete="address-level2" value={newGuest.city} onChange={(event) => setNewGuest((current) => ({ ...current, city: event.target.value }))} /></label>

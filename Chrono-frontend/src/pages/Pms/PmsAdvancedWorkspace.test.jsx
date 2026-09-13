@@ -51,6 +51,7 @@ const operations = {
         label: 'Hauptfolio',
         currencyCode: 'CHF',
         charges: 216.2,
+        items: [{ id: 501, serviceDate: '2026-07-28', description: 'Übernachtung', totalAmount: 216.2, taxRate: 8.1, invoiced: false }],
     }],
 };
 
@@ -177,6 +178,19 @@ const portfolioReport = {
     }],
 };
 
+const revenuePlanningReport = {
+    propertyId: 5,
+    currencyCode: 'CHF',
+    businessDate: '2026-07-28',
+    from: '2026-07-28',
+    toExclusive: '2026-07-29',
+    comparisonSnapshot: null,
+    snapshots: [],
+    summary: { roomNights: 1, netRoomRevenue: 150, unknownRevenueRoomNights: 0, comparisonCoverageDays: 0, requestedDays: 1 },
+    days: [{ date: '2026-07-28', roomNights: 1, netRoomRevenue: 150 }],
+    months: [{ monthStart: '2026-07-01', coveredDays: 1, daysInMonth: 31, roomNights: 1, netRoomRevenue: 150, budget: null }],
+};
+
 const renderWorkspace = (section, canManageSettings = true) => render(
     <PmsAdvancedWorkspace
         section={section}
@@ -198,10 +212,12 @@ describe('PmsAdvancedWorkspace', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         apiMock.get.mockImplementation((url) => Promise.resolve({
-            data: url === '/api/pms/advanced'
+            data: url.endsWith('/financial-day') ? { businessDate: '2026-07-28' } : url === '/api/pms/advanced'
                 ? advanced
                 : url === '/api/pms/reports/performance'
                     ? performanceReport
+                    : url === '/api/pms/properties/5/reports/revenue-planning'
+                        ? revenuePlanningReport
                     : url === '/api/pms/reports/portfolio'
                         ? portfolioReport
                     : operations,

@@ -154,8 +154,8 @@ const WorkspaceTabStrip = () => {
 
     if (!workspace || !workspace.tabs.length) return null;
 
-    const openItem = (item) => {
-        const opened = workspace.openRoute(item.url);
+    const openItem = (item, options) => {
+        const opened = options ? workspace.openRoute(item.url, options) : workspace.openRoute(item.url);
         if (!opened) {
             setLimitMessage(t('workspaceTabs.limitReached', 'Maximal 12 Tabs. Löse oder schließe zuerst einen angehefteten Tab.'));
             return;
@@ -165,6 +165,15 @@ const WorkspaceTabStrip = () => {
         setLimitMessage('');
         setQuery('');
     };
+
+    const openExtraItem = (event, item) => {
+        if (event.button !== 1) return;
+        event.preventDefault();
+        openItem(item, { forceNew: true });
+    };
+    const workspaceLabel = workspace.scope === 'pms'
+        ? t('workspaceTabs.pmsWorkspace', 'PMS Arbeitsbereiche')
+        : t('workspaceTabs.workspace', 'Chrono Arbeitsbereiche');
 
     const onTabKeyDown = (event, tab, index, mobile) => {
         if (event.key === 'Home' || event.key === 'End') {
@@ -284,6 +293,12 @@ const WorkspaceTabStrip = () => {
                             workspace.activateTab(tab.id);
                             if (mobile) setMobileOpen(false);
                         }}
+                        onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
+                        onAuxClick={(event) => {
+                            if (event.button !== 1) return;
+                            event.preventDefault();
+                            if (!tab.pinned) workspace.closeTab(tab.id);
+                        }}
                         onKeyDown={(event) => onTabKeyDown(event, tab, index, mobile)}
                     >
                         <span className="workspace-tab-icon" aria-hidden="true">{tab.icon}</span>
@@ -314,7 +329,7 @@ const WorkspaceTabStrip = () => {
     );
 
     return (
-        <section className="workspace-tabs" aria-label={t('workspaceTabs.workspace', 'Chrono Arbeitsbereiche')}>
+        <section className="workspace-tabs" aria-label={workspaceLabel}>
             <div className="workspace-tabs-desktop">
                 {tabList(false)}
                 <div className="workspace-tab-toolbar" ref={launcherRef}>
@@ -364,7 +379,10 @@ const WorkspaceTabStrip = () => {
                                     <section key={group}>
                                         <h3>{group}</h3>
                                         {items.map((item) => (
-                                            <button type="button" key={item.key} onClick={() => openItem(item)}>
+                                            <button type="button" key={item.key} onClick={() => openItem(item)}
+                                                onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
+                                                onAuxClick={(event) => openExtraItem(event, item)}
+                                                title={t('workspaceTabs.middleClick', 'Mittelklick öffnet einen weiteren Tab')}>
                                                 <span>{item.icon}</span>
                                                 <span><strong>{item.label}</strong><small>{item.description}</small></span>
                                             </button>
@@ -401,7 +419,7 @@ const WorkspaceTabStrip = () => {
                     onClick={() => setMobileOpen((open) => !open)}
                     aria-expanded={mobileOpen}
                     aria-controls="workspace-mobile-drawer"
-                    aria-label={`${t('workspaceTabs.workspace', 'Chrono Arbeitsbereiche')}: ${workspace.activeTab?.title}`}
+                    aria-label={`${workspaceLabel}: ${workspace.activeTab?.title}`}
                 >
                     <span>{workspace.activeTab?.icon}</span>
                     <strong>{workspace.activeTab?.title}</strong>
@@ -443,7 +461,9 @@ const WorkspaceTabStrip = () => {
                             {Object.entries(groupedItems).map(([group, items]) => (
                                 <section key={group}>
                                     <h3>{group}</h3>
-                                    {items.map((item) => <button type="button" key={item.key} onClick={() => openItem(item)}><span>{item.icon}</span><strong>{item.label}</strong></button>)}
+                                    {items.map((item) => <button type="button" key={item.key} onClick={() => openItem(item)}
+                                        onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
+                                        onAuxClick={(event) => openExtraItem(event, item)}><span>{item.icon}</span><strong>{item.label}</strong></button>)}
                                 </section>
                             ))}
                             {limitMessage && <p className="workspace-limit-message" role="alert">{limitMessage}</p>}

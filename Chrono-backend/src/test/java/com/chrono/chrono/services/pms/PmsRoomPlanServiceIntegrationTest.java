@@ -138,6 +138,50 @@ class PmsRoomPlanServiceIntegrationTest {
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("404");
     }
 
+    @Test void showsEachStaySegmentOnItsOwnRoomWithOriginalBookingDatesAndExclusiveBoundaries() {
+        Room oldRoom = room("101", ""); Room newRoom = room("102", "");
+        Reservation moved = stay(oldRoom, start, start.plusDays(10), ReservationStatus.CONFIRMED);
+        addSegment(moved, oldRoom, start, start.plusDays(4));
+        addSegment(moved, newRoom, start.plusDays(4), start.plusDays(10));
+        reservations.saveAndFlush(moved);
+        var timeline = service.getRoomPlan(company, property.getId(), filter(start, List.of(), false, 0, 50, ""));
+        assertThat(timeline.reservations()).hasSize(2).allSatisfy(row -> {
+            assertThat(row.id()).isEqualTo(moved.getId()); assertThat(row.arrivalDate()).isEqualTo(start);
+            assertThat(row.departureDate()).isEqualTo(start.plusDays(10)); assertThat(row.segmentId()).isNotNull();
+        });
+        assertThat(timeline.reservations()).anySatisfy(row -> {
+            assertThat(row.roomId()).isEqualTo(oldRoom.getId()); assertThat(row.segmentStartDate()).isEqualTo(start); assertThat(row.segmentEndDate()).isEqualTo(start.plusDays(4));
+        }).anySatisfy(row -> {
+            assertThat(row.roomId()).isEqualTo(newRoom.getId()); assertThat(row.segmentStartDate()).isEqualTo(start.plusDays(4)); assertThat(row.segmentEndDate()).isEqualTo(start.plusDays(10));
+        });
+        var afterMove = service.getRoomPlan(company, property.getId(), shortFilter(start.plusDays(4), 3, false));
+        assertThat(afterMove.reservations()).singleElement().satisfies(row -> assertThat(row.roomId()).isEqualTo(newRoom.getId()));
+    }
+
+    @Test void availabilityExcludesOnlyTheOverlappingStaySegmentAndAlsoRespectsLegacyReservations() {
+        Room oldRoom = room("101", ""); Room newRoom = room("102", ""); Room other = room("103", "");
+        Reservation moved = stay(oldRoom, start, start.plusDays(10), ReservationStatus.CONFIRMED);
+        addSegment(moved, oldRoom, start, start.plusDays(4)); addSegment(moved, newRoom, start.plusDays(4), start.plusDays(10));
+        reservations.saveAndFlush(moved);
+        stay(other, start, start.plusDays(10), ReservationStatus.CONFIRMED);
+        assertThat(service.getRoomPlan(company, property.getId(), shortFilter(start, 4, true)).rooms()).extracting(r -> r.id()).containsExactly(newRoom.getId());
+        assertThat(service.getRoomPlan(company, property.getId(), shortFilter(start.plusDays(4), 6, true)).rooms()).extracting(r -> r.id()).containsExactly(oldRoom.getId());
+        assertThat(service.getRoomPlan(company, property.getId(), shortFilter(start.plusDays(3), 2, true)).rooms()).isEmpty();
+        assertThat(service.getRoomPlan(company, property.getId(), shortFilter(start.plusDays(10), 1, true)).rooms()).hasSize(3);
+        var excluded = java.util.Set.of(ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW, ReservationStatus.CHECKED_OUT, ReservationStatus.OFFERED, ReservationStatus.WAITLISTED);
+        assertThat(reservations.countOverlappingByRoom(newRoom.getId(), start, start.plusDays(4), excluded, null)).isZero();
+        assertThat(reservations.countOverlappingByRoom(oldRoom.getId(), start.plusDays(4), start.plusDays(10), excluded, null)).isZero();
+        assertThat(reservations.countOverlappingByRoom(newRoom.getId(), start.plusDays(4), start.plusDays(5), excluded, null)).isEqualTo(1);
+    }
+
+    private PmsRoomPlanFilter shortFilter(LocalDate from, int days, boolean available) {
+        return new PmsRoomPlanFilter(from, days, 0, 50, "", null, null, null, null, null, null, null, List.of(), available, false);
+    }
+    private void addSegment(Reservation reservation, Room room, LocalDate from, LocalDate to) {
+        ReservationRoomSegment segment = new ReservationRoomSegment(); segment.setReservation(reservation); segment.setRoom(room); segment.setRatePlan(rate);
+        segment.setStartDate(from); segment.setEndDate(to); segment.setCreatedBy("Test"); reservation.getRoomSegments().add(segment);
+    }
+
     private PmsRoomPlanFilter filter(LocalDate from, List<String> features, boolean available, int page, int size, String search) {
         return new PmsRoomPlanFilter(from, 30, page, size, search, null, null, null, null, null, null, null, features, available, false);
     }

@@ -21,6 +21,10 @@ public class FolioItem {
     @JoinColumn(name = "folio_id", nullable = false)
     private Folio folio;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_reservation_id")
+    private Reservation sourceReservation;
+
     @Column(name = "service_date", nullable = false)
     private LocalDate serviceDate;
 
@@ -34,11 +38,9 @@ public class FolioItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity = BigDecimal.ONE;
 
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal unitPrice;
+    @Column(name = "unit_price", nullable = false, precision = 19, scale = 4) private BigDecimal unitPrice;
 
-    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal totalAmount;
+    @Column(name = "total_amount", nullable = false, precision = 19, scale = 4) private BigDecimal totalAmount;
 
     @Column(name = "tax_rate", precision = 7, scale = 4)
     private BigDecimal taxRate;
@@ -54,6 +56,7 @@ public class FolioItem {
 
     @PrePersist
     void prePersist() {
+        if (sourceReservation == null && folio != null) sourceReservation = folio.getReservation();
         createdAt = LocalDateTime.now();
     }
 }

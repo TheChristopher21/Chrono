@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface CashShiftRepository extends JpaRepository<CashShift, Long> {
     Optional<CashShift> findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(Long propertyId, CashShiftStatus status);
     List<CashShift> findAllByProperty_IdOrderByOpenedAtDesc(Long propertyId);
+    List<CashShift> findAllByProperty_IdAndStatusOrderByOpenedAtDesc(Long propertyId, CashShiftStatus status);
+    boolean existsByProperty_IdAndRegisterCodeAndStatus(Long propertyId, String registerCode, CashShiftStatus status);
+    Optional<CashShift> findByIdAndProperty_Id(Long id, Long propertyId);
 }

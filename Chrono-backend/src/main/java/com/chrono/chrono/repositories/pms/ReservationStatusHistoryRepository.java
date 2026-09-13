@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ReservationStatusHistoryRepository extends JpaRepository<ReservationStatusHistory, Long> {
     List<ReservationStatusHistory> findAllByReservation_IdOrderByChangedAtDesc(Long reservationId);
+    List<ReservationStatusHistory> findAllByReservation_IdInOrderByChangedAtDescIdDesc(List<Long> reservationIds);
 }

@@ -32,6 +32,21 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 };
 
 describe('Navbar', () => {
+    it('shows only PMS workspace navigation and an explicit switch back to Chrono inside PMS', async () => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Reception', roles: ['ROLE_ADMIN'], companyFeatureKeys: ['pms'],
+                pagePermissions: { adminDashboard: 'VIEW', pms: 'MANAGE' } },
+        }, '/pms?section=guests');
+        expect(screen.getByRole('link', { name: 'Zu Chrono wechseln' })).toHaveAttribute('href', '/admin/dashboard');
+        expect(screen.queryByRole('link', { name: 'Arbeitszeit-Rechner' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Plattform/i })).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: /PMS-Bereiche/i }));
+        expect(screen.getByRole('link', { name: /Zimmerplan/i })).toHaveAttribute('href', '/pms?section=room-plan');
+        expect(screen.getByRole('link', { name: /Hotelportfolio/i })).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /Benutzerverwaltung/i })).not.toBeInTheDocument();
+    });
+
     it('shows login and an honest demo request CTA when unauthenticated', () => {
         mockNavigate.mockReset();
         renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');

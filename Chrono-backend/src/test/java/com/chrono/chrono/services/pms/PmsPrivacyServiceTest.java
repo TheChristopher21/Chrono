@@ -27,10 +27,11 @@ class PmsPrivacyServiceTest {
             mock(GuestRegistrationRepository.class);
     private final PmsAuditEventRepository auditRepository = mock(PmsAuditEventRepository.class);
     private final PmsAuditWriter auditWriter = mock(PmsAuditWriter.class);
+    private final ReservationGuestRepository accompanyingRepository = mock(ReservationGuestRepository.class);
     private final PmsPrivacyService service = new PmsPrivacyService(
             guestRepository, propertyRepository, reservationRepository, folioRepository,
             invoiceRepository, communicationRepository, registrationRepository,
-            auditRepository, auditWriter);
+            auditRepository, auditWriter, accompanyingRepository);
     private final Company company = new Company("Chrono Hotel AG");
     private final GuestProfile guest = new GuestProfile();
     private final Reservation reservation = new Reservation();
@@ -72,6 +73,33 @@ class PmsPrivacyServiceTest {
         when(communicationRepository.findAllByGuest_IdOrderByCreatedAtDesc(9L))
                 .thenReturn(List.of());
         when(registrationRepository.findByReservation_Id(11L)).thenReturn(Optional.empty());
+    }
+
+    @Test
+    void blocksActiveAccompanyingStayBeforeMutatingProfile() {
+        Reservation coReservation = new Reservation(); coReservation.setId(44L); coReservation.setStatus(ReservationStatus.CHECKED_IN);
+        ReservationGuest coGuest = new ReservationGuest(); coGuest.setReservation(coReservation);
+        when(accompanyingRepository.findAllByGuest_Id(9L)).thenReturn(List.of(coGuest));
+        assertThatThrownBy(() -> service.anonymizeGuest(company, 9L, "Antrag", "Christopher"))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("aktiver oder zukünftiger");
+        assertThat(guest.getFirstName()).isEqualTo("Gabriela");
+    }
+
+    @Test
+    void exportsAndErasesOnlyTheAccompanyingGuestsRegistrationSnapshot() {
+        Reservation coReservation = new Reservation(); coReservation.setId(44L); coReservation.setProperty(property);
+        coReservation.setStatus(ReservationStatus.CHECKED_OUT); coReservation.setNotes("Primary guest's note");
+        ReservationGuest coGuest = new ReservationGuest(); coGuest.setId(55L); coGuest.setReservation(coReservation);
+        coGuest.setAddressLine("Personal address"); coGuest.setDocumentHash("hash"); coGuest.setDocumentLastFour("1234"); coGuest.setSignatureName("Signature");
+        when(accompanyingRepository.findAllByGuest_Id(9L)).thenReturn(List.of(coGuest));
+        var exported = service.exportGuestData(company, 9L, "Christopher");
+        assertThat(exported.accompanyingStays()).hasSize(1);
+        assertThat(exported.accompanyingStays().get(0).addressLine()).isEqualTo("Personal address");
+        service.anonymizeGuest(company, 9L, "Antrag", "Christopher");
+        assertThat(coGuest.getAddressLine()).isNull(); assertThat(coGuest.getDocumentHash()).isNull();
+        assertThat(coGuest.getDocumentLastFour()).isNull(); assertThat(coGuest.getSignatureName()).isNull();
+        assertThat(coReservation.getNotes()).isEqualTo("Primary guest's note");
+        verify(registrationRepository, never()).findByReservation_Id(44L);
     }
 
     @Test

@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,6 +19,48 @@ class UiPreferencePayloadValidatorTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UiPreferencePayloadValidator validator = new UiPreferencePayloadValidator(objectMapper);
+
+    @Test
+    void roundTripsTwelveChronoAndTwelvePmsTabsIncludingExplicitCopies() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        ArrayNode tabs = payload.putArray("tabs");
+        for (int index = 0; index < 12; index++) {
+            tabs.addObject().put("id", "chrono-" + index).put("viewKey", "dashboard")
+                    .put("pinned", index == 0).putObject("params");
+            tabs.addObject().put("id", "pms-" + index).put("viewKey", "pms")
+                    .put("pinned", false).putObject("params")
+                    .put("propertyId", 42).put("workspace", "room-plan");
+        }
+        payload.put("activeTabId", "pms-11");
+
+        String serialized = validator.validateAndSerialize(UserUiPreferenceArea.APP_TABS, "workspace", payload);
+
+        assertEquals(payload, validator.deserializeAndValidate(
+                UserUiPreferenceArea.APP_TABS, "workspace", serialized));
+    }
+
+    @Test
+    void rejectsDuplicateTabIdentityWhileAllowingDuplicatePages() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        ArrayNode tabs = payload.putArray("tabs");
+        tabs.addObject().put("id", "pms-copy").put("viewKey", "pms");
+        tabs.addObject().put("id", "pms-copy").put("viewKey", "pms");
+
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.APP_TABS, "workspace", payload));
+    }
+
+    @Test
+    void sharedWorkspaceStillEnforcesTheOverallTabLimit() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        ArrayNode tabs = payload.putArray("tabs");
+        for (int index = 0; index <= UiPreferencePayloadValidator.MAX_TABS; index++) {
+            tabs.addObject().put("id", "copy-" + index).put("viewKey", "pms");
+        }
+
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.APP_TABS, "workspace", payload));
+    }
 
     @ParameterizedTest
     @EnumSource(value = UserUiPreferenceArea.class, names = {
@@ -40,6 +84,89 @@ class UiPreferencePayloadValidatorTest {
         String serialized = assertDoesNotThrow(() -> validator.validateAndSerialize(area, context, payload));
 
         assertEquals(payload, assertDoesNotThrow(() -> objectMapper.readTree(serialized)));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,0,12,24", "11,199,1,1", "3,176,9,24"})
+    void pmsGridRoundTripsBoundaryPositionsWithoutNormalization(int x, int y, int w, int h) {
+        ObjectNode payload = dashboardPayload("property:42");
+        pmsWidget(payload).put("x", x).put("y", y).put("w", w).put("h", h);
+
+        String serialized = validator.validateAndSerialize(UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload);
+
+        assertEquals(payload, validator.deserializeAndValidate(
+                UserUiPreferenceArea.PMS_DASHBOARD, "property:42", serialized));
+    }
+
+    @Test
+    void pmsGridCanCoexistWithLegacyWidgetsWithoutAddingCoordinatesToThem() {
+        ObjectNode payload = dashboardPayload("property:42");
+        ArrayNode widgets = (ArrayNode) payload.path("layouts").path("property:42").path("widgets");
+        widgets.addObject().put("id", "grid-widget").put("visible", false).put("order", 1).put("size", "S")
+                .put("x", 8).put("y", 19).put("w", 4).put("h", 3);
+
+        String serialized = validator.validateAndSerialize(UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload);
+
+        assertEquals(payload, validator.deserializeAndValidate(UserUiPreferenceArea.PMS_DASHBOARD, "property:42", serialized));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"-1,0,1,1", "12,0,1,1", "0,-1,1,1", "0,200,1,1",
+            "0,0,0,1", "0,0,13,1", "0,0,1,0", "0,0,1,25", "11,0,2,1", "0,199,1,2"})
+    void rejectsPmsGridBoundsAndOverflowBeyondRightOrBottomEdge(int x, int y, int w, int h) {
+        ObjectNode payload = dashboardPayload("property:42");
+        pmsWidget(payload).put("x", x).put("y", y).put("w", w).put("h", h);
+
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"x", "y", "w", "h"})
+    void rejectsPartialNullFractionalStringAndOverflowingPmsGridFields(String field) throws Exception {
+        for (String value : new String[]{"null", "0.5", "\"1\"", "true", "2147483648"}) {
+            ObjectNode payload = dashboardPayload("property:42");
+            pmsWidget(payload).put("x", 0).put("y", 0).put("w", 1).put("h", 1)
+                    .set(field, objectMapper.readTree(value));
+            assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                    UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload), field + "=" + value);
+        }
+        ObjectNode partial = dashboardPayload("property:42");
+        pmsWidget(partial).put("x", 0).put("y", 0).put("w", 1).put("h", 1).remove(field);
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.PMS_DASHBOARD, "property:42", partial));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = UserUiPreferenceArea.class, names = {"TIME_USER_DASHBOARD", "TIME_ADMIN_DASHBOARD"})
+    void pmsGridExtensionDoesNotLoosenChronoDashboardContract(UserUiPreferenceArea area) {
+        String scope = area == UserUiPreferenceArea.TIME_USER_DASHBOARD ? "default" : "overview";
+        String context = area == UserUiPreferenceArea.TIME_USER_DASHBOARD ? "USER_STANDARD" : "ADMIN";
+        ObjectNode payload = dashboardPayload(scope);
+        ((ObjectNode) payload.path("layouts").path(scope).path("widgets").path(0))
+                .put("x", 0).put("y", 0).put("w", 1).put("h", 1);
+
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(area, context, payload));
+    }
+
+    @Test
+    void pmsGridExtensionStillRejectsUnknownWidgetFieldsAndRequiresLegacyMetadata() {
+        ObjectNode payload = dashboardPayload("property:42");
+        pmsWidget(payload).put("x", 0).put("y", 0).put("w", 1).put("h", 1).put("minWidth", 1);
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload));
+
+        pmsWidget(payload).remove("minWidth");
+        for (String required : new String[]{"id", "visible", "order", "size"}) {
+            ObjectNode missingMetadata = payload.deepCopy();
+            pmsWidget(missingMetadata).remove(required);
+            assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                    UserUiPreferenceArea.PMS_DASHBOARD, "property:42", missingMetadata));
+        }
+    }
+
+    private ObjectNode pmsWidget(ObjectNode payload) {
+        return (ObjectNode) payload.path("layouts").path("property:42").path("widgets").path(0);
     }
 
     @Test

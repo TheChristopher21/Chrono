@@ -13,8 +13,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+    @Query("select r.id from Reservation r where r.property.id=:propertyId and r.id>:cursor and r.status=com.chrono.chrono.entities.pms.ReservationStatus.CONFIRMED and r.policyDepositPercent>0 order by r.id")
+    List<Long> findDepositCandidates(@Param("propertyId") Long propertyId,@Param("cursor") Long cursor,org.springframework.data.domain.Pageable page);
     Optional<Reservation> findByIdAndProperty_Company_Id(Long id, Long companyId);
+    @Query("select r.property.id from Reservation r where r.id=:id and r.property.company.id=:companyId")
+    Optional<Long> findPropertyIdForTenant(@Param("id") Long id,@Param("companyId") Long companyId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {
+            "property", "guest", "roomType", "ratePlan", "room", "groupBooking", "roomSegments", "roomSegments.room"
+    })
     List<Reservation> findAllByProperty_IdAndArrivalDateLessThanAndDepartureDateGreaterThanOrderByArrivalDateAsc(
             Long propertyId,
             LocalDate toExclusive,
@@ -24,7 +31,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("""
             select count(r) from Reservation r
             where r.property.id = :propertyId
-              and r.roomType.id = :roomTypeId
+              and ((not exists (select s.id from ReservationRoomSegment s where s.reservation = r) and r.roomType.id = :roomTypeId)
+                   or exists (select s.id from ReservationRoomSegment s where s.reservation = r and s.room.roomType.id = :roomTypeId and s.startDate < :departure and s.endDate > :arrival))
               and r.status not in :excludedStatuses
               and r.arrivalDate < :departure
               and r.departureDate > :arrival
@@ -41,7 +49,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query("""
             select count(r) from Reservation r
-            where r.room.id = :roomId
+            where ((not exists (select s.id from ReservationRoomSegment s where s.reservation = r) and r.room.id = :roomId)
+                   or exists (select s.id from ReservationRoomSegment s where s.reservation = r and s.room.id = :roomId and s.startDate < :departure and s.endDate > :arrival))
               and r.status not in :excludedStatuses
               and r.arrivalDate < :departure
               and r.departureDate > :arrival

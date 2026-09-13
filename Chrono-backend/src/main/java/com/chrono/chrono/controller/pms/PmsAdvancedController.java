@@ -7,6 +7,10 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.pms.PmsAdvancedService;
 import com.chrono.chrono.services.pms.PmsReportingService;
+import com.chrono.chrono.services.pms.PmsReceivablesService;
+import com.chrono.chrono.services.pms.PmsGroupService;
+import com.chrono.chrono.services.pms.PmsEventOrderService;
+import com.chrono.chrono.services.pms.PmsAccountingSettingsService;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -29,15 +33,146 @@ public class PmsAdvancedController {
     private final PmsReportingService reportingService;
     private final UserRepository userRepository;
     private final UserPermissionService userPermissionService;
+    private final PmsReceivablesService receivables;
+    private final PmsGroupService groupOperations;
+    private final PmsEventOrderService eventOrders;
+    private final PmsAccountingSettingsService accountingSettings;
 
     public PmsAdvancedController(PmsAdvancedService advancedService,
                                  PmsReportingService reportingService,
                                  UserRepository userRepository,
-                                 UserPermissionService userPermissionService) {
+                                 UserPermissionService userPermissionService, PmsReceivablesService receivables,PmsGroupService groupOperations,PmsEventOrderService eventOrders,
+                                 PmsAccountingSettingsService accountingSettings) {
         this.advancedService = advancedService;
         this.reportingService = reportingService;
         this.userRepository = userRepository;
         this.userPermissionService = userPermissionService;
+        this.receivables = receivables;
+        this.groupOperations = groupOperations;
+        this.eventOrders = eventOrders;
+        this.accountingSettings = accountingSettings;
+    }
+
+    @GetMapping("/properties/{propertyId}/accounting-settings")
+    public ResponseEntity<PmsAccountingSettingsDto> accountingSettings(@PathVariable Long propertyId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(accountingSettings.get(context.company(),propertyId));
+    }
+    @PutMapping("/properties/{propertyId}/accounting-settings")
+    public ResponseEntity<PmsAccountingSettingsDto> saveAccountingSettings(@PathVariable Long propertyId,
+            @Valid @RequestBody PmsAccountingSettingsDto request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE,true);
+        return ResponseEntity.ok(accountingSettings.update(context.company(),propertyId,request,context.username()));
+    }
+
+    @GetMapping("/properties/{propertyId}/resource-bookings/{bookingId}/event-order")
+    public ResponseEntity<PmsEventOrderDto.View> eventOrder(@PathVariable Long propertyId,@PathVariable Long bookingId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(eventOrders.get(context.company(),propertyId,bookingId));
+    }
+    @PutMapping("/properties/{propertyId}/resource-bookings/{bookingId}/event-order")
+    public ResponseEntity<PmsEventOrderDto.View> saveEventOrder(@PathVariable Long propertyId,@PathVariable Long bookingId,
+            @Valid @RequestBody PmsEventOrderDto.Save request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(eventOrders.save(context.company(),propertyId,bookingId,request));
+    }
+    @PostMapping("/properties/{propertyId}/resource-bookings/{bookingId}/event-order/post")
+    public ResponseEntity<PmsEventOrderDto.View> postEventOrder(@PathVariable Long propertyId,@PathVariable Long bookingId,
+            @Valid @RequestBody PmsEventOrderDto.Post request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(eventOrders.post(context.company(),propertyId,bookingId,request,context.username()));
+    }
+    @GetMapping("/properties/{propertyId}/resource-bookings/{bookingId}/event-order/beo.pdf")
+    public ResponseEntity<byte[]> eventOrderPdf(@PathVariable Long propertyId,@PathVariable Long bookingId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION,
+                "inline; filename=event-order-"+bookingId+".pdf").body(eventOrders.beoPdf(context.company(),propertyId,bookingId));
+    }
+
+    @GetMapping("/properties/{propertyId}/groups/{groupId}/operations")
+    public ResponseEntity<PmsGroupOperationsDto.View> groupOperations(@PathVariable Long propertyId,@PathVariable Long groupId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(groupOperations.view(context.company(),propertyId,groupId));
+    }
+    @PostMapping("/properties/{propertyId}/groups/{groupId}/allotments")
+    public ResponseEntity<PmsGroupOperationsDto.View> groupAllotment(@PathVariable Long propertyId,@PathVariable Long groupId,
+            @Valid @RequestBody PmsGroupOperationsDto.Allotment request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(groupOperations.addAllotment(context.company(),propertyId,groupId,request));
+    }
+    @PostMapping("/properties/{propertyId}/groups/{groupId}/allotments/{allotmentId}/release")
+    public ResponseEntity<PmsGroupOperationsDto.View> releaseAllotment(@PathVariable Long propertyId,@PathVariable Long groupId,
+            @PathVariable Long allotmentId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(groupOperations.release(context.company(),propertyId,groupId,allotmentId));
+    }
+    @PostMapping("/properties/{propertyId}/groups/{groupId}/rooming-list")
+    public ResponseEntity<PmsGroupOperationsDto.View> appendRoomingList(@PathVariable Long propertyId,@PathVariable Long groupId,
+            @Valid @RequestBody PmsGroupOperationsDto.RoomingList request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(groupOperations.appendMembers(context.company(),propertyId,groupId,request,context.username()));
+    }
+    @PutMapping("/properties/{propertyId}/groups/{groupId}/routing")
+    public ResponseEntity<PmsGroupOperationsDto.View> groupRouting(@PathVariable Long propertyId,@PathVariable Long groupId,
+            @Valid @RequestBody PmsGroupOperationsDto.Routing request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(groupOperations.configureRouting(context.company(),propertyId,groupId,request));
+    }
+    @PostMapping("/properties/{propertyId}/groups/{groupId}/bulk-operation")
+    public ResponseEntity<java.util.List<PmsGroupOperationsDto.MemberResult>> bulkGroupOperation(@PathVariable Long propertyId,@PathVariable Long groupId,
+            @Valid @RequestBody PmsGroupOperationsDto.BulkOperation request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(groupOperations.bulk(context.company(),propertyId,groupId,request,context.username()));
+    }
+
+    @GetMapping("/properties/{propertyId}/credit-accounts")
+    public ResponseEntity<java.util.List<PmsReceivablesDto.CreditView>> creditAccounts(@PathVariable Long propertyId,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(receivables.accounts(context.company(),propertyId));
+    }
+
+    @PutMapping("/properties/{propertyId}/organizations/{organizationId}/credit-account")
+    public ResponseEntity<PmsReceivablesDto.CreditView> configureCredit(@PathVariable Long propertyId,@PathVariable Long organizationId,
+            @Valid @RequestBody PmsReceivablesDto.CreditSettings request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE,true);
+        return ResponseEntity.ok(receivables.configure(context.company(),propertyId,organizationId,request,context.username()));
+    }
+
+    @PostMapping("/properties/{propertyId}/invoices/{invoiceId}/direct-bill")
+    public ResponseEntity<PmsReceivablesDto.ReceivableView> directBill(@PathVariable Long propertyId,@PathVariable Long invoiceId,
+            @Valid @RequestBody PmsReceivablesDto.DirectBill request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(receivables.directBill(context.company(),propertyId,invoiceId,request,context.username()));
+    }
+
+    @GetMapping("/properties/{propertyId}/receivables")
+    public ResponseEntity<PmsReceivablesDto.Page> receivables(@PathVariable Long propertyId,
+            @RequestParam(required=false) Long organizationId,@RequestParam(defaultValue="false") boolean openOnly,
+            @RequestParam(defaultValue="false") boolean overdueOnly,@RequestParam(defaultValue="0") int page,
+            @RequestParam(defaultValue="50") int size,@RequestParam(required=false) String query,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(receivables.listPage(context.company(),propertyId,organizationId,openOnly,overdueOnly,page,size,query));
+    }
+
+    @PostMapping("/properties/{propertyId}/receivables/{receivableId}/settlements")
+    public ResponseEntity<PmsReceivablesDto.ReceivableView> settleReceivable(@PathVariable Long propertyId,@PathVariable Long receivableId,
+            @Valid @RequestBody PmsReceivablesDto.Settlement request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(receivables.settle(context.company(),propertyId,receivableId,request,context.username(),false));
+    }
+
+    @PostMapping("/properties/{propertyId}/receivables/{receivableId}/refunds")
+    public ResponseEntity<PmsReceivablesDto.ReceivableView> refundReceivable(@PathVariable Long propertyId,@PathVariable Long receivableId,
+            @Valid @RequestBody PmsReceivablesDto.Settlement request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(receivables.settle(context.company(),propertyId,receivableId,request,context.username(),true));
+    }
+
+    @PostMapping("/properties/{propertyId}/receivables/{receivableId}/reminders")
+    public ResponseEntity<PmsReceivablesDto.ReceivableView> remindReceivable(@PathVariable Long propertyId,@PathVariable Long receivableId,
+            @Valid @RequestBody PmsReceivablesDto.Reminder request,Principal principal) {
+        AccessContext context=requireContext(principal,UserPermissionService.ACCESS_MANAGE);
+        return ResponseEntity.ok(receivables.remind(context.company(),propertyId,receivableId,request,context.username()));
     }
 
     @GetMapping("/advanced")
@@ -57,6 +192,12 @@ public class PmsAdvancedController {
         AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
         return ResponseEntity.ok(reportingService.performance(
                 context.company(), propertyId, fromDate, toDateExclusive));
+    }
+
+    @GetMapping("/properties/{propertyId}/financial-day")
+    public ResponseEntity<PmsFinancialDayResponse> financialDay(@PathVariable Long propertyId, Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(advancedService.financialDay(context.company(), propertyId));
     }
 
     @GetMapping("/reports/portfolio")

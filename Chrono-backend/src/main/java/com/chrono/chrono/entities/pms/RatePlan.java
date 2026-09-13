@@ -43,8 +43,7 @@ public class RatePlan {
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
 
-    @Column(name = "nightly_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal nightlyRate;
+    @Column(name = "nightly_rate", nullable = false, precision = 19, scale = 4) private BigDecimal nightlyRate;
 
     @Column(name = "min_stay", nullable = false)
     private int minStay = 1;
@@ -66,8 +65,7 @@ public class RatePlan {
     private boolean taxIncluded = true;
 
     /** Allocated breakfast portion of nightlyRate, in the same gross/net basis. */
-    @Column(name = "breakfast_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal breakfastAmount = BigDecimal.ZERO;
+    @Column(name = "breakfast_amount", nullable = false, precision = 19, scale = 4) private BigDecimal breakfastAmount = BigDecimal.ZERO;
 
     @Column(name = "breakfast_vat_rate", precision = 7, scale = 4)
     private BigDecimal breakfastVatRate;
@@ -83,11 +81,9 @@ public class RatePlan {
     @Column(name = "included_adults", nullable = false)
     private int includedAdults = 1;
 
-    @Column(name = "extra_adult_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal extraAdultRate = BigDecimal.ZERO;
+    @Column(name = "extra_adult_rate", nullable = false, precision = 19, scale = 4) private BigDecimal extraAdultRate = BigDecimal.ZERO;
 
-    @Column(name = "child_rate", nullable = false, precision = 12, scale = 2)
-    private BigDecimal childRate = BigDecimal.ZERO;
+    @Column(name = "child_rate", nullable = false, precision = 19, scale = 4) private BigDecimal childRate = BigDecimal.ZERO;
 
     private Integer cancellationDeadlineHours;
     @Column(precision = 7, scale = 4)
@@ -95,6 +91,11 @@ public class RatePlan {
     @Column(precision = 7, scale = 4)
     private BigDecimal depositPercent;
     private Integer paymentDueDays;
+    @Column(precision = 7, scale = 4)
+    private BigDecimal noShowFeePercent;
+    @Column(precision = 7, scale = 4)
+    private BigDecimal policyFeeTaxRate;
+    private Integer depositDueDaysBeforeArrival;
     @Column(length = 2000)
     private String cancellationPolicy;
     @Column(length = 2000)

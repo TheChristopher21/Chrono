@@ -13,8 +13,13 @@ public record PmsGuestDataExport(
         List<RegistrationData> registrations,
         List<InvoiceData> retainedInvoices,
         List<AuditData> auditTrail,
-        String legalRetentionNotice
+        String legalRetentionNotice,
+        List<AccompanyingStayData> accompanyingStays
 ) {
+    public record AccompanyingStayData(Long id, Long reservationId, Long propertyId, String propertyName,
+            String confirmationCode, LocalDate arrivalDate, LocalDate departureDate, boolean child,
+            String status, String addressLine, String postalCode, String city, String countryCode,
+            String nationalityCode, String documentLastFour, String signatureName, LocalDateTime registrationCompletedAt) {}
     public record GuestData(
             Long id,
             String referenceCode,

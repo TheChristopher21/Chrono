@@ -2,7 +2,10 @@
  * Navbar.jsx · kompakt mit Dropdowns & Icons (Aug 2025)
  ****************************************/
 import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Link from './workspace/WorkspaceLink.jsx';
+import { useWorkspacePaneActive } from './workspace/WorkspacePaneContext.jsx';
+import { PMS_NAVIGATION_GROUPS } from '../pages/Pms/pmsNavigation.js';
 import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import styles from '../styles/Navbar.module.css';
@@ -74,12 +77,13 @@ function useClickOutside(ref, onOutside) {
     }, [ref, onOutside]);
 }
 
-const Navbar = () => {
+const NavbarContents = () => {
     const { authToken, logout, currentUser } = useAuth();
     const { t } = useTranslation();
     const { language, setLanguage } = useContext(LanguageContext);
     const location = useLocation();
     const navigate = useNavigate();
+    const isPmsArea = /^\/pms(?:\/|$)/.test(location.pathname);
 
     const isSuperAdmin = isSuperAdminUser(currentUser);
     const isAdmin = isAdminUser(currentUser);
@@ -217,6 +221,10 @@ const Navbar = () => {
 
     const dashboardTarget = getDefaultLandingPage(currentUser);
     const workspaceMenuItems = useMemo(() => {
+        if (isPmsArea) return canOpenPage('pms') ? PMS_NAVIGATION_GROUPS.flatMap((group) => group.items.map((item) => ({
+            ...item,
+            to: item.key === 'overview' ? '/pms' : `/pms?section=${item.key}`,
+        }))) : [];
         if (!adminMenuItems.length) {
             return [];
         }
@@ -230,8 +238,9 @@ const Navbar = () => {
             { key: 'dashboardHome', to: dashboardTarget, label: t('navbar.myDashboard', 'Mein Dashboard') },
             ...adminMenuItems,
         ];
-    }, [adminMenuItems, dashboardTarget, isAdmin, isSuperAdmin, t]);
+    }, [adminMenuItems, canOpenPage, dashboardTarget, isAdmin, isPmsArea, isSuperAdmin, t]);
     const dashboardMenuItem = useMemo(() => {
+        if (isPmsArea) return workspaceMenuItems.find((item) => item.key === 'overview') ?? null;
         const dashboardItem = workspaceMenuItems.find((item) => item.key === 'dashboardHome' || item.key === 'adminDashboard');
         if (dashboardItem) {
             return dashboardItem;
@@ -240,10 +249,14 @@ const Navbar = () => {
             return { key: 'dashboardHome', to: dashboardTarget, label: t('navbar.myDashboard', 'Mein Dashboard') };
         }
         return null;
-    }, [dashboardTarget, t, workspaceMenuItems]);
+    }, [dashboardTarget, isPmsArea, t, workspaceMenuItems]);
     const platformMenuGroups = useMemo(() => {
         const itemsByKey = new Map(workspaceMenuItems.map((item) => [item.key, item]));
         const pick = (keys) => keys.map((key) => itemsByKey.get(key)).filter(Boolean);
+        if (isPmsArea) return PMS_NAVIGATION_GROUPS.map((group) => ({
+            key: group.key, title: group.label, subtitle: '',
+            items: pick(group.items.filter((item) => item.key !== 'overview').map((item) => item.key)),
+        })).filter((group) => group.items.length > 0);
         return [
             {
                 key: 'timeTeam',
@@ -270,7 +283,7 @@ const Navbar = () => {
                 items: pick(['adminKnowledge', 'chronoTwo', 'companySettings', 'companyManagement']),
             },
         ].filter((group) => group.items.length > 0);
-    }, [t, workspaceMenuItems]);
+    }, [isPmsArea, t, workspaceMenuItems]);
     const groupedPlatformItemKeys = useMemo(
         () => new Set(platformMenuGroups.flatMap((group) => group.items.map((item) => item.key))),
         [platformMenuGroups]
@@ -285,7 +298,7 @@ const Navbar = () => {
     const showChangePassword = canOpenPage('adminChangePassword') || canOpenPage('personalData');
     const userDisplayName = getUserDisplayName(currentUser);
     const userInitial = userDisplayName?.[0]?.toUpperCase() || currentUser?.username?.[0]?.toUpperCase() || 'U';
-    const workspaceMenuLabel = t('navbar.platform', 'Plattform');
+    const workspaceMenuLabel = isPmsArea ? t('navbar.pmsAreas', 'PMS-Bereiche') : t('navbar.platform', 'Plattform');
 
     const toggleWorkspaceMenu = () => {
         setOpenAdmin((prev) => !prev);
@@ -297,7 +310,7 @@ const Navbar = () => {
         <div className={`${styles['dropdown-menu']} ${styles['platform-menu']}`}>
             <div className={styles['platform-menu-header']}>
                 <div>
-                    <span className={styles['platform-kicker']}>Chrono</span>
+                    <span className={styles['platform-kicker']}>{isPmsArea ? 'Chrono PMS' : 'Chrono'}</span>
                     <strong>{t('navbar.switchWorkspace', 'Arbeitsbereich wechseln')}</strong>
                 </div>
                 {dashboardMenuItem && (
@@ -321,7 +334,7 @@ const Navbar = () => {
                                     key={item.key}
                                     to={item.to}
                                     onClick={closeMobileNav}
-                                    className={`${styles['platform-item']} ${location.pathname === item.to ? styles.activeLink : ''}`}
+                                    className={`${styles['platform-item']} ${`${location.pathname}${location.search}` === item.to ? styles.activeLink : ''}`}
                                 >
                                     <span className={styles['platform-item-code']} aria-hidden="true">
                                         {getPlatformItemCode(item)}
@@ -358,7 +371,7 @@ const Navbar = () => {
         <div className={`${styles['scoped-navbar']} chrono-navbar-shell ${showWorkspaceTabs ? 'has-workspace-tabs' : ''}`}>
             <nav className={styles.navbar} aria-label="Hauptnavigation">
                 <div className={styles['navbar-brand']}>
-                    <Link to="/" className={styles['navbar-logo']}>
+                    <Link to={isPmsArea ? '/pms' : '/'} className={styles['navbar-logo']} aria-label={isPmsArea ? 'Chrono PMS' : 'Chrono'}>
                         <img
                             className={styles['navbar-logo-image']}
                             src="/img/komplettesLogo.png"
@@ -450,7 +463,11 @@ const Navbar = () => {
                         <>
                             {currentUser && (
                                 <>
-                                    <li>
+                                    {isPmsArea ? <li>
+                                        <Link to={dashboardTarget} onClick={closeMobileNav}>
+                                            {t('navbar.backToChrono', 'Zu Chrono wechseln')}
+                                        </Link>
+                                    </li> : <li>
                                         <Link
                                             to="/arbeitszeit-rechner"
                                             onClick={closeMobileNav}
@@ -458,7 +475,7 @@ const Navbar = () => {
                                         >
                                             {t('navbar.workTimeCalculator', 'Arbeitszeit-Rechner')}
                                         </Link>
-                                    </li>
+                                    </li>}
 
                                     {workspaceMenuItems.length === 0 && (
                                         <li>
@@ -528,7 +545,7 @@ const Navbar = () => {
                                             {t('navbar.profile', 'Mein Profil')}
                                         </Link>
                                     )}
-                                    {showPmsLink && (
+                                    {showPmsLink && !isPmsArea && (
                                         <Link to="/pms" onClick={() => setOpenUser(false)}>
                                             {t('navbar.pms', 'Hotelverwaltung (PMS)')}
                                         </Link>
@@ -580,4 +597,7 @@ const Navbar = () => {
     );
 };
 
-export default Navbar;
+export default function Navbar() {
+    const active = useWorkspacePaneActive();
+    return active ? <NavbarContents /> : null;
+}

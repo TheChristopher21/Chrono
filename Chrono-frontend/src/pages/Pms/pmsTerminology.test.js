@@ -29,8 +29,8 @@ const BACKEND_ENUM_VALUES = {
     OrganizationType: ['COMPANY', 'TRAVEL_AGENCY', 'EVENT_ORGANIZER'],
     OutboxStatus: ['PENDING', 'PROCESSING', 'DELIVERED', 'FAILED', 'DEAD_LETTER'],
     PaymentKind: ['PAYMENT', 'REFUND'],
-    PaymentMethod: ['CASH', 'CARD', 'BANK_TRANSFER', 'VOUCHER', 'OTHER'],
-    PaymentStatus: ['POSTED', 'VOIDED'],
+    PaymentMethod: ['CASH', 'CARD', 'BANK_TRANSFER', 'VOUCHER', 'DIRECT_BILL', 'OTHER'],
+    PaymentStatus: ['POSTED', 'PENDING', 'FAILED', 'VOIDED'],
     ReservationGuaranteeStatus: [
         'UNGUARANTEED',
         'CREDIT_CARD',

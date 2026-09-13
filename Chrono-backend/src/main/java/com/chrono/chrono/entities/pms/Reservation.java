@@ -47,6 +47,13 @@ public class Reservation {
     @JoinColumn(name = "room_id")
     private Room room;
 
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("startDate ASC")
+    private java.util.List<ReservationRoomSegment> roomSegments = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ReservationGuest> coGuests = new java.util.ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rate_plan_id", nullable = false)
     private RatePlan ratePlan;
@@ -91,8 +98,7 @@ public class Reservation {
     @Column(name = "hold_until")
     private LocalDateTime holdUntil;
 
-    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @Column(name = "total_amount", nullable = false, precision = 19, scale = 4) private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
@@ -135,4 +141,12 @@ public class Reservation {
     void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    private LocalDateTime policySnapshotAt;
+    private Integer policyCancellationDeadlineHours;
+    @Column(precision = 7, scale = 4) private BigDecimal policyCancellationFeePercent;
+    @Column(precision = 7, scale = 4) private BigDecimal policyNoShowFeePercent;
+    @Column(precision = 7, scale = 4) private BigDecimal policyFeeTaxRate;
+    @Column(precision = 7, scale = 4) private BigDecimal policyDepositPercent;
+    private Integer policyDepositDueDaysBeforeArrival;
+    private java.time.LocalTime policyCheckInTime;
 }

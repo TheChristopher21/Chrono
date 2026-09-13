@@ -77,7 +77,9 @@ public record PmsAdvancedResponse(
             Long roomId,
             String roomNumber,
             ReservationStatus status,
-            BigDecimal totalAmount
+            BigDecimal totalAmount,
+            LocalDate arrivalDate,
+            LocalDate departureDate
     ) {
     }
 

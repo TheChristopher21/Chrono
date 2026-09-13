@@ -7,6 +7,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,5 +69,44 @@ class PmsRestoreDrillServiceTest {
                 "restore-user",
                 "secret",
                 Duration.ofDays(7));
+    }
+
+    @Test
+    void externalProofWorksWithoutMysqlBinaryAndMustMatchBackupAndRelease() throws Exception {
+        Path backup = tempDirectory.resolve("current.sql");
+        Files.writeString(backup, "-- verified backup");
+        String checksum = "a".repeat(64);
+        Files.writeString(tempDirectory.resolve("current.sql.sha256"), checksum + "  current.sql\n");
+        var proof = new ObjectMapper().createObjectNode().put("schemaVersion", 1).put("status", "OK")
+                .put("verifiedAt", Instant.now().toString()).put("backupFile", "current.sql")
+                .put("backupSha256", checksum).put("flywayVersion", PmsRestoreDrillService.expectedSchemaVersion());
+        Path evidence = tempDirectory.resolve("restore-verification.json");
+        Files.writeString(evidence, proof.toString());
+        var verifier = mock(PmsBackupVerifier.class);
+        when(verifier.latestVerifiedBackup()).thenReturn(Optional.of(backup));
+        var service = externalService(verifier);
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.OK);
+        proof.put("backupSha256", "b".repeat(64)); Files.writeString(evidence, proof.toString());
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.CRITICAL);
+        proof.put("backupSha256", checksum).put("flywayVersion", "17"); Files.writeString(evidence, proof.toString());
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.WARNING);
+    }
+
+    @Test
+    void externalProofRejectsStaleFailedAndMalformedEvidence() throws Exception {
+        Path backup = tempDirectory.resolve("current.sql"); Files.writeString(backup, "backup");
+        var verifier = mock(PmsBackupVerifier.class); when(verifier.latestVerifiedBackup()).thenReturn(Optional.of(backup));
+        var service = externalService(verifier);
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.WARNING);
+        Path evidence = tempDirectory.resolve("restore-verification.json");
+        Files.writeString(evidence, "{\"schemaVersion\":1,\"status\":\"FAILED\"}");
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.CRITICAL);
+        Files.writeString(evidence, "{\"schemaVersion\":1,\"status\":\"OK\",\"verifiedAt\":\"" + Instant.now().minus(Duration.ofDays(9)) + "\"}");
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.WARNING);
+        Files.writeString(evidence, "not json");
+        assertThat(service.inspect().status()).isEqualTo(HealthStatus.CRITICAL);
+    }
+    private PmsRestoreDrillService externalService(PmsBackupVerifier verifier) {
+        return new PmsRestoreDrillService(verifier, false, "missing-mysql", "localhost", 3306, "user", "secret", Duration.ofDays(7), true, tempDirectory.toString());
     }
 }

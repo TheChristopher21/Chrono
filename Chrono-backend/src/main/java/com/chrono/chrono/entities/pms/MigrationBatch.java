@@ -29,8 +29,7 @@ public class MigrationBatch {
     private int importedReservations;
     @Column(name = "imported_payments", nullable = false)
     private int importedPayments;
-    @Column(name = "total_opening_balance", nullable = false, precision = 14, scale = 2)
-    private BigDecimal totalOpeningBalance = BigDecimal.ZERO;
+    @Column(name = "total_opening_balance", nullable = false, precision = 19, scale = 4) private BigDecimal totalOpeningBalance = BigDecimal.ZERO;
     @Column(name = "reconciliation_message", length = 1000)
     private String reconciliationMessage;
     @Column(name = "created_by", nullable = false, length = 120)

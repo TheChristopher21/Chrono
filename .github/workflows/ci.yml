@@ -137,6 +137,8 @@ jobs:
           docker run --rm \
             --network chrono-restore-ci \
             --volume "${backup_dir}:/backups:ro" \
+            --volume "${backup_dir}/evidence:/restore-evidence" \
+            --volume "${PWD}/Chrono-backend/src/main/resources/db/migration:/migrations:ro" \
             --entrypoint /opt/chrono/restore-drill.sh \
             --env MYSQL_HOST=chrono-restore-db-ci \
             --env MYSQL_PORT=3306 \
@@ -145,8 +147,10 @@ jobs:
             --env MYSQL_PASSWORD=chrono-ci-restore-root \
             --env RESTORE_MINIMUM_TABLES=20 \
             --env RESTORE_MINIMUM_PMS_TABLES=41 \
-            --env RESTORE_EXPECTED_FLYWAY_VERSION=17 \
+            --env RESTORE_EXPECTED_FLYWAY_VERSION=auto \
             chrono/mysql-backup:ci
+          test -s "${backup_dir}/evidence/restore-verification.json"
+          grep -q '"status":"OK"' "${backup_dir}/evidence/restore-verification.json"
 
   pms-e2e:
     runs-on: ubuntu-latest

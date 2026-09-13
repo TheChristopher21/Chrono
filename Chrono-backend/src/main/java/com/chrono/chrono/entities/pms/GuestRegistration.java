@@ -82,4 +82,7 @@ public class GuestRegistration {
 
     @Column(name = "rule_version", nullable = false)
     private int ruleVersion = 1;
+
+    @Column(name="required_fields_snapshot",columnDefinition="TEXT")
+    private String requiredFieldsSnapshot;
 }

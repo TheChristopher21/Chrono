@@ -16,6 +16,7 @@ describe('api data refresh interceptor', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         localStorage.clear();
+        sessionStorage.clear();
         resetDataRefreshCoordinator();
     });
 
@@ -64,5 +65,21 @@ describe('api data refresh interceptor', () => {
 
         expect(listener).not.toHaveBeenCalled();
     });
-});
 
+    it('does not send shared PMS credentials from an idle-signed-out Chrono tab', async () => {
+        localStorage.setItem('token', 'pms-shared-token');
+        sessionStorage.setItem('chrono:tabIdleSignOut', 'true');
+        const response = await api.request({
+            method: 'get', url: '/api/auth/me',
+            headers: { Authorization: 'Bearer stale-default-token' }, adapter: successfulAdapter,
+        });
+        expect(response.config.headers.get('Authorization')).toBeUndefined();
+        expect(localStorage.getItem('token')).toBe('pms-shared-token');
+    });
+
+    it('uses the latest shared finite token in a signed-in tab', async () => {
+        localStorage.setItem('token', 'renewed-pms-token');
+        const response = await api.request({ method: 'get', url: '/api/auth/me', adapter: successfulAdapter });
+        expect(response.config.headers.get('Authorization')).toBe('Bearer renewed-pms-token');
+    });
+});

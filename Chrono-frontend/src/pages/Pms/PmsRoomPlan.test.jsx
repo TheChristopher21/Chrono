@@ -40,11 +40,11 @@ describe('PmsRoomPlan', () => {
         render(<PmsRoomPlan property={property} businessDate="2000-01-01" />);
         await screen.findByRole('table');
         const today = hotelToday(property.timezone);
-        expect(apiMock.get).toHaveBeenLastCalledWith('/api/pms/properties/5/room-plan', expect.objectContaining({ params: expect.objectContaining({ from: today, days: 30, page: 0, size: 50 }) }));
+        expect(apiMock.get).toHaveBeenCalledWith('/api/pms/properties/5/room-plan', expect.objectContaining({ params: expect.objectContaining({ from: today, days: 30, page: 0, size: 50 }) }));
         expect(screen.getByLabelText('Startdatum').value).toBe(today);
         expect(screen.getAllByRole('columnheader')).toHaveLength(31);
         expect(screen.getByRole('columnheader', { name: `${planDayLabel(today)} Heute` }).getAttribute('aria-current')).toBe('date');
-        expect(screen.getByText('1–50 von 2000 Zimmern · Seite 1 / 40')).toBeTruthy();
+        expect(screen.getByText(/2000 Zimmer · fortlaufende Tabelle/)).toBeTruthy();
         expect(screen.getAllByRole('rowheader')).toHaveLength(1);
     });
     it('requests a 10-day range and applies multiple room features together server-side', async () => {
@@ -56,7 +56,7 @@ describe('PmsRoomPlan', () => {
         await waitFor(() => expect(apiMock.get.mock.calls.at(-1)[1].params.features).toEqual(['Badewanne']));
         fireEvent.click(screen.getByLabelText('ruhig'));
         fireEvent.change(screen.getByLabelText('Bettenart'), { target: { value: 'Doppelbett' } });
-        await waitFor(() => expect(apiMock.get.mock.calls.at(-1)[1].params).toMatchObject({ days: 10, bedType: 'Doppelbett', features: ['Badewanne', 'ruhig'], page: 0 }));
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ params: expect.objectContaining({ days: 10, bedType: 'Doppelbett', features: ['Badewanne', 'ruhig'], page: 0 }) })));
         expect(screen.getAllByRole('columnheader')).toHaveLength(11);
     });
     it('paginates thousands of rooms on the server and searches all pages', async () => {
@@ -90,8 +90,8 @@ describe('PmsRoomPlan', () => {
         const booking = await screen.findByRole('button', { name: 'Anna Gast' });
         expect(booking.draggable).toBe(true);
         const target = screen.getByRole('rowheader', { name: /102/ }).closest('[role=row]');
-        fireEvent.drop(target, { dataTransfer: { getData: () => '90' } });
-        await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/api/pms/reservations/90/move-room', { roomId: 12, reason: 'Verschoben im fortlaufenden Zimmerplan' }, { params: { businessDate: today } }));
+        fireEvent.drop(target, { dataTransfer: { getData: (key) => key === 'text/reservation-id' ? '90' : '' } });
+        await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/api/pms/reservations/90/move-room', { roomId: 12, effectiveDate: today, reason: 'Verschoben im fortlaufenden Zimmerplan' }, { params: { businessDate: today } }));
         expect(changed).toHaveBeenCalledWith({ reservations: [] });
     });
     it('shows server errors without presenting stale availability as current', async () => {
@@ -99,5 +99,35 @@ describe('PmsRoomPlan', () => {
         render(<PmsRoomPlan property={property} />);
         expect((await screen.findByRole('alert')).textContent).toContain('Hotel nicht gefunden.');
         expect(screen.queryByRole('table')).toBeNull();
+    });
+    it('jumps across a 20,000-room hotel with a bounded server and DOM window', async () => {
+        apiMock.get.mockImplementation((path, { params }) => Promise.resolve({ data: { ...response, page: params.page, totalRooms: 20_000,
+            rooms: Array.from({ length: 50 }, (_, index) => ({ ...room, id: params.page * 50 + index + 1, number: String(params.page * 50 + index + 1) })) } }));
+        render(<PmsRoomPlan property={property} />);
+        await screen.findByRole('rowheader', { name: /^1 / });
+        expect(screen.getAllByRole('rowheader').length).toBeLessThan(30);
+        fireEvent.change(screen.getByLabelText('Zu Zeile springen'), { target: { value: '15001' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Gehe zu' }));
+        await screen.findByRole('rowheader', { name: /^15001 / });
+        expect(screen.getAllByRole('rowheader').length).toBeLessThan(30);
+        expect(apiMock.get.mock.calls.every(([, config]) => config.params.size === 50)).toBe(true);
+        expect(apiMock.get.mock.calls.length).toBeLessThan(10);
+        expect(screen.queryByRole('rowheader', { name: /^1 / })).toBeNull();
+    });
+    it('selects cells with shift/arrows and copies a spreadsheet-safe rectangular range', async () => {
+        apiMock.get.mockResolvedValue({ data: { ...response, totalRooms: 2, rooms: [room, { ...room, id: 12, number: '=2+2' }] } });
+        render(<PmsRoomPlan property={property} />);
+        await screen.findByRole('table');
+        const cells = screen.getAllByRole('cell');
+        fireEvent.click(cells[0]); fireEvent.click(cells[31], { shiftKey: true });
+        expect(screen.getByText('2 Zimmer × 2 Tage')).toBeTruthy();
+        const viewport = screen.getByLabelText('Zimmer und Tage, horizontal und vertikal scrollbar');
+        fireEvent.keyDown(viewport, { key: 'ArrowRight', shiftKey: true });
+        const clipboardData = { setData: vi.fn() };
+        fireEvent.copy(viewport, { clipboardData });
+        const copied = clipboardData.setData.mock.calls[0][1];
+        expect(copied.split('\n')).toHaveLength(3);
+        expect(copied.split('\n').every((line) => line.split('\t').length === 4)).toBe(true);
+        expect(copied).toContain("'=2+2\tFrei");
     });
 });

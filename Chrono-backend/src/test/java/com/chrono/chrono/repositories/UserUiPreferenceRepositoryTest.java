@@ -4,6 +4,10 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserUiPreference;
 import com.chrono.chrono.entities.UserUiPreferenceArea;
+import com.chrono.chrono.entities.pms.HotelProperty;
+import com.chrono.chrono.services.UiPreferencePayloadValidator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -30,6 +34,46 @@ class UserUiPreferenceRepositoryTest {
 
     @Autowired
     private UserUiPreferenceRepository preferenceRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Test
+    void restoresPmsGridJsonUnchangedAfterClearingPersistenceContext() throws Exception {
+        Company company = companyRepository.save(new Company("Grid Hotel AG"));
+        User user = userRepository.save(user("preference-grid", "PREF-GRID", company));
+        HotelProperty property = new HotelProperty();
+        property.setCompany(company);
+        property.setCode("GRID");
+        property.setName("Grid Hotel");
+        entityManager.persist(property);
+        String context = "property:" + property.getId();
+        ObjectMapper mapper = new ObjectMapper();
+        var payload = mapper.readTree("""
+                {"type":"chrono-dashboard-layouts","schemaVersion":1,"layouts":{"%s":{"widgets":[
+                  {"id":"occupancy","visible":true,"order":0,"size":"M","x":7,"y":176,"w":5,"h":24},
+                  {"id":"legacy-widget","visible":false,"order":1,"size":"S"}
+                ]}}}
+                """.formatted(context));
+        UiPreferencePayloadValidator validator = new UiPreferencePayloadValidator(mapper);
+        UserUiPreference row = preference(user, company, context);
+        row.setArea(UserUiPreferenceArea.PMS_DASHBOARD);
+        row.setProperty(property);
+        row.setPayload(validator.validateAndSerialize(UserUiPreferenceArea.PMS_DASHBOARD, context, payload));
+        Long userId = user.getId();
+        String tenantKey = row.getTenantKey();
+        String serialized = row.getPayload();
+        preferenceRepository.saveAndFlush(row);
+        entityManager.clear();
+
+        UserUiPreference restored = preferenceRepository.findByUser_IdAndTenantKeyAndAreaAndContextKey(
+                userId, tenantKey, UserUiPreferenceArea.PMS_DASHBOARD, context).orElseThrow();
+
+        assertThat(restored.getPayload()).isEqualTo(serialized);
+        assertThat(validator.deserializeAndValidate(UserUiPreferenceArea.PMS_DASHBOARD, context,
+                restored.getPayload())).isEqualTo(payload);
+        assertThat(restored.getSchemaVersion()).isEqualTo(1);
+    }
 
     @Test
     void persistsSelfScopedPreferenceAndAdvancesOptimisticRevision() {

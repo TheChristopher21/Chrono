@@ -25,40 +25,46 @@ export function OrganizationProfileDetails({ value, onChange, guests }) {
     </>;
 }
 
-export function OrganizationDocuments({ organizationId, rates = [], canManage }) {
+export function OrganizationDocuments({ organizationId, propertyId, rates = [], canManage }) {
     const [documents, setDocuments] = useState([]);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const [ratePlanId, setRatePlanId] = useState('');
     const [file, setFile] = useState(null);
+    const [previousDocumentId, setPreviousDocumentId] = useState('');
+    const [limits, setLimits] = useState({ maxFileBytes: 25 * 1024 * 1024 });
     useEffect(() => {
         let active = true;
-        api.get(`/api/pms/organizations/${organizationId}/documents`).then((response) => { if (active) setDocuments(response.data); }).catch(() => { if (active) setError('Dokumente konnten nicht geladen werden.'); });
+        api.get(`/api/pms/organizations/${organizationId}/documents`, { params: { propertyId } }).then((response) => { if (active) setDocuments(response.data); }).catch(() => { if (active) setError('Dokumente konnten nicht geladen werden.'); });
+        api.get('/api/pms/document-limits', { params: { propertyId } }).then(({ data }) => { if (active && data?.maxFileBytes) setLimits(data); }).catch(() => {});
         return () => { active = false; };
-    }, [organizationId]);
+    }, [organizationId, propertyId]);
     const upload = async () => {
         if (!file) return;
         setBusy(true); setError('');
         try {
             const form = new FormData(); form.append('file', file);
-            const response = await api.post(`/api/pms/organizations/${organizationId}/documents`, form, { params: ratePlanId ? { ratePlanId } : {}, headers: { 'Content-Type': 'multipart/form-data' } });
-            setDocuments((values) => [response.data, ...values]); setFile(null);
+            const response = await api.post(`/api/pms/organizations/${organizationId}/documents`, form, { params: { propertyId, ...(ratePlanId ? { ratePlanId } : {}), ...(previousDocumentId ? { previousDocumentId } : {}) }, headers: { 'Content-Type': 'multipart/form-data' } });
+            setDocuments((values) => [response.data, ...values]); setFile(null); setPreviousDocumentId('');
         } catch (err) { setError(err.response?.data?.detail || 'Dokument konnte nicht gespeichert werden.'); }
         finally { setBusy(false); }
     };
     const download = async (document) => {
         try {
-            const response = await api.get(`/api/pms/documents/${document.id}/download`, { responseType: 'blob' });
+            const response = await api.get(`/api/pms/documents/${document.id}/download`, { params: { propertyId }, responseType: 'blob' });
             const url = URL.createObjectURL(response.data); const anchor = window.document.createElement('a');
             anchor.href = url; anchor.download = document.fileName; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch { setError('Download fehlgeschlagen.'); }
     };
-    return <section className="pms-work-card"><h4>Firmen- und Ratenverträge</h4><p>Private Ablage: PDF, PNG oder JPEG, maximal 4 MB pro Datei.</p>
+    const latest = documents.filter((entry) => !entry.versionGroup || !documents.some((other) => other.versionGroup === entry.versionGroup && other.documentVersion > entry.documentVersion));
+    return <section className="pms-work-card"><h4>Firmen- und Ratenverträge</h4><p>Private Ablage: PDF, PNG oder JPEG, maximal {Math.floor(limits.maxFileBytes / 1024 / 1024)} MB pro Datei. Neue Versionen bewahren den bisherigen Vertragsstand.</p>
         {error && <p role="alert">{error}</p>}
-        {documents.map((document) => <div className="pms-record" key={document.id}><span>{document.fileName} · {Math.ceil(document.sizeBytes / 1024)} KB{document.ratePlanId ? ` · ${rates.find((rate) => rate.id === document.ratePlanId)?.name || 'Vertragsrate'}` : ''}</span><button type="button" onClick={() => download(document)}>Herunterladen</button></div>)}
+        {documents.map((document) => <div className="pms-record" key={document.id}><span>{document.fileName} · Version {document.documentVersion || 1} · {Math.ceil(document.sizeBytes / 1024)} KB{document.ratePlanId ? ` · ${rates.find((rate) => rate.id === document.ratePlanId)?.name || 'Vertragsrate'}` : ''}{!latest.includes(document) ? ' · Vorheriger Stand' : ''}</span><button type="button" onClick={() => download(document)}>Herunterladen</button></div>)}
         {canManage && <div className="pms-form-grid"><label>Dokument<input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-            <label>Zugehörige Rate<select value={ratePlanId} onChange={(e) => setRatePlanId(e.target.value)}><option value="">Allgemeiner Firmenvertrag</option>{rates.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
-            <button type="button" disabled={busy || !file || file.size > 4 * 1024 * 1024} onClick={upload}>Dokument hinterlegen</button>
+            <label>Vertragsstand<select value={previousDocumentId} onChange={(event) => { const previous = documents.find((entry) => String(entry.id) === event.target.value); setPreviousDocumentId(event.target.value); if (previous) setRatePlanId(previous.ratePlanId || ''); }}><option value="">Neues eigenständiges Dokument</option>{latest.map((document) => <option key={document.id} value={document.id}>Neue Version von {document.fileName} (V{document.documentVersion || 1})</option>)}</select></label>
+            <label>Zugehörige Rate<select disabled={Boolean(previousDocumentId)} value={ratePlanId} onChange={(e) => setRatePlanId(e.target.value)}><option value="">Allgemeiner Firmenvertrag</option>{rates.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
+            {file?.size > limits.maxFileBytes && <p role="alert">Die Datei überschreitet das Uploadlimit.</p>}
+            <button type="button" disabled={busy || !file || file.size > limits.maxFileBytes} onClick={upload}>{previousDocumentId ? 'Neue Version hinterlegen' : 'Dokument hinterlegen'}</button>
         </div>}
     </section>;
 }

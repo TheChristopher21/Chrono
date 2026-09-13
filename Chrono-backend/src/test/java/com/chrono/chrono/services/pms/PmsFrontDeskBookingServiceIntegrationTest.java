@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import({
-        PmsOperationsService.class,
+        PmsOperationsService.class, com.chrono.chrono.services.pms.PmsGroupRoutingService.class, com.chrono.chrono.services.pms.PmsGroupInventoryService.class, com.chrono.chrono.services.pms.PmsHousekeepingService.class, com.chrono.chrono.services.pms.PmsReservationPolicyService.class, PmsRefundProcessor.class, PmsCashService.class, PmsFinancialPeriodService.class,
         PmsAdvancedService.class,
         PmsFrontDeskBookingService.class,
         PmsAuditWriter.class,

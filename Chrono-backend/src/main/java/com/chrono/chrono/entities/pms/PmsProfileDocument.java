@@ -20,4 +20,8 @@ public class PmsProfileDocument {
     @Column(name = "uploaded_by", nullable = false, length = 120) private String uploadedBy;
     @Column(name = "uploaded_at", nullable = false) private LocalDateTime uploadedAt;
     @Lob @Basic(fetch = FetchType.LAZY) @Column(nullable = false, columnDefinition = "longblob") private byte[] content;
+    @Column(name = "storage_key", length = 100) private String storageKey;
+    @Column(name = "version_group", length = 36) private String versionGroup;
+    @Column(name = "document_version", nullable = false) private int documentVersion = 1;
+    @Column(nullable = false) private boolean archived;
 }

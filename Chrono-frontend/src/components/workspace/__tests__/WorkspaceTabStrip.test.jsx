@@ -42,6 +42,21 @@ describe('WorkspaceTabStrip interactions', () => {
         };
     });
 
+    it('opens an extra instance from the launcher with the middle mouse button', async () => {
+        render(<WorkspaceTabStrip />);
+        await userEvent.click(screen.getAllByRole('button', { name: 'Arbeitsbereich öffnen' })[0]);
+        const item = within(screen.getByRole('dialog')).getByRole('button', { name: /PMS/ });
+        fireEvent(item, new MouseEvent('auxclick', { button: 1, bubbles: true, cancelable: true }));
+        expect(workspaceMock.openRoute).toHaveBeenCalledExactlyOnceWith('/pms', { forceNew: true });
+    });
+
+    it('closes an unpinned tab with the middle mouse button', () => {
+        render(<WorkspaceTabStrip />);
+        fireEvent(screen.getByRole('tab', { name: 'Dashboard' }), new MouseEvent('auxclick', { button: 1, bubbles: true, cancelable: true }));
+        expect(workspaceMock.closeTab).toHaveBeenCalledWith('dashboard');
+        expect(workspaceMock.activateTab).not.toHaveBeenCalled();
+    });
+
     it('moves focus with arrow navigation and returns focus when the actions menu closes', async () => {
         const user = userEvent.setup();
         render(<WorkspaceTabStrip />);

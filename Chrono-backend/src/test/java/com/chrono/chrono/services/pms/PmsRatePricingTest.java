@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.*;
 class PmsRatePricingTest {
     private RatePlan rate() {
         RatePlan rate = new RatePlan();
+        rate.setCurrencyCode("CHF");
         rate.setNightlyRate(new BigDecimal("120.00"));
         rate.setVatRate(new BigDecimal("7"));
         rate.setBreakfastIncluded(true);

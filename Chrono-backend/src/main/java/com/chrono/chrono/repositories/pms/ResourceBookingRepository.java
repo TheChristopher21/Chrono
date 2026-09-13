@@ -19,8 +19,8 @@ public interface ResourceBookingRepository extends JpaRepository<ResourceBooking
             select count(b) from ResourceBooking b
             where b.resource.id = :resourceId
               and b.status not in :excludedStatuses
-              and b.startAt < :endAt
-              and b.endAt > :startAt
+              and b.occupiedFrom < :endAt
+              and b.occupiedUntil > :startAt
             """)
     long countOverlapping(
             @Param("resourceId") Long resourceId,
@@ -28,4 +28,8 @@ public interface ResourceBookingRepository extends JpaRepository<ResourceBooking
             @Param("endAt") LocalDateTime endAt,
             @Param("excludedStatuses") Collection<ResourceBookingStatus> excludedStatuses
     );
+
+    @Query("select count(b) from ResourceBooking b where b.resource.id=:resourceId and b.id<>:excludeId and b.status<>com.chrono.chrono.entities.pms.ResourceBookingStatus.CANCELLED and b.occupiedFrom<:endAt and b.occupiedUntil>:startAt")
+    long countBufferedOverlap(@Param("resourceId") Long resourceId,@Param("excludeId") Long excludeId,
+                              @Param("startAt") LocalDateTime startAt,@Param("endAt") LocalDateTime endAt);
 }

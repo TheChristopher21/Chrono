@@ -54,6 +54,9 @@ public class GroupBooking {
     @Column(length = 2000)
     private String notes;
 
+    @Column(name = "routed_types", length = 120)
+    private String routedTypes;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

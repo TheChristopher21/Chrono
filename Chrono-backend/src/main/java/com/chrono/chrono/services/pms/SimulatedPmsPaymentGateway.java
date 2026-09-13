@@ -35,9 +35,12 @@ public class SimulatedPmsPaymentGateway implements PmsPaymentGateway {
     }
 
     @Override
-    public void refund(Payment original, BigDecimal amount, String reason, String idempotencyKey) {
+    public RefundResult refund(Payment original, BigDecimal amount, String reason, String idempotencyKey) {
         // Local-only simulation. The live profile can never load this component.
+        return new RefundResult("sim_" + idempotencyKey, "succeeded");
     }
+
+    @Override public RefundResult retrieveRefund(String providerId) { return new RefundResult(providerId, "succeeded"); }
 
     @Override
     public void voidPayment(Payment original, String reason, String idempotencyKey) {

@@ -171,7 +171,10 @@ public record PmsOperationsResponse(
             String paymentPolicy,
             String notes,
             Long organizationId,
-            String organizationName
+            String organizationName,
+            BigDecimal noShowFeePercent,
+            BigDecimal policyFeeTaxRate,
+            Integer depositDueDaysBeforeArrival
     ) {
     }
 
@@ -211,7 +214,10 @@ public record PmsOperationsResponse(
             int estimatedMinutes,
             String notes,
             String assignedTo,
-            LocalDateTime completedAt
+            LocalDateTime completedAt,
+            long version,
+            HousekeepingWorkType workType,
+            HousekeepingWorkStatus workStatus
     ) {
     }
 
@@ -229,7 +235,9 @@ public record PmsOperationsResponse(
             BigDecimal payments,
             BigDecimal balance,
             List<FolioItemView> items,
-            List<PaymentView> paymentEntries
+            List<PaymentView> paymentEntries,
+            boolean groupMaster,
+            Long groupBookingId
     ) {
     }
 
@@ -240,7 +248,9 @@ public record PmsOperationsResponse(
             String description,
             BigDecimal quantity,
             BigDecimal unitPrice,
-            BigDecimal totalAmount
+            BigDecimal totalAmount,
+            BigDecimal taxRate,
+            boolean invoiced
     ) {
     }
 
@@ -256,7 +266,11 @@ public record PmsOperationsResponse(
             LocalDateTime receivedAt,
             String createdBy,
             LocalDateTime voidedAt,
-            String voidedBy
+            String voidedBy,
+            Long cashShiftId,
+            String providerTransactionId,
+            String providerStatus,
+            String refundRequestId
     ) {
     }
 
@@ -272,7 +286,9 @@ public record PmsOperationsResponse(
             BigDecimal variance,
             String closedBy,
             LocalDateTime closedAt,
-            String notes
+            String notes,
+            String registerCode,
+            String outletCode
     ) {
     }
 

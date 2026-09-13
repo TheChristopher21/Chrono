@@ -2,12 +2,15 @@ package com.chrono.chrono.config;
 
 import com.chrono.chrono.dto.pms.*;
 import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.pms.*;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.pms.HotelPropertyRepository;
+import com.chrono.chrono.repositories.pms.PmsPropertyGrantRepository;
 import com.chrono.chrono.services.pms.PmsAdvancedService;
 import com.chrono.chrono.services.pms.PmsOperationsService;
 import com.chrono.chrono.services.pms.PmsSetupService;
+import com.chrono.chrono.services.pms.PmsPropertyAccessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 
 /**
  * Creates a broad, idempotent PMS demo scenario for the local Christopher account.
@@ -35,11 +40,17 @@ import java.util.List;
 @ConditionalOnProperty(name = "app.pms.demo-data.enabled", havingValue = "true")
 public class PmsDemoDataInitializer implements CommandLineRunner {
     static final String DEMO_PROPERTY_CODE = "DEMO";
+    static final String DEMO_PROPERTY_NAME = "Chrono Demo Hotel Zürich";
+    static final String DEMO_LEGAL_NAME = "Chrono Demo Hotel AG";
+    static final String DEMO_EMAIL = "rezeption@demo-hotel.local";
     private static final Logger log = LoggerFactory.getLogger(PmsDemoDataInitializer.class);
     private static final String ACTOR = "Christopher (Demo-Daten)";
+    private static final BigDecimal DEMO_ROOM_TAX_RATE = new BigDecimal("3.80");
+    private static final BigDecimal DEMO_SERVICE_TAX_RATE = new BigDecimal("8.10");
 
     private final UserRepository userRepository;
     private final HotelPropertyRepository propertyRepository;
+    private final PmsPropertyGrantRepository grantRepository;
     private final PmsSetupService setupService;
     private final PmsOperationsService operationsService;
     private final PmsAdvancedService advancedService;
@@ -48,12 +59,14 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
     public PmsDemoDataInitializer(
             UserRepository userRepository,
             HotelPropertyRepository propertyRepository,
+            PmsPropertyGrantRepository grantRepository,
             PmsSetupService setupService,
             PmsOperationsService operationsService,
             PmsAdvancedService advancedService,
             @Value("${app.pms.test-account.username:Christopher}") String username) {
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
+        this.grantRepository = grantRepository;
         this.setupService = setupService;
         this.operationsService = operationsService;
         this.advancedService = advancedService;
@@ -65,27 +78,43 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
     public void run(String... args) {
         var user = userRepository.findByUsername(username == null ? "" : username.trim())
                 .orElse(null);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || user.isDeleted() || user.getCompany() == null) {
             log.info("PMS-Demodaten übersprungen: lokales Testkonto oder Firma fehlt.");
             return;
         }
         Company company = user.getCompany();
-        if (propertyRepository.existsByCompany_IdAndCodeIgnoreCase(
-                company.getId(), DEMO_PROPERTY_CODE)) {
+        HotelProperty existing = propertyRepository.findByCompany_IdAndCodeIgnoreCase(company.getId(), DEMO_PROPERTY_CODE).orElse(null);
+        if (existing != null) {
+            grantDemoHotel(user, existing);
             log.info("PMS-Demodaten sind bereits vorhanden.");
             return;
         }
 
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
-        seed(company, today);
+        Long createdId = seed(company, today);
+        grantDemoHotel(user, propertyRepository.findByIdAndCompany_Id(createdId, company.getId()).orElseThrow());
         log.info("PMS-Demodaten für '{}' wurden vollständig angelegt.", username);
     }
 
-    private void seed(Company company, LocalDate today) {
+    private void grantDemoHotel(User user, HotelProperty property) {
+        // Repair only this initializer's exact generated demo identity, never a
+        // coincidentally named DEMO hotel or any other hotel in the company.
+        if (!Objects.equals(user.getCompany().getId(), property.getCompany().getId())
+                || !DEMO_PROPERTY_CODE.equals(property.getCode()) || !DEMO_PROPERTY_NAME.equals(property.getName())
+                || !DEMO_LEGAL_NAME.equals(property.getLegalName()) || !DEMO_EMAIL.equals(property.getEmail())) return;
+        if (grantRepository.findByUser_IdAndProperty_Company_Id(user.getId(), user.getCompany().getId()).stream()
+                .anyMatch(grant -> Objects.equals(grant.getProperty().getId(), property.getId()))) return;
+        PmsPropertyGrant grant = new PmsPropertyGrant(); grant.setUser(user); grant.setProperty(property);
+        var permissions = new LinkedHashMap<String, String>();
+        PmsPropertyAccessService.PERMISSIONS.forEach(permission -> permissions.put(permission, "MANAGE"));
+        grant.setPermissions(permissions); grantRepository.save(grant);
+    }
+
+    private Long seed(Company company, LocalDate today) {
         PmsSetupResponse setup = setupService.createProperty(company, new UpsertHotelPropertyRequest(
                 DEMO_PROPERTY_CODE,
-                "Chrono Demo Hotel Zürich",
-                "Chrono Demo Hotel AG",
+                DEMO_PROPERTY_NAME,
+                DEMO_LEGAL_NAME,
                 "CH",
                 "CHF",
                 "Europe/Zurich",
@@ -93,7 +122,7 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
                 "8001",
                 "Zürich",
                 "+41 44 555 01 01",
-                "rezeption@demo-hotel.local",
+                DEMO_EMAIL,
                 LocalTime.of(15, 0),
                 LocalTime.of(11, 0),
                 true));
@@ -163,15 +192,15 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
         long miaId = guest(operations, "mia.rossi@example.test").id();
         long jonasId = guest(operations, "jonas.wenger@example.test").id();
 
-        operations = operationsService.createRatePlan(company, propertyId, new UpsertRatePlanRequest(
+        operations = operationsService.createRatePlan(company, propertyId, demoRate(
                 singleTypeId, "BAR-SGL", "Beste flexible Rate Einzelzimmer",
-                new BigDecimal("159.00"), 1, true, true, true), today);
-        operations = operationsService.createRatePlan(company, propertyId, new UpsertRatePlanRequest(
+                new BigDecimal("159.00"), 1), today);
+        operations = operationsService.createRatePlan(company, propertyId, demoRate(
                 doubleTypeId, "BAR-DBL", "Beste flexible Rate Doppelzimmer",
-                new BigDecimal("229.00"), 1, true, true, true), today);
-        operations = operationsService.createRatePlan(company, propertyId, new UpsertRatePlanRequest(
+                new BigDecimal("229.00"), 1), today);
+        operations = operationsService.createRatePlan(company, propertyId, demoRate(
                 suiteTypeId, "BAR-STE", "Beste flexible Rate Suite",
-                new BigDecimal("389.00"), 2, true, true, true), today);
+                new BigDecimal("389.00"), 2), today);
         long singleRateId = rate(operations, "BAR-SGL").id();
         long doubleRateId = rate(operations, "BAR-DBL").id();
         long suiteRateId = rate(operations, "BAR-STE").id();
@@ -254,7 +283,7 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
                 company, propertyId, gabrielaFolio.id(),
                 new PostFolioItemRequest(
                         today, FolioItemType.SERVICE, "Minibar und Mineralwasser",
-                        BigDecimal.ONE, new BigDecimal("18.50")),
+                        BigDecimal.ONE, new BigDecimal("18.50"), DEMO_SERVICE_TAX_RATE),
                 today);
         operations = operationsService.postPayment(
                 company, propertyId, gabrielaFolio.id(),
@@ -413,13 +442,24 @@ public class PmsDemoDataInitializer implements CommandLineRunner {
         advancedService.createInvoice(
                 company, propertyId,
                 new CreateInvoiceRequest(
-                        invoiceFolio.id(), today.plusDays(30), new BigDecimal("8.10"),
+                        invoiceFolio.id(), today.plusDays(30), DEMO_ROOM_TAX_RATE,
                         "Emma Baumann", "Musterweg 7", "8004", "Zürich", "CH",
                         "CH9300762011623852957", null),
                 today);
 
         advancedService.issueGuestRegistrationInvite(
                 company, propertyId, danielReservationId, ACTOR);
+        return propertyId;
+    }
+
+    private UpsertRatePlanRequest demoRate(Long roomTypeId, String code, String name,
+                                          BigDecimal nightlyRate, int minStay) {
+        // Explicit values belong only to this new fixture; never infer missing tax in existing hotels.
+        return new UpsertRatePlanRequest(roomTypeId, code, name, nightlyRate, minStay, true, true, true,
+                DEMO_ROOM_TAX_RATE, true, BigDecimal.ZERO, DEMO_ROOM_TAX_RATE,
+                null, null, null, null, null, null, null, null,
+                BigDecimal.ZERO, BigDecimal.ZERO, null, null, null, null,
+                null, null, "Explizite Beispielsteuern für den lokalen Demo-Betrieb.", null);
     }
 
     private PmsSetupResponse createRoom(

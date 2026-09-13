@@ -1,5 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import PmsDirectoryPicker, { PmsDirectoryBrowser, usePmsOrganizationDirectory } from './PmsDirectoryPicker.jsx';
+import { currencyStep } from './pmsMoney.js';
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../utils/api.js';
+import usePmsLiveRefresh from './usePmsLiveRefresh.js';
+import PmsAccessWorkspace from './PmsAccessWorkspace.jsx';
+import PmsFinancialDayPanel from './PmsFinancialDayPanel.jsx';
+import PmsFinancialActionDialog from './PmsFinancialActionDialog.jsx';
+import PmsReceivablesWorkspace from './PmsReceivablesWorkspace.jsx';
+import PmsGroupOperations from './PmsGroupOperations.jsx';
+import PmsEventOrderPanel from './PmsEventOrderPanel.jsx';
+import PmsHistoryPanel from './PmsHistoryPanel.jsx';
+import PmsRevenuePlanningPanel from './PmsRevenuePlanningPanel.jsx';
+import PmsRevenueAutomationPanel from './PmsRevenueAutomationPanel.jsx';
+import PmsEventOffersPanel from './PmsEventOffersPanel.jsx';
+import PmsPaymentAutomationPanel from './PmsPaymentAutomationPanel.jsx';
+import PmsBillingAutomationPanel from './PmsBillingAutomationPanel.jsx';
+import PmsBankReconciliationPanel from './PmsBankReconciliationPanel.jsx';
+import PmsInternationalPanel from './PmsInternationalPanel.jsx';
+import PmsApprovalPanel from './PmsApprovalPanel.jsx';
+import PmsBeds24Panel from './PmsBeds24Panel.jsx';
 import { BillingProfileEditor } from './PmsGuestProfileDetails.jsx';
 import { OrganizationProfileDetails, OrganizationDocuments } from './PmsOrganizationDetails.jsx';
 import { formatPmsDate, formatPmsDateTime } from './pmsFormatting.js';
@@ -102,7 +121,10 @@ const PmsAdvancedWorkspace = ({
     operations,
     businessDate,
     canManage,
+    canFinance = canManage,
+    canRefund = canManage,
     canManageSettings = false,
+    canManageRates = false,
     onOperationsChange,
 }) => {
     const locale = usePmsLocale();
@@ -114,6 +136,10 @@ const PmsAdvancedWorkspace = ({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [financePane, setFinancePane] = useState('documents');
+    useEffect(() => {
+        if (financePane === 'approvals' && !canRefund && !canManageSettings) setFinancePane('documents');
+    }, [canRefund, canManageSettings, financePane]);
     const [organizationForm, setOrganizationForm] = useState({
         type: 'COMPANY', name: '', vatNumber: '', addressLine1: '', postalCode: '', city: '',
         countryCode: 'CH', email: '', phone: '', billingEmail: '', paymentTermsDays: 10,
@@ -128,7 +154,7 @@ const PmsAdvancedWorkspace = ({
         rooms: [{ guestId: '', roomTypeId: property?.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0, childAges: [] }],
     });
     const [invoiceForm, setInvoiceForm] = useState({
-        folioId: '', dueDate: addDays(businessDate, 10), vatRate: '8.10',
+        folioId: '', dueDate: addDays(businessDate, 10), vatRate: '8.10', languageCode: 'de',
         recipientName: '', recipientAddress: '', recipientPostalCode: '', recipientCity: '',
         recipientCountryCode: property?.countryCode || 'CH', creditorIban: '', qrReference: '', useProfileBilling: true, billingProfile: {},
     });
@@ -174,9 +200,9 @@ const PmsAdvancedWorkspace = ({
         attendees: 1, status: 'CONFIRMED', totalAmount: 0, notes: '',
     });
 
-    const loadAdvanced = useCallback(async () => {
+    const loadAdvanced = useCallback(async ({ background = false } = {}) => {
         if (!property?.id) return;
-        setBusy(true);
+        if (!background) setBusy(true);
         setError('');
         try {
             const response = await api.get('/api/pms/advanced', {
@@ -186,13 +212,14 @@ const PmsAdvancedWorkspace = ({
         } catch (loadError) {
             setError(errorMessage(loadError));
         } finally {
-            setBusy(false);
+            if (!background) setBusy(false);
         }
     }, [businessDate, property?.id]);
 
     useEffect(() => {
         loadAdvanced();
     }, [loadAdvanced]);
+    usePmsLiveRefresh(() => loadAdvanced({ background: true }), { enabled: Boolean(property?.id) && !busy, propertyId: property?.id });
 
     const loadPerformanceReport = useCallback(async () => {
         if (!property?.id || section !== 'reports') return;
@@ -246,13 +273,20 @@ const PmsAdvancedWorkspace = ({
     };
 
     const mutateAdvanced = async (method, url, payload, message, refreshCore = false) => {
-        if (!canManage) return false;
+        const requiresRefund = /\/invoices\/\d+\/correct$/.test(url.split('?')[0]);
+        if (busy || !(requiresRefund ? canRefund : canManage)) return false;
         setBusy(true);
         setError('');
         setNotice('');
         try {
             const separator = url.includes('?') ? '&' : '?';
-            const response = await api[method](`${url}${separator}businessDate=${businessDate}`, payload);
+            let postingDate = businessDate;
+            if (/\/invoices(?:\/|$)/.test(url)) {
+                const { data: day } = await api.get(`/api/pms/properties/${property.id}/financial-day`);
+                if (!day?.businessDate) throw new Error('Aktueller Abrechnungstag konnte nicht ermittelt werden.');
+                postingDate = day.businessDate;
+            }
+            const response = await api[method](`${url}${separator}businessDate=${postingDate}`, payload);
             setAdvanced(response.data);
             if (refreshCore) await refreshOperations();
             setNotice(message);
@@ -270,7 +304,9 @@ const PmsAdvancedWorkspace = ({
     const rates = operations?.ratePlans ?? [];
     const rooms = operations?.rooms ?? [];
     const folios = operations?.folios ?? [];
-    const organizations = advanced?.organizations ?? [];
+    const [organizations, rememberOrganization] = usePmsOrganizationDirectory(property?.id, advanced?.organizations ?? []);
+    const invoiceDirectoryLookup = useRef(0);
+    const invoiceDirectoryScope = useRef(property?.id); invoiceDirectoryScope.current = property?.id;
 
     const groupRoomChoices = useMemo(() => groupForm.rooms.map((entry) => ({
         rates: rates.filter((rate) => String(rate.roomTypeId) === String(entry.roomTypeId) && rate.active),
@@ -378,12 +414,8 @@ const PmsAdvancedWorkspace = ({
         }
     };
 
-    const correctInvoice = (invoice) => mutateAdvanced(
-        'post',
-        `/api/pms/properties/${property.id}/invoices/${invoice.id}/correct`,
-        { reason: 'Korrektur durch Rezeption' },
-        `Gutschrift zu ${invoice.invoiceNumber} erstellt.`,
-    );
+    const [correctionInvoice, setCorrectionInvoice] = useState(null);
+    const correctInvoice = (invoice) => setCorrectionInvoice(invoice);
 
     const closeNightAudit = () => mutateAdvanced(
         'post',
@@ -581,6 +613,29 @@ const PmsAdvancedWorkspace = ({
         <>
             {error && <div className="pms-inline-message is-error" role="alert">{error}</div>}
             {notice && <div className="pms-inline-message is-success" role="status">{notice}</div>}
+            {correctionInvoice && <PmsFinancialActionDialog invoice={correctionInvoice} canSubmit={canRefund} busy={busy} onClose={() => setCorrectionInvoice(null)} onSubmit={(payload) => mutateAdvanced('post', `/api/pms/properties/${property.id}/invoices/${correctionInvoice.id}/correct`, payload, 'Rechnungskorrektur gebucht.', true)} />}
+            {section === 'portfolio' && canManageSettings && <PmsAccessWorkspace />}
+            {section === 'reports' && <PmsRevenuePlanningPanel key={property.id} property={property} canManage={canManage} />}
+            {section === 'reports' && <PmsRevenueAutomationPanel key={`revenue-auto-${property.id}`} property={property} rates={operations?.ratePlans || []} canManageRates={canManageRates} isMaster={canManageSettings} />}
+            {section === 'invoices' && <>
+                <nav className="pms-finance-navigation" aria-label="Bereiche im Rechnungswesen">
+                    {[
+                        ['documents', 'Rechnungen'], ['receivables', 'Forderungen'], ['delivery', 'Versand & Mahnungen'],
+                        ['bank', 'Bank & Buchhaltung'], ['payments', 'Zahlungen'],
+                        ...((canRefund || canManageSettings) ? [['approvals', 'Freigaben']] : []), ['international', 'Länder & XML'],
+                    ].map(([key, label]) => <button key={key} type="button" aria-pressed={financePane === key} onClick={() => setFinancePane(key)}>{label}</button>)}
+                </nav>
+                <Activity mode={financePane === 'payments' ? 'visible' : 'hidden'}><PmsPaymentAutomationPanel key={`payment-auto-${property.id}`} property={property} canManage={canFinance} canManageSettings={canManageSettings} /></Activity>
+                <Activity mode={financePane === 'delivery' ? 'visible' : 'hidden'}><PmsBillingAutomationPanel key={`billing-${property.id}`} propertyId={property.id} property={property} canManage={canFinance} canMaster={canManageSettings} invoices={advanced?.invoices || []} /></Activity>
+                <Activity mode={financePane === 'bank' ? 'visible' : 'hidden'}><PmsBankReconciliationPanel key={`bank-${property.id}`} propertyId={property.id} property={property} canManage={canFinance} businessDate={businessDate} /></Activity>
+                <Activity mode={financePane === 'international' ? 'visible' : 'hidden'}><PmsInternationalPanel key={`international-${property.id}`} property={property} isMaster={canManageSettings} canManageFinance={canFinance} /></Activity>
+                {(canRefund || canManageSettings) && <Activity mode={financePane === 'approvals' ? 'visible' : 'hidden'}><PmsApprovalPanel key={`approvals-${property.id}`} property={property} canManage={canRefund} isMaster={canManageSettings} onChanged={async () => { await loadAdvanced({ background: true }); await refreshOperations(); }} /></Activity>}
+                <Activity mode={financePane === 'receivables' ? 'visible' : 'hidden'}><PmsReceivablesWorkspace key={property.id} property={property} invoices={advanced?.invoices || []} organizations={advanced?.organizations || []} canManage={canManage} canRefund={canRefund} canManageSettings={canManageSettings} onChanged={async () => { await loadAdvanced({ background: true }); await refreshOperations(); }} /></Activity>
+            </>}
+            {section === 'integrations' && <PmsBeds24Panel key={`beds24-${property.id}`} property={property} canManage={canManage} canManageSettings={canManageSettings} />}
+            {section === 'events' && <PmsEventOffersPanel key={`offers-${property.id}`} property={property} bookings={advanced?.resourceBookings || []} canManage={canManage} onChanged={async () => { await loadAdvanced({ background: true }); await refreshOperations(); }} />}
+            {section === 'events' && <PmsEventOrderPanel key={property.id} property={property} bookings={advanced?.resourceBookings || []} folios={operations?.folios || []} canManage={canManage} canFinance={canFinance} onChanged={async () => { await loadAdvanced({ background: true }); await refreshOperations(); }} />}
+            {section === 'groups' && <PmsGroupOperations key={property.id} property={property} groups={advanced?.groups || []} operations={operations} canManage={canManage} canFinance={canFinance} businessDate={businessDate} onChanged={async () => { await loadAdvanced({ background: true }); await refreshOperations(); }} />}
 
             {section === 'portfolio' && portfolio && (
                 <div className="pms-operations-stack">
@@ -616,20 +671,20 @@ const PmsAdvancedWorkspace = ({
                             <label>Name<input aria-label="Ressourcenname" value={resourceForm.name} onChange={(event) => setResourceForm({ ...resourceForm, name: event.target.value })} required /></label>
                             <label>Lage / Raum<input value={resourceForm.location} onChange={(event) => setResourceForm({ ...resourceForm, location: event.target.value })} /></label>
                             <label>Kapazität<input type="number" min="1" value={resourceForm.capacity} onChange={(event) => setResourceForm({ ...resourceForm, capacity: event.target.value })} required /></label>
-                            <label>Preis pro Stunde (falls berechnet)<input type="number" min="0" step="0.01" value={resourceForm.hourlyRate} onChange={(event) => setResourceForm({ ...resourceForm, hourlyRate: event.target.value })} required /></label>
+                            <label>Preis pro Stunde (falls berechnet)<input type="number" min="0" step={currencyStep(property.currencyCode)} value={resourceForm.hourlyRate} onChange={(event) => setResourceForm({ ...resourceForm, hourlyRate: event.target.value })} required /></label>
                             <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManageSettings || busy}>Ressource anlegen</button></div>
                         </form>
                         <hr />
                         <h4>Ressource buchen</h4>
                         <form className="pms-form-grid" onSubmit={createResourceBooking}>
                             <label>Ressource<select aria-label="Buchungsressource" value={resourceBookingForm.resourceId} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, resourceId: event.target.value })} required><option value="">Ressource wählen</option>{advanced?.hotelResources?.filter((resource) => resource.active).map((resource) => <option key={resource.id} value={resource.id}>{resource.name} · max. {resource.capacity}</option>)}</select></label>
-                            <label>Gruppe (optional)<select value={resourceBookingForm.groupBookingId} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, groupBookingId: event.target.value })}><option value="">Ohne Gruppe</option>{advanced?.groups?.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+                            <PmsDirectoryPicker propertyId={property.id} label="Gruppe (optional)" value={resourceBookingForm.groupBookingId} initialOptions={advanced?.groups || []} kind="groups" placeholder="Ohne Gruppe" onChange={(value) => setResourceBookingForm({ ...resourceBookingForm, groupBookingId: value })} />
                             <label>Titel<input aria-label="Eventtitel" value={resourceBookingForm.title} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, title: event.target.value })} required /></label>
                             <label>Veranstalter<input aria-label="Veranstalter" value={resourceBookingForm.organizerName} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, organizerName: event.target.value })} required /></label>
                             <label>Beginn<input aria-label="Eventbeginn" type="datetime-local" value={resourceBookingForm.startAt} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, startAt: event.target.value })} required /></label>
                             <label>Ende<input aria-label="Eventende" type="datetime-local" value={resourceBookingForm.endAt} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, endAt: event.target.value })} required /></label>
                             <label>Teilnehmende<input type="number" min="1" value={resourceBookingForm.attendees} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, attendees: event.target.value })} required /></label>
-                            <label>Gesamtbetrag<input type="number" min="0" step="0.01" value={resourceBookingForm.totalAmount} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, totalAmount: event.target.value })} required /></label>
+                            <label>Gesamtbetrag<input type="number" min="0" step={currencyStep(property.currencyCode)} value={resourceBookingForm.totalAmount} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, totalAmount: event.target.value })} required /></label>
                             <label className="is-wide">Notizen<textarea value={resourceBookingForm.notes} onChange={(event) => setResourceBookingForm({ ...resourceBookingForm, notes: event.target.value })} /></label>
                             <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Konfliktfrei buchen</button></div>
                         </form>
@@ -649,7 +704,7 @@ const PmsAdvancedWorkspace = ({
                             <label>Gruppencode<input value={groupForm.groupCode} onChange={(event) => setGroupForm({ ...groupForm, groupCode: event.target.value })} required /></label>
                             <label>Gruppenname<input value={groupForm.name} onChange={(event) => setGroupForm({ ...groupForm, name: event.target.value })} required /></label>
                             <label>Hauptansprechperson<select value={groupForm.contactGuestId} onChange={(event) => setGroupForm({ ...groupForm, contactGuestId: event.target.value })} required><option value="">Gast wählen</option>{guests.map((guest) => <option key={guest.id} value={guest.id}>{guest.firstName} {guest.lastName}</option>)}</select></label>
-                            <label>Firma / Reisebüro<select value={groupForm.organizationId} onChange={(event) => setGroupForm({ ...groupForm, organizationId: event.target.value })}><option value="">Privat / keine</option>{organizations.filter((entry) => entry.active).map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select></label>
+                            <PmsDirectoryPicker propertyId={property.id} label="Firma / Reisebüro" value={groupForm.organizationId} initialOptions={organizations} onResolve={rememberOrganization} placeholder="Privat / keine" onChange={(value) => setGroupForm({ ...groupForm, organizationId: value })} />
                             <label>Anreise<input type="date" value={groupForm.arrivalDate} onChange={(event) => setGroupForm({ ...groupForm, arrivalDate: event.target.value })} required /></label>
                             <label>Abreise<input type="date" value={groupForm.departureDate} onChange={(event) => setGroupForm({ ...groupForm, departureDate: event.target.value })} required /></label>
                             <label>Status<select value={groupForm.status} onChange={(event) => setGroupForm({ ...groupForm, status: event.target.value })}><option value="CONFIRMED">Bestätigt</option><option value="OPTION">Option</option></select></label>
@@ -657,6 +712,7 @@ const PmsAdvancedWorkspace = ({
                             <div className="is-wide pms-rooming-list">
                                 <div className="pms-work-card-heading">
                                     <h4>Zimmerliste (Rooming List)</h4>
+                                    {groupForm.rooms.length > 0 && <button type="button" onClick={() => setGroupForm((current) => ({ ...current, rooms: [] }))}>Zunächst ohne Zimmerliste</button>}
                                     <button type="button" onClick={() => setGroupForm((current) => ({
                                         ...current,
                                         rooms: [...current.rooms, { guestId: '', roomTypeId: property.roomTypes?.[0]?.id ?? '', roomId: '', ratePlanId: '', adults: 1, children: 0, childAges: [] }],
@@ -685,10 +741,10 @@ const PmsAdvancedWorkspace = ({
                         </form>
                     </section>
                     <section className="pms-work-card">
-                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Gruppen</span><h3>{advanced?.groups?.length ?? 0} Buchungen</h3></div></div>
-                        <div className="pms-record-list">
-                            {advanced?.groups?.map((group) => <article className="pms-record is-stacked" key={group.id}><div><span>{group.groupCode} · {getPmsEnumLabel(GROUP_BOOKING_STATUS_LABELS, group.status)}</span><strong>{group.name}</strong><small>{formatPmsDate(group.arrivalDate)} bis {formatPmsDate(group.departureDate)} · {group.rooms.length} Zimmer · {group.organizationName || 'Privat'}</small></div><ul>{group.rooms.map((entry) => <li key={entry.reservationId}>{entry.guestName} · {entry.roomNumber ? `Zimmer ${entry.roomNumber}` : entry.roomTypeName} · {entry.confirmationCode}</li>)}</ul></article>)}
-                        </div>
+                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Gruppen</span><h3>Gruppenverzeichnis</h3></div></div>
+                        <PmsDirectoryBrowser propertyId={property.id} kind="groups" refreshKey={advanced} initialItems={advanced?.groups || []} renderItems={(entries) => <div className="pms-record-list">
+                            {entries.map((group) => <article className="pms-record is-stacked" key={group.id}><div><span>{group.groupCode} · {getPmsEnumLabel(GROUP_BOOKING_STATUS_LABELS, group.status)}</span><strong>{group.name}</strong><small>{formatPmsDate(group.arrivalDate)} bis {formatPmsDate(group.departureDate)} · {group.rooms.length} Zimmer · {group.organizationName || 'Privat'}</small></div><ul>{group.rooms.map((entry) => <li key={entry.reservationId}>{entry.guestName} · {entry.roomNumber ? `Zimmer ${entry.roomNumber}` : entry.roomTypeName} · {entry.confirmationCode}</li>)}</ul></article>)}
+                        </div>} />
                     </section>
                 </div>
             )}
@@ -701,7 +757,7 @@ const PmsAdvancedWorkspace = ({
                             <label>Typ<select value={organizationForm.type} onChange={(event) => setOrganizationForm({ ...organizationForm, type: event.target.value })}>{getPmsEnumOptions(ORGANIZATION_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                             <label>Name<input value={organizationForm.name} onChange={(event) => setOrganizationForm({ ...organizationForm, name: event.target.value })} required /></label>
                             <label className="pms-checkbox"><input type="checkbox" checked={organizationForm.masterRecord} onChange={(event) => setOrganizationForm({ ...organizationForm, masterRecord: event.target.checked, parentOrganizationId: event.target.checked ? '' : organizationForm.parentOrganizationId })} /> Masterkartei / Hauptsitz</label>
-                            {!organizationForm.masterRecord && <label>Übergeordnete Masterkartei<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm({ ...organizationForm, parentOrganizationId: event.target.value })}><option value="">Keine</option>{organizations.filter((entry) => entry.active && entry.masterRecord && entry.id !== editingOrganizationId).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>}
+                            {!organizationForm.masterRecord && <PmsDirectoryPicker propertyId={property.id} label="Übergeordnete Masterkartei" value={organizationForm.parentOrganizationId} initialOptions={organizations} onResolve={rememberOrganization} masterOnly excludeIds={[editingOrganizationId]} placeholder="Keine" onChange={(value) => setOrganizationForm({ ...organizationForm, parentOrganizationId: value })} />}
                             <label>UID / MWST-Nr.<input value={organizationForm.vatNumber} onChange={(event) => setOrganizationForm({ ...organizationForm, vatNumber: event.target.value })} /></label>
                             <label>Zahlungsziel (Tage)<input type="number" min="0" value={organizationForm.paymentTermsDays} onChange={(event) => setOrganizationForm({ ...organizationForm, paymentTermsDays: event.target.value })} /></label>
                             <label className="is-wide">Adresse<input value={organizationForm.addressLine1} onChange={(event) => setOrganizationForm({ ...organizationForm, addressLine1: event.target.value })} /></label>
@@ -717,15 +773,15 @@ const PmsAdvancedWorkspace = ({
                         </form>
                     </section>
                     <section className="pms-work-card">
-                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Geschäftspartner</span><h3>{organizations.length} Profile</h3></div></div>
-                        <div className="pms-record-list">{organizations.map((entry) => <article className="pms-record" key={entry.id}><div><span>{entry.referenceCode || getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)} · {entry.masterRecord ? 'Masterkartei' : getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}{!entry.active ? ' · zusammengeführt' : ''}</span><strong>{entry.name}</strong><small>{entry.parentOrganizationName ? `Unterkartei von ${entry.parentOrganizationName} · ` : ''}{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small><small>{[entry.addressLine1, entry.postalCode, entry.city, entry.countryCode].filter(Boolean).join(', ')}</small><small>{(entry.contacts || []).map((contact) => contact.name).join(' · ')}</small></div><button type="button" onClick={() => { setEditingOrganizationId(entry.id); setOrganizationForm({ ...entry, parentOrganizationId: entry.parentOrganizationId || '' }); }}>{canManage ? 'Bearbeiten / Dokumente' : 'Ansehen / Dokumente'}</button></article>)}</div>
-                        {editingOrganizationId && <OrganizationDocuments organizationId={editingOrganizationId} rates={operations?.ratePlans || []} canManage={canManageSettings} />}
+                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Geschäftspartner</span><h3>Firmenverzeichnis</h3></div></div>
+                        <PmsDirectoryBrowser propertyId={property.id} kind="organizations" refreshKey={advanced} initialItems={organizations} renderItems={(entries) => <div className="pms-record-list">{entries.map((entry) => <article className="pms-record" key={entry.id}><div><span>{entry.referenceCode || getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)} · {entry.masterRecord ? 'Masterkartei' : getPmsEnumLabel(ORGANIZATION_TYPE_LABELS, entry.type)}{!entry.active ? ' · zusammengeführt' : ''}</span><strong>{entry.name}</strong><small>{entry.parentOrganizationName ? `Unterkartei von ${entry.parentOrganizationName} · ` : ''}{entry.billingEmail || entry.email || 'Keine E-Mail'} · {entry.paymentTermsDays} Tage Zahlungsziel</small><small>{[entry.addressLine1, entry.postalCode, entry.city, entry.countryCode].filter(Boolean).join(', ')}</small><small>{(entry.contacts || []).map((contact) => contact.name).join(' · ')}</small></div><button type="button" onClick={() => { setEditingOrganizationId(entry.id); setOrganizationForm({ ...entry, parentOrganizationId: entry.parentOrganizationId || '' }); }}>{canManage ? 'Bearbeiten / Dokumente' : 'Ansehen / Dokumente'}</button></article>)}</div>} />
+                        {editingOrganizationId && <OrganizationDocuments organizationId={editingOrganizationId} propertyId={property.id} rates={operations?.ratePlans || []} canManage={canManage} />}
                         <details className="pms-work-card">
                             <summary>Firmen-Dubletten zusammenführen</summary>
                             <p>Die Quellkartei bleibt inaktiv als Historie erhalten. Verknüpfte Gäste, Gruppen, Unterkarteien und Rechnungsadressen wechseln zur Zielkartei.</p>
                             <form className="pms-form-grid" onSubmit={mergeOrganization}>
-                                <label>Quellkartei<select value={organizationMerge.sourceOrganizationId} onChange={(event) => setOrganizationMerge({ ...organizationMerge, sourceOrganizationId: event.target.value })} required><option value="">Quelle wählen</option>{organizations.filter((entry) => entry.active && String(entry.id) !== String(organizationMerge.targetOrganizationId)).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>
-                                <label>Zielkartei<select value={organizationMerge.targetOrganizationId} onChange={(event) => setOrganizationMerge({ ...organizationMerge, targetOrganizationId: event.target.value })} required><option value="">Ziel wählen</option>{organizations.filter((entry) => entry.active && String(entry.id) !== String(organizationMerge.sourceOrganizationId)).map((entry) => <option key={entry.id} value={entry.id}>{entry.referenceCode} · {entry.name}</option>)}</select></label>
+                                <PmsDirectoryPicker propertyId={property.id} label="Quellkartei" value={organizationMerge.sourceOrganizationId} initialOptions={organizations} onResolve={rememberOrganization} required excludeIds={[organizationMerge.targetOrganizationId]} placeholder="Quelle wählen" onChange={(value) => setOrganizationMerge({ ...organizationMerge, sourceOrganizationId: value })} />
+                                <PmsDirectoryPicker propertyId={property.id} label="Zielkartei" value={organizationMerge.targetOrganizationId} initialOptions={organizations} onResolve={rememberOrganization} required excludeIds={[organizationMerge.sourceOrganizationId]} placeholder="Ziel wählen" onChange={(value) => setOrganizationMerge({ ...organizationMerge, targetOrganizationId: value })} />
                                 <fieldset className="is-wide"><legend>Diese Werte aus der Quelle übernehmen</legend>{[
                                     ['name', 'Name'], ['vatNumber', 'UID / MWST-Nr.'], ['addressLine1', 'Adresse'],
                                     ['postalCode', 'PLZ'], ['city', 'Ort'], ['countryCode', 'Land'],
@@ -739,14 +795,23 @@ const PmsAdvancedWorkspace = ({
                 </div>
             )}
 
-            {section === 'invoices' && (
+            {section === 'invoices' && financePane === 'documents' && (
                 <div className="pms-operations-layout">
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Rechnungswesen</span><h3>Rechnung erstellen</h3></div></div>
                         <form className="pms-form-grid" onSubmit={submitInvoice}>
-                            <label className="is-wide">Gastkonto (Folio)<select value={invoiceForm.folioId} onChange={(event) => {
-                                const folio = folios.find((entry) => String(entry.id) === event.target.value);
-                                const organization = organizations.find((entry) => String(entry.id) === String(folio?.organizationId));
+                            <label className="is-wide">Gastkonto (Folio)<select value={invoiceForm.folioId} onChange={async (event) => {
+                                const selectedFolioId = event.target.value;
+                                const lookup = ++invoiceDirectoryLookup.current;
+                                const startedProperty = property.id;
+                                const folio = folios.find((entry) => String(entry.id) === selectedFolioId);
+                                let organization = organizations.find((entry) => String(entry.id) === String(folio?.organizationId));
+                                if (folio?.organizationId && !organization) {
+                                    try { const { data } = await api.get(`/api/pms/properties/${property.id}/directory/organizations/${folio.organizationId}`); organization = data; }
+                                    catch (failure) { if (lookup === invoiceDirectoryLookup.current && invoiceDirectoryScope.current === startedProperty) setError(failure.response?.data?.detail || 'Die Rechnungskartei konnte nicht geladen werden.'); return; }
+                                }
+                                if (lookup !== invoiceDirectoryLookup.current || invoiceDirectoryScope.current !== startedProperty) return;
+                                if (organization) rememberOrganization(organization);
                                 const reservation = reservations.find((entry) => String(entry.id) === String(folio?.reservationId));
                                 const guest = guests.find((entry) => String(entry.id) === String(reservation?.guestId));
                                 const recipient = organization || guest;
@@ -756,7 +821,7 @@ const PmsAdvancedWorkspace = ({
                                 const contact = organization?.contacts?.find((entry) => entry.id === guest?.organizationContactId);
                                 setInvoiceForm({
                                     ...invoiceForm,
-                                    folioId: event.target.value,
+                                    folioId: selectedFolioId,
                                     recipientName: billing?.legalName || organization?.name || folio?.guestName || '',
                                     billingProfile: { ...billing, attention: billing?.attention || contact?.name || '', vatNumber: billing?.vatNumber || recipient?.vatNumber || '' },
                                     useProfileBilling: true,
@@ -766,10 +831,12 @@ const PmsAdvancedWorkspace = ({
                                     recipientCity: billing?.city || recipient?.city || '',
                                     recipientCountryCode: billing?.countryCode || recipient?.countryCode || property?.countryCode || 'CH',
                                 });
-                            }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => Number(folio.charges) > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode} · {folio.organizationName || folio.guestName}</option>)}</select></label>
+                            }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => (folio.items || []).some((item) => !item.invoiced && Number(item.totalAmount) !== 0)).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode} · {folio.organizationName || folio.guestName}</option>)}</select></label>
+                            {invoiceForm.folioId && <div className="pms-invoice-preview is-wide"><h4>Noch nicht fakturierte Leistungen</h4>{folios.find((folio) => String(folio.id) === invoiceForm.folioId)?.items?.filter((item) => !item.invoiced).map((item) => <div key={item.id}><span>{formatPmsDate(item.serviceDate)} · {item.description}</span><strong>{money(item.totalAmount, property.currencyCode)}</strong><small>{item.taxRate == null ? 'Steuersatz noch zu bestätigen' : `MwSt. ${item.taxRate} %`}</small></div>)}</div>}
                             <label className="pms-checkbox is-wide"><input type="checkbox" checked={invoiceForm.useProfileBilling} onChange={(e) => setInvoiceForm({ ...invoiceForm, useProfileBilling: e.target.checked })} /> Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)</label>
                             <label>Empfänger<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientName} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientName: event.target.value })} required /></label>
                             <label>Fällig am<input type="date" value={invoiceForm.dueDate} onChange={(event) => setInvoiceForm({ ...invoiceForm, dueDate: event.target.value })} required /></label>
+                            <label>Rechnungssprache<select value={invoiceForm.languageCode || 'de'} onChange={(event) => setInvoiceForm({ ...invoiceForm, languageCode: event.target.value })}>{[['de','Deutsch'],['en','English'],['fr','Français'],['it','Italiano'],['es','Español']].map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                             <label>Steuersatz für Positionen ohne hinterlegten Satz (%)<input type="number" min="0" max="100" step="0.01" value={invoiceForm.vatRate} onChange={(event) => setInvoiceForm({ ...invoiceForm, vatRate: event.target.value })} required /></label>
                             <label>IBAN<input value={invoiceForm.creditorIban} onChange={(event) => setInvoiceForm({ ...invoiceForm, creditorIban: event.target.value })} placeholder="optional für Schweizer QR-Rechnung" /></label>
                             <label className="is-wide">Adresse<input disabled={invoiceForm.useProfileBilling} value={invoiceForm.recipientAddress} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientAddress: event.target.value })} /></label>
@@ -783,18 +850,14 @@ const PmsAdvancedWorkspace = ({
                     </section>
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Rechnungsjournal</span><h3>{advanced?.invoices?.length ?? 0} Rechnungen</h3></div></div>
-                        <div className="pms-record-list">{advanced?.invoices?.map((invoice) => <article className="pms-record" key={invoice.id}><div><span>{invoice.invoiceNumber} · {getPmsEnumLabel(INVOICE_TYPE_LABELS, invoice.type)} · {getPmsEnumLabel(INVOICE_STATUS_LABELS, invoice.status)}</span><strong>{invoice.recipientName}</strong><small>Netto {money(invoice.netAmount, invoice.currencyCode)} · MWST {money(invoice.vatAmount, invoice.currencyCode)} · Total {money(invoice.grossAmount, invoice.currencyCode)}</small>{invoice.originalInvoiceNumber && <small>Korrektur zu {invoice.originalInvoiceNumber} · {invoice.correctionReason}</small>}</div><div className="pms-record-actions"><button type="button" onClick={() => downloadInvoice(invoice)}>PDF</button>{invoice.type === 'INVOICE' && invoice.status === 'ISSUED' && <button type="button" className="is-danger" disabled={!canManage || busy} onClick={() => correctInvoice(invoice)}>Gutschrift</button>}</div></article>)}</div>
+                        <div className="pms-record-list">{advanced?.invoices?.map((invoice) => <article className="pms-record" key={invoice.id}><div><span>{invoice.invoiceNumber} · {getPmsEnumLabel(INVOICE_TYPE_LABELS, invoice.type)} · {getPmsEnumLabel(INVOICE_STATUS_LABELS, invoice.status)}</span><strong>{invoice.recipientName}</strong><small>Netto {money(invoice.netAmount, invoice.currencyCode)} · MWST {money(invoice.vatAmount, invoice.currencyCode)} · Total {money(invoice.grossAmount, invoice.currencyCode)}</small>{invoice.originalInvoiceNumber && <small>Korrektur zu {invoice.originalInvoiceNumber} · {invoice.correctionReason}</small>}</div><div className="pms-record-actions"><button type="button" onClick={() => downloadInvoice(invoice)}>PDF</button>{invoice.type === 'INVOICE' && invoice.status === 'ISSUED' && <button type="button" className="is-danger" disabled={!canRefund || busy} onClick={() => correctInvoice(invoice)}>Gutschrift</button>}</div></article>)}</div>
                     </section>
                 </div>
             )}
 
             {section === 'audit' && (
                 <div className="pms-operations-layout">
-                    <section className="pms-work-card">
-                        <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Tagesabschluss (Night Audit)</span><h3>Betriebstag {formatPmsDate(businessDate)}</h3></div></div>
-                        <p>Der Abschluss speichert Anreisen, Abreisen, Gäste im Haus, Nichtanreisen und den offenen Saldo als unveränderliche Tagesabschluss-Zusammenfassung. Offene bestätigte Anreisen werden als nicht angereist markiert.</p>
-                        <button type="button" className="is-primary" onClick={closeNightAudit} disabled={!canManage || busy || advanced?.nightAudits?.some((entry) => entry.businessDate === businessDate)}>Betriebstag abschliessen</button>
-                    </section>
+                    <PmsFinancialDayPanel property={property} canManage={canManage} onClosed={async () => { await loadAdvanced(); await refreshOperations(); }} />
                     <section className="pms-work-card">
                         <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Abschlussjournal</span><h3>{advanced?.nightAudits?.length ?? 0} Abschlüsse</h3></div></div>
                         <div className="pms-record-list">{advanced?.nightAudits?.map((audit) => <article className="pms-record" key={audit.id}><div><span>{formatPmsDate(audit.businessDate)} · {audit.closedBy}</span><strong>{audit.inHouseCount} im Haus · {audit.noShowCount} nicht angereist</strong><small>{audit.arrivalsCount} Anreisen · {audit.departuresCount} Abreisen · Offen {money(audit.openBalance)}</small></div></article>)}</div>
@@ -912,7 +975,7 @@ const PmsAdvancedWorkspace = ({
                             <>
                                 <div className="pms-metrics">
                                     <article><span>Zimmerauslastung</span><strong>{Number(performanceReport.occupancyPercent).toFixed(2)} %</strong><small>{performanceReport.soldRoomNights} von {performanceReport.availableRoomNights} Zimmernächten</small></article>
-                                    <article><span>Zimmerumsatz</span><strong>{money(performanceReport.roomRevenue, performanceReport.currencyCode)}</strong><small>Auf Aufenthaltsnächte verteilt</small></article>
+                                    <article><span>Zimmerumsatz</span><strong>{money(performanceReport.roomRevenue, performanceReport.currencyCode)}</strong><small>Netto-Zimmerleistungen je Datum</small></article>
                                     <article><span>ADR</span><strong>{money(performanceReport.adr, performanceReport.currencyCode)}</strong><small>Umsatz je verkaufter Zimmernacht</small></article>
                                     <article><span>RevPAR</span><strong>{money(performanceReport.revPar, performanceReport.currencyCode)}</strong><small>Umsatz je verfügbarer Zimmernacht</small></article>
                                     <article><span>Anreisen</span><strong>{performanceReport.arrivals}</strong><small>{performanceReport.cancellations} Stornos · {performanceReport.noShows} nicht angereist</small></article>
@@ -966,6 +1029,7 @@ const PmsAdvancedWorkspace = ({
                     <div className="pms-record-list">{advanced?.auditEvents?.map((event) => <article className="pms-record" key={event.id}><div><span>{formatPmsDateTime(event.createdAt)} · {event.actor}</span><strong>{eventLabel(event.eventType)}</strong><small>{aggregateLabel(event.aggregateType)} #{event.aggregateId} · Prüfsumme {event.integrityHash?.slice(0, 12)}…</small></div></article>)}</div>
                 </section>
             )}
+            {['invoices', 'audit', 'communications', 'digital-check-in', 'events', 'integrations'].includes(section) && <PmsHistoryPanel propertyId={property.id} currencyCode={property.currencyCode} sections={{ invoices: ['invoices'], audit: ['night-audits'], communications: ['communications'], 'digital-check-in': ['guest-registrations'], events: ['resource-bookings'], integrations: ['outbox', 'audit'] }[section]} />}
         </>
         </PmsTranslationBoundary>
     );

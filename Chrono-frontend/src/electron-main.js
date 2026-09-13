@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import os from 'os'; // Neuer Import
 import { Buffer } from 'buffer';
+import { installWindowHistoryNavigation } from './electron-navigation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,6 +94,8 @@ function createWindow() {
             webSecurity: true
         }
     });
+
+    installWindowHistoryNavigation(mainWindow);
 
 
     mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {

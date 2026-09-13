@@ -75,7 +75,8 @@ const renderDashboard = (initialEntries = ['/pms']) => render(
                 firstName: 'Raja',
                 lastName: 'Siefert',
                 companyFeatureKeys: ['pms'],
-                pagePermissions: { pms: 'MANAGE' },
+                roles: ['ROLE_ADMIN'],
+                pagePermissions: { pms: 'MANAGE', pmsSettings: 'MANAGE' },
             },
         }}
     >
@@ -108,13 +109,44 @@ describe('PmsDashboard', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Übersicht anpassen' }));
         const editor = screen.getByRole('complementary', { name: 'PMS-Übersicht' });
 
-        await userEvent.click(within(editor).getByRole('checkbox', { name: /Anreisen/ }));
+        await userEvent.click(within(editor).getByRole('button', { name: 'Anreisen: Entfernen', exact: true }));
 
         expect(screen.queryByText('Keine Anreisen vorhanden')).not.toBeInTheDocument();
         expect(screen.getByText('Betriebstag')).toBeInTheDocument();
         expect(screen.getByText('Lokal auf diesem Gerät gespeichert')).toBeInTheDocument();
         expect(apiMock.put).not.toHaveBeenCalled();
         expect(apiMock.get.mock.calls.some(([url]) => url === '/api/ui/preferences/PMS_DASHBOARD')).toBe(false);
+    });
+
+    it('allows an individual metric to replace the grouped metrics and restores that personal selection', async () => {
+        const view = renderDashboard();
+        await screen.findByText('Hotel einrichten');
+        expect(document.querySelector('[data-dashboard-widget="metric-occupancy"]')).toBeNull();
+        await userEvent.click(screen.getByRole('button', { name: 'Übersicht anpassen' }));
+        const editor = screen.getByRole('complementary', { name: 'PMS-Übersicht' });
+        await userEvent.click(within(editor).getByRole('button', { name: 'Kennzahlen: Entfernen', exact: true }));
+        await userEvent.click(within(editor).getByRole('button', { name: 'Kennzahl: Auslastung: Hinzufügen', exact: true }));
+        expect(document.querySelector('[data-dashboard-widget="metrics"]')).toBeNull();
+        expect(within(document.querySelector('[data-dashboard-widget="metric-occupancy"]')).getByText('0 %')).toBeInTheDocument();
+
+        view.unmount();
+        renderDashboard();
+        await screen.findByText('Hotel einrichten');
+        expect(document.querySelector('[data-dashboard-widget="metrics"]')).toBeNull();
+        expect(document.querySelector('[data-dashboard-widget="metric-occupancy"]')).toBeInTheDocument();
+    });
+
+    it('lets a separately placed quick action start its usual reception workflow', async () => {
+        renderDashboard();
+        await screen.findByText('Hotel einrichten');
+        await userEvent.click(screen.getByRole('button', { name: 'Übersicht anpassen' }));
+        const editor = screen.getByRole('complementary', { name: 'PMS-Übersicht' });
+        await userEvent.click(within(editor).getByRole('button', { name: 'Schnellaktionen: Entfernen', exact: true }));
+        await userEvent.click(within(editor).getByRole('button', { name: 'Aktion: Gast vor Ort aufnehmen: Hinzufügen', exact: true }));
+        const action = document.querySelector('[data-dashboard-widget="action-walk-in"]');
+        expect(action).toBeInTheDocument();
+        await userEvent.click(within(action).getByRole('button', { name: /^Gast vor Ort aufnehmen/ }));
+        await waitFor(() => expect(screen.getByTestId('pms-location')).toHaveTextContent('/pms?section=reservations'));
     });
 
     it('scopes dashboard preferences to the active property', async () => {
@@ -165,12 +197,13 @@ describe('PmsDashboard', () => {
         expect(screen.getByText('Hotel und Betriebsdaten anlegen')).toBeInTheDocument();
     });
 
-    it('switches to pro mode and displays keyboard shortcuts', async () => {
+    it('always displays all professional sections and shortcuts without a mode switch', async () => {
         renderDashboard();
         await screen.findByText('Hotel einrichten');
 
-        expect(screen.queryByRole('button', { name: 'Hotelportfolio' })).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', { name: 'Profi' }));
+        expect(screen.queryByRole('button', { name: 'Einfach' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Profi' })).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Bedienmodus')).not.toBeInTheDocument();
 
         expect(screen.getByText('Ctrl N')).toBeInTheDocument();
         expect(screen.getByText('Ctrl I')).toBeInTheDocument();
