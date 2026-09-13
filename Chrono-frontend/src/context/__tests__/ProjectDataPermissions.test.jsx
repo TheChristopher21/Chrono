@@ -68,7 +68,7 @@ const renderTaskContext = () => {
 
 describe('permission-aware project data contexts', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.resetAllMocks();
         authState.value = {
             authToken: 'token',
             currentUser: userWith({ dashboard: 'VIEW' })
