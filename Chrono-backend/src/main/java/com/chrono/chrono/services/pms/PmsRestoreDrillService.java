@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +25,6 @@ import java.util.Optional;
 @Service
 public class PmsRestoreDrillService {
     private static final String MARKER = "restore-verification.txt";
-    private static final int REQUIRED_TABLES = 4;
 
     private final PmsBackupVerifier backupVerifier;
     private final boolean enabled;
@@ -192,7 +193,7 @@ public class PmsRestoreDrillService {
                             + "WHERE table_schema = DATABASE() AND table_name IN "
                             + "('pms_properties','pms_reservations','pms_audit_events','pms_integration_outbox')"),
                     null).trim();
-            if (!String.valueOf(REQUIRED_TABLES).equals(tableCount)) {
+            if (!String.valueOf(PmsBackupVerifier.RESTORE_FOUNDATION.size()).equals(tableCount)) {
                 return record(backup.get(), false,
                         "Restore enthielt nicht alle erforderlichen PMS-Kerntabellen.");
             }
@@ -223,15 +224,34 @@ public class PmsRestoreDrillService {
         builder.environment().put("MYSQL_PWD", password);
         builder.redirectError(ProcessBuilder.Redirect.INHERIT);
         if (input != null) {
-            builder.redirectInput(input.toFile());
+            // Imports can be large and can themselves emit query output. Drain it in the OS,
+            // while feeding the decompressed SQL directly; no temporary uncompressed dump.
+            builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         }
         Process process = builder.start();
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new IOException("mysql-Client meldete Exit-Code " + exitCode);
+        try {
+            try (OutputStream stdin = process.getOutputStream()) {
+                if (input != null) writeSqlInput(input, stdin);
+            }
+            byte[] output;
+            try (InputStream stdout = process.getInputStream()) {
+                output = stdout.readNBytes(65_537);
+            }
+            if (output.length > 65_536) throw new IOException("Unerwartet große mysql-Statusausgabe.");
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new IOException("mysql-Client meldete Exit-Code " + exitCode);
+            }
+            return new String(output, StandardCharsets.UTF_8);
+        } finally {
+            if (process.isAlive()) process.destroyForcibly();
         }
-        return output;
+    }
+
+    static void writeSqlInput(Path backup, OutputStream target) throws IOException {
+        try (InputStream sql = PmsBackupVerifier.openSqlInput(backup)) {
+            sql.transferTo(target);
+        }
     }
 
     private RestoreCheck record(Path backup, boolean success, String message) {

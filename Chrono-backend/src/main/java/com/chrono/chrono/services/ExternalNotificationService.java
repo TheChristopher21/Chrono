@@ -58,4 +58,18 @@ public class ExternalNotificationService {
             logger.warn("Failed to send webhook notification: {}", e.getMessage());
         }
     }
+
+    /** Send one channel so a failed Teams delivery does not replay a successful Slack delivery. */
+    public void sendOperationalWebhookChecked(String url, String text) {
+        if (url == null || url.isBlank() || text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Operational webhook destination and message are required.");
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(Map.of("text", text), headers);
+        var response = restTemplate.postForEntity(url, entity, String.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Operational webhook did not acknowledge delivery.");
+        }
+    }
 }

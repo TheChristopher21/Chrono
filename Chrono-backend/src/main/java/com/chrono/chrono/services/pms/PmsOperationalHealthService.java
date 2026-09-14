@@ -32,6 +32,7 @@ public class PmsOperationalHealthService {
     private final PmsBackupVerifier backupVerifier;
     private final PmsRestoreDrillService restoreDrillService;
     private final JdbcTemplate jdbcTemplate;
+    private final List<PmsOutboxTransport> transports;
     private final Duration pendingWarningAge;
 
     public PmsOperationalHealthService(
@@ -42,6 +43,7 @@ public class PmsOperationalHealthService {
             PmsBackupVerifier backupVerifier,
             PmsRestoreDrillService restoreDrillService,
             JdbcTemplate jdbcTemplate,
+            List<PmsOutboxTransport> transports,
             @Value("${app.pms.monitoring.pending-warning-age:PT15M}") Duration pendingWarningAge) {
         this.propertyRepository = propertyRepository;
         this.outboxRepository = outboxRepository;
@@ -50,6 +52,7 @@ public class PmsOperationalHealthService {
         this.backupVerifier = backupVerifier;
         this.restoreDrillService = restoreDrillService;
         this.jdbcTemplate = jdbcTemplate;
+        this.transports = List.copyOf(transports);
         this.pendingWarningAge = pendingWarningAge;
     }
 
@@ -80,19 +83,15 @@ public class PmsOperationalHealthService {
         long pending = outboxRepository.countByProperty_IdAndStatus(propertyId, OutboxStatus.PENDING);
         long failed = outboxRepository.countByProperty_IdAndStatus(propertyId, OutboxStatus.FAILED);
         long deadLetter = outboxRepository.countByProperty_IdAndStatus(propertyId, OutboxStatus.DEAD_LETTER);
-        IntegrationOutboxEvent oldestOpen = outboxRepository
-                .findFirstByProperty_IdAndStatusInOrderByCreatedAtAsc(
-                        propertyId, List.of(OutboxStatus.PENDING, OutboxStatus.FAILED))
-                .orElse(null);
-        boolean overdue = oldestOpen != null
-                && oldestOpen.getCreatedAt().isBefore(checkedAt.minus(pendingWarningAge));
+        PendingDeliveryCheck pendingDelivery = inspectPendingDelivery(propertyId, pending, checkedAt);
         HealthStatus outboxStatus = deadLetter > 0
                 ? HealthStatus.CRITICAL
-                : failed > 0 || overdue ? HealthStatus.WARNING : HealthStatus.OK;
+                : failed > 0 || pendingDelivery.overdue() ? HealthStatus.WARNING
+                : pendingDelivery.notConfigured() ? HealthStatus.NOT_CONFIGURED : HealthStatus.OK;
         components.add(new ComponentHealth(
                 "outbox", "Externe Übertragungen", outboxStatus,
                 pending + " offen, " + failed + " fehlgeschlagen, "
-                        + deadLetter + " endgültig fehlgeschlagen.",
+                        + deadLetter + " endgültig fehlgeschlagen." + pendingDelivery.explanation(),
                 checkedAt));
         if (deadLetter > 0) {
             alerts.add(new OperationalAlert(
@@ -100,13 +99,13 @@ public class PmsOperationalHealthService {
                     "Integrationsereignisse endgültig fehlgeschlagen",
                     deadLetter + " Übertragung(en) sind endgültig fehlgeschlagen.",
                     "Schnittstellen & Integrationen öffnen, Fehler prüfen und Übertragungen erneut einplanen."));
-        } else if (failed > 0 || overdue) {
+        } else if (failed > 0 || pendingDelivery.overdue()) {
             alerts.add(new OperationalAlert(
                     "PMS_OUTBOX_DELAYED", HealthStatus.WARNING,
                     "Externe Übertragungen benötigen Aufmerksamkeit",
                     failed > 0
                             ? failed + " Zustellversuch(e) sind fehlgeschlagen."
-                            : "Das älteste offene Ereignis überschreitet das Zeitlimit.",
+                            : "Ein offenes Ereignis mit eingerichteter Anbieteranbindung überschreitet das Zeitlimit.",
                     "Anbieterverbindung und ausstehende Übertragungen prüfen."));
         }
 
@@ -159,6 +158,45 @@ public class PmsOperationalHealthService {
         return new PmsOperationalHealthResponse(
                 propertyId, overall, checkedAt, pending, failed, deadLetter,
                 List.copyOf(components), List.copyOf(alerts));
+    }
+
+    private PendingDeliveryCheck inspectPendingDelivery(Long propertyId, long pending, LocalDateTime checkedAt) {
+        if (transports.isEmpty()) {
+            return new PendingDeliveryCheck(true, false,
+                    " Keine externe Anbieteranbindung eingerichtet. Offene Ereignisse bleiben gespeichert"
+                            + " und warten auf die Einrichtung einer passenden Anbindung.");
+        }
+        if (pending == 0) {
+            return new PendingDeliveryCheck(false, false, "");
+        }
+
+        // Bound the health probe independently of the queue size. Provider matching mirrors the
+        // delivery worker, but never claims or delivers an event and uses the known property id.
+        List<IntegrationOutboxEvent> oldestPending = outboxRepository
+                .findTop100ByProperty_IdAndStatusOrderByCreatedAtAsc(propertyId, OutboxStatus.PENDING);
+        long withoutProvider = 0;
+        boolean overdue = false;
+        LocalDateTime overdueBefore = checkedAt.minus(pendingWarningAge);
+        for (IntegrationOutboxEvent event : oldestPending) {
+            PmsOutboxMessage message = new PmsOutboxMessage(
+                    event.getId(), propertyId, event.getEventType(), event.getAggregateType(),
+                    event.getAggregateId(), event.getPayload(), event.getAttemptCount() + 1);
+            if (transports.stream().noneMatch(transport -> transport.supports(message))) {
+                withoutProvider++;
+            } else if (event.getCreatedAt().isBefore(overdueBefore)) {
+                overdue = true;
+            }
+        }
+        String explanation = withoutProvider == 0 ? ""
+                : " " + withoutProvider + " der geprüften offenen Ereignisse warten auf eine passende"
+                        + " Anbieteranbindung und bleiben gespeichert.";
+        if (pending > oldestPending.size()) {
+            explanation += " Geprüft wurden die " + oldestPending.size() + " ältesten offenen Ereignisse.";
+        }
+        return new PendingDeliveryCheck(withoutProvider > 0, overdue, explanation);
+    }
+
+    private record PendingDeliveryCheck(boolean notConfigured, boolean overdue, String explanation) {
     }
 
     private HealthStatus databaseHealth() {

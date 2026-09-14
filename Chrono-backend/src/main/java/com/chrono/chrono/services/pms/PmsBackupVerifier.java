@@ -6,9 +6,17 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.LinkOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -16,20 +24,26 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Set;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 @Service
 public class PmsBackupVerifier {
     private static final String LATEST_BACKUP_MARKER = "latest.ok";
+    private static final Duration VERIFICATION_CACHE_TTL = Duration.ofSeconds(60);
+    static final Set<String> RESTORE_FOUNDATION = Set.of(
+            "pms_properties", "pms_reservations", "pms_audit_events", "pms_integration_outbox");
 
     private final boolean enabled;
     private final Path directory;
     private final Duration maxAge;
     private final long minimumBytes;
+    private CachedVerification cachedVerification;
 
     public PmsBackupVerifier(
             @Value("${app.backup.monitoring.enabled:${app.backup.enabled:false}}") boolean enabled,
@@ -62,7 +76,7 @@ public class PmsBackupVerifier {
             if (latest.isEmpty()) {
                 return new BackupCheck(
                         HealthStatus.CRITICAL,
-                        "Im Backup-Verzeichnis wurde keine SQL-Sicherung gefunden.",
+                        "Keine abgeschlossene reguläre SQL-Sicherung (.sql oder .sql.gz) gefunden; latest.ok und Backup-Dienst prüfen.",
                         null,
                         false);
             }
@@ -94,39 +108,43 @@ public class PmsBackupVerifier {
         }
     }
 
-    BackupCheck verify(Path backup, Instant now) throws IOException {
+    synchronized BackupCheck verify(Path backup, Instant now) throws IOException {
         Path normalized = backup.toAbsolutePath().normalize();
-        if (!normalized.startsWith(directory) || !Files.isRegularFile(normalized)) {
+        if (!isBackupArtifact(normalized)) {
             return new BackupCheck(HealthStatus.CRITICAL, "Ungültiges Backup-Artefakt.", null, false);
         }
-        long size = Files.size(normalized);
+        VerificationKey key = verificationKey(normalized);
         LocalDateTime modifiedAt = LocalDateTime.ofInstant(
-                Files.getLastModifiedTime(normalized).toInstant(), ZoneId.systemDefault());
-        if (size < minimumBytes) {
-            return new BackupCheck(
-                    HealthStatus.CRITICAL,
-                    "Die neueste SQL-Sicherung ist unvollständig oder leer.",
-                    modifiedAt,
-                    false);
+                key.backup().modifiedAt().toInstant(), ZoneId.systemDefault());
+        ContentVerification content;
+        if (cachedVerification != null && cachedVerification.key().equals(key)
+                && !now.isBefore(cachedVerification.checkedAt())
+                && now.isBefore(cachedVerification.checkedAt().plus(VERIFICATION_CACHE_TTL))) {
+            content = cachedVerification.content();
+        } else {
+            content = verifyContents(normalized, key);
+            // A dump or sidecar being replaced during a scan cannot produce a trusted cached result.
+            if (!isBackupArtifact(normalized) || !key.equals(verificationKey(normalized))) {
+                cachedVerification = null;
+                return new BackupCheck(HealthStatus.CRITICAL,
+                        "Backup-Artefakt oder Bestätigung wurde während der Prüfung geändert; erneute Prüfung erforderlich.",
+                        modifiedAt, false);
+            }
+            cachedVerification = new CachedVerification(key, now, content);
         }
-        if (!containsRestoreFoundation(normalized)) {
-            return new BackupCheck(
-                    HealthStatus.CRITICAL,
-                    "Die Sicherung enthält nicht alle für einen PMS-Restore erforderlichen Kerntabellen.",
-                    modifiedAt,
-                    false);
+        if (content.failure() != null) {
+            return new BackupCheck(HealthStatus.CRITICAL, content.failure(), modifiedAt, false);
         }
-        boolean checksumValid = hasValidChecksum(normalized);
-        Duration age = Duration.between(
-                Files.getLastModifiedTime(normalized).toInstant(), now);
+        // Age is deliberately not cached: a previously healthy artifact can cross the backup window.
+        Duration age = Duration.between(key.backup().modifiedAt().toInstant(), now);
         if (age.compareTo(maxAge) > 0) {
             return new BackupCheck(
                     HealthStatus.WARNING,
                     "Die neueste SQL-Sicherung ist älter als das erlaubte Sicherungsfenster.",
                     modifiedAt,
-                    checksumValid);
+                    content.checksumValid());
         }
-        if (!checksumValid) {
+        if (!content.checksumValid()) {
             return new BackupCheck(
                     HealthStatus.WARNING,
                     "Die SQL-Sicherung hat noch keine gültige SHA-256-Prüfsumme.",
@@ -140,26 +158,49 @@ public class PmsBackupVerifier {
                 true);
     }
 
+    private ContentVerification verifyContents(Path normalized, VerificationKey key) throws IOException {
+        if (key.backup().size() < minimumBytes) {
+            return new ContentVerification("Die neueste SQL-Sicherung ist unvollständig oder leer.", false);
+        }
+        Set<String> missing;
+        try {
+            missing = missingRestoreFoundation(normalized);
+        } catch (IOException exception) {
+            return new ContentVerification(
+                    "Die SQL-Sicherung ist nicht vollständig lesbar oder das komprimierte Archiv ist beschädigt.",
+                    false);
+        }
+        if (!missing.isEmpty()) {
+            return new ContentVerification(
+                    "Der Sicherung " + normalized.getFileName() + " fehlen CREATE-TABLE-Definitionen für PMS-Kerntabellen: "
+                            + String.join(", ", missing) + ".",
+                    false);
+        }
+        String expected = key.checksum().content() == null ? "" : key.checksum().content().trim().split("\\s+", 2)[0];
+        return new ContentVerification(null,
+                expected.matches("[a-fA-F0-9]{64}") && expected.equalsIgnoreCase(sha256(normalized)));
+    }
+
     private Optional<Path> latestBackup() throws IOException {
         Path marker = directory.resolve(LATEST_BACKUP_MARKER).normalize();
-        if (Files.isRegularFile(marker)) {
-            String markerValue;
-            try (BufferedReader reader = Files.newBufferedReader(marker)) {
-                markerValue = reader.readLine();
-            }
+        if (Files.exists(marker, LinkOption.NOFOLLOW_LINKS)) {
+            String markerContent = smallFileSnapshot(marker).content();
+            String markerValue = markerContent == null ? null : markerContent.lines().findFirst().orElse(null);
             if (markerValue == null || markerValue.isBlank()) {
                 return Optional.empty();
             }
 
-            Path markedBackup = Path.of(markerValue.trim());
+            Path markedBackup;
+            try {
+                markedBackup = Path.of(markerValue.trim());
+            } catch (java.nio.file.InvalidPathException exception) {
+                return Optional.empty();
+            }
             if (!markedBackup.isAbsolute()) {
                 markedBackup = directory.resolve(markedBackup);
             }
             markedBackup = markedBackup.toAbsolutePath().normalize();
-            if (!markedBackup.startsWith(directory)
-                    || !markedBackup.getFileName().toString().endsWith(".sql")
-                    || !Files.isRegularFile(markedBackup)
-                    || Files.isSymbolicLink(markedBackup)) {
+            if (!isBackupArtifact(markedBackup)) {
                 return Optional.empty();
             }
             return Optional.of(markedBackup);
@@ -167,35 +208,192 @@ public class PmsBackupVerifier {
 
         try (Stream<Path> files = Files.list(directory)) {
             return files
-                    .filter(Files::isRegularFile)
-                    .filter(path -> !path.getFileName().toString().startsWith("."))
-                    .filter(path -> path.getFileName().toString().endsWith(".sql"))
+                    .filter(this::isBackupArtifact)
                     .max(Comparator.comparingLong(this::lastModified));
         }
     }
 
-    private boolean hasValidChecksum(Path backup) throws IOException {
-        Path checksumFile = backup.resolveSibling(backup.getFileName() + ".sha256");
-        if (!Files.isRegularFile(checksumFile)) {
-            return false;
-        }
-        String expected = Files.readString(checksumFile).trim().split("\\s+")[0];
-        return expected.equalsIgnoreCase(sha256(backup));
+    private VerificationKey verificationKey(Path backup) throws IOException {
+        FileIdentity identity = fileIdentity(backup);
+        if (identity == null || !identity.regular()) throw new IOException("Backup no longer exists");
+        return new VerificationKey(backup, identity,
+                smallFileSnapshot(backup.resolveSibling(backup.getFileName() + ".sha256")),
+                smallFileSnapshot(directory.resolve(LATEST_BACKUP_MARKER)));
     }
 
-    private boolean containsRestoreFoundation(Path backup) throws IOException {
-        Set<String> missing = new HashSet<>(Set.of(
-                "pms_properties",
-                "pms_reservations",
-                "pms_audit_events",
-                "pms_integration_outbox"));
-        try (BufferedReader reader = Files.newBufferedReader(backup)) {
-            String line;
-            while ((line = reader.readLine()) != null && !missing.isEmpty()) {
-                missing.removeIf(line::contains);
-            }
+    private SmallFileSnapshot smallFileSnapshot(Path file) throws IOException {
+        FileIdentity identity = fileIdentity(file);
+        if (identity == null || !identity.regular() || identity.size() > 4096 || !isSafeRegularFile(file)) {
+            return new SmallFileSnapshot(identity, null);
         }
-        return missing.isEmpty();
+        try (InputStream input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
+            byte[] bytes = input.readNBytes(4097);
+            return new SmallFileSnapshot(identity, bytes.length > 4096 ? null : new String(bytes, StandardCharsets.UTF_8));
+        }
+    }
+
+    private FileIdentity fileIdentity(Path file) throws IOException {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            return new FileIdentity(attributes.fileKey(), attributes.size(), attributes.lastModifiedTime(), attributes.isRegularFile());
+        } catch (NoSuchFileException exception) {
+            return null;
+        }
+    }
+
+    private record FileIdentity(Object fileKey, long size, FileTime modifiedAt, boolean regular) { }
+    private record SmallFileSnapshot(FileIdentity identity, String content) { }
+    private record VerificationKey(Path path, FileIdentity backup, SmallFileSnapshot checksum, SmallFileSnapshot marker) { }
+    private record ContentVerification(String failure, boolean checksumValid) { }
+    private record CachedVerification(VerificationKey key, Instant checkedAt, ContentVerification content) { }
+
+    private boolean isBackupArtifact(Path path) {
+        String name = path.getFileName().toString();
+        // Pre-deploy dumps protect rollback of the old release; they are not routine backups.
+        return !name.startsWith(".") && !name.startsWith("predeploy-")
+                && (name.endsWith(".sql") || name.endsWith(".sql.gz")) && isSafeRegularFile(path);
+    }
+
+    private boolean isSafeRegularFile(Path path) {
+        try {
+            Path normalized = path.toAbsolutePath().normalize();
+            return normalized.startsWith(directory) && Files.isRegularFile(normalized, LinkOption.NOFOLLOW_LINKS)
+                    && normalized.toRealPath().startsWith(directory.toRealPath());
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    static InputStream openSqlInput(Path backup) throws IOException {
+        InputStream input = new BufferedInputStream(Files.newInputStream(backup));
+        try {
+            return backup.getFileName().toString().endsWith(".sql.gz") ? new GZIPInputStream(input) : input;
+        } catch (IOException exception) {
+            input.close();
+            throw exception;
+        }
+    }
+
+    Set<String> missingRestoreFoundation(Path backup) throws IOException {
+        Set<String> missing = new TreeSet<>(RESTORE_FOUNDATION);
+        try (InputStream sql = openSqlInput(backup);
+                Reader reader = new InputStreamReader(sql, StandardCharsets.UTF_8)) {
+            SqlTokens tokens = new SqlTokens(reader);
+            String token;
+            while (!missing.isEmpty() && (token = tokens.next()) != null) {
+                if (!"create".equals(token)) continue;
+                token = tokens.next();
+                // Temporary tables disappear with the restore connection and prove no persisted data.
+                if ("temporary".equals(token)) continue;
+                if (!"table".equals(token)) continue;
+                token = tokens.next();
+                if ("if".equals(token)) {
+                    if (!"not".equals(tokens.next()) || !"exists".equals(tokens.next())) continue;
+                    token = tokens.next();
+                }
+                String table = token;
+                token = tokens.next();
+                if (".".equals(token)) {
+                    table = tokens.next();
+                    token = tokens.next();
+                }
+                if ("(".equals(token) && table != null) missing.remove(table);
+            }
+            // SQL parsing can stop, but gzip must reach its trailer to detect CRC/truncation errors.
+            if (backup.getFileName().toString().endsWith(".sql.gz")) sql.transferTo(OutputStream.nullOutputStream());
+        }
+        return missing;
+    }
+
+    /** Bounded tokens keep multi-gigabyte mysqldump INSERT lines out of memory. */
+    private static final class SqlTokens {
+        private final Reader reader;
+        private final char[] buffer = new char[32_768];
+        private int position;
+        private int count;
+        private int pushedBack = -1;
+
+        private SqlTokens(Reader reader) {
+            this.reader = reader;
+        }
+
+        private int read() throws IOException {
+            if (pushedBack != -1) {
+                int value = pushedBack;
+                pushedBack = -1;
+                return value;
+            }
+            if (count == -1) return -1;
+            if (position == count) {
+                count = reader.read(buffer);
+                position = 0;
+                if (count == -1) return -1;
+            }
+            return buffer[position++];
+        }
+
+        private void unread(int value) {
+            pushedBack = value;
+        }
+
+        private String next() throws IOException {
+            int ch;
+            while ((ch = read()) != -1) {
+                if (Character.isWhitespace(ch)) continue;
+                if (ch == '#') { skipLine(); continue; }
+                if (ch == '-' || ch == '/') {
+                    int following = read();
+                    if (ch == '-' && following == '-') { skipLine(); continue; }
+                    if (ch == '/' && following == '*') { skipComment(); continue; }
+                    if (following != -1) unread(following);
+                }
+                if (ch == '\'' || ch == '"') { quoted(ch, false); return "'"; }
+                if (ch == '`') return quoted(ch, true);
+                if (Character.isLetterOrDigit(ch) || ch == '_') {
+                    StringBuilder token = new StringBuilder();
+                    do {
+                        if (token.length() < 256) token.append((char) ch);
+                        ch = read();
+                    } while (ch != -1 && (Character.isLetterOrDigit(ch) || ch == '_' || ch == '$'));
+                    if (ch != -1) unread(ch);
+                    return token.toString().toLowerCase(Locale.ROOT);
+                }
+                return Character.toString((char) ch);
+            }
+            return null;
+        }
+
+        private String quoted(int quote, boolean identifier) throws IOException {
+            StringBuilder token = new StringBuilder();
+            int ch;
+            while ((ch = read()) != -1) {
+                if (ch == '\\' && !identifier) { read(); continue; }
+                if (ch == quote) {
+                    int following = read();
+                    if (following != quote) {
+                        if (following != -1) unread(following);
+                        return token.toString().toLowerCase(Locale.ROOT);
+                    }
+                }
+                if (identifier && token.length() < 256) token.append((char) ch);
+            }
+            throw new IOException("Unterminated SQL quote");
+        }
+
+        private void skipLine() throws IOException {
+            int ch;
+            while ((ch = read()) != -1 && ch != '\n' && ch != '\r') { }
+        }
+
+        private void skipComment() throws IOException {
+            int previous = 0;
+            int ch;
+            while ((ch = read()) != -1) {
+                if (previous == '*' && ch == '/') return;
+                previous = ch;
+            }
+            throw new IOException("Unterminated SQL comment");
+        }
     }
 
     private String sha256(Path file) throws IOException {

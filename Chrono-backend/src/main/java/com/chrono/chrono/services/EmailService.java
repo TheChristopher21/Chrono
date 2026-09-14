@@ -113,6 +113,19 @@ public class EmailService {
         sendSafely(message, "operational-alert");
     }
 
+    /** Durable dispatchers must observe SMTP failures before acknowledging delivery. */
+    public void sendOperationalAlertChecked(String recipient, String subject, String text) {
+        if (recipient == null || recipient.isBlank() || text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Operational alert recipient and message are required.");
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("siefertchristopher@chrono-logisch.ch");
+        message.setTo(recipient.trim());
+        message.setSubject(subject == null || subject.isBlank() ? "Chrono Betriebsalarm" : subject);
+        message.setText(text);
+        mailSender.send(message);
+    }
+
     private void sendSafely(SimpleMailMessage message, String context) {
         try {
             mailSender.send(message);

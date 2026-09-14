@@ -11,6 +11,13 @@ expected_flyway_version=""
 flyway_version=""
 table_count=0
 pms_table_count=0
+pipe_directory=""
+decompressor=""
+cleanup_failed_restore() {
+  if [ -n "${decompressor}" ]; then kill "${decompressor}" 2>/dev/null || true; fi
+  if [ -n "${pipe_directory}" ]; then rm -f "${pipe_directory}/dump"; rmdir "${pipe_directory}"; fi
+  write_evidence FAILED
+}
 write_evidence() {
   result="$1"
   umask 077
@@ -24,7 +31,7 @@ write_evidence() {
   mv "${temporary}" "${evidence_directory}/restore-verification.json"
 }
 # Even invalid/missing backups must replace an earlier successful proof.
-trap 'write_evidence FAILED' EXIT
+trap cleanup_failed_restore EXIT
 
 : "${MYSQL_HOST:?MYSQL_HOST is required}"
 : "${MYSQL_DATABASE:?MYSQL_DATABASE is required}"
@@ -34,18 +41,20 @@ trap 'write_evidence FAILED' EXIT
 marker="/backups/latest.ok"
 test -s "${marker}"
 backup_file="$(sed -n '1p' "${marker}")"
+case "${backup_file}" in /*) ;; *) backup_file="/backups/${backup_file}";; esac
 case "${backup_file}" in
-  /backups/*.sql) ;;
+  /backups/*.sql|/backups/*.sql.gz) ;;
   *)
     echo "Restore drill failed: backup marker points outside /backups or not to a SQL dump." >&2
     exit 1
     ;;
 esac
+test "$(dirname "${backup_file}")" = /backups
 test -f "${backup_file}"
 test ! -L "${backup_file}"
 test -s "${backup_file}"
 candidate_backup_name="$(basename "${backup_file}")"
-case "${candidate_backup_name}" in *[!A-Za-z0-9_.-]*) echo "Unsafe backup filename" >&2; exit 1;; esac
+case "${candidate_backup_name}" in .*|predeploy-*|*[!A-Za-z0-9_.-]*) echo "Unsafe or non-regular backup filename" >&2; exit 1;; esac
 backup_name="${candidate_backup_name}"
 backup_sha256="$(sha256sum "${backup_file}" | cut -d ' ' -f 1)"
 (cd /backups && sha256sum -c "${backup_name}.sha256")
@@ -60,12 +69,28 @@ if [ "${candidate_flyway_version}" = "auto" ]; then
 fi
 case "${candidate_flyway_version}" in ''|*[!0-9.]*) echo "Release migration version is unavailable or invalid" >&2; exit 1;; esac
 expected_flyway_version="${candidate_flyway_version}"
-mysql \
-  --protocol=TCP \
-  --host="${MYSQL_HOST}" \
-  --port="${MYSQL_PORT:-3306}" \
-  --user="${MYSQL_USER}" \
-  "${MYSQL_DATABASE}" < "${backup_file}"
+import_backup() {
+  mysql --protocol=TCP --host="${MYSQL_HOST}" --port="${MYSQL_PORT:-3306}" \
+    --user="${MYSQL_USER}" "${MYSQL_DATABASE}"
+}
+case "${backup_file}" in
+  *.sql.gz)
+    # A FIFO avoids an unbounded decompressed temporary file; check both processes.
+    pipe_directory="$(mktemp -d /tmp/chrono-restore-pipe.XXXXXX)"
+    mkfifo "${pipe_directory}/dump"
+    gzip -dc "${backup_file}" > "${pipe_directory}/dump" &
+    decompressor=$!
+    import_status=0
+    import_backup < "${pipe_directory}/dump" || import_status=$?
+    wait "${decompressor}" || import_status=1
+    decompressor=""
+    rm -f "${pipe_directory}/dump"
+    rmdir "${pipe_directory}"
+    pipe_directory=""
+    test "${import_status}" -eq 0
+    ;;
+  *) import_backup < "${backup_file}";;
+esac
 
 table_count="$(mysql \
   --batch --skip-column-names \
