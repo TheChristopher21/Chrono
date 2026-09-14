@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import VacationCalendarAdmin from '../VacationCalendarAdmin';
 import api from '../../utils/api';
-import { formatLocalDateYMD } from '../../pages/AdminDashboard/adminDashboardUtils';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 const notifyMock = vi.fn();
 const currentUserMock = {
@@ -84,7 +84,7 @@ describe('VacationCalendarAdmin employee vacation planning', () => {
     });
 
     it('applies the selected team to sickness markers and the employee picker', async () => {
-        const today = formatLocalDateYMD(new Date());
+        const today = formatLocalDate(new Date());
         api.get.mockImplementation(url => Promise.resolve({ data: url.includes('/api/holidays/details') ? {} : url.includes('/sick-leave/') ? [
             { id: 1, username: 'employee1', startDate: today, endDate: today },
             { id: 2, username: 'employee2', startDate: today, endDate: today },
@@ -117,22 +117,26 @@ describe('VacationCalendarAdmin employee vacation planning', () => {
         expect(within(reopened).getByLabelText(/Startdatum/)).toHaveValue('');
     });
 
-    it('navigates the real creation calendar and selects a range spanning two months', async () => {
+    it.each([
+        ['2027-01-28', '2027-02-03'],
+        ['2027-03-27', '2027-04-02'],
+        ['2027-10-28', '2027-11-03'],
+        ['2027-12-29', '2028-01-03'],
+    ])('preserves selected calendar days across months from %s to %s', async (startDate, endDate) => {
         const { user, dialog } = await openPlanner();
-        setDates(dialog, '2027-01-01');
-        expect(within(dialog).getByText('Januar 2027')).toBeInTheDocument();
-        await user.click(dayButton(dialog, '28. Januar 2027'));
-        expect(within(dialog).getByLabelText(/Startdatum/)).toHaveValue('2027-01-28');
+        const labelFor = date => new Date(`${date}T00:00:00`).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+        setDates(dialog, `${startDate.slice(0, 7)}-01`);
+        await user.click(dayButton(dialog, labelFor(startDate)));
+        expect(within(dialog).getByLabelText(/Startdatum/)).toHaveValue(startDate);
         expect(within(dialog).getByLabelText(/Enddatum/)).toHaveValue('');
 
         await user.click(within(dialog).getByRole('button', { name: '›' }));
-        expect(within(dialog).getByText('Februar 2027')).toBeInTheDocument();
-        await user.click(dayButton(dialog, '3. Februar 2027'));
-        expect(within(dialog).getByLabelText(/Startdatum/)).toHaveValue('2027-01-28');
-        expect(within(dialog).getByLabelText(/Enddatum/)).toHaveValue('2027-02-03');
+        await user.click(dayButton(dialog, labelFor(endDate)));
+        expect(within(dialog).getByLabelText(/Startdatum/)).toHaveValue(startDate);
+        expect(within(dialog).getByLabelText(/Enddatum/)).toHaveValue(endDate);
         await savePeriods(user, dialog);
         await waitFor(() => expect(api.post).toHaveBeenCalledWith('/api/vacation/adminCreate', null, {
-            params: { adminUsername: 'admin', username: 'employee1', startDate: '2027-01-28', endDate: '2027-02-03', halfDay: false, usesOvertime: false },
+            params: { adminUsername: 'admin', username: 'employee1', startDate, endDate, halfDay: false, usesOvertime: false },
         }));
         expect(dialog).toBeInTheDocument();
     });
@@ -199,8 +203,8 @@ describe('VacationCalendarAdmin employee vacation planning', () => {
         const today = new Date();
         const originalDay = new Date(today.getFullYear(), today.getMonth(), 7);
         const updatedDay = new Date(today.getFullYear(), today.getMonth(), 11);
-        const originalDate = formatLocalDateYMD(originalDay);
-        const updatedDate = formatLocalDateYMD(updatedDay);
+        const originalDate = formatLocalDate(originalDay);
+        const updatedDate = formatLocalDate(updatedDay);
         const label = (date) => date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
         setDates(dialog, originalDate);
         await savePeriods(user, dialog);
@@ -350,8 +354,8 @@ describe('VacationCalendarAdmin admin editing', () => {
         const vacation = {
             id: 33,
             username: 'employee1',
-            startDate: formatLocalDateYMD(new Date()),
-            endDate: formatLocalDateYMD(new Date()),
+            startDate: formatLocalDate(new Date()),
+            endDate: formatLocalDate(new Date()),
             halfDay: false,
             usesOvertime: true,
             overtimeDeductionMinutes: 480,
@@ -439,7 +443,7 @@ describe('VacationCalendarAdmin admin editing', () => {
     });
 
     it('updates sick leave entries with admin-provided values', async () => {
-        const todayIso = formatLocalDateYMD(new Date());
+        const todayIso = formatLocalDate(new Date());
         const sickLeave = {
             id: 91,
             username: 'employee1',
@@ -518,8 +522,8 @@ describe('VacationCalendarAdmin admin editing', () => {
         const vacation = {
             id: 44,
             username: 'employee1',
-            startDate: formatLocalDateYMD(new Date()),
-            endDate: formatLocalDateYMD(new Date()),
+            startDate: formatLocalDate(new Date()),
+            endDate: formatLocalDate(new Date()),
             halfDay: false,
             usesOvertime: false,
             color: '#336699',
@@ -552,7 +556,7 @@ describe('VacationCalendarAdmin admin editing', () => {
     });
 
     it('deletes sick leave entries after confirmation', async () => {
-        const todayIso = formatLocalDateYMD(new Date());
+        const todayIso = formatLocalDate(new Date());
         const sickLeave = {
             id: 92,
             username: 'employee1',

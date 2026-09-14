@@ -8,13 +8,9 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
-import { formatLocalDateYMD } from '../pages/AdminDashboard/adminDashboardUtils.js'; // Passe den Pfad ggf. an
+import { formatLocalDate } from '../utils/dateUtils.js';
 import { getUserDisplayName } from '../utils/userDisplay';
 
-// Annahme: formatLocalDateYMD ist in einer Utility-Datei und wird hier importiert
-// import { formatLocalDateYMD } from './adminDashboardUtils'; // Oder der korrekte Pfad
-
-// Falls formatLocalDateYMD nicht extern ist, hier definieren:
 
 
 function getContrastYIQ(hexcolor) {
@@ -237,7 +233,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
 
             // 'start' ist das Date-Objekt vom Kalender für den aktuellen Tag, den wir prüfen.
             // Wandle es in "YYYY-MM-DD" um für den String-Vergleich.
-            const compDateStr = formatLocalDateYMD(start);
+            const compDateStr = formatLocalDate(start);
 
             // Vergleiche die Strings.
             return compDateStr >= itemStartStr && compDateStr <= itemEndStr;
@@ -601,7 +597,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     };
 
     const getDayDetails = (date) => {
-        const dateString = formatLocalDateYMD(date);
+        const dateString = formatLocalDate(date);
         const vacationsToday = calendarVacationRequests.filter((vac) => itemInRange(vac, date, date));
         const sickToday = scopedSickLeaves.filter((sickLeave) => itemInRange(sickLeave, date, date));
         const vacationToday = vacationsToday.filter((vacation) => !vacation?.usesOvertime);
@@ -930,7 +926,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
         resetVacationForm();
         setVacationCalendarMonth(startOfMonth(dateClicked || activeStartDate));
         if (dateClicked) {
-            const dateStr = formatLocalDateYMD(dateClicked);
+            const dateStr = formatLocalDate(dateClicked);
             setVacationStartDate(dateStr);
             setVacationEndDate(dateStr);
         }
@@ -940,7 +936,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     const openSickLeaveModalAndReset = (dateClicked = null) => {
         resetSickLeaveForm();
         if (dateClicked) {
-            const dateStr = formatLocalDateYMD(dateClicked);
+            const dateStr = formatLocalDate(dateClicked);
             setSickLeaveStartDate(dateStr);
             setSickLeaveEndDate(dateStr);
         }
@@ -1151,8 +1147,10 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
                                 onChange={(range) => {
                                     if (Array.isArray(range)) {
                                         const [startSel, endSel] = range;
-                                        if (startSel) setVacationStartDate(formatLocalDateYMD(startSel));
-                                        setVacationEndDate(endSel ? formatLocalDateYMD(endSel) : '');
+                                        // The range ends at local 23:59:59.999. Keep the selected
+                                        // calendar day instead of converting it to another time zone.
+                                        if (startSel) setVacationStartDate(formatLocalDate(startSel));
+                                        setVacationEndDate(endSel ? formatLocalDate(endSel) : '');
                                     }
                                 }}
                                 value={[
@@ -1161,7 +1159,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
                                 ]}
                                 tileClassName={({ date, view }) => {
                                     if (view !== 'month') return null;
-                                    const day = formatLocalDateYMD(date);
+                                    const day = formatLocalDate(date);
                                     if (pendingVacationPeriods.some((period) => day >= period.startDate && day <= period.endDate)) return 'vacation-day-queued';
                                     if (calendarVacationRequests.some((period) => (isCompanyVacation || period.username === newVacationUser) && period.id !== editingVacation?.id && day >= period.startDate && day <= period.endDate)) return 'vacation-day-saved';
                                     return null;
