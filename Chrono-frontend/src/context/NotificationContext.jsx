@@ -1,5 +1,5 @@
 // src/context/NotificationContext.jsx
-import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
+import React, { createContext, useState, useContext, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from './LanguageContext';
 import "../styles/Notification.css";
 
@@ -13,23 +13,25 @@ export function NotificationProvider({ children }) {
     const [visible, setVisible] = useState(false);
     const timerRef = useRef(null);
 
-    function close() {
+    const close = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = null;
         setVisible(false);
-    }
+    }, []);
 
     /**
      * notify("Text")
      * notify({ message: "Text", type: "success" | "info" | "warn" | "error", duration: 3500 })
      */
-    function notify(input) {
+    const notify = useCallback((input, legacyType, legacyDuration) => {
         let message = "";
         let type = "info";
         let duration = 3500;
 
         if (typeof input === "string") {
             message = input;
+            type = legacyType ?? type;
+            duration = Number(legacyDuration) || duration;
         } else if (input && typeof input === "object") {
             message = input.message ?? "";
             type = input.type ?? "info";
@@ -45,20 +47,25 @@ export function NotificationProvider({ children }) {
             setVisible(false);
             timerRef.current = null;
         }, duration);
-    }
+    }, []);
+
+    useEffect(() => () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+    }, []);
 
     // ESC zum Schließen
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && close();
         if (visible) window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [visible]);
+    }, [close, visible]);
 
     const ariaLive = toast.type === "error" ? "assertive" : "polite";
     const ariaRole = toast.type === "error" ? "alert" : "status";
+    const contextValue = useMemo(() => ({ notify }), [notify]);
 
     return (
-        <NotificationContext.Provider value={{ notify }}>
+        <NotificationContext.Provider value={contextValue}>
             {children}
 
             {/* Korrigierte Struktur: .scoped-notification -> .notification-portal -> .notification-toast */}

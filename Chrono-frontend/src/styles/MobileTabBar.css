@@ -11,6 +11,8 @@
     border-top: 1px solid rgba(120, 140, 200, 0.25);
     padding: 0.25rem clamp(0.6rem, 5vw, 1.4rem);
     gap: 0.4rem;
+    box-sizing: border-box;
+    min-height: var(--tabbar-safe-area, 68px);
 }
 
 [data-theme="light"] .mobile-tab-bar {
@@ -64,17 +66,38 @@
     background: inherit;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px),
+       (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
     .mobile-tab-bar {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding-right: max(clamp(0.35rem, 3vw, 1rem), env(safe-area-inset-right, 0px));
         padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+        padding-left: max(clamp(0.35rem, 3vw, 1rem), env(safe-area-inset-left, 0px));
         padding-top: 0.45rem;
     }
 
     .mobile-tab-spacer {
         display: block;
-        height: max(var(--tabbar-height, 72px), env(safe-area-inset-bottom, 0px));
+        flex: 0 0 var(--tabbar-safe-area, 68px);
+        width: 100%;
+        height: var(--tabbar-safe-area, 68px);
+    }
+
+    .mobile-tab-link {
+        min-height: 48px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-tab-label {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        line-height: 1.15;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
@@ -99,6 +122,24 @@
     }
 }
 
+@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+    .mobile-tab-bar {
+        padding-top: 0.2rem;
+        padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
+    }
+
+    .mobile-tab-link {
+        min-height: 44px;
+        flex-direction: row;
+        gap: 0.35rem;
+        padding-block: 0.25rem;
+    }
+
+    .mobile-tab-label {
+        width: auto;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mobile-tab-link,
     .mobile-tab-link.is-active {
@@ -107,6 +148,9 @@
     }
 }
 
-.mobile-tab-spacer {
-    display: none;
+@media (min-width: 933px),
+       (min-width: 769px) and (min-height: 501px) {
+    .mobile-tab-spacer {
+        display: none;
+    }
 }

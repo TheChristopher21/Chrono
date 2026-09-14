@@ -2,11 +2,13 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.NfcCommandRequest;
 import com.chrono.chrono.entities.NfcCommand;
+import com.chrono.chrono.services.NfcAgentAuthService;
 import com.chrono.chrono.services.NfcCommandService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,11 +22,11 @@ public class NfcCommandController {
     @Autowired
     private NfcCommandService nfcCommandService;
 
-    // Injektion des Agent-Tokens aus application.properties
-    @Value("${nfc.agent.token}")
-    private String agentToken;
+    @Autowired
+    private NfcAgentAuthService nfcAgentAuthService;
 
     @GetMapping("/command/status/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> getCommandStatus(@PathVariable Long id) {
         Optional<NfcCommand> commandOpt = nfcCommandService.getCommandById(id);
         if (commandOpt.isPresent()) {
@@ -36,6 +38,7 @@ public class NfcCommandController {
 
 
     @PostMapping("/command")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> createCommand(@RequestBody NfcCommandRequest request) {
         NfcCommand command = nfcCommandService.createCommand(request.getType(), request.getData());
         Map<String, Object> responseMap = new HashMap<>();
@@ -48,7 +51,11 @@ public class NfcCommandController {
     }
 
     @GetMapping("/command")
-    public ResponseEntity<?> getPendingCommand() {
+    public ResponseEntity<?> getPendingCommand(
+            @RequestHeader(value = "X-Agent-Token", required = false) String token,
+            @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
+            HttpServletRequest httpRequest) {
+        nfcAgentAuthService.requireAgent(token, legacyHeader, httpRequest);
         return nfcCommandService.getPendingCommand().map(command -> {
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("id", command.getId());
@@ -65,10 +72,12 @@ public class NfcCommandController {
     public ResponseEntity<?> updateCommandStatus(
             @PathVariable Long id,
             @RequestParam String status,
-            @RequestHeader(value = "X-Agent-Token", required = false) String token) {
+            @RequestHeader(value = "X-Agent-Token", required = false) String token,
+            @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
+            HttpServletRequest httpRequest) {
 
         // Vergleiche mit trim() (entfernt zufällige Leerzeichen)
-        if (token == null || !token.trim().equals(agentToken.trim())) {
+        if (!nfcAgentAuthService.isAgentRequest(token, legacyHeader, httpRequest)) {
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("status", "error");
             responseMap.put("message", "Unauthorized: Invalid or missing agent token");

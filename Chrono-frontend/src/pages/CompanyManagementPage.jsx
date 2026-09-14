@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import '../styles/CompanyManagementScoped.css';
 import { useAuth } from '../context/AuthContext';
 import { FEATURE_CATALOG } from '../constants/registrationFeatures';
+import { isAnalyticsExcluded, setAnalyticsExcluded } from '../utils/analytics';
 
 const OPTIONAL_FEATURES = FEATURE_CATALOG.filter((feature) => !feature.alwaysAvailable);
 const ALWAYS_AVAILABLE_LABELS = FEATURE_CATALOG.filter((feature) => feature.alwaysAvailable).map(
@@ -18,7 +19,6 @@ const FEATURE_LABEL_MAP = FEATURE_CATALOG.reduce((acc, feature) => {
 const MODULE_ICON_MAP = {
     notifyVacation: '🌴',
     notifyOvertime: '⏱️',
-    customerTrackingEnabled: '👥',
     payroll: '💼',
     projects: '📁',
     accounting: '💰',
@@ -40,7 +40,6 @@ const MODULE_CATEGORIES = [
         items: [
             { type: 'boolean', key: 'notifyVacation', label: 'Urlaub' },
             { type: 'boolean', key: 'notifyOvertime', label: 'Überstunden' },
-            { type: 'boolean', key: 'customerTrackingEnabled', label: 'Kunden-Zeiterfassung' },
         ],
     },
     {
@@ -85,6 +84,34 @@ const STATUS_FILTERS = [
     { key: 'inactive', label: 'Inaktiv' },
     { key: 'canceled', label: 'Gekündigt' },
 ];
+
+const createWithAdminInitialState = () => ({
+    companyName: '',
+    adminUsername: '',
+    adminPassword: '',
+    adminEmail: '',
+    adminFirstName: '',
+    adminLastName: '',
+    adminDepartment: '',
+    adminCountry: 'CH',
+    adminTaxClass: '',
+    adminTarifCode: 'A0',
+    adminCanton: 'SG',
+    adminPersonnelNumber: '',
+    adminIncludeInTimeTracking: false,
+    adminPmsAccess: false,
+    addressLine1: '',
+    addressLine2: '',
+    postalCode: '',
+    city: '',
+    companyCanton: '',
+    slackWebhookUrl: '',
+    teamsWebhookUrl: '',
+    notifyVacation: false,
+    notifyOvertime: false,
+    customerTrackingEnabled: false,
+    enabledFeatures: [],
+});
 
 const toFeatureKeyArray = (rawKeys) => {
     if (!rawKeys) {
@@ -132,6 +159,30 @@ const normalizeFeatureSelection = (keys = []) => {
     return OPTIONAL_FEATURES.filter((feature) => keyArray.includes(feature.key)).map((feature) => feature.key);
 };
 
+const normalizeCompanyFeatureAliases = (company = {}) => {
+    const requestedFeatures = toFeatureKeyArray(company.enabledFeatures);
+    const enabledFeatures = normalizeFeatureSelection(
+        company.customerTrackingEnabled === true && !requestedFeatures.includes('projects')
+            ? [...requestedFeatures, 'projects']
+            : requestedFeatures
+    );
+
+    return {
+        ...company,
+        enabledFeatures,
+        customerTrackingEnabled: enabledFeatures.includes('projects'),
+    };
+};
+
+const withSynchronizedProjectAlias = (state, nextFeatures) => {
+    const enabledFeatures = normalizeFeatureSelection(nextFeatures);
+    return {
+        ...state,
+        enabledFeatures,
+        customerTrackingEnabled: enabledFeatures.includes('projects'),
+    };
+};
+
 const ModulePicker = ({
     title = 'Module freischalten',
     hint,
@@ -139,21 +190,30 @@ const ModulePicker = ({
     onToggleFeature,
     toggles = {},
     onToggleBoolean,
+    t = (key, fallback) => fallback ?? key,
 }) => (
     <div className="cmp-module-picker">
         <div className="cmp-module-picker__header">
             <div>
-                <strong>{title}</strong>
+                <strong>{t('companyManagement.modulePicker.title', title)}</strong>
                 <p className="cmp-module-picker__hint">
-                    {hint || `Immer verfügbar: ${ALWAYS_AVAILABLE_LABELS.join(', ')}`}
+                    {hint || t(
+                        'companyManagement.modulePicker.alwaysAvailable',
+                        'Immer verfügbar: {{modules}}',
+                        { modules: ALWAYS_AVAILABLE_LABELS.join(', ') }
+                    )}
                 </p>
             </div>
         </div>
         <div className="cmp-module-picker__categories">
             {MODULE_CATEGORIES.map((category) => (
                 <div key={category.key} className={`cmp-module-category cmp-module-category--${category.key}`}>
-                    <div className="cmp-module-category__title">{category.title}</div>
-                    <p className="cmp-module-category__description">{category.description}</p>
+                    <div className="cmp-module-category__title">
+                        {t(`companyManagement.moduleCategories.${category.key}.title`, category.title)}
+                    </div>
+                    <p className="cmp-module-category__description">
+                        {t(`companyManagement.moduleCategories.${category.key}.description`, category.description)}
+                    </p>
                     <div className="cmp-module-category__items">
                         {category.items.map((item) => {
                             const icon = MODULE_ICON_MAP[item.key] || '•';
@@ -175,7 +235,9 @@ const ModulePicker = ({
                                     <span className="cmp-module-item__icon" aria-hidden="true">
                                         {icon}
                                     </span>
-                                    <span className="cmp-module-item__label">{item.label}</span>
+                                    <span className="cmp-module-item__label">
+                                        {t(`companyManagement.modules.${item.key}`, item.label)}
+                                    </span>
                                 </label>
                             );
                         })}
@@ -195,12 +257,33 @@ const formatDate = (value) => {
     return date.toLocaleDateString();
 };
 
+const formatNumber = (value) => new Intl.NumberFormat().format(Number(value || 0));
+
+const formatShortDate = (value) => {
+    if (!value) return '';
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
+};
+
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [analyticsSummary, setAnalyticsSummary] = useState(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [analyticsError, setAnalyticsError] = useState('');
+    const [analyticsDays, setAnalyticsDays] = useState(14);
+    const [analyticsExcluded, setAnalyticsExcludedState] = useState(() => isAnalyticsExcluded());
+    const [analyticsExcludedIps, setAnalyticsExcludedIps] = useState([]);
+    const [analyticsIpAddressInput, setAnalyticsIpAddressInput] = useState('');
+    const [analyticsIpLabelInput, setAnalyticsIpLabelInput] = useState('');
+    const [analyticsIpSaving, setAnalyticsIpSaving] = useState(false);
+    const [analyticsIpError, setAnalyticsIpError] = useState('');
 
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyCanton, setNewCompanyCanton] = useState('');
@@ -212,28 +295,9 @@ const CompanyManagementPage = () => {
     const [newTeamsWebhook, setNewTeamsWebhook] = useState('');
     const [newNotifyVacation, setNewNotifyVacation] = useState(false);
     const [newNotifyOvertime, setNewNotifyOvertime] = useState(false);
-    const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
     const [newEnabledFeatures, setNewEnabledFeatures] = useState([]);
 
-    const [createWithAdmin, setCreateWithAdmin] = useState({
-        companyName: '',
-        adminUsername: '',
-        adminPassword: '',
-        adminEmail: '',
-        adminFirstName: '',
-        adminLastName: '',
-        addressLine1: '',
-        addressLine2: '',
-        postalCode: '',
-        city: '',
-        companyCanton: '',
-        slackWebhookUrl: '',
-        teamsWebhookUrl: '',
-        notifyVacation: false,
-        notifyOvertime: false,
-        customerTrackingEnabled: false,
-        enabledFeatures: [],
-    });
+    const [createWithAdmin, setCreateWithAdmin] = useState(createWithAdminInitialState);
 
     const [editingCompany, setEditingCompany] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState({});
@@ -242,6 +306,7 @@ const CompanyManagementPage = () => {
     const [changelogVersion, setChangelogVersion] = useState('');
     const [changelogTitle, setChangelogTitle] = useState('');
     const [changelogContent, setChangelogContent] = useState('');
+    const getModuleLabel = (key, fallback = FEATURE_LABEL_MAP[key] || key) => t(`companyManagement.modules.${key}`, fallback);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -251,30 +316,99 @@ const CompanyManagementPage = () => {
     const quickCreateRef = useRef(null);
     const advancedCreateRef = useRef(null);
     const companiesRef = useRef(null);
+    const companyRefreshInFlightRef = useRef(false);
+    const companiesLoadedRef = useRef(false);
+    const companyPageMountedRef = useRef(false);
+    const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPERADMIN');
 
     useEffect(() => {
-        fetchCompanies();
-        const interval = setInterval(fetchCompanies, 30000);
-        return () => clearInterval(interval);
+        companyPageMountedRef.current = true;
+        void fetchCompanies({ initial: true });
+        const interval = setInterval(() => {
+            void fetchCompanies();
+        }, 30000);
+        return () => {
+            companyPageMountedRef.current = false;
+            clearInterval(interval);
+        };
     }, []);
 
-    async function fetchCompanies() {
-        setLoading(true);
-        setError('');
+    useEffect(() => {
+        if (isSuperAdmin && !isAnalyticsExcluded()) {
+            setAnalyticsExcluded(true);
+        }
+        setAnalyticsExcludedState(isAnalyticsExcluded());
+    }, [isSuperAdmin]);
+
+    useEffect(() => {
+        if (!isSuperAdmin) {
+            setAnalyticsLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+        async function fetchAnalyticsSummary() {
+            setAnalyticsLoading(true);
+            setAnalyticsError('');
+            try {
+                const [summaryRes, excludedIpsRes] = await Promise.all([
+                    api.get(`/api/superadmin/analytics/summary?days=${analyticsDays}`),
+                    api.get('/api/superadmin/analytics/excluded-ips'),
+                ]);
+                if (isMounted) {
+                    setAnalyticsSummary(summaryRes.data || null);
+                    setAnalyticsExcludedIps(Array.isArray(excludedIpsRes.data) ? excludedIpsRes.data : []);
+                }
+            } catch (err) {
+                console.error('Error fetching analytics summary:', err);
+                if (isMounted) {
+                    setAnalyticsError('Analytics konnten nicht geladen werden');
+                }
+            } finally {
+                if (isMounted) {
+                    setAnalyticsLoading(false);
+                }
+            }
+        }
+
+        fetchAnalyticsSummary();
+        return () => {
+            isMounted = false;
+        };
+    }, [analyticsDays, isSuperAdmin]);
+
+    async function fetchCompanies({ initial = false } = {}) {
+        if (companyRefreshInFlightRef.current) {
+            return;
+        }
+
+        companyRefreshInFlightRef.current = true;
+        const showInitialLoading = initial && !companiesLoadedRef.current;
+        if (showInitialLoading) {
+            setLoading(true);
+            setError('');
+        }
+
         try {
             const res = await api.get('/api/superadmin/companies');
             const payload = Array.isArray(res.data)
-                ? res.data.map((company) => ({
-                      ...company,
-                      enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
-                  }))
+                ? res.data.map(normalizeCompanyFeatureAliases)
                 : [];
-            setCompanies(payload);
+            if (companyPageMountedRef.current) {
+                setCompanies(payload);
+                setError('');
+                companiesLoadedRef.current = true;
+            }
         } catch (err) {
             console.error('Error fetching companies:', err);
-            setError('Fehler beim Laden der Firmenliste');
+            if (companyPageMountedRef.current && !companiesLoadedRef.current) {
+                setError('Fehler beim Laden der Firmenliste');
+            }
         } finally {
-            setLoading(false);
+            companyRefreshInFlightRef.current = false;
+            if (companyPageMountedRef.current && showInitialLoading) {
+                setLoading(false);
+            }
         }
     }
 
@@ -291,7 +425,6 @@ const CompanyManagementPage = () => {
         const setters = {
             notifyVacation: setNewNotifyVacation,
             notifyOvertime: setNewNotifyOvertime,
-            customerTrackingEnabled: setNewCustomerTrackingEnabled,
         };
         setters[key]?.(value);
     };
@@ -302,7 +435,7 @@ const CompanyManagementPage = () => {
             const next = current.includes(featureKey)
                 ? current.filter((key) => key !== featureKey)
                 : [...current, featureKey];
-            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+            return withSynchronizedProjectAlias(prev, next);
         });
     };
 
@@ -317,7 +450,7 @@ const CompanyManagementPage = () => {
             const next = current.includes(featureKey)
                 ? current.filter((key) => key !== featureKey)
                 : [...current, featureKey];
-            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+            return withSynchronizedProjectAlias(prev, next);
         });
     };
 
@@ -341,7 +474,7 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: newTeamsWebhook || null,
                 notifyVacation: newNotifyVacation,
                 notifyOvertime: newNotifyOvertime,
-                customerTrackingEnabled: newCustomerTrackingEnabled,
+                customerTrackingEnabled: newEnabledFeatures.includes('projects'),
                 enabledFeatures: newEnabledFeatures,
             };
             await api.post('/api/superadmin/companies', payload);
@@ -355,7 +488,6 @@ const CompanyManagementPage = () => {
             setNewTeamsWebhook('');
             setNewNotifyVacation(false);
             setNewNotifyOvertime(false);
-            setNewCustomerTrackingEnabled(false);
             setNewEnabledFeatures([]);
             setShowQuickAdvanced(false);
             fetchCompanies();
@@ -370,9 +502,22 @@ const CompanyManagementPage = () => {
         if (
             !createWithAdmin.companyName.trim() ||
             !createWithAdmin.adminUsername.trim() ||
-            !createWithAdmin.adminPassword.trim()
+            !createWithAdmin.adminPassword.trim() ||
+            !createWithAdmin.adminPersonnelNumber.trim()
         ) {
-            alert('Bitte Firmenname, Admin-Username und Admin-Passwort angeben');
+            alert('Bitte Firmenname, Admin-Benutzername, Passwort und Personalnummer angeben.');
+            return;
+        }
+        if (createWithAdmin.adminPassword.length < 12) {
+            alert('Das Admin-Passwort muss mindestens 12 Zeichen lang sein.');
+            return;
+        }
+        if (createWithAdmin.adminCountry === 'CH' && !createWithAdmin.adminTarifCode.trim()) {
+            alert('Bitte für die Schweiz einen Tarifcode angeben.');
+            return;
+        }
+        if (createWithAdmin.adminCountry === 'DE' && !createWithAdmin.adminTaxClass.trim()) {
+            alert('Bitte für Deutschland eine Steuerklasse angeben.');
             return;
         }
 
@@ -384,6 +529,23 @@ const CompanyManagementPage = () => {
                 adminEmail: createWithAdmin.adminEmail,
                 adminFirstName: createWithAdmin.adminFirstName,
                 adminLastName: createWithAdmin.adminLastName,
+                adminDepartment: createWithAdmin.adminDepartment,
+                adminCountry: createWithAdmin.adminCountry,
+                adminTaxClass:
+                    createWithAdmin.adminCountry === 'DE'
+                        ? createWithAdmin.adminTaxClass.trim()
+                        : null,
+                adminTarifCode:
+                    createWithAdmin.adminCountry === 'CH'
+                        ? createWithAdmin.adminTarifCode.trim()
+                        : null,
+                adminCanton:
+                    createWithAdmin.adminCountry === 'CH'
+                        ? createWithAdmin.adminCanton.trim().toUpperCase() || null
+                        : null,
+                adminPersonnelNumber: createWithAdmin.adminPersonnelNumber.trim(),
+                adminIncludeInTimeTracking: createWithAdmin.adminIncludeInTimeTracking,
+                adminPmsAccess: createWithAdmin.adminPmsAccess,
                 addressLine1: createWithAdmin.addressLine1.trim() || null,
                 addressLine2: createWithAdmin.addressLine2.trim() || null,
                 postalCode: createWithAdmin.postalCode.trim() || null,
@@ -393,34 +555,16 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
                 notifyVacation: createWithAdmin.notifyVacation,
                 notifyOvertime: createWithAdmin.notifyOvertime,
-                customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
+                customerTrackingEnabled: createWithAdmin.enabledFeatures.includes('projects'),
                 enabledFeatures: createWithAdmin.enabledFeatures,
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
             console.log('Created Company + Admin:', res.data);
 
-            setCreateWithAdmin({
-                companyName: '',
-                adminUsername: '',
-                adminPassword: '',
-                adminEmail: '',
-                adminFirstName: '',
-                adminLastName: '',
-                addressLine1: '',
-                addressLine2: '',
-                postalCode: '',
-                city: '',
-                companyCanton: '',
-                slackWebhookUrl: '',
-                teamsWebhookUrl: '',
-                notifyVacation: false,
-                notifyOvertime: false,
-                customerTrackingEnabled: false,
-                enabledFeatures: [],
-            });
+            setCreateWithAdmin(createWithAdminInitialState());
 
-            fetchCompanies();
+            void fetchCompanies();
             alert('Firma + AdminUser wurden erfolgreich erstellt.');
         } catch (err) {
             console.error('Error create-with-admin:', err);
@@ -469,8 +613,9 @@ const CompanyManagementPage = () => {
     };
 
     function startEdit(company) {
+        const normalizedCompany = normalizeCompanyFeatureAliases(company);
         setEditingCompany({
-            ...company,
+            ...normalizedCompany,
             cantonAbbreviation: company.cantonAbbreviation || '',
             addressLine1: company.addressLine1 || '',
             addressLine2: company.addressLine2 || '',
@@ -480,8 +625,6 @@ const CompanyManagementPage = () => {
             teamsWebhookUrl: company.teamsWebhookUrl || '',
             notifyVacation: company.notifyVacation || false,
             notifyOvertime: company.notifyOvertime || false,
-            customerTrackingEnabled: company.customerTrackingEnabled || false,
-            enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
         });
     }
 
@@ -502,7 +645,7 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: editingCompany.teamsWebhookUrl,
                 notifyVacation: editingCompany.notifyVacation,
                 notifyOvertime: editingCompany.notifyOvertime,
-                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
+                customerTrackingEnabled: editingCompany.enabledFeatures.includes('projects'),
                 enabledFeatures: editingCompany.enabledFeatures || [],
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
@@ -576,23 +719,80 @@ const CompanyManagementPage = () => {
         });
     }, [companies, searchTerm, statusFilter]);
 
+    const maxDailyPageViews = useMemo(() => {
+        const daily = analyticsSummary?.daily || [];
+        return Math.max(1, ...daily.map((point) => Number(point.pageViews || 0)));
+    }, [analyticsSummary]);
+
+    const handleAnalyticsExcludedChange = (event) => {
+        const excluded = event.target.checked;
+        setAnalyticsExcluded(excluded);
+        setAnalyticsExcludedState(excluded);
+    };
+
+    const refreshAnalyticsExcludedIps = async () => {
+        const res = await api.get('/api/superadmin/analytics/excluded-ips');
+        setAnalyticsExcludedIps(Array.isArray(res.data) ? res.data : []);
+    };
+
+    const handleAddAnalyticsExcludedIp = async (event) => {
+        event.preventDefault();
+        const ipAddress = analyticsIpAddressInput.trim();
+        if (!ipAddress) {
+            setAnalyticsIpError('Bitte eine IP-Adresse eingeben.');
+            return;
+        }
+
+        setAnalyticsIpSaving(true);
+        setAnalyticsIpError('');
+        try {
+            await api.post('/api/superadmin/analytics/excluded-ips', {
+                ipAddress,
+                label: analyticsIpLabelInput.trim() || null,
+            });
+            setAnalyticsIpAddressInput('');
+            setAnalyticsIpLabelInput('');
+            await refreshAnalyticsExcludedIps();
+        } catch (err) {
+            console.error('Error saving analytics excluded IP:', err);
+            setAnalyticsIpError(err.response?.data?.message || 'IP-Adresse konnte nicht gespeichert werden.');
+        } finally {
+            setAnalyticsIpSaving(false);
+        }
+    };
+
+    const handleRemoveAnalyticsExcludedIp = async (entry) => {
+        if (!entry?.id || entry.configured) {
+            return;
+        }
+
+        setAnalyticsIpError('');
+        try {
+            await api.delete(`/api/superadmin/analytics/excluded-ips/${entry.id}`);
+            await refreshAnalyticsExcludedIps();
+        } catch (err) {
+            console.error('Error removing analytics excluded IP:', err);
+            setAnalyticsIpError('IP-Filter konnte nicht entfernt werden.');
+        }
+    };
+
     return (
         <div className="company-management-page scoped-company">
             <Navbar />
             <div className="cmp-container">
                 <header className="cmp-topbar">
                     <div className="cmp-breadcrumb">
-                        <span className="cmp-breadcrumb__title">🏢 Firmenverwaltung</span>
+                        <span className="cmp-breadcrumb__title">{t('companyManagement.title', 'Firmenverwaltung')}</span>
                         <span className="cmp-breadcrumb__subtitle">SuperAdmin</span>
                     </div>
                     <div className="cmp-topbar-actions">
                         <div className="cmp-search">
                             <input
                                 type="text"
-                                placeholder="Firma suchen…"
+                                placeholder={t('companyManagement.searchPlaceholder', 'Firma suchen...')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                aria-label="Firma suchen"
+                                aria-label={t('companyManagement.searchAria', 'Firma suchen')}
                             />
                         </div>
                         <button
@@ -603,7 +803,7 @@ const CompanyManagementPage = () => {
                                 setShowQuickAdvanced(false);
                             }}
                         >
-                            Neue Firma
+                            {t('companyManagement.newCompany', 'Neue Firma')}
                         </button>
                         <button
                             type="button"
@@ -612,13 +812,13 @@ const CompanyManagementPage = () => {
                                 advancedCreateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }}
                         >
-                            Neue Firma + Admin
+                            {t('companyManagement.newCompanyWithAdmin', 'Neue Firma + Admin')}
                         </button>
                         <button
                             type="button"
                             className={`cmp-icon-button${showFilterBar ? ' is-active' : ''}`}
                             onClick={() => setShowFilterBar((prev) => !prev)}
-                            aria-label="Filter anzeigen"
+                            aria-label={t('companyManagement.showFilters', 'Filter anzeigen')}
                             aria-pressed={showFilterBar}
                         >
                             <span aria-hidden="true">⚙️</span>
@@ -628,7 +828,7 @@ const CompanyManagementPage = () => {
 
                 {showFilterBar && (
                     <div className="cmp-filter-bar">
-                        <span className="cmp-filter-label">Status:</span>
+                        <span className="cmp-filter-label">{t('common.status', 'Status')}:</span>
                         <div className="cmp-filter-tabs">
                             {STATUS_FILTERS.map((option) => (
                                 <button
@@ -637,7 +837,7 @@ const CompanyManagementPage = () => {
                                     className={`cmp-filter-tab${statusFilter === option.key ? ' is-active' : ''}`}
                                     onClick={() => setStatusFilter(option.key)}
                                 >
-                                    {option.label}
+                                    {t(`companyManagement.status.${option.key}`, option.label)}
                                 </button>
                             ))}
                         </div>
@@ -650,17 +850,220 @@ const CompanyManagementPage = () => {
                     <div className="cmp-state cmp-state--error">{error}</div>
                 ) : (
                     <>
+                        {isSuperAdmin && (
+                            <section className="cmp-section cmp-section--analytics">
+                                <div className="cmp-section__header cmp-section__header--analytics">
+                                    <div>
+                                        <h3>{t('companyManagement.analytics.title', 'Chrono Analytics')}</h3>
+                                        <p>
+                                            {t(
+                                                'companyManagement.analytics.hint',
+                                                'Eigene Seitenaufrufe und Klicks, ohne externe Tracking-Dienste.'
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="cmp-analytics-controls">
+                                        <select
+                                            value={analyticsDays}
+                                            onChange={(event) => setAnalyticsDays(Number(event.target.value))}
+                                            aria-label={t('companyManagement.analytics.period', 'Zeitraum')}
+                                        >
+                                            <option value={7}>7 Tage</option>
+                                            <option value={14}>14 Tage</option>
+                                            <option value={30}>30 Tage</option>
+                                            <option value={90}>90 Tage</option>
+                                        </select>
+                                        <label className="cmp-toggle cmp-analytics-optout">
+                                            <input
+                                                type="checkbox"
+                                                checked={analyticsExcluded}
+                                                onChange={handleAnalyticsExcludedChange}
+                                            />
+                                            <span>{t('companyManagement.analytics.optOut', 'Diesen Browser nicht zaehlen')}</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="cmp-analytics-ip-note">
+                                    {t(
+                                        'companyManagement.analytics.ipExcluded',
+                                        'Deine IP 146.185.87.126 wird serverseitig nicht gezaehlt.'
+                                    )}
+                                </div>
+
+                                <div className="cmp-analytics-ip-manager">
+                                    <form className="cmp-analytics-ip-form" onSubmit={handleAddAnalyticsExcludedIp}>
+                                        <label className="cmp-field">
+                                            <span>{t('companyManagement.analytics.excludedIp', 'IP ausschliessen')}</span>
+                                            <input
+                                                type="text"
+                                                value={analyticsIpAddressInput}
+                                                onChange={(event) => setAnalyticsIpAddressInput(event.target.value)}
+                                                placeholder="203.0.113.10"
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>{t('companyManagement.analytics.ipLabel', 'Notiz')}</span>
+                                            <input
+                                                type="text"
+                                                value={analyticsIpLabelInput}
+                                                onChange={(event) => setAnalyticsIpLabelInput(event.target.value)}
+                                                placeholder={t('companyManagement.analytics.ipLabelPlaceholder', 'z.B. Buero, Zuhause')}
+                                            />
+                                        </label>
+                                        <button
+                                            type="submit"
+                                            className="cmp-button cmp-button--primary"
+                                            disabled={analyticsIpSaving}
+                                        >
+                                            {analyticsIpSaving
+                                                ? t('saving', 'Speichern...')
+                                                : t('companyManagement.analytics.addIp', 'Hinzufuegen')}
+                                        </button>
+                                    </form>
+                                    {analyticsIpError && (
+                                        <div className="cmp-analytics-ip-error">{analyticsIpError}</div>
+                                    )}
+                                    <div className="cmp-analytics-ip-list">
+                                        {analyticsExcludedIps.length === 0 ? (
+                                            <p className="cmp-module-empty">Keine ausgeschlossenen IPs hinterlegt.</p>
+                                        ) : (
+                                            analyticsExcludedIps.map((entry) => (
+                                                <div className="cmp-analytics-ip-row" key={`${entry.configured ? 'cfg' : 'db'}-${entry.ipAddress}`}>
+                                                    <div>
+                                                        <strong>{entry.ipAddress}</strong>
+                                                        <span>
+                                                            {entry.label || (entry.configured ? 'Konfiguration' : 'Manuell')}
+                                                        </span>
+                                                    </div>
+                                                    {entry.configured ? (
+                                                        <span className="cmp-tag">Fix</span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="cmp-button cmp-button--danger"
+                                                            onClick={() => handleRemoveAnalyticsExcludedIp(entry)}
+                                                        >
+                                                            {t('delete', 'Loeschen')}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {analyticsLoading ? (
+                                    <div className="cmp-state">{t('loading', 'Lade...')}</div>
+                                ) : analyticsError ? (
+                                    <div className="cmp-state cmp-state--error">{analyticsError}</div>
+                                ) : (
+                                    <>
+                                        <div className="cmp-analytics-kpis">
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Aufrufe</span>
+                                                <strong>{formatNumber(analyticsSummary?.totalPageViews)}</strong>
+                                                <small>{formatNumber(analyticsSummary?.todayPageViews)} heute</small>
+                                            </div>
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Besucher</span>
+                                                <strong>{formatNumber(analyticsSummary?.uniqueVisitors)}</strong>
+                                                <small>eindeutige Browser</small>
+                                            </div>
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Klicks</span>
+                                                <strong>{formatNumber(analyticsSummary?.totalClicks)}</strong>
+                                                <small>{formatNumber(analyticsSummary?.todayClicks)} heute</small>
+                                            </div>
+                                        </div>
+
+                                        <div className="cmp-analytics-grid">
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Verlauf</h4>
+                                                <div className="cmp-analytics-bars">
+                                                    {(analyticsSummary?.daily || []).map((point) => {
+                                                        const height = Math.max(
+                                                            6,
+                                                            Math.round((Number(point.pageViews || 0) / maxDailyPageViews) * 100)
+                                                        );
+                                                        return (
+                                                            <div className="cmp-analytics-bar" key={point.date}>
+                                                                <span
+                                                                    className="cmp-analytics-bar__fill"
+                                                                    style={{ height: `${height}%` }}
+                                                                    title={`${formatShortDate(point.date)}: ${formatNumber(point.pageViews)} Aufrufe`}
+                                                                />
+                                                                <span className="cmp-analytics-bar__label">{formatShortDate(point.date)}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Top Seiten</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.topPages || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Seitenaufrufe erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.topPages.map((page) => (
+                                                            <div className="cmp-analytics-row" key={page.path}>
+                                                                <span>{page.path}</span>
+                                                                <strong>{formatNumber(page.pageViews)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Top Klicks</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.topClicks || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Klicks erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.topClicks.map((click) => (
+                                                            <div className="cmp-analytics-row" key={`${click.path}-${click.label}`}>
+                                                                <span>{click.label}</span>
+                                                                <strong>{formatNumber(click.clicks)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Quellen</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.referrers || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Quellen erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.referrers.map((referrer) => (
+                                                            <div className="cmp-analytics-row" key={referrer.referrer}>
+                                                                <span>{referrer.referrer}</span>
+                                                                <strong>{formatNumber(referrer.pageViews)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </section>
+                        )}
+
                         <section className="cmp-section cmp-section--quick" ref={quickCreateRef}>
                             <div className="cmp-section__header">
                                 <div>
-                                    <h3>Neue Firma anlegen</h3>
-                                    <p>Lege mit drei Feldern in Sekunden eine Firma an.</p>
+                                    <h3>{t('companyManagement.quickCreateTitle', 'Neue Firma anlegen')}</h3>
+                                    <p>{t('companyManagement.quickCreateHint', 'Lege mit drei Feldern in Sekunden eine Firma an.')}</p>
                                 </div>
                             </div>
                             <form onSubmit={handleCreateCompany} className="cmp-form">
                                 <div className="cmp-form-grid cmp-form-grid--compact">
                                     <label className="cmp-field">
-                                        <span>Firmenname</span>
+                                        <span>{t('companyManagement.companyName', 'Firmenname')}</span>
                                         <input
                                             type="text"
                                             value={newCompanyName}
@@ -669,7 +1072,7 @@ const CompanyManagementPage = () => {
                                         />
                                     </label>
                                     <label className="cmp-field">
-                                        <span>Kanton</span>
+                                        <span>{t('companyManagement.canton', 'Kanton')}</span>
                                         <input
                                             type="text"
                                             value={newCompanyCanton}
@@ -679,7 +1082,7 @@ const CompanyManagementPage = () => {
                                         />
                                     </label>
                                     <label className="cmp-field">
-                                        <span>Ort</span>
+                                        <span>{t('companyManagement.city', 'Ort')}</span>
                                         <input
                                             type="text"
                                             value={newCity}
@@ -693,14 +1096,16 @@ const CompanyManagementPage = () => {
                                         className="cmp-text-link"
                                         onClick={() => setShowQuickAdvanced((prev) => !prev)}
                                     >
-                                        {showQuickAdvanced ? 'Erweiterte Felder ausblenden' : 'Erweiterte Felder anzeigen'}
+                                        {showQuickAdvanced
+                                            ? t('companyManagement.hideAdvancedFields', 'Erweiterte Felder ausblenden')
+                                            : t('companyManagement.showAdvancedFields', 'Erweiterte Felder anzeigen')}
                                     </button>
                                 </div>
                                 {showQuickAdvanced && (
                                     <div className="cmp-collapsible">
                                         <div className="cmp-form-grid cmp-form-grid--two">
                                             <label className="cmp-field">
-                                                <span>Adresse</span>
+                                                <span>{t('companyManagement.address', 'Adresse')}</span>
                                                 <input
                                                     type="text"
                                                     value={newAddressLine1}
@@ -708,7 +1113,7 @@ const CompanyManagementPage = () => {
                                                 />
                                             </label>
                                             <label className="cmp-field">
-                                                <span>Adresszusatz</span>
+                                                <span>{t('companyManagement.addressLine2', 'Adresszusatz')}</span>
                                                 <input
                                                     type="text"
                                                     value={newAddressLine2}
@@ -716,7 +1121,7 @@ const CompanyManagementPage = () => {
                                                 />
                                             </label>
                                             <label className="cmp-field">
-                                                <span>PLZ</span>
+                                                <span>{t('companyManagement.postalCode', 'PLZ')}</span>
                                                 <input
                                                     type="text"
                                                     value={newPostalCode}
@@ -746,15 +1151,15 @@ const CompanyManagementPage = () => {
                                             toggles={{
                                                 notifyVacation: newNotifyVacation,
                                                 notifyOvertime: newNotifyOvertime,
-                                                customerTrackingEnabled: newCustomerTrackingEnabled,
                                             }}
                                             onToggleBoolean={handleQuickBooleanToggle}
+                                            t={t}
                                         />
                                     </div>
                                 )}
                                 <div className="cmp-form-actions">
                                     <button type="submit" className="cmp-button cmp-button--primary">
-                                        Firma erstellen
+                                        {t('companyManagement.createCompany', 'Firma erstellen')}
                                     </button>
                                 </div>
                             </form>
@@ -763,16 +1168,20 @@ const CompanyManagementPage = () => {
                         <section className="cmp-section cmp-section--advanced" ref={advancedCreateRef}>
                             <div className="cmp-section__header">
                                 <div>
-                                    <h3>Neue Firma + Admin anlegen</h3>
-                                    <p>Alle Daten in einem strukturierten Formular erfassen.</p>
+                                    <h3>{t('companyManagement.advancedCreateTitle', 'Neue Firma + Admin anlegen')}</h3>
+                                    <p>{t('companyManagement.advancedCreateHint', 'Alle Daten in einem strukturierten Formular erfassen.')}</p>
                                 </div>
                             </div>
-                            <form onSubmit={handleCreateWithAdmin} className="cmp-form">
+                            <form
+                                onSubmit={handleCreateWithAdmin}
+                                className="cmp-form"
+                                data-testid="company-admin-create-form"
+                            >
                                 <div className="cmp-form-group">
-                                    <h4>Firmendaten</h4>
+                                    <h4>{t('companyManagement.companyData', 'Firmendaten')}</h4>
                                     <div className="cmp-form-grid cmp-form-grid--two">
                                         <label className="cmp-field">
-                                            <span>Firmenname</span>
+                                            <span>{t('companyManagement.companyName', 'Firmenname')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.companyName}
@@ -786,7 +1195,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Kanton</span>
+                                            <span>{t('companyManagement.canton', 'Kanton')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.companyCanton}
@@ -801,7 +1210,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Adresse</span>
+                                            <span>{t('companyManagement.address', 'Adresse')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.addressLine1}
@@ -814,7 +1223,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Adresszusatz</span>
+                                            <span>{t('companyManagement.addressLine2', 'Adresszusatz')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.addressLine2}
@@ -827,7 +1236,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>PLZ</span>
+                                            <span>{t('companyManagement.postalCode', 'PLZ')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.postalCode}
@@ -840,7 +1249,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Ort</span>
+                                            <span>{t('companyManagement.city', 'Ort')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.city}
@@ -882,21 +1291,21 @@ const CompanyManagementPage = () => {
                                 </div>
 
                                 <div className="cmp-form-group">
-                                    <h4>Module freischalten</h4>
+                                    <h4>{t('companyManagement.modulePicker.title', 'Module freischalten')}</h4>
                                     <ModulePicker
                                         selectedFeatures={createWithAdmin.enabledFeatures}
                                         onToggleFeature={toggleCreateWithAdminFeature}
                                         toggles={{
                                             notifyVacation: createWithAdmin.notifyVacation,
                                             notifyOvertime: createWithAdmin.notifyOvertime,
-                                            customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
                                         }}
                                         onToggleBoolean={handleCreateWithAdminBooleanToggle}
+                                        t={t}
                                     />
                                 </div>
 
                                 <div className="cmp-form-group">
-                                    <h4>Admin-Daten</h4>
+                                    <h4>{t('companyManagement.adminData', 'Admin-Daten')}</h4>
                                     <div className="cmp-form-grid cmp-form-grid--two">
                                         <label className="cmp-field">
                                             <span>Admin E-Mail</span>
@@ -912,7 +1321,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Admin Benutzername</span>
+                                            <span>{t('companyManagement.adminUsername', 'Admin Benutzername')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.adminUsername}
@@ -926,7 +1335,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Admin Passwort</span>
+                                            <span>{t('companyManagement.adminPassword', 'Admin Passwort')}</span>
                                             <input
                                                 type="password"
                                                 value={createWithAdmin.adminPassword}
@@ -936,11 +1345,13 @@ const CompanyManagementPage = () => {
                                                         adminPassword: e.target.value,
                                                     })
                                                 }
+                                                minLength={12}
+                                                autoComplete="new-password"
                                                 required
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Vorname</span>
+                                            <span>{t('userManagement.firstName', 'Vorname')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.adminFirstName}
@@ -953,7 +1364,7 @@ const CompanyManagementPage = () => {
                                             />
                                         </label>
                                         <label className="cmp-field">
-                                            <span>Nachname</span>
+                                            <span>{t('userManagement.lastName', 'Nachname')}</span>
                                             <input
                                                 type="text"
                                                 value={createWithAdmin.adminLastName}
@@ -965,12 +1376,132 @@ const CompanyManagementPage = () => {
                                                 }
                                             />
                                         </label>
+                                        <label className="cmp-field">
+                                            <span>Abteilung / Funktion</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminDepartment}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminDepartment: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Personalnummer</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminPersonnelNumber}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminPersonnelNumber: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Land</span>
+                                            <select
+                                                value={createWithAdmin.adminCountry}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin((previous) => ({
+                                                        ...previous,
+                                                        adminCountry: e.target.value,
+                                                        adminTaxClass: e.target.value === 'DE' ? previous.adminTaxClass : '',
+                                                        adminTarifCode: e.target.value === 'CH' ? previous.adminTarifCode || 'A0' : '',
+                                                        adminCanton: e.target.value === 'CH' ? previous.adminCanton || 'SG' : '',
+                                                    }))
+                                                }
+                                            >
+                                                <option value="CH">Schweiz</option>
+                                                <option value="DE">Deutschland</option>
+                                            </select>
+                                        </label>
+                                        {createWithAdmin.adminCountry === 'CH' ? (
+                                            <>
+                                                <label className="cmp-field">
+                                                    <span>Tarifcode</span>
+                                                    <input
+                                                        type="text"
+                                                        value={createWithAdmin.adminTarifCode}
+                                                        onChange={(e) =>
+                                                            setCreateWithAdmin({
+                                                                ...createWithAdmin,
+                                                                adminTarifCode: e.target.value,
+                                                            })
+                                                        }
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="cmp-field">
+                                                    <span>Wohnkanton</span>
+                                                    <input
+                                                        type="text"
+                                                        value={createWithAdmin.adminCanton}
+                                                        onChange={(e) =>
+                                                            setCreateWithAdmin({
+                                                                ...createWithAdmin,
+                                                                adminCanton: e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        maxLength={2}
+                                                    />
+                                                </label>
+                                            </>
+                                        ) : (
+                                            <label className="cmp-field">
+                                                <span>Steuerklasse</span>
+                                                <input
+                                                    type="text"
+                                                    value={createWithAdmin.adminTaxClass}
+                                                    onChange={(e) =>
+                                                        setCreateWithAdmin({
+                                                            ...createWithAdmin,
+                                                            adminTaxClass: e.target.value,
+                                                        })
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                    <div className="cmp-admin-options">
+                                        <label className="cmp-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={createWithAdmin.adminPmsAccess}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminPmsAccess: e.target.checked,
+                                                    })
+                                                }
+                                            />
+                                            <span>Hotelverwaltung (PMS) verwalten</span>
+                                        </label>
+                                        <label className="cmp-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={createWithAdmin.adminIncludeInTimeTracking}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminIncludeInTimeTracking: e.target.checked,
+                                                    })
+                                                }
+                                            />
+                                            <span>Admin in der Zeiterfassung führen</span>
+                                        </label>
                                     </div>
                                 </div>
 
                                 <div className="cmp-form-actions">
                                     <button type="submit" className="cmp-button cmp-button--primary">
-                                        Firma + Admin erstellen
+                                        {t('companyManagement.createCompanyWithAdmin', 'Firma + Admin erstellen')}
                                     </button>
                                 </div>
                             </form>
@@ -979,14 +1510,14 @@ const CompanyManagementPage = () => {
                         <section className="cmp-section cmp-section--companies" ref={companiesRef}>
                             <div className="cmp-section__header">
                                 <div>
-                                    <h3>Bestehende Firmen</h3>
-                                    <p>Alle Kundenkonten mit Status, Modulen und Aktionen.</p>
+                                    <h3>{t('companyManagement.existingCompanies', 'Bestehende Firmen')}</h3>
+                                    <p>{t('companyManagement.existingCompaniesHint', 'Alle Kundenkonten mit Status, Modulen und Aktionen.')}</p>
                                 </div>
                             </div>
 
                             {filteredCompanies.length === 0 ? (
                                 <div className="cmp-empty-state">
-                                    <p>Keine Firmen gefunden. Passe deine Suche oder Filter an.</p>
+                                    <p>{t('companyManagement.noCompaniesFound', 'Keine Firmen gefunden. Passe deine Suche oder Filter an.')}</p>
                                 </div>
                             ) : (
                                 <div className="cmp-company-grid">
@@ -995,30 +1526,33 @@ const CompanyManagementPage = () => {
                                         const inactiveFeatures = OPTIONAL_FEATURES.map((feature) => feature.key).filter(
                                             (key) => !activeFeatures.includes(key)
                                         );
-                                        const activeBooleanKeys = ['notifyVacation', 'notifyOvertime', 'customerTrackingEnabled'].filter(
+                                        const activeBooleanKeys = ['notifyVacation', 'notifyOvertime'].filter(
                                             (key) => Boolean(co[key])
                                         );
                                         const activeModules = [
                                             ...activeBooleanKeys.map((key) => ({
                                                 key,
-                                                label:
+                                                label: getModuleLabel(
+                                                    key,
                                                     MODULE_CATEGORIES.find((category) =>
                                                         category.items.some((item) => item.key === key)
-                                                    )?.items.find((item) => item.key === key)?.label || key,
+                                                    )?.items.find((item) => item.key === key)?.label || key
+                                                ),
                                                 category: 'core',
                                             })),
                                             ...activeFeatures.map((key) => ({
                                                 key,
-                                                label: FEATURE_LABEL_MAP[key] || key,
+                                                label: getModuleLabel(key),
                                                 category: CATEGORY_BY_FEATURE[key] || 'business',
                                             })),
                                         ];
 
+                                        const statusTone = co.canceled ? 'canceled' : co.active ? 'active' : 'inactive';
                                         const statusLabel = co.canceled
-                                            ? 'Gekündigt'
+                                            ? t('companyManagement.status.canceled', 'Gekündigt')
                                             : co.active
-                                            ? 'Aktiv'
-                                            : 'Deaktiviert';
+                                            ? t('companyManagement.status.active', 'Aktiv')
+                                            : t('companyManagement.status.inactive', 'Deaktiviert');
 
                                         return (
                                             <article key={co.id} className="cmp-company-card">
@@ -1026,7 +1560,7 @@ const CompanyManagementPage = () => {
                                                     <form onSubmit={handleSaveEdit} className="cmp-edit-form">
                                                         <div className="cmp-edit-form__grid">
                                                             <label className="cmp-field">
-                                                                <span>Firmenname</span>
+                                                                <span>{t('companyManagement.companyName', 'Firmenname')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.name}
@@ -1040,7 +1574,7 @@ const CompanyManagementPage = () => {
                                                                 />
                                                             </label>
                                                             <label className="cmp-field">
-                                                                <span>Kanton</span>
+                                                                <span>{t('companyManagement.canton', 'Kanton')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.cantonAbbreviation}
@@ -1055,7 +1589,7 @@ const CompanyManagementPage = () => {
                                                                 />
                                                             </label>
                                                             <label className="cmp-field">
-                                                                <span>Adresse</span>
+                                                                <span>{t('companyManagement.address', 'Adresse')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.addressLine1}
@@ -1068,7 +1602,7 @@ const CompanyManagementPage = () => {
                                                                 />
                                                             </label>
                                                             <label className="cmp-field">
-                                                                <span>Adresszusatz</span>
+                                                                <span>{t('companyManagement.addressLine2', 'Adresszusatz')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.addressLine2}
@@ -1081,7 +1615,7 @@ const CompanyManagementPage = () => {
                                                                 />
                                                             </label>
                                                             <label className="cmp-field">
-                                                                <span>PLZ</span>
+                                                                <span>{t('companyManagement.postalCode', 'PLZ')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.postalCode}
@@ -1094,7 +1628,7 @@ const CompanyManagementPage = () => {
                                                                 />
                                                             </label>
                                                             <label className="cmp-field">
-                                                                <span>Ort</span>
+                                                                <span>{t('companyManagement.city', 'Ort')}</span>
                                                                 <input
                                                                     type="text"
                                                                     value={editingCompany.city}
@@ -1140,9 +1674,9 @@ const CompanyManagementPage = () => {
                                                             toggles={{
                                                                 notifyVacation: editingCompany.notifyVacation,
                                                                 notifyOvertime: editingCompany.notifyOvertime,
-                                                                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
                                                             }}
                                                             onToggleBoolean={handleEditingBooleanToggle}
+                                                            t={t}
                                                         />
 
                                                         <div className="cmp-edit-actions">
@@ -1157,7 +1691,7 @@ const CompanyManagementPage = () => {
                                                                         })
                                                                     }
                                                                 />
-                                                                <span>Aktiv</span>
+                                                                <span>{t('companyManagement.status.active', 'Aktiv')}</span>
                                                             </label>
                                                             <div className="cmp-edit-actions__buttons">
                                                                 <button
@@ -1165,10 +1699,10 @@ const CompanyManagementPage = () => {
                                                                     className="cmp-button"
                                                                     onClick={() => setEditingCompany(null)}
                                                                 >
-                                                                    Abbrechen
+                                                                    {t('cancel', 'Abbrechen')}
                                                                 </button>
                                                                 <button type="submit" className="cmp-button cmp-button--primary">
-                                                                    Speichern
+                                                                    {t('save', 'Speichern')}
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1179,11 +1713,13 @@ const CompanyManagementPage = () => {
                                                             <div>
                                                                 <h4>{co.name}</h4>
                                                                 <div className="cmp-company-card__meta">
-                                                                    <span className={`cmp-status-badge cmp-status-badge--${statusLabel.toLowerCase()}`}>
+                                                                    <span className={`cmp-status-badge cmp-status-badge--${statusTone}`}>
                                                                         {statusLabel}
                                                                     </span>
                                                                     {typeof co.userCount === 'number' && (
-                                                                        <span className="cmp-tag cmp-tag--users">{co.userCount} Nutzer</span>
+                                                                        <span className="cmp-tag cmp-tag--users">
+                                                                            {t('companyManagement.userCount', '{{count}} Nutzer', { count: co.userCount })}
+                                                                        </span>
                                                                     )}
                                                                     {co.city && <span className="cmp-tag">{co.city}</span>}
                                                                     {co.cantonAbbreviation && <span className="cmp-tag">{co.cantonAbbreviation}</span>}
@@ -1192,13 +1728,13 @@ const CompanyManagementPage = () => {
                                                             </div>
                                                             <div className="cmp-company-card__actions">
                                                                 <button type="button" className="cmp-button" onClick={() => startEdit(co)}>
-                                                                    Bearbeiten
+                                                                    {t('edit', 'Bearbeiten')}
                                                                 </button>
                                                                 <button type="button" className="cmp-button" onClick={() => togglePayments(co)}>
-                                                                    Zahlungen
+                                                                    {t('companyManagement.payments', 'Zahlungen')}
                                                                 </button>
                                                                 <button type="button" className="cmp-button" onClick={() => toggleActive(co)}>
-                                                                    {co.active ? 'Deaktivieren' : 'Aktivieren'}
+                                                                    {co.active ? t('companyManagement.deactivate', 'Deaktivieren') : t('companyManagement.activate', 'Aktivieren')}
                                                                 </button>
                                                                 <button
                                                                     type="button"
@@ -1211,21 +1747,23 @@ const CompanyManagementPage = () => {
                                                                         )
                                                                     }
                                                                 >
-                                                                    {co.paid ? 'Zahlung zurücksetzen' : 'Zahlung bestätigen'}
+                                                                    {co.paid
+                                                                        ? t('companyManagement.resetPayment', 'Zahlung zurücksetzen')
+                                                                        : t('companyManagement.confirmPayment', 'Zahlung bestätigen')}
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     className="cmp-button cmp-button--danger"
                                                                     onClick={() => handleDeleteCompany(co.id)}
                                                                 >
-                                                                    Löschen
+                                                                    {t('delete', 'Löschen')}
                                                                 </button>
                                                             </div>
                                                         </div>
 
                                                         <div className="cmp-company-card__modules">
                                                             <div>
-                                                                <span className="cmp-module-title">Aktive Module</span>
+                                                                <span className="cmp-module-title">{t('companyManagement.activeModules', 'Aktive Module')}</span>
                                                                 {activeModules.length > 0 ? (
                                                                     <div className="cmp-module-chip-row">
                                                                         {activeModules.map((module) => (
@@ -1238,36 +1776,36 @@ const CompanyManagementPage = () => {
                                                                         ))}
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="cmp-module-empty">Keine Zusatzmodule aktiviert</p>
+                                                                    <p className="cmp-module-empty">{t('companyManagement.noExtraModulesActive', 'Keine Zusatzmodule aktiviert')}</p>
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <span className="cmp-module-title">Verfügbare Module</span>
+                                                                <span className="cmp-module-title">{t('companyManagement.availableModules', 'Verfügbare Module')}</span>
                                                                 {inactiveFeatures.length > 0 ? (
                                                                     <div className="cmp-module-chip-row">
                                                                         {inactiveFeatures.map((key) => (
                                                                             <span key={key} className="cmp-module-chip cmp-module-chip--inactive">
-                                                                                {MODULE_ICON_MAP[key] || '•'} {FEATURE_LABEL_MAP[key] || key}
+                                                                                {MODULE_ICON_MAP[key] || '•'} {getModuleLabel(key)}
                                                                             </span>
                                                                         ))}
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="cmp-module-empty">Alle Module sind aktiviert</p>
+                                                                    <p className="cmp-module-empty">{t('companyManagement.allModulesActive', 'Alle Module sind aktiviert')}</p>
                                                                 )}
                                                             </div>
                                                         </div>
 
                                                         <div className="cmp-company-card__footer">
                                                             <div>
-                                                                <span>Erstellt am</span>
+                                                                <span>{t('companyManagement.createdAt', 'Erstellt am')}</span>
                                                                 <strong>{formatDate(co.createdAt)}</strong>
                                                             </div>
                                                             <div>
-                                                                <span>Zuletzt aktualisiert</span>
+                                                                <span>{t('companyManagement.updatedAt', 'Zuletzt aktualisiert')}</span>
                                                                 <strong>{formatDate(co.updatedAt)}</strong>
                                                             </div>
                                                             <div>
-                                                                <span>Letzte Zahlung</span>
+                                                                <span>{t('companyManagement.lastPayment', 'Letzte Zahlung')}</span>
                                                                 <strong>{formatDate(co.lastPaymentAt || co.lastPaymentDate)}</strong>
                                                             </div>
                                                         </div>
@@ -1278,9 +1816,9 @@ const CompanyManagementPage = () => {
                                                                     <thead>
                                                                         <tr>
                                                                             <th>ID</th>
-                                                                            <th>Betrag</th>
-                                                                            <th>Status</th>
-                                                                            <th>Erstellt</th>
+                                                                            <th>{t('amount', 'Betrag')}</th>
+                                                                            <th>{t('common.status', 'Status')}</th>
+                                                                            <th>{t('companyManagement.created', 'Erstellt')}</th>
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
@@ -1311,8 +1849,8 @@ const CompanyManagementPage = () => {
                             <section className="cmp-section cmp-section--release">
                                 <div className="cmp-section__header">
                                     <div>
-                                        <h3>Release Notes erstellen</h3>
-                                        <p>Dokumentiere Änderungen und veröffentliche sie mit einem Klick.</p>
+                                        <h3>{t('companyManagement.createReleaseNotes', 'Release Notes erstellen')}</h3>
+                                        <p>{t('companyManagement.releaseNotesHint', 'Dokumentiere Änderungen und veröffentliche sie mit einem Klick.')}</p>
                                     </div>
                                 </div>
                                 <form onSubmit={handlePublishChangelog} className="cmp-form">
@@ -1329,23 +1867,23 @@ const CompanyManagementPage = () => {
                                                 />
                                             </label>
                                             <label className="cmp-field">
-                                                <span>Titel</span>
+                                                <span>{t('title', 'Titel')}</span>
                                                 <input
                                                     type="text"
                                                     value={changelogTitle}
                                                     onChange={(e) => setChangelogTitle(e.target.value)}
-                                                    placeholder="Neue Funktionen im Dashboard"
+                                                    placeholder={t('companyManagement.releaseTitlePlaceholder', 'Neue Funktionen im Dashboard')}
                                                     required
                                                 />
                                             </label>
                                         </div>
                                         <div className="cmp-release-grid__right">
                                             <label className="cmp-field">
-                                                <span>Änderungen</span>
+                                                <span>{t('changes', 'Änderungen')}</span>
                                                 <textarea
                                                     value={changelogContent}
                                                     onChange={(e) => setChangelogContent(e.target.value)}
-                                                    placeholder="- Neues Feature: ...\n- Bugfix: ..."
+                                                    placeholder={t('companyManagement.releaseChangesPlaceholder', '- Neues Feature: ...\n- Bugfix: ...')}
                                                     rows={10}
                                                     required
                                                 />
@@ -1354,7 +1892,7 @@ const CompanyManagementPage = () => {
                                     </div>
                                     <div className="cmp-form-actions">
                                         <button type="submit" className="cmp-button cmp-button--primary">
-                                            Release veröffentlichen
+                                            {t('companyManagement.publishRelease', 'Release veröffentlichen')}
                                         </button>
                                     </div>
                                 </form>

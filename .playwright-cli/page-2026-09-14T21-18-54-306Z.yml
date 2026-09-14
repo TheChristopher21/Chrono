@@ -1,0 +1,8 @@
+- generic [ref=f12e2]:
+  - generic [ref=f12e3]: Dashboard wird geladen...
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -119,6 +121,48 @@ class EmploymentModelHistoryServiceTest {
     }
 
     @Test
+    void replaceHistoryFrom_removesAllLaterSnapshotsAndStoresCorrectedState() {
+        User user = new User();
+        user.setIsHourly(true);
+        user.setIsPercentage(false);
+        user.setDailyWorkHours(4.0);
+
+        LocalDate correctedFrom = LocalDate.of(2025, 10, 1);
+        service.replaceHistoryFrom(user, correctedFrom);
+
+        verify(historyRepository).deleteFromDate(user, correctedFrom);
+        ArgumentCaptor<UserEmploymentModelHistory> captor = ArgumentCaptor.forClass(UserEmploymentModelHistory.class);
+        verify(historyRepository).save(captor.capture());
+        assertEquals(correctedFrom, captor.getValue().getEffectiveFrom());
+        assertEquals(EmploymentModelType.HOURLY, captor.getValue().getModelType());
+        assertEquals(4.0, captor.getValue().getDailyWorkHours(), 0.001);
+    }
+
+    @Test
+    void resolveLatestEffectiveFrom_returnsLatestHistoryDate() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2025, 1, 1));
+        UserEmploymentModelHistory current = new UserEmploymentModelHistory();
+        current.setEffectiveFrom(LocalDate.of(2025, 10, 1));
+        when(historyRepository.findFirstByUserOrderByEffectiveFromDesc(eq(user)))
+                .thenReturn(Optional.of(current));
+
+        LocalDate result = service.resolveLatestEffectiveFrom(user);
+
+        assertEquals(LocalDate.of(2025, 10, 1), result);
+    }
+
+    @Test
+    void resolveLatestEffectiveFrom_fallsBackToEntryDateWithoutHistory() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2025, 10, 1));
+        when(historyRepository.findFirstByUserOrderByEffectiveFromDesc(eq(user)))
+                .thenReturn(Optional.empty());
+
+        assertEquals(LocalDate.of(2025, 10, 1), service.resolveLatestEffectiveFrom(user));
+    }
+
+    @Test
     void needsBaselineBefore_returnsTrueWhenEarliestHistoryStartsTooLate() {
         User user = new User();
         UserEmploymentModelHistory first = new UserEmploymentModelHistory();
@@ -150,5 +194,54 @@ class EmploymentModelHistoryServiceTest {
         User snapshot = service.resolveUserSnapshotForDate(user, LocalDate.of(2026, 2, 1));
 
         assertNull(snapshot.getScheduleEffectiveDate());
+    }
+
+    @Test
+    void resolveUserSnapshotsForRange_appliesModelChangesWithoutDailyQueries() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("worker");
+
+        UserEmploymentModelHistory hourly = new UserEmploymentModelHistory();
+        hourly.setModelType(EmploymentModelType.HOURLY);
+        hourly.setEffectiveFrom(LocalDate.of(2026, 1, 1));
+
+        UserEmploymentModelHistory standard = new UserEmploymentModelHistory();
+        standard.setModelType(EmploymentModelType.STANDARD);
+        standard.setEffectiveFrom(LocalDate.of(2026, 1, 3));
+        standard.setDailyWorkHours(8.5);
+
+        when(historyRepository.findByUserOrderByEffectiveFromAsc(user)).thenReturn(List.of(hourly, standard));
+
+        Map<LocalDate, User> snapshots = service.resolveUserSnapshotsForRange(
+                user,
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 4)
+        );
+
+        assertTrue(snapshots.get(LocalDate.of(2026, 1, 2)).getIsHourly());
+        assertEquals(false, snapshots.get(LocalDate.of(2026, 1, 3)).getIsHourly());
+        assertEquals(8.5, snapshots.get(LocalDate.of(2026, 1, 4)).getDailyWorkHours());
+        verify(historyRepository).findByUserOrderByEffectiveFromAsc(user);
+    }
+
+    @Test
+    void resolveCurrentOvertimeStreakStart_returnsFirstNonHourlyDateAfterHourlyPeriod() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2024, 1, 21));
+
+        UserEmploymentModelHistory hourly = new UserEmploymentModelHistory();
+        hourly.setModelType(EmploymentModelType.HOURLY);
+        hourly.setEffectiveFrom(LocalDate.of(2024, 1, 21));
+
+        UserEmploymentModelHistory standard = new UserEmploymentModelHistory();
+        standard.setModelType(EmploymentModelType.STANDARD);
+        standard.setEffectiveFrom(LocalDate.of(2024, 4, 7));
+
+        when(historyRepository.findByUserOrderByEffectiveFromAsc(eq(user))).thenReturn(List.of(hourly, standard));
+
+        LocalDate result = service.resolveCurrentOvertimeStreakStart(user);
+
+        assertEquals(LocalDate.of(2024, 4, 7), result);
     }
 }

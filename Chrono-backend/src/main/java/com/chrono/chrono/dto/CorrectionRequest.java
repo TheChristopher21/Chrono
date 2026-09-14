@@ -39,6 +39,12 @@ public class CorrectionRequest {
     @Column(name = "admin_comment", length = 1000)
     private String adminComment;
 
+    @Column(name = "processed_by_admin_username", length = 255)
+    private String processedByAdminUsername;
+
+    @Column(name = "processed_by_admin_initials", length = 10)
+    private String processedByAdminInitials;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonBackReference("user-correctionRequests")
@@ -93,6 +99,10 @@ public class CorrectionRequest {
     public void setUser(User user) { this.user = user; }
     public String getAdminComment() { return adminComment; }
     public void setAdminComment(String adminComment) { this.adminComment = adminComment; }
+    public String getProcessedByAdminUsername() { return processedByAdminUsername; }
+    public void setProcessedByAdminUsername(String processedByAdminUsername) { this.processedByAdminUsername = processedByAdminUsername; }
+    public String getProcessedByAdminInitials() { return processedByAdminInitials; }
+    public void setProcessedByAdminInitials(String processedByAdminInitials) { this.processedByAdminInitials = processedByAdminInitials; }
     public LocalDate getRequestDate() { return requestDate; }
     public void setRequestDate(LocalDate requestDate) { this.requestDate = requestDate; }
     public String getUserPassword() { return userPassword; }

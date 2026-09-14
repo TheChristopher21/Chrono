@@ -8,6 +8,7 @@ import com.chrono.chrono.services.ComplianceAuditService;
 import com.chrono.chrono.services.CustomerService;
 import com.chrono.chrono.services.ProjectService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ public class ProjectController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return u.getCompany() != null && Boolean.TRUE.equals(u.getCompany().getCustomerTrackingEnabled());
+        return RegistrationFeatures.isProjectsEnabled(u.getCompany());
     }
 
     @GetMapping

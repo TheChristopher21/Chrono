@@ -1112,3 +1112,842 @@ td
     scroll-behavior: auto !important;
   }
 }
+
+/* --------------------------- 4) Moderne User-Erstellung und Bearbeitung --------------------------- */
+.admin-user-management-page.scoped-dashboard .modern-user-form {
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto var(--u-gap) auto;
+  padding: var(--u-gap-md);
+  border: 1px solid color-mix(in srgb, var(--c-border) 80%, transparent);
+  border-radius: 8px;
+  box-shadow: var(--u-shadow-md);
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 4.5rem;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .button-primary:disabled,
+.admin-user-management-page.scoped-dashboard .modern-user-form .button-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .button-small {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.admin-user-management-page.scoped-dashboard .user-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--c-card), var(--c-surface));
+}
+
+.admin-user-management-page.scoped-dashboard .profile-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .profile-avatar,
+.admin-user-management-page.scoped-dashboard .summary-avatar,
+.admin-user-management-page.scoped-dashboard .avatar-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .profile-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-user-management-page.scoped-dashboard .profile-header-main .eyebrow {
+  margin: 0 0 0.15rem 0;
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .profile-header-main h3 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--c-text);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.2;
+}
+
+.admin-user-management-page.scoped-dashboard .profile-header-main p:last-child {
+  margin: 0.18rem 0 0 0;
+  color: var(--c-muted);
+  font-size: 0.9rem;
+}
+
+.admin-user-management-page.scoped-dashboard .profile-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.admin-user-management-page.scoped-dashboard .wizard-progress-label,
+.admin-user-management-page.scoped-dashboard .soft-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .user-edit-shell {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .summary-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel h4 {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel p {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel dt {
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .user-summary-panel dd {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.admin-user-management-page.scoped-dashboard .completion-box {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.admin-user-management-page.scoped-dashboard .completion-box > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .completion-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--c-line);
+}
+
+.admin-user-management-page.scoped-dashboard .completion-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--c-pri), var(--c-success));
+}
+
+.admin-user-management-page.scoped-dashboard .missing-summary {
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--c-warn) 55%, var(--c-line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-warn) 12%, var(--c-card));
+}
+
+.admin-user-management-page.scoped-dashboard .missing-summary strong,
+.admin-user-management-page.scoped-dashboard .missing-panel strong {
+  display: block;
+  color: var(--c-text);
+  font-size: 0.84rem;
+}
+
+.admin-user-management-page.scoped-dashboard .missing-summary ul,
+.admin-user-management-page.scoped-dashboard .missing-panel ul {
+  margin: 0.45rem 0 0 1rem;
+  padding: 0;
+  color: var(--c-text-light);
+  font-size: 0.82rem;
+}
+
+.admin-user-management-page.scoped-dashboard .user-detail-panel,
+.admin-user-management-page.scoped-dashboard .create-wizard-shell {
+  min-width: 0;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-card);
+  overflow: hidden;
+}
+
+.admin-user-management-page.scoped-dashboard .user-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .user-tabs button,
+.admin-user-management-page.scoped-dashboard .wizard-steps button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color var(--u-dur), color var(--u-dur), border-color var(--u-dur);
+}
+
+.admin-user-management-page.scoped-dashboard .user-tabs button {
+  padding: 0.55rem 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .user-tabs button.active,
+.admin-user-management-page.scoped-dashboard .wizard-steps button.active {
+  border-color: color-mix(in srgb, var(--c-pri) 45%, var(--c-border));
+  background: color-mix(in srgb, var(--c-pri) 12%, var(--c-card));
+  color: var(--c-pri);
+}
+
+.admin-user-management-page.scoped-dashboard .tab-content,
+.admin-user-management-page.scoped-dashboard .wizard-content {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-user-management-page.scoped-dashboard .wizard-steps {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .wizard-steps button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.admin-user-management-page.scoped-dashboard .wizard-steps button span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--c-line);
+  color: var(--c-muted);
+  font-size: 0.78rem;
+}
+
+.admin-user-management-page.scoped-dashboard .wizard-steps button.active span,
+.admin-user-management-page.scoped-dashboard .wizard-steps button.done span {
+  background: var(--c-pri);
+  color: #fff;
+}
+
+.admin-user-management-page.scoped-dashboard .form-section {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-card);
+}
+
+.admin-user-management-page.scoped-dashboard .section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.admin-user-management-page.scoped-dashboard .section-heading h4 {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.admin-user-management-page.scoped-dashboard .section-heading p {
+  margin: 0.22rem 0 0 0;
+  color: var(--c-muted);
+  font-size: 0.84rem;
+}
+
+.admin-user-management-page.scoped-dashboard .section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .admin-user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .full-width,
+.admin-user-management-page.scoped-dashboard .modern-user-form .form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .form-field label,
+.admin-user-management-page.scoped-dashboard .modern-user-form .form-label-text {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.65rem;
+  color: var(--c-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .required-indicator {
+  color: var(--c-muted);
+  font-size: 0.9rem;
+  margin-left: 0.18rem;
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .label-hint {
+  color: var(--c-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.admin-user-management-page.scoped-dashboard .role-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-user-management-page.scoped-dashboard .role-preset-card {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 92px;
+  padding: 0.9rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-user-management-page.scoped-dashboard .role-preset-card span {
+  font-weight: 800;
+}
+
+.admin-user-management-page.scoped-dashboard .role-preset-card small {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.admin-user-management-page.scoped-dashboard .role-preset-card.selected {
+  border-color: var(--c-pri);
+  background: color-mix(in srgb, var(--c-pri) 11%, var(--c-card));
+}
+
+.admin-user-management-page.scoped-dashboard .readonly-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .readonly-status span {
+  color: var(--c-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .readonly-status strong {
+  color: var(--c-text);
+  font-size: 0.9rem;
+}
+
+.admin-user-management-page.scoped-dashboard .toggle-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-user-management-page.scoped-dashboard .toggle-card {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .toggle-card input {
+  margin-top: 0.18rem;
+}
+
+.admin-user-management-page.scoped-dashboard .toggle-card label {
+  display: grid;
+  gap: 0.18rem;
+  color: var(--c-text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-user-management-page.scoped-dashboard .toggle-card label small {
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-user-management-page.scoped-dashboard .color-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.admin-user-management-page.scoped-dashboard .selected-color-dot {
+  display: inline-block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 3px solid var(--c-card);
+  box-shadow: 0 0 0 1px var(--c-border);
+}
+
+.admin-user-management-page.scoped-dashboard .color-control input[type="color"] {
+  width: 2.55rem;
+  height: 2.35rem;
+  padding: 0.15rem;
+}
+
+.admin-user-management-page.scoped-dashboard .color-popover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-width: 360px;
+  padding: 0.65rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .modern-user-form .color-swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.admin-user-management-page.scoped-dashboard .permissions-workspace {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.admin-user-management-page.scoped-dashboard .compact-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--c-text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-section {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-section h5,
+.admin-user-management-page.scoped-dashboard .work-week-card h5 {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(145px, 170px);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.72rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .permission-item.customized {
+  border-color: color-mix(in srgb, var(--c-warn) 55%, var(--c-border));
+  background: color-mix(in srgb, var(--c-warn) 9%, var(--c-card));
+}
+
+.admin-user-management-page.scoped-dashboard .permission-item strong {
+  display: block;
+  color: var(--c-text);
+  font-size: 0.9rem;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-item span {
+  display: block;
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.admin-user-management-page.scoped-dashboard .permission-empty,
+.admin-user-management-page.scoped-dashboard .ready-panel {
+  padding: 0.85rem;
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.admin-user-management-page.scoped-dashboard .work-week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .work-week-card {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.admin-user-management-page.scoped-dashboard .week-day-row {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.7fr) minmax(80px, 1fr) 84px;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-user-management-page.scoped-dashboard .week-day-row label {
+  color: var(--c-text);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-user-management-page.scoped-dashboard .week-day-row input[type="number"] {
+  padding: 0.42rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.admin-user-management-page.scoped-dashboard .day-hours-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--c-line);
+}
+
+.admin-user-management-page.scoped-dashboard .day-hours-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c-info);
+}
+
+.admin-user-management-page.scoped-dashboard .preview-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-card);
+}
+
+.admin-user-management-page.scoped-dashboard .preview-main {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .avatar-preview {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  background: var(--c-pri);
+  border: 3px solid var(--c-pri);
+}
+
+.admin-user-management-page.scoped-dashboard .preview-main h4 {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 1.1rem;
+}
+
+.admin-user-management-page.scoped-dashboard .preview-main p {
+  margin: 0.2rem 0 0 0;
+  color: var(--c-muted);
+}
+
+.admin-user-management-page.scoped-dashboard .preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-user-management-page.scoped-dashboard .preview-grid span {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.75rem;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 800;
+}
+
+.admin-user-management-page.scoped-dashboard .preview-grid strong {
+  color: var(--c-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .missing-panel {
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--c-danger) 35%, var(--c-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-danger) 8%, var(--c-card));
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-warning span {
+  color: var(--c-text-light);
+  font-size: 0.86rem;
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-save-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-card) 94%, transparent);
+  box-shadow: var(--u-shadow-lg);
+  backdrop-filter: blur(12px);
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-save-bar > div:first-child {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-save-bar strong {
+  color: var(--c-text);
+  font-size: 0.9rem;
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-save-bar span {
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-management-page.scoped-dashboard .sticky-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .admin-user-management-page.scoped-dashboard .user-edit-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-management-page.scoped-dashboard .user-summary-panel {
+    position: static;
+  }
+
+  .admin-user-management-page.scoped-dashboard .preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-user-management-page.scoped-dashboard .modern-user-form {
+    padding: 0.75rem;
+  }
+
+  .admin-user-management-page.scoped-dashboard .modern-user-form form {
+    padding-bottom: 7.5rem;
+  }
+
+  .admin-user-management-page.scoped-dashboard .user-profile-header,
+  .admin-user-management-page.scoped-dashboard .profile-header-main,
+  .admin-user-management-page.scoped-dashboard .section-heading,
+  .admin-user-management-page.scoped-dashboard .sticky-save-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-user-management-page.scoped-dashboard .profile-header-actions,
+  .admin-user-management-page.scoped-dashboard .sticky-actions {
+    justify-content: stretch;
+  }
+
+  .admin-user-management-page.scoped-dashboard .profile-header-actions button,
+  .admin-user-management-page.scoped-dashboard .sticky-actions button {
+    flex: 1 1 100%;
+  }
+
+  .admin-user-management-page.scoped-dashboard .modern-user-form .admin-user-form-grid,
+  .admin-user-management-page.scoped-dashboard .role-preset-grid,
+  .admin-user-management-page.scoped-dashboard .toggle-row,
+  .admin-user-management-page.scoped-dashboard .preview-grid,
+  .admin-user-management-page.scoped-dashboard .permission-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-management-page.scoped-dashboard .permission-item {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-management-page.scoped-dashboard .week-day-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-user-management-page.scoped-dashboard .week-day-row label {
+    grid-column: 1 / -1;
+  }
+}

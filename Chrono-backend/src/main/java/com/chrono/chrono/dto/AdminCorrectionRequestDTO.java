@@ -29,6 +29,8 @@ public class AdminCorrectionRequestDTO {
     private boolean approved;
     private boolean denied;
     private String adminComment;
+    private String processedByAdminUsername;
+    private String processedByAdminInitials;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime originalTimestamp;
@@ -47,6 +49,8 @@ public class AdminCorrectionRequestDTO {
                                      boolean approved,
                                      boolean denied,
                                      String adminComment,
+                                     String processedByAdminUsername,
+                                     String processedByAdminInitials,
                                      LocalDateTime originalTimestamp,
                                      TimeTrackingEntry.PunchType originalPunchType,
                                      Long targetEntryId) {
@@ -59,6 +63,8 @@ public class AdminCorrectionRequestDTO {
         this.approved = approved;
         this.denied = denied;
         this.adminComment = adminComment;
+        this.processedByAdminUsername = processedByAdminUsername;
+        this.processedByAdminInitials = processedByAdminInitials;
         this.originalTimestamp = originalTimestamp;
         this.originalPunchType = originalPunchType;
         this.targetEntryId = targetEntryId;
@@ -134,6 +140,22 @@ public class AdminCorrectionRequestDTO {
 
     public void setAdminComment(String adminComment) {
         this.adminComment = adminComment;
+    }
+
+    public String getProcessedByAdminUsername() {
+        return processedByAdminUsername;
+    }
+
+    public void setProcessedByAdminUsername(String processedByAdminUsername) {
+        this.processedByAdminUsername = processedByAdminUsername;
+    }
+
+    public String getProcessedByAdminInitials() {
+        return processedByAdminInitials;
+    }
+
+    public void setProcessedByAdminInitials(String processedByAdminInitials) {
+        this.processedByAdminInitials = processedByAdminInitials;
     }
 
     public LocalDateTime getOriginalTimestamp() {

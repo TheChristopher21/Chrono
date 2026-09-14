@@ -1,0 +1,305 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e981]:
+    - generic [ref=f5e982]:
+      - navigation "Hauptnavigation" [ref=f5e983]:
+        - link "Chrono PMS" [ref=f5e985] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e986]
+        - list [ref=f5e987]:
+          - listitem [ref=f5e988]:
+            - link "Zu Chrono wechseln" [ref=f5e989] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e990]:
+            - button "Was ist neu?" [ref=f5e991] [cursor=pointer]
+          - listitem [ref=f5e995]:
+            - button "Dark Mode" [ref=f5e996] [cursor=pointer]
+          - listitem [ref=f5e1000]:
+            - button "🌐" [ref=f5e1001] [cursor=pointer]
+          - listitem [ref=f5e1004]:
+            - button "Default Admin" [ref=f5e1005] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1006]: D
+        - button "PMS-Bereiche" [ref=f5e1011] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e1014]:
+        - generic [ref=f5e1015]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e1016]:
+            - generic [ref=f5e1017]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e1018] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1019]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e1021] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e1022] [cursor=pointer]'
+            - generic [ref=f5e1023]:
+              - tab "PMS · Zimmerplan" [ref=f5e1024] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1025]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e1027] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e1028] [cursor=pointer]'
+            - generic [ref=f5e1029]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f5e1030] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1031]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f5e1033] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f5e1034] [cursor=pointer]'
+            - generic [ref=f5e1035]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f5e1036] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1037]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f5e1039] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f5e1040] [cursor=pointer]'
+            - generic [ref=f5e1041]:
+              - tab "PMS · Rechnungen" [selected] [ref=f5e1042] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1043]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f5e1045] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f5e1046] [cursor=pointer]'
+          - generic [ref=f5e1047]:
+            - button "Arbeitsbereich öffnen" [ref=f5e1048] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e1049] [cursor=pointer]
+    - generic [ref=f5e1050]:
+      - complementary "PMS-Navigation" [ref=f5e1051]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e1052] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e1053]: CH
+          - generic [ref=f5e1054]:
+            - generic [ref=f5e1055]: Aktives Hotel
+            - strong [ref=f5e1056]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e1057]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e1058]:
+          - generic [ref=f5e1059]:
+            - generic [ref=f5e1060]: Rezeption
+            - button "Übersicht" [ref=f5e1061] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1062]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e1063] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1064]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e1065] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1066]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e1067] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1068]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e1069] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1070]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e1071] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1072]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e1073]:
+            - generic [ref=f5e1074]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e1075] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1076]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e1077] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1078]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e1079] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1080]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e1081] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1082]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e1083]:
+            - generic [ref=f5e1084]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e1085] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1086]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e1087] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1088]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e1089] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1090]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e1091]:
+            - generic [ref=f5e1092]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e1093] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1094]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e1095] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1096]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e1097] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1098]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e1099] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1100]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e1101] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1102]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e1105]:
+          - strong [ref=f5e1106]: PMS betriebsbereit
+          - generic [ref=f5e1107]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e1108]:
+        - generic [ref=f5e1109]:
+          - generic [ref=f5e1110]:
+            - generic [ref=f5e1111]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e1112]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e1114] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e1115]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e1116]: Ctrl K
+        - region "Zimmerplan" [ref=f5e1117]:
+          - generic [ref=f5e1119]:
+            - generic [ref=f5e1120]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Rechnungen" [level=2] [ref=f5e1121]
+            - paragraph [ref=f5e1122]: Rechnungen erstellen, ausgeben und korrigieren. · Betriebstag 12.09.2026
+          - generic [ref=f5e1123]:
+            - generic [ref=f5e1124]:
+              - generic [ref=f5e1125]:
+                - generic [ref=f5e1126]:
+                  - generic [ref=f5e1127]: Firmenabrechnung
+                  - heading "Offene Posten & Zahlungsziele" [level=3] [ref=f5e1128]
+                - generic [ref=f5e1129]: CHF
+              - generic [ref=f5e1130]:
+                - generic [ref=f5e1131]:
+                  - generic [ref=f5e1132]: Offene Forderungen
+                  - strong [ref=f5e1133]: CHF 0.00
+                - generic [ref=f5e1134]:
+                  - generic [ref=f5e1135]: Davon überfällig
+                  - strong [ref=f5e1136]: CHF 0.00
+                - generic [ref=f5e1137]:
+                  - generic [ref=f5e1138]: Freigegebene Firmen
+                  - strong [ref=f5e1139]: "0"
+              - generic [ref=f5e1140]:
+                - generic [ref=f5e1141]:
+                  - text: Firma oder Rechnungsnummer
+                  - textbox "Firma oder Rechnungsnummer" [ref=f5e1142]:
+                    - /placeholder: Offene Posten durchsuchen
+                - generic [ref=f5e1143]:
+                  - checkbox "Nur überfällige Forderungen" [ref=f5e1144]
+                  - text: Nur überfällige Forderungen
+              - generic [ref=f5e1145]:
+                - table [ref=f5e1146]:
+                  - rowgroup [ref=f5e1147]:
+                    - row [ref=f5e1148]:
+                      - columnheader "Rechnung / Firma" [ref=f5e1149]
+                      - columnheader "Fällig am" [ref=f5e1150]
+                      - columnheader "Offener Betrag" [ref=f5e1151]
+                      - columnheader "Status" [ref=f5e1152]
+                      - columnheader "Aktionen" [ref=f5e1153]
+                  - rowgroup
+                - paragraph [ref=f5e1154]: Keine passenden Firmenforderungen.
+              - generic [ref=f5e1155]:
+                - generic [ref=f5e1156]: 0 Forderungen · Seite 1
+                - button "Zurück" [disabled] [ref=f5e1157]
+                - button "Weiter" [disabled] [ref=f5e1158]
+              - group [ref=f5e1159]:
+                - generic "Rechnung auf Firmenkredit übertragen" [ref=f5e1160] [cursor=pointer]
+                - option "Rechnung auswählen" [selected]
+                - option "INV-2026-00001 · Emma Baumann"
+                - option "Firma auswählen" [selected]
+              - group [ref=f5e1161]:
+                - generic "Firmenkredit freigeben & Limits verwalten" [ref=f5e1162] [cursor=pointer]
+                - option "Firma auswählen" [selected]
+                - option "Helvetia Consulting AG"
+            - generic [ref=f5e1163]:
+              - generic [ref=f5e1164]:
+                - generic [ref=f5e1166]:
+                  - generic [ref=f5e1167]: Rechnungswesen
+                  - heading "Rechnung erstellen" [level=3] [ref=f5e1168]
+                - generic [ref=f5e1169]:
+                  - generic [ref=f5e1170]:
+                    - text: Gastkonto (Folio)
+                    - combobox "Gastkonto (Folio)" [ref=f5e1171]:
+                      - option "Gastkonto wählen" [selected]
+                      - option "Hauptkonto · CHR-1419159D · Noah Schmid"
+                      - option "Hauptkonto · CHR-F2700EC0 · Jonas Wenger"
+                      - option "Hauptkonto · CHR-237DB5F7 · Mia Rossi"
+                      - option "Hauptkonto · CHR-AE135E38 · Lukas Frei"
+                      - option "Hauptkonto · CHR-E30BFC92 · Sophie Keller"
+                      - option "Hauptkonto · CHR-3C26B96C · Daniel Meier"
+                      - option "Hauptkonto · CHR-3ED176A2 · Gabriela Tschopp"
+                  - generic [ref=f5e1172]:
+                    - checkbox "Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)" [checked] [ref=f5e1173]
+                    - text: Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)
+                  - generic [ref=f5e1174]:
+                    - text: Empfänger
+                    - textbox "Empfänger" [disabled] [ref=f5e1175]
+                  - generic [ref=f5e1176]:
+                    - text: Fällig am
+                    - textbox "Fällig am" [ref=f5e1177]: 2026-09-22
+                  - generic [ref=f5e1178]:
+                    - text: Steuersatz für Positionen ohne hinterlegten Satz (%)
+                    - spinbutton "Steuersatz für Positionen ohne hinterlegten Satz (%)" [ref=f5e1179]: "8.10"
+                  - generic [ref=f5e1180]:
+                    - text: IBAN
+                    - textbox "IBAN" [ref=f5e1181]:
+                      - /placeholder: optional für Schweizer QR-Rechnung
+                  - generic [ref=f5e1182]:
+                    - text: Adresse
+                    - textbox "Adresse" [disabled] [ref=f5e1183]
+                  - generic [ref=f5e1184]:
+                    - text: PLZ
+                    - textbox "PLZ" [disabled] [ref=f5e1185]
+                  - generic [ref=f5e1186]:
+                    - text: Ort
+                    - textbox "Ort" [disabled] [ref=f5e1187]
+                  - generic [ref=f5e1188]:
+                    - text: Empfängerland (ISO)
+                    - textbox "Empfängerland (ISO)" [disabled] [ref=f5e1189]: CH
+                  - paragraph [ref=f5e1190]: "Empfänger: · · · CH. Die Angaben werden bei Ausstellung unveränderlich gespeichert."
+                  - button "Rechnung ausstellen" [ref=f5e1192] [cursor=pointer]
+              - generic [ref=f5e1193]:
+                - generic [ref=f5e1195]:
+                  - generic [ref=f5e1196]: Rechnungsjournal
+                  - heading "1 Rechnungen" [level=3] [ref=f5e1197]
+                - article [ref=f5e1199]:
+                  - generic [ref=f5e1200]:
+                    - generic [ref=f5e1201]: INV-2026-00001 · Rechnung · Ausgestellt
+                    - strong [ref=f5e1202]: Emma Baumann
+                    - generic [ref=f5e1203]: Netto CHF 1'079.55 · MWST CHF 87.45 · Total CHF 1'167.00
+                  - generic [ref=f5e1204]:
+                    - button "PDF" [ref=f5e1205] [cursor=pointer]
+                    - button "Gutschrift" [ref=f5e1206] [cursor=pointer]
+            - region "Hotelverlauf" [ref=f5e1207]:
+              - generic [ref=f5e1208]:
+                - heading "Verlauf und ältere Einträge" [level=3] [ref=f5e1209]
+                - button "Verlauf aktualisieren" [ref=f5e1210]
+              - generic [ref=f5e1211]:
+                - generic [ref=f5e1212]:
+                  - text: Verlaufsbereich
+                  - combobox "Verlaufsbereich" [ref=f5e1213]:
+                    - option "Rechnungen" [selected]
+                - generic [ref=f5e1214]:
+                  - text: Verlauf durchsuchen
+                  - searchbox "Verlauf durchsuchen" [ref=f5e1215]
+                - generic [ref=f5e1216]:
+                  - text: Einträge pro Seite
+                  - combobox "Einträge pro Seite" [ref=f5e1217]:
+                    - option "10"
+                    - option "25" [selected]
+                    - option "50"
+                    - option "100"
+              - status [ref=f5e1218]: 1 passende Einträge
+              - table [ref=f5e1220]:
+                - rowgroup [ref=f5e1221]:
+                  - row [ref=f5e1222]:
+                    - columnheader "ID" [ref=f5e1223]
+                    - columnheader "Rechnungsnummer" [ref=f5e1224]
+                    - columnheader "Art" [ref=f5e1225]
+                    - columnheader "Ausgestellt" [ref=f5e1226]
+                    - columnheader "Fällig" [ref=f5e1227]
+                    - columnheader "Empfänger" [ref=f5e1228]
+                    - columnheader "Währung" [ref=f5e1229]
+                    - columnheader "Netto" [ref=f5e1230]
+                    - columnheader "Steuer" [ref=f5e1231]
+                    - columnheader "Brutto" [ref=f5e1232]
+                    - columnheader "Status" [ref=f5e1233]
+                - rowgroup [ref=f5e1234]:
+                  - row [ref=f5e1235]:
+                    - cell "1" [ref=f5e1236]
+                    - cell "INV-2026-00001" [ref=f5e1237]
+                    - cell "INVOICE" [ref=f5e1238]
+                    - cell "2026-09-12" [ref=f5e1239]
+                    - cell "2026-10-12" [ref=f5e1240]
+                    - cell "Emma Baumann" [ref=f5e1241]
+                    - cell "CHF" [ref=f5e1242]
+                    - cell "CHF 1'079.55" [ref=f5e1243]
+                    - cell "CHF 87.45" [ref=f5e1244]
+                    - cell "CHF 1'167.00" [ref=f5e1245]
+                    - cell "ISSUED" [ref=f5e1246]
+              - generic [ref=f5e1247]:
+                - button "Vorherige Seite" [disabled] [ref=f5e1248]
+                - generic [ref=f5e1249]: Seite 1 von 1
+                - button "Nächste Seite" [disabled] [ref=f5e1250]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

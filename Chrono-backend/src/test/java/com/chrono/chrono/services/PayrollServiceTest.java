@@ -49,6 +49,8 @@ class PayrollServiceTest {
 
     @Mock
     private AccountingService accountingService;
+    @Mock
+    private TimeTrackingService timeTrackingService;
 
     @InjectMocks
     private PayrollService payrollService;
@@ -103,7 +105,7 @@ class PayrollServiceTest {
     }
 
     @Test
-    void generatePayslip_payoutOvertimeAdjustsBalanceAndPay() {
+    void generatePayslip_payoutOvertimeStoresPayoutAndPayWithoutChangingBalance() {
         User user = new User();
         user.setId(1L);
         user.setUsername("john");
@@ -132,7 +134,86 @@ class PayrollServiceTest {
         assertEquals(18.75, ps.getGrossSalary());
         assertEquals(1.5, ps.getOvertimeHours());
         assertTrue(ps.isPayoutOvertime());
-        assertEquals(30, user.getTrackingBalanceInMinutes());
+        assertEquals(120, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void generatePayslip_rejectsHourlyEmployeeWithoutHourlyRate() {
+        User user = new User();
+        user.setId(38L);
+        user.setUsername("chris");
+        user.setIsHourly(true);
+        user.setHourlyRate(null);
+
+        when(userRepository.findById(38L)).thenReturn(Optional.of(user));
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> payrollService.generatePayslip(
+                        38L,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 7, 31),
+                        LocalDate.of(2025, 8, 5)
+                )
+        );
+
+        assertTrue(error.getMessage().contains("positiver Stundenansatz"));
+        verifyNoInteractions(timeTrackingEntryRepository, taxCalculationService, payslipRepository);
+    }
+
+    @Test
+    void approvePayslip_rebuildsBalanceAfterPersistingApproval() {
+        User user = new User();
+        user.setTrackingBalanceInMinutes(180);
+
+        Payslip ps = new Payslip();
+        ps.setId(42L);
+        ps.setUser(user);
+        ps.setPayoutOvertime(true);
+        ps.setOvertimeHours(2.0);
+
+        when(payslipRepository.findById(42L)).thenReturn(Optional.of(ps));
+        when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
+        when(payslipRepository.saveAndFlush(ps)).thenReturn(ps);
+        when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
+
+        payrollService.approvePayslip(42L, null);
+
+        assertTrue(ps.isApproved());
+        verify(timeTrackingService).rebuildUserBalance(user);
+        verify(userRepository, never()).save(user);
+    }
+
+    @Test
+    void reopenAndReapproveReconcilesHourlyBalanceFromCanonicalData() {
+        User user = new User();
+        user.setId(62L);
+        user.setIsHourly(true);
+        user.setTrackingBalanceInMinutes(9071);
+
+        Payslip ps = new Payslip();
+        ps.setId(76L);
+        ps.setUser(user);
+        ps.setApproved(true);
+        ps.setPayoutOvertime(true);
+        ps.setOvertimeHours(7.5);
+
+        when(payslipRepository.findById(76L)).thenReturn(Optional.of(ps));
+        when(payslipRepository.saveAndFlush(ps)).thenReturn(ps);
+        when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
+        when(accountingService.recordPayrollPosting(ps)).thenReturn(null);
+        doAnswer(invocation -> {
+            user.setTrackingBalanceInMinutes(ps.isApproved() ? 867 : 1317);
+            return null;
+        }).when(timeTrackingService).rebuildUserBalance(user);
+
+        payrollService.reopenPayslip(76L);
+        assertEquals(1317, user.getTrackingBalanceInMinutes());
+
+        payrollService.approvePayslip(76L, null);
+        assertEquals(867, user.getTrackingBalanceInMinutes());
+        verify(timeTrackingService, times(2)).rebuildUserBalance(user);
+        verify(userRepository, never()).save(user);
     }
 
     @Test
@@ -142,7 +223,7 @@ class PayrollServiceTest {
         ps.setUser(new User());
         when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
         when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
-        when(payslipRepository.save(ps)).thenReturn(ps);
+        when(payslipRepository.saveAndFlush(ps)).thenReturn(ps);
         when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
 
         payrollService.approvePayslip(2L, "ok");
@@ -158,6 +239,52 @@ class PayrollServiceTest {
     }
 
     @Test
+    void approvePayslip_isIdempotentWhenAlreadyApproved() {
+        User user = new User();
+        Payslip ps = new Payslip();
+        ps.setId(2L);
+        ps.setUser(user);
+        ps.setApproved(true);
+        when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
+
+        payrollService.approvePayslip(2L, "again");
+
+        verify(timeTrackingService).rebuildUserBalance(user);
+        verify(payslipRepository, never()).saveAndFlush(any());
+        verify(accountingService, never()).recordPayrollPosting(any());
+        verify(payslipAuditRepository, never()).save(any());
+        verify(emailService, never()).sendPayslipApprovedMail(any(), any());
+    }
+
+    @Test
+    void approveAllForUser_skipsAlreadyApprovedPayslips() {
+        User user = new User();
+        user.setId(5L);
+
+        Payslip approved = new Payslip();
+        approved.setId(10L);
+        approved.setUser(user);
+        approved.setApproved(true);
+
+        Payslip pending = new Payslip();
+        pending.setId(11L);
+        pending.setUser(user);
+
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(approved, pending));
+        when(pdfService.generatePayslipPdf(pending)).thenReturn("file.pdf");
+
+        payrollService.approveAllForUser(5L, "batch");
+
+        verify(payslipRepository).saveAllAndFlush(List.of(pending));
+        verify(accountingService).recordPayrollPosting(pending);
+        verify(accountingService, never()).recordPayrollPosting(approved);
+        verify(emailService).sendPayslipApprovedMail(user, pending);
+        verify(emailService, never()).sendPayslipApprovedMail(user, approved);
+        verify(timeTrackingService).rebuildUserBalance(user);
+    }
+
+    @Test
     void deletePayslip_throwsWhenApproved() {
         Payslip ps = new Payslip();
         ps.setId(3L);
@@ -168,4 +295,3 @@ class PayrollServiceTest {
         verify(payslipRepository, never()).delete(any());
     }
 }
-

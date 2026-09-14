@@ -1,0 +1,518 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e7]:
+    - generic [ref=f5e8]:
+      - navigation "Hauptnavigation" [ref=f5e9]:
+        - link "Chrono PMS" [ref=f5e11] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e12]
+        - list [ref=f5e13]:
+          - listitem [ref=f5e14]:
+            - link "Zu Chrono wechseln" [ref=f5e15] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e16]:
+            - button "Was ist neu?" [ref=f5e17] [cursor=pointer]
+          - listitem [ref=f5e21]:
+            - button "Dark Mode" [ref=f5e22] [cursor=pointer]
+          - listitem [ref=f5e26]:
+            - button "🌐" [ref=f5e27] [cursor=pointer]
+          - listitem [ref=f5e30]:
+            - button "Default Admin" [ref=f5e31] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e32]: D
+        - button "PMS-Bereiche" [ref=f5e37] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e40]:
+        - generic [ref=f5e41]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e42]:
+            - generic [ref=f5e43]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e44] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e45]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e47] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e48] [cursor=pointer]'
+            - generic [ref=f5e49]:
+              - tab "PMS · Zimmerplan" [selected] [ref=f5e50] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e51]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e53] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e54] [cursor=pointer]'
+          - generic [ref=f5e55]:
+            - button "Arbeitsbereich öffnen" [ref=f5e56] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e57] [cursor=pointer]
+    - generic [ref=f5e58]:
+      - complementary "PMS-Navigation" [ref=f5e59]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e60] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e61]: CH
+          - generic [ref=f5e62]:
+            - generic [ref=f5e63]: Aktives Hotel
+            - strong [ref=f5e64]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e65]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e66]:
+          - generic [ref=f5e67]:
+            - generic [ref=f5e68]: Rezeption
+            - button "Übersicht" [ref=f5e69] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e70]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e71] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e72]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e73] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e74]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e75] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e76]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e77] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e78]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e79] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e80]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e81]:
+            - generic [ref=f5e82]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e83] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e84]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e85] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e86]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e87] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e88]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e89] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e90]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e91]:
+            - generic [ref=f5e92]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e93] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e94]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e95] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e96]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e97] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e98]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e99]:
+            - generic [ref=f5e100]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e101] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e102]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e103] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e104]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e105] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e106]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e107] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e108]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e109] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e110]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e113]:
+          - strong [ref=f5e114]: PMS betriebsbereit
+          - generic [ref=f5e115]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e116]:
+        - generic [ref=f5e117]:
+          - generic [ref=f5e118]:
+            - generic [ref=f5e119]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e120]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e122] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e123]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e124]: Ctrl K
+        - region [ref=f5e125]:
+          - heading "Zimmerplan" [level=2] [ref=f5e128]
+          - region "Fortlaufender Zimmerplan" [ref=f5e130]:
+            - generic [ref=f5e131]:
+              - paragraph [ref=f5e133]: Chrono Demo Hotel Zürich · 12.09.2026 – 11.10.2026
+              - button "Aktualisieren" [ref=f5e134] [cursor=pointer]
+            - generic [ref=f5e135]:
+              - generic [ref=f5e136]:
+                - button "Vorheriger Zeitraum" [ref=f5e137] [cursor=pointer]: ←
+                - button "Heute" [pressed] [ref=f5e138] [cursor=pointer]
+                - button "Nächster Zeitraum" [ref=f5e139] [cursor=pointer]: →
+              - generic [ref=f5e140]:
+                - text: Startdatum
+                - textbox "Startdatum" [ref=f5e141]: 2026-09-12
+              - generic [ref=f5e142]:
+                - text: Zeitraum
+                - combobox "Zeitraum" [ref=f5e143]:
+                  - option "7 Tage"
+                  - option "10 Tage"
+                  - option "14 Tage"
+                  - option "30 Tage" [selected]
+                  - option "60 Tage"
+                  - option "90 Tage"
+              - generic [ref=f5e144]:
+                - text: Zimmer suchen
+                - searchbox "Zimmer suchen" [ref=f5e145]
+              - generic [ref=f5e146]:
+                - text: Zimmer je Seite
+                - combobox "Zimmer je Seite" [ref=f5e147]:
+                  - option "25"
+                  - option "50" [selected]
+                  - option "100"
+            - generic [ref=f5e148]:
+              - generic [ref=f5e149]:
+                - text: Zimmertyp
+                - combobox "Zimmertyp" [ref=f5e150]:
+                  - option "Alle Typen" [selected]
+                  - option "City Einzelzimmer"
+                  - option "Classic Doppelzimmer"
+                  - option "Limmat Suite"
+              - generic [ref=f5e151]:
+                - text: Etage
+                - combobox "Etage" [ref=f5e152]:
+                  - option "Alle Etagen" [selected]
+                  - option "1"
+                  - option "2"
+                  - option "3"
+              - generic [ref=f5e153]:
+                - text: Bettenart
+                - combobox "Bettenart" [ref=f5e154]:
+                  - option "Alle Bettenarten" [selected]
+                  - option "Einzelbett"
+                  - option "Kingsize-Bett und Schlafsofa"
+                  - option "Kingsize-Doppelbett"
+              - generic [ref=f5e155]:
+                - text: Mind. Personen
+                - spinbutton "Mind. Personen" [ref=f5e156]
+              - generic [ref=f5e157]:
+                - text: Housekeeping
+                - combobox "Housekeeping" [ref=f5e158]:
+                  - option "Alle Zustände" [selected]
+                  - option "Sauber"
+                  - option "Zu reinigen"
+                  - option "Reinigung läuft"
+                  - option "Kontrolle ausstehend"
+                  - option "Eingeschränkter Betrieb (OOS)"
+              - generic [ref=f5e159]:
+                - text: Betriebsstatus
+                - combobox "Betriebsstatus" [ref=f5e160]:
+                  - option "Alle Betriebsstatus" [selected]
+                  - option "In Betrieb und verkaufbar"
+                  - option "Technisch ausser Betrieb – nicht verkaufbar"
+                  - option "Inaktiv (nicht im Verkauf)"
+              - generic [ref=f5e161]:
+                - text: Reinigungsbereich
+                - combobox "Reinigungsbereich" [ref=f5e162]:
+                  - option "Alle Bereiche" [selected]
+                  - option "Nord"
+                  - option "Suiten"
+                  - option "Süd"
+            - group [ref=f5e163]:
+              - generic "Ausstattung · Badewanne, ruhige Lage und weitere Merkmale" [ref=f5e164] [cursor=pointer]
+            - generic [ref=f5e165]:
+              - generic [ref=f5e166]:
+                - checkbox "Im gesamten Zeitraum frei und zuweisbar" [ref=f5e167]
+                - text: Im gesamten Zeitraum frei und zuweisbar
+              - generic [ref=f5e168]:
+                - checkbox "Inaktive Zimmer einblenden" [ref=f5e169]
+                - text: Inaktive Zimmer einblenden
+              - button "Filter zurücksetzen" [ref=f5e170] [cursor=pointer]
+            - generic "Farblegende" [ref=f5e171]:
+              - generic [ref=f5e172]: Frei
+              - generic [ref=f5e173]: Bestätigt
+              - generic [ref=f5e174]: Im Haus
+              - generic [ref=f5e175]: Option
+              - generic [ref=f5e176]: Abgereist
+              - generic [ref=f5e177]: Gesperrt / Eigennutzung
+              - generic [ref=f5e178]: Eingeschränkt
+            - paragraph [ref=f5e179]: Datum = Übernachtung; Abreise gibt das Zimmer frei. Die linke Zimmerfarbe kennzeichnet den Zimmertyp. Heute folgt automatisch dem Hoteldatum (Europe/Zurich). Reservierungen zum Verschieben auf eine andere Zimmerzeile ziehen.
+            - generic "Zimmer und Tage, horizontal und vertikal scrollbar" [ref=f5e180]:
+              - table "Belegung nach Zimmer und Tag" [ref=f5e181]:
+                - row [ref=f5e182]:
+                  - columnheader "A Zimmer / Kategorie" [ref=f5e183]:
+                    - generic [ref=f5e184]: A
+                    - text: Zimmer / Kategorie
+                  - columnheader "Sa. 12.09 Heute" [ref=f5e185]:
+                    - text: Sa. 12.09
+                    - generic [ref=f5e186]: Heute
+                  - columnheader "So. 13.09" [ref=f5e187]
+                  - columnheader "Mo. 14.09" [ref=f5e188]
+                  - columnheader "Di. 15.09" [ref=f5e189]
+                  - columnheader "Mi. 16.09" [ref=f5e190]
+                  - columnheader "Do. 17.09" [ref=f5e191]
+                  - columnheader "Fr. 18.09" [ref=f5e192]
+                  - columnheader "Sa. 19.09" [ref=f5e193]
+                  - columnheader "So. 20.09" [ref=f5e194]
+                  - columnheader "Mo. 21.09" [ref=f5e195]
+                  - columnheader "Di. 22.09" [ref=f5e196]
+                  - columnheader "Mi. 23.09" [ref=f5e197]
+                  - columnheader "Do. 24.09" [ref=f5e198]
+                  - columnheader "Fr. 25.09" [ref=f5e199]
+                  - columnheader "Sa. 26.09" [ref=f5e200]
+                  - columnheader "So. 27.09" [ref=f5e201]
+                  - columnheader "Mo. 28.09" [ref=f5e202]
+                  - columnheader "Di. 29.09" [ref=f5e203]
+                  - columnheader "Mi. 30.09" [ref=f5e204]
+                  - columnheader "Do. 01.10" [ref=f5e205]
+                  - columnheader "Fr. 02.10" [ref=f5e206]
+                  - columnheader "Sa. 03.10" [ref=f5e207]
+                  - columnheader "So. 04.10" [ref=f5e208]
+                  - columnheader "Mo. 05.10" [ref=f5e209]
+                  - columnheader "Di. 06.10" [ref=f5e210]
+                  - columnheader "Mi. 07.10" [ref=f5e211]
+                  - columnheader "Do. 08.10" [ref=f5e212]
+                  - columnheader "Fr. 09.10" [ref=f5e213]
+                  - columnheader "Sa. 10.10" [ref=f5e214]
+                  - columnheader "So. 11.10" [ref=f5e215]
+                - row [ref=f5e216]:
+                  - rowheader "101 Et. 1 City Einzelzimmer Sauber" [ref=f5e217]:
+                    - strong [ref=f5e218]: 101 Et. 1
+                    - generic [ref=f5e219]: City Einzelzimmer
+                    - generic [ref=f5e220]: Sauber
+                  - cell "Zimmer 101, Sa. 12.09" [ref=f5e221]
+                  - cell "Zimmer 101, So. 13.09" [ref=f5e222]
+                  - cell "Zimmer 101, Mo. 14.09" [ref=f5e223]
+                  - cell "Zimmer 101, Di. 15.09" [ref=f5e224]
+                  - cell "Zimmer 101, Mi. 16.09" [ref=f5e225]
+                  - cell "Zimmer 101, Do. 17.09" [ref=f5e226]
+                  - cell "Zimmer 101, Fr. 18.09" [ref=f5e227]
+                  - cell "Zimmer 101, Sa. 19.09" [ref=f5e228]
+                  - cell "Zimmer 101, So. 20.09" [ref=f5e229]
+                  - cell "Zimmer 101, Mo. 21.09" [ref=f5e230]
+                  - cell "Zimmer 101, Di. 22.09" [ref=f5e231]
+                  - cell "Zimmer 101, Mi. 23.09" [ref=f5e232]
+                  - cell "Zimmer 101, Do. 24.09" [ref=f5e233]
+                  - cell "Zimmer 101, Fr. 25.09" [ref=f5e234]
+                  - cell "Zimmer 101, Sa. 26.09" [ref=f5e235]
+                  - cell "Zimmer 101, So. 27.09" [ref=f5e236]
+                  - cell "Zimmer 101, Mo. 28.09" [ref=f5e237]
+                  - cell "Zimmer 101, Di. 29.09" [ref=f5e238]
+                  - cell "Zimmer 101, Mi. 30.09" [ref=f5e239]
+                  - cell "Zimmer 101, Do. 01.10" [ref=f5e240]
+                  - cell "Zimmer 101, Fr. 02.10" [ref=f5e241]
+                  - cell "Zimmer 101, Sa. 03.10" [ref=f5e242]
+                  - cell "Zimmer 101, So. 04.10" [ref=f5e243]
+                  - cell "Zimmer 101, Mo. 05.10" [ref=f5e244]
+                  - cell "Zimmer 101, Di. 06.10" [ref=f5e245]
+                  - cell "Zimmer 101, Mi. 07.10" [ref=f5e246]
+                  - cell "Zimmer 101, Do. 08.10" [ref=f5e247]
+                  - cell "Zimmer 101, Fr. 09.10" [ref=f5e248]
+                  - cell "Zimmer 101, Sa. 10.10" [ref=f5e249]
+                  - cell "Zimmer 101, So. 11.10" [ref=f5e250]
+                  - button "‹ Gabriela Tschopp" [ref=f5e251]
+                - row [ref=f5e252]:
+                  - rowheader "102 Et. 1 City Einzelzimmer Zu reinigen" [ref=f5e253]:
+                    - strong [ref=f5e254]: 102 Et. 1
+                    - generic [ref=f5e255]: City Einzelzimmer
+                    - generic [ref=f5e256]: Zu reinigen
+                  - cell "Zimmer 102, Sa. 12.09" [ref=f5e257]
+                  - cell "Zimmer 102, So. 13.09" [ref=f5e258]
+                  - cell "Zimmer 102, Mo. 14.09" [ref=f5e259]
+                  - cell "Zimmer 102, Di. 15.09" [ref=f5e260]
+                  - cell "Zimmer 102, Mi. 16.09" [ref=f5e261]
+                  - cell "Zimmer 102, Do. 17.09" [ref=f5e262]
+                  - cell "Zimmer 102, Fr. 18.09" [ref=f5e263]
+                  - cell "Zimmer 102, Sa. 19.09" [ref=f5e264]
+                  - cell "Zimmer 102, So. 20.09" [ref=f5e265]
+                  - cell "Zimmer 102, Mo. 21.09" [ref=f5e266]
+                  - cell "Zimmer 102, Di. 22.09" [ref=f5e267]
+                  - cell "Zimmer 102, Mi. 23.09" [ref=f5e268]
+                  - cell "Zimmer 102, Do. 24.09" [ref=f5e269]
+                  - cell "Zimmer 102, Fr. 25.09" [ref=f5e270]
+                  - cell "Zimmer 102, Sa. 26.09" [ref=f5e271]
+                  - cell "Zimmer 102, So. 27.09" [ref=f5e272]
+                  - cell "Zimmer 102, Mo. 28.09" [ref=f5e273]
+                  - cell "Zimmer 102, Di. 29.09" [ref=f5e274]
+                  - cell "Zimmer 102, Mi. 30.09" [ref=f5e275]
+                  - cell "Zimmer 102, Do. 01.10" [ref=f5e276]
+                  - cell "Zimmer 102, Fr. 02.10" [ref=f5e277]
+                  - cell "Zimmer 102, Sa. 03.10" [ref=f5e278]
+                  - cell "Zimmer 102, So. 04.10" [ref=f5e279]
+                  - cell "Zimmer 102, Mo. 05.10" [ref=f5e280]
+                  - cell "Zimmer 102, Di. 06.10" [ref=f5e281]
+                  - cell "Zimmer 102, Mi. 07.10" [ref=f5e282]
+                  - cell "Zimmer 102, Do. 08.10" [ref=f5e283]
+                  - cell "Zimmer 102, Fr. 09.10" [ref=f5e284]
+                  - cell "Zimmer 102, Sa. 10.10" [ref=f5e285]
+                  - cell "Zimmer 102, So. 11.10" [ref=f5e286]
+                  - button "Daniel Meier" [ref=f5e287]
+                - row [ref=f5e288]:
+                  - rowheader "201 Et. 2 Classic Doppelzimmer Sauber" [ref=f5e289]:
+                    - strong [ref=f5e290]: 201 Et. 2
+                    - generic [ref=f5e291]: Classic Doppelzimmer
+                    - generic [ref=f5e292]: Sauber
+                  - cell "Zimmer 201, Sa. 12.09" [ref=f5e293]
+                  - cell "Zimmer 201, So. 13.09" [ref=f5e294]
+                  - cell "Zimmer 201, Mo. 14.09" [ref=f5e295]
+                  - cell "Zimmer 201, Di. 15.09" [ref=f5e296]
+                  - cell "Zimmer 201, Mi. 16.09" [ref=f5e297]
+                  - cell "Zimmer 201, Do. 17.09" [ref=f5e298]
+                  - cell "Zimmer 201, Fr. 18.09" [ref=f5e299]
+                  - cell "Zimmer 201, Sa. 19.09" [ref=f5e300]
+                  - cell "Zimmer 201, So. 20.09" [ref=f5e301]
+                  - cell "Zimmer 201, Mo. 21.09" [ref=f5e302]
+                  - cell "Zimmer 201, Di. 22.09" [ref=f5e303]
+                  - cell "Zimmer 201, Mi. 23.09" [ref=f5e304]
+                  - cell "Zimmer 201, Do. 24.09" [ref=f5e305]
+                  - cell "Zimmer 201, Fr. 25.09" [ref=f5e306]
+                  - cell "Zimmer 201, Sa. 26.09" [ref=f5e307]
+                  - cell "Zimmer 201, So. 27.09" [ref=f5e308]
+                  - cell "Zimmer 201, Mo. 28.09" [ref=f5e309]
+                  - cell "Zimmer 201, Di. 29.09" [ref=f5e310]
+                  - cell "Zimmer 201, Mi. 30.09" [ref=f5e311]
+                  - cell "Zimmer 201, Do. 01.10" [ref=f5e312]
+                  - cell "Zimmer 201, Fr. 02.10" [ref=f5e313]
+                  - cell "Zimmer 201, Sa. 03.10" [ref=f5e314]
+                  - cell "Zimmer 201, So. 04.10" [ref=f5e315]
+                  - cell "Zimmer 201, Mo. 05.10" [ref=f5e316]
+                  - cell "Zimmer 201, Di. 06.10" [ref=f5e317]
+                  - cell "Zimmer 201, Mi. 07.10" [ref=f5e318]
+                  - cell "Zimmer 201, Do. 08.10" [ref=f5e319]
+                  - cell "Zimmer 201, Fr. 09.10" [ref=f5e320]
+                  - cell "Zimmer 201, Sa. 10.10" [ref=f5e321]
+                  - cell "Zimmer 201, So. 11.10" [ref=f5e322]
+                  - button "‹ Sophie Keller" [ref=f5e323]
+                - row [ref=f5e324]:
+                  - rowheader "202 Et. 2 Classic Doppelzimmer Sauber" [ref=f5e325]:
+                    - strong [ref=f5e326]: 202 Et. 2
+                    - generic [ref=f5e327]: Classic Doppelzimmer
+                    - generic [ref=f5e328]: Sauber
+                  - cell "Zimmer 202, Sa. 12.09" [ref=f5e329]
+                  - cell "Zimmer 202, So. 13.09" [ref=f5e330]
+                  - cell "Zimmer 202, Mo. 14.09" [ref=f5e331]
+                  - cell "Zimmer 202, Di. 15.09" [ref=f5e332]
+                  - cell "Zimmer 202, Mi. 16.09" [ref=f5e333]
+                  - cell "Zimmer 202, Do. 17.09" [ref=f5e334]
+                  - cell "Zimmer 202, Fr. 18.09" [ref=f5e335]
+                  - cell "Zimmer 202, Sa. 19.09" [ref=f5e336]
+                  - cell "Zimmer 202, So. 20.09" [ref=f5e337]
+                  - cell "Zimmer 202, Mo. 21.09" [ref=f5e338]
+                  - cell "Zimmer 202, Di. 22.09" [ref=f5e339]
+                  - cell "Zimmer 202, Mi. 23.09" [ref=f5e340]
+                  - cell "Zimmer 202, Do. 24.09" [ref=f5e341]
+                  - cell "Zimmer 202, Fr. 25.09" [ref=f5e342]
+                  - cell "Zimmer 202, Sa. 26.09" [ref=f5e343]
+                  - cell "Zimmer 202, So. 27.09" [ref=f5e344]
+                  - cell "Zimmer 202, Mo. 28.09" [ref=f5e345]
+                  - cell "Zimmer 202, Di. 29.09" [ref=f5e346]
+                  - cell "Zimmer 202, Mi. 30.09" [ref=f5e347]
+                  - cell "Zimmer 202, Do. 01.10" [ref=f5e348]
+                  - cell "Zimmer 202, Fr. 02.10" [ref=f5e349]
+                  - cell "Zimmer 202, Sa. 03.10" [ref=f5e350]
+                  - cell "Zimmer 202, So. 04.10" [ref=f5e351]
+                  - cell "Zimmer 202, Mo. 05.10" [ref=f5e352]
+                  - cell "Zimmer 202, Di. 06.10" [ref=f5e353]
+                  - cell "Zimmer 202, Mi. 07.10" [ref=f5e354]
+                  - cell "Zimmer 202, Do. 08.10" [ref=f5e355]
+                  - cell "Zimmer 202, Fr. 09.10" [ref=f5e356]
+                  - cell "Zimmer 202, Sa. 10.10" [ref=f5e357]
+                  - cell "Zimmer 202, So. 11.10" [ref=f5e358]
+                  - button "Mia Rossi" [ref=f5e359]
+                - row [ref=f5e360]:
+                  - rowheader "203 Et. 2 Classic Doppelzimmer Sauber" [ref=f5e361]:
+                    - strong [ref=f5e362]: 203 Et. 2
+                    - generic [ref=f5e363]: Classic Doppelzimmer
+                    - generic [ref=f5e364]: Sauber
+                  - cell "Zimmer 203, Sa. 12.09" [ref=f5e365]
+                  - cell "Zimmer 203, So. 13.09" [ref=f5e366]
+                  - cell "Zimmer 203, Mo. 14.09" [ref=f5e367]
+                  - cell "Zimmer 203, Di. 15.09" [ref=f5e368]
+                  - cell "Zimmer 203, Mi. 16.09" [ref=f5e369]
+                  - cell "Zimmer 203, Do. 17.09" [ref=f5e370]
+                  - cell "Zimmer 203, Fr. 18.09" [ref=f5e371]
+                  - cell "Zimmer 203, Sa. 19.09" [ref=f5e372]
+                  - cell "Zimmer 203, So. 20.09" [ref=f5e373]
+                  - cell "Zimmer 203, Mo. 21.09" [ref=f5e374]
+                  - cell "Zimmer 203, Di. 22.09" [ref=f5e375]
+                  - cell "Zimmer 203, Mi. 23.09" [ref=f5e376]
+                  - cell "Zimmer 203, Do. 24.09" [ref=f5e377]
+                  - cell "Zimmer 203, Fr. 25.09" [ref=f5e378]
+                  - cell "Zimmer 203, Sa. 26.09" [ref=f5e379]
+                  - cell "Zimmer 203, So. 27.09" [ref=f5e380]
+                  - cell "Zimmer 203, Mo. 28.09" [ref=f5e381]
+                  - cell "Zimmer 203, Di. 29.09" [ref=f5e382]
+                  - cell "Zimmer 203, Mi. 30.09" [ref=f5e383]
+                  - cell "Zimmer 203, Do. 01.10" [ref=f5e384]
+                  - cell "Zimmer 203, Fr. 02.10" [ref=f5e385]
+                  - cell "Zimmer 203, Sa. 03.10" [ref=f5e386]
+                  - cell "Zimmer 203, So. 04.10" [ref=f5e387]
+                  - cell "Zimmer 203, Mo. 05.10" [ref=f5e388]
+                  - cell "Zimmer 203, Di. 06.10" [ref=f5e389]
+                  - cell "Zimmer 203, Mi. 07.10" [ref=f5e390]
+                  - cell "Zimmer 203, Do. 08.10" [ref=f5e391]
+                  - cell "Zimmer 203, Fr. 09.10" [ref=f5e392]
+                  - cell "Zimmer 203, Sa. 10.10" [ref=f5e393]
+                  - cell "Zimmer 203, So. 11.10" [ref=f5e394]
+                  - button "Jonas Wenger" [ref=f5e395]
+                - row [ref=f5e396]:
+                  - rowheader "301 Et. 3 Limmat Suite Sauber" [ref=f5e397]:
+                    - strong [ref=f5e398]: 301 Et. 3
+                    - generic [ref=f5e399]: Limmat Suite
+                    - generic [ref=f5e400]: Sauber
+                  - cell "Zimmer 301, Sa. 12.09" [ref=f5e401]
+                  - cell "Zimmer 301, So. 13.09" [ref=f5e402]
+                  - cell "Zimmer 301, Mo. 14.09" [ref=f5e403]
+                  - cell "Zimmer 301, Di. 15.09" [ref=f5e404]
+                  - cell "Zimmer 301, Mi. 16.09" [ref=f5e405]
+                  - cell "Zimmer 301, Do. 17.09" [ref=f5e406]
+                  - cell "Zimmer 301, Fr. 18.09" [ref=f5e407]
+                  - cell "Zimmer 301, Sa. 19.09" [ref=f5e408]
+                  - cell "Zimmer 301, So. 20.09" [ref=f5e409]
+                  - cell "Zimmer 301, Mo. 21.09" [ref=f5e410]
+                  - cell "Zimmer 301, Di. 22.09" [ref=f5e411]
+                  - cell "Zimmer 301, Mi. 23.09" [ref=f5e412]
+                  - cell "Zimmer 301, Do. 24.09" [ref=f5e413]
+                  - cell "Zimmer 301, Fr. 25.09" [ref=f5e414]
+                  - cell "Zimmer 301, Sa. 26.09" [ref=f5e415]
+                  - cell "Zimmer 301, So. 27.09" [ref=f5e416]
+                  - cell "Zimmer 301, Mo. 28.09" [ref=f5e417]
+                  - cell "Zimmer 301, Di. 29.09" [ref=f5e418]
+                  - cell "Zimmer 301, Mi. 30.09" [ref=f5e419]
+                  - cell "Zimmer 301, Do. 01.10" [ref=f5e420]
+                  - cell "Zimmer 301, Fr. 02.10" [ref=f5e421]
+                  - cell "Zimmer 301, Sa. 03.10" [ref=f5e422]
+                  - cell "Zimmer 301, So. 04.10" [ref=f5e423]
+                  - cell "Zimmer 301, Mo. 05.10" [ref=f5e424]
+                  - cell "Zimmer 301, Di. 06.10" [ref=f5e425]
+                  - cell "Zimmer 301, Mi. 07.10" [ref=f5e426]
+                  - cell "Zimmer 301, Do. 08.10" [ref=f5e427]
+                  - cell "Zimmer 301, Fr. 09.10" [ref=f5e428]
+                  - cell "Zimmer 301, Sa. 10.10" [ref=f5e429]
+                  - cell "Zimmer 301, So. 11.10" [ref=f5e430]
+                  - button "Ausser Betrieb – nicht verkaufbar (OOO)" [ref=f5e431] [cursor=pointer]
+                - row [ref=f5e432]:
+                  - rowheader "302 Et. 3 Limmat Suite Sauber" [ref=f5e433]:
+                    - strong [ref=f5e434]: 302 Et. 3
+                    - generic [ref=f5e435]: Limmat Suite
+                    - generic [ref=f5e436]: Sauber
+                  - cell "Zimmer 302, Sa. 12.09" [ref=f5e437]
+                  - cell "Zimmer 302, So. 13.09" [ref=f5e438]
+                  - cell "Zimmer 302, Mo. 14.09" [ref=f5e439]
+                  - cell "Zimmer 302, Di. 15.09" [ref=f5e440]
+                  - cell "Zimmer 302, Mi. 16.09" [ref=f5e441]
+                  - cell "Zimmer 302, Do. 17.09" [ref=f5e442]
+                  - cell "Zimmer 302, Fr. 18.09" [ref=f5e443]
+                  - cell "Zimmer 302, Sa. 19.09" [ref=f5e444]
+                  - cell "Zimmer 302, So. 20.09" [ref=f5e445]
+                  - cell "Zimmer 302, Mo. 21.09" [ref=f5e446]
+                  - cell "Zimmer 302, Di. 22.09" [ref=f5e447]
+                  - cell "Zimmer 302, Mi. 23.09" [ref=f5e448]
+                  - cell "Zimmer 302, Do. 24.09" [ref=f5e449]
+                  - cell "Zimmer 302, Fr. 25.09" [ref=f5e450]
+                  - cell "Zimmer 302, Sa. 26.09" [ref=f5e451]
+                  - cell "Zimmer 302, So. 27.09" [ref=f5e452]
+                  - cell "Zimmer 302, Mo. 28.09" [ref=f5e453]
+                  - cell "Zimmer 302, Di. 29.09" [ref=f5e454]
+                  - cell "Zimmer 302, Mi. 30.09" [ref=f5e455]
+                  - cell "Zimmer 302, Do. 01.10" [ref=f5e456]
+                  - cell "Zimmer 302, Fr. 02.10" [ref=f5e457]
+                  - cell "Zimmer 302, Sa. 03.10" [ref=f5e458]
+                  - cell "Zimmer 302, So. 04.10" [ref=f5e459]
+                  - cell "Zimmer 302, Mo. 05.10" [ref=f5e460]
+                  - cell "Zimmer 302, Di. 06.10" [ref=f5e461]
+                  - cell "Zimmer 302, Mi. 07.10" [ref=f5e462]
+                  - cell "Zimmer 302, Do. 08.10" [ref=f5e463]
+                  - cell "Zimmer 302, Fr. 09.10" [ref=f5e464]
+                  - cell "Zimmer 302, Sa. 10.10" [ref=f5e465]
+                  - cell "Zimmer 302, So. 11.10" [ref=f5e466]
+            - generic [ref=f5e467]:
+              - generic [ref=f5e468]: 1–7 von 7 Zimmern · Seite 1 / 1
+              - button "Vorherige Zimmer" [disabled] [ref=f5e469]
+              - button "Weitere Zimmer" [disabled] [ref=f5e470]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

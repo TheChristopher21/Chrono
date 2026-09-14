@@ -4,33 +4,38 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserAudit;
 import com.chrono.chrono.repositories.UserAuditRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostRemove;
 import jakarta.persistence.PreUpdate;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 @Component
 public class UserAuditListener {
-    private static final Map<Long, User> PREVIOUS = new HashMap<>();
+    private static final Map<User, User> PREVIOUS =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
-    private static UserAuditRepository repo;
+    private final ObjectProvider<UserAuditRepository> repositoryProvider;
 
     @Autowired
-    public void init(UserAuditRepository r) {
-        repo = r;
+    public UserAuditListener(ObjectProvider<UserAuditRepository> repositoryProvider) {
+        this.repositoryProvider = repositoryProvider;
     }
 
     @PostLoad
     public void postLoad(User user) {
-        PREVIOUS.put(user.getId(), copy(user));
+        PREVIOUS.put(user, copy(user));
     }
 
     @PreUpdate
     public void preUpdate(User user) {
-        User old = PREVIOUS.get(user.getId());
+        User old = PREVIOUS.get(user);
         if (old != null) {
+            UserAuditRepository repo = repositoryProvider.getObject();
             if (diff(old.getBankAccount(), user.getBankAccount())) {
                 repo.save(new UserAudit(user, "bankAccount", old.getBankAccount(), user.getBankAccount()));
             }
@@ -41,7 +46,12 @@ public class UserAuditListener {
                 repo.save(new UserAudit(user, "email", old.getEmail(), user.getEmail()));
             }
         }
-        PREVIOUS.put(user.getId(), copy(user));
+        PREVIOUS.put(user, copy(user));
+    }
+
+    @PostRemove
+    public void postRemove(User user) {
+        PREVIOUS.remove(user);
     }
 
     private boolean diff(String a, String b) {

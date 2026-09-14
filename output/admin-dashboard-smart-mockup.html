@@ -1,0 +1,2971 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chrono Admin Dashboard Mockup</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #d8dee8;
+      --line-strong: #c7d0de;
+      --ink: #172033;
+      --muted: #657386;
+      --nav: #111827;
+      --nav-soft: #202b3b;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #15803d;
+      --green-soft: #dcfce7;
+      --yellow: #b7791f;
+      --yellow-soft: #fef3c7;
+      --red: #b42318;
+      --red-soft: #fee2e2;
+      --cyan: #0e7490;
+      --cyan-soft: #cffafe;
+      --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      letter-spacing: 0;
+      font-size: 15px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--nav);
+      color: #f8fafc;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 850;
+      background: var(--nav-soft);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 3px;
+      color: #b9c2d0;
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav button {
+      border: 0;
+      width: 100%;
+      height: 48px;
+      border-radius: 8px;
+      background: transparent;
+      color: #dbe4f0;
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: var(--nav-soft);
+      color: #ffffff;
+    }
+
+    .nav-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: #111827;
+      background: #dbeafe;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .nav button[data-view="requests"] .nav-icon {
+      background: #fef3c7;
+    }
+
+    .nav button[data-view="month"] .nav-icon {
+      background: #dcfce7;
+    }
+
+    .nav button[data-view="teamtime"] .nav-icon {
+      background: #cffafe;
+    }
+
+    .nav button[data-view="calendar"] .nav-icon {
+      background: #fee2e2;
+    }
+
+    .count {
+      min-width: 24px;
+      height: 20px;
+      border-radius: 999px;
+      padding: 0 7px;
+      display: grid;
+      place-items: center;
+      background: #fde68a;
+      color: #111827;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    main {
+      min-width: 0;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .segmented {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 1fr);
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px;
+      background: var(--surface);
+    }
+
+    .segmented button {
+      border: 0;
+      border-radius: 6px;
+      padding: 0 12px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .segmented button.active {
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .search {
+      width: min(330px, 38vw);
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 7px;
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .kpi .value {
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .senior-flow {
+      margin: 0 0 14px;
+      border: 2px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .senior-flow header {
+      border-bottom: 1px solid #bfdbfe;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .senior-flow h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .senior-flow p {
+      margin: 4px 0 0;
+      color: #355278;
+      line-height: 1.4;
+    }
+
+    .step-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .step-card {
+      min-height: 134px;
+      border: 1px solid #c7d8f5;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 13px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .step-card strong {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .step-number {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      background: #111827;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 900;
+      flex: none;
+    }
+
+    .step-card span:not(.step-number) {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .feature-item {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .feature-item strong {
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .feature-item span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .feature-tag {
+      width: fit-content;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .kpi.red .value { color: var(--red); }
+    .kpi.yellow .value { color: var(--yellow); }
+    .kpi.green .value { color: var(--green); }
+    .kpi.blue .value { color: var(--blue); }
+
+    .terms {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: -4px 0 14px;
+    }
+
+    .term {
+      min-height: 66px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--surface);
+    }
+
+    .term strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .term span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.9fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .section-gap {
+      margin-top: 14px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      min-height: 56px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel-actions,
+    .chips {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 12px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    button.chip {
+      min-height: 36px;
+    }
+
+    .chip.active {
+      border-color: #111827;
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 14px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    tr.selected td {
+      background: #eef6ff;
+    }
+
+    .employee {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 850;
+      flex: none;
+    }
+
+    .employee strong,
+    .employee span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .employee span {
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.red { background: var(--red); }
+    .dot.blue { background: var(--blue); }
+    .dot.cyan { background: var(--cyan); }
+
+    .number {
+      font-variant-numeric: tabular-nums;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .neg { color: var(--red); }
+    .pos { color: var(--green); }
+    .neutral { color: var(--muted); }
+
+    .bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #e5eaf1;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .bar.warn span { background: var(--yellow); }
+    .bar.danger span { background: var(--red); }
+    .bar.info span { background: var(--blue); }
+
+    .primary-button,
+    .ghost-button,
+    .danger-button {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 0 13px;
+      font-size: 13px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .primary-button {
+      border: 1px solid #111827;
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .ghost-button {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+    }
+
+    .danger-button {
+      border: 1px solid var(--red);
+      background: var(--red);
+      color: #ffffff;
+    }
+
+    .actions {
+      display: grid;
+    }
+
+    .action-item {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 14px;
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 11px;
+    }
+
+    .action-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .action-icon.red { background: var(--red); color: #ffffff; }
+    .action-icon.yellow { background: #fde68a; color: #111827; }
+    .action-icon.blue { background: var(--blue); color: #ffffff; }
+    .action-icon.green { background: var(--green); color: #ffffff; }
+
+    .action-item h3 {
+      margin: 0 0 3px;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .action-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .micro-note {
+      margin-top: 8px;
+      border-left: 3px solid var(--line-strong);
+      padding-left: 10px;
+      color: #45566f;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .hint {
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #eff6ff;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .hint strong {
+      color: #1d4ed8;
+    }
+
+    .hint.warning {
+      border-color: #fde68a;
+      background: #fffbeb;
+    }
+
+    .hint.warning strong {
+      color: #92400e;
+    }
+
+    .detail {
+      padding: 14px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .detail-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .detail-top h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .detail-top p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .detail-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat {
+      min-height: 72px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface-soft);
+      display: grid;
+      align-content: center;
+      gap: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      font-size: 17px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .heatmap {
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .heat-row {
+      min-width: 610px;
+      margin-bottom: 7px;
+      display: grid;
+      grid-template-columns: 120px repeat(5, minmax(78px, 1fr));
+      gap: 6px;
+      align-items: center;
+    }
+
+    .heat-row.header {
+      margin-bottom: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .heat-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .heat-cell {
+      min-height: 34px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 6px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 780;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .heat-cell.ok { background: var(--green-soft); color: #14532d; border-color: #bbf7d0; }
+    .heat-cell.warn { background: var(--yellow-soft); color: #78350f; border-color: #fde68a; }
+    .heat-cell.bad { background: var(--red-soft); color: #7f1d1d; border-color: #fecaca; }
+    .heat-cell.off { background: var(--surface-soft); color: var(--muted); border-color: #e2e8f0; }
+    .heat-cell.info { background: var(--cyan-soft); color: #155e75; border-color: #a5f3fc; }
+
+    .mini-bars {
+      display: grid;
+      gap: 7px;
+    }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: 76px 1fr 78px;
+      align-items: center;
+      gap: 9px;
+      font-size: 12px;
+    }
+
+    .mini-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #e5eaf1;
+      overflow: hidden;
+    }
+
+    .mini-bar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--cyan);
+    }
+
+    .stamp-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .stamp-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: minmax(100px, 0.7fr) minmax(0, 1.8fr) minmax(84px, 0.5fr);
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stamp-heading {
+      display: grid;
+      gap: 3px;
+    }
+
+    .stamp-heading strong {
+      font-size: 13px;
+    }
+
+    .stamp-heading span,
+    .stamp-note {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .stamp-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .stamp-chip {
+      min-height: 28px;
+      border: 1px solid #dbe3ee;
+      border-radius: 999px;
+      background: #fff;
+      padding: 5px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .stamp-chip span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .stamp-chip.start { border-color: #bae6fd; background: var(--blue-soft); }
+    .stamp-chip.break { border-color: #fed7aa; background: #fff7ed; }
+    .stamp-chip.end { border-color: #bbf7d0; background: var(--green-soft); }
+    .stamp-chip.auto { border-color: #fecaca; background: var(--red-soft); }
+
+    .stamp-total {
+      text-align: right;
+      font-size: 12px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .stamp-table td,
+    .stamp-table th {
+      white-space: nowrap;
+    }
+
+    .stamp-table .stamp-points {
+      min-width: 290px;
+    }
+
+    .month-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .month-strip {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .month-card {
+      min-height: 108px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface-soft);
+      display: grid;
+      gap: 8px;
+    }
+
+    .month-card strong {
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .month-card span,
+    .month-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .calendar-grid {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(76px, 1fr));
+      gap: 6px;
+      overflow: auto;
+    }
+
+    .day-head,
+    .day-box {
+      min-width: 76px;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    .day-head {
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .day-box {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+    }
+
+    .day-box strong {
+      font-size: 13px;
+    }
+
+    .day-box span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .day-box.warn { border-color: #fde68a; background: #fffbeb; }
+    .day-box.bad { border-color: #fecaca; background: #fff1f2; }
+
+    .request-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .request-column {
+      min-height: 392px;
+    }
+
+    .request-card {
+      margin: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      display: grid;
+      gap: 9px;
+    }
+
+    .request-card h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .request-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .request-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 0 9px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .badge.red { background: var(--red-soft); color: #7f1d1d; }
+    .badge.yellow { background: var(--yellow-soft); color: #78350f; }
+    .badge.green { background: var(--green-soft); color: #14532d; }
+    .badge.blue { background: var(--blue-soft); color: #1d4ed8; }
+
+    .empty {
+      min-height: 118px;
+      margin: 12px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.28);
+      display: none;
+      z-index: 20;
+    }
+
+    .drawer-backdrop.open {
+      display: block;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(520px, 100vw);
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      box-shadow: -18px 0 40px rgba(15, 23, 42, 0.18);
+      transform: translateX(100%);
+      transition: transform 160ms ease;
+      z-index: 21;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header,
+    .drawer-footer {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .drawer-footer {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .drawer-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .drawer-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .drawer-body {
+      overflow: auto;
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .close-button {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font-weight: 850;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(380px, calc(100vw - 36px));
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      box-shadow: var(--shadow);
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+      z-index: 30;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Ruhige Standardansicht: Status, Aufgaben und Stempel stehen im Vordergrund. */
+    .title p,
+    .sidebar-note {
+      display: none;
+    }
+
+    #overview > .kpis,
+    #overview > .terms,
+    #overview > .senior-flow,
+    #overview > article.panel,
+    #overview > .grid-2,
+    #teamtime > .kpis,
+    #teamtime > article.panel,
+    #teamtime > .grid-2 {
+      display: none;
+    }
+
+    .clean-view {
+      display: grid;
+      gap: 16px;
+    }
+
+    .clean-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--blue);
+      border-radius: 8px;
+      padding: 16px 18px;
+      background: var(--surface);
+      box-shadow: 0 5px 16px rgba(15, 23, 42, 0.06);
+      display: grid;
+      align-content: center;
+      gap: 7px;
+    }
+
+    .summary-card.warning { border-left-color: var(--yellow); }
+    .summary-card.danger { border-left-color: var(--red); }
+    .summary-card.success { border-left-color: var(--green); }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-note {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .clean-panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 5px 16px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .clean-panel-header {
+      min-height: 64px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .clean-panel-header h2 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+    }
+
+    .clean-panel-header .date-label {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .clean-toolbar,
+    .date-navigation,
+    .filter-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .date-navigation strong {
+      min-width: 138px;
+      text-align: center;
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .task-list {
+      display: grid;
+    }
+
+    .task-row {
+      min-height: 72px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: 34px minmax(180px, 1fr) minmax(120px, auto) auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .task-row:last-child {
+      border-bottom: 0;
+    }
+
+    .task-rank {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #eef2f7;
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .task-main strong,
+    .task-main span {
+      display: block;
+    }
+
+    .task-main strong {
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .task-main span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .task-value {
+      font-size: 15px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .stamp-table-wrap {
+      overflow: auto;
+      scrollbar-gutter: stable;
+    }
+
+    .clear-stamp-table {
+      min-width: 1040px;
+      table-layout: auto;
+    }
+
+    .clear-stamp-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      color: #445269;
+      font-size: 13px;
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .clear-stamp-table td {
+      height: 68px;
+      padding: 12px 14px;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    .clear-stamp-table tbody tr:hover td {
+      background: #f8fbff;
+    }
+
+    .clear-stamp-table tr.needs-attention td {
+      background: #fff8f2;
+    }
+
+    .clear-stamp-table tr.needs-attention td:first-child {
+      box-shadow: inset 4px 0 0 var(--red);
+    }
+
+    .employee-day strong,
+    .employee-day span {
+      display: block;
+    }
+
+    .employee-day strong {
+      font-size: 16px;
+    }
+
+    .employee-day span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .clock-time {
+      font-size: 17px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .clock-time.empty {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .clear-status {
+      min-height: 30px;
+      border-radius: 999px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--green-soft);
+      color: #14532d;
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .clear-status.warning {
+      background: var(--red-soft);
+      color: #7f1d1d;
+    }
+
+    .clear-status.info {
+      background: var(--blue-soft);
+      color: #1d4ed8;
+    }
+
+    .team-summary-table {
+      min-width: 900px;
+      table-layout: auto;
+    }
+
+    .team-summary-table th,
+    .team-summary-table td {
+      padding: 14px 16px;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    .team-summary-table th {
+      font-size: 13px;
+      text-transform: none;
+    }
+
+    .panel-footer-actions {
+      border-top: 1px solid var(--line);
+      padding: 11px 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--surface-soft);
+    }
+
+    body.simple-mode .micro-note {
+      display: none;
+    }
+
+    body.simple-mode .terms,
+    body.simple-mode .kpi .meta,
+    body.simple-mode .feature-item span:not(.feature-tag),
+    body.simple-mode .panel-header > div > span {
+      display: none;
+    }
+
+    body.simple-mode .feature-item {
+      min-height: 92px;
+    }
+
+    body.simple-mode .feature-item span:not(.feature-tag) {
+      display: none;
+    }
+
+    body.simple-mode .senior-flow {
+      border-color: #2563eb;
+    }
+
+    .hidden-by-search {
+      display: none;
+    }
+
+    @media (max-width: 1180px) {
+      .clean-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .kpis,
+      .terms,
+      .grid-3,
+      .request-board,
+      .feature-grid,
+      .step-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-2,
+      .month-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .tools,
+      .search {
+        width: 100%;
+      }
+
+      .clean-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .task-row {
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+      }
+
+      .task-value {
+        grid-column: 2;
+      }
+
+      .clean-panel-header,
+      .clean-toolbar {
+        align-items: stretch;
+      }
+
+      .kpis,
+      .terms,
+      .grid-3,
+      .request-board,
+      .feature-grid,
+      .step-list,
+      .detail-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .stamp-row {
+        grid-template-columns: 1fr;
+      }
+
+      .stamp-total {
+        text-align: left;
+      }
+
+      table {
+        min-width: 780px;
+      }
+    }
+  </style>
+</head>
+<body class="simple-mode">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">C</div>
+        <div>
+          <strong>Chrono Admin</strong>
+          <span>Firma: ItSupport</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Admin Bereiche">
+        <button class="active" data-view="overview"><span class="nav-icon">U</span><span>Übersicht</span><span class="count">6</span></button>
+        <button data-view="teamtime"><span class="nav-icon">Z</span><span>Zeitprüfung</span><span></span></button>
+        <button data-view="month"><span class="nav-icon">M</span><span>Monat</span><span></span></button>
+        <button data-view="requests"><span class="nav-icon">A</span><span>Anträge</span><span class="count">6</span></button>
+        <button data-view="calendar"><span class="nav-icon">K</span><span>Kalender</span><span></span></button>
+        <button data-view="modules"><span class="nav-icon">P</span><span>Module</span><span></span></button>
+      </nav>
+
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div class="title">
+          <h1 id="page-title">Admin Dashboard</h1>
+          <p id="page-subtitle">Offene Aufgaben und Stempelzeiten auf einen Blick.</p>
+        </div>
+        <div class="tools">
+          <div class="segmented" aria-label="Zeitraum">
+            <button data-period="today">Heute</button>
+            <button class="active" data-period="week">Woche</button>
+            <button data-period="month">Monat</button>
+          </div>
+          <input class="search" id="global-search" placeholder="Mitarbeiter suchen">
+          <button class="ghost-button" data-action="toggle-simple" aria-pressed="false">Erklärungen</button>
+          <button class="primary-button" data-action="close-week">Wochenabschluss</button>
+        </div>
+      </section>
+
+      <section id="overview" class="view active">
+        <div class="clean-view" aria-label="Klare Admin-Übersicht">
+          <div class="clean-summary">
+            <article class="summary-card danger">
+              <span class="summary-label">Offene Anträge</span>
+              <strong class="summary-value">6</strong>
+              <span class="summary-note">Alle bei Rosa</span>
+            </article>
+            <article class="summary-card warning">
+              <span class="summary-label">Stempel prüfen</span>
+              <strong class="summary-value">1</strong>
+              <span class="summary-note">Nadine, heute</span>
+            </article>
+            <article class="summary-card success">
+              <span class="summary-label">Woche Plus/Minus</span>
+              <strong class="summary-value">-0h 13m</strong>
+              <span class="summary-note">Fast ausgeglichen</span>
+            </article>
+          </div>
+
+          <section class="clean-panel" aria-labelledby="today-tasks-title">
+            <header class="clean-panel-header">
+              <h2 id="today-tasks-title">Heute zu erledigen</h2>
+              <button class="ghost-button" data-view-jump="requests">Alle Anträge</button>
+            </header>
+            <div class="task-list">
+              <div class="task-row">
+                <span class="task-rank">1</span>
+                <div class="task-main"><strong>Rosas Korrekturen prüfen</strong><span>02. und 03. Juli</span></div>
+                <span class="task-value neg">6 offen</span>
+                <button class="primary-button" data-drawer="rosa-group">Prüfen</button>
+              </div>
+              <div class="task-row">
+                <span class="task-rank">2</span>
+                <div class="task-main"><strong>Nadines Stempel prüfen</strong><span>Heute keine Stempelung</span></div>
+                <span class="task-value">Heute</span>
+                <button class="ghost-button" data-action="new-entry">Eintragen</button>
+              </div>
+              <div class="task-row">
+                <span class="task-rank">3</span>
+                <div class="task-main"><strong>Gabrielas Zeitkonto ansehen</strong><span>Aktuelle Woche ist fast im Plan</span></div>
+                <span class="task-value neg">-27h 56m</span>
+                <button class="ghost-button" data-drawer="gabriela">Öffnen</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="clean-panel" aria-labelledby="overview-stamps-title">
+            <header class="clean-panel-header">
+              <div>
+                <h2 id="overview-stamps-title">Stempelzeiten</h2>
+                <span class="date-label">Woche 13.-19. Juli 2026</span>
+              </div>
+              <div class="clean-toolbar">
+                <div class="date-navigation" aria-label="Woche wechseln">
+                  <button class="icon-button" data-action="previous-week" aria-label="Vorherige Woche" title="Vorherige Woche">&lsaquo;</button>
+                  <button class="ghost-button" data-action="current-week">Heute</button>
+                  <button class="icon-button" data-action="next-week" aria-label="Nächste Woche" title="Nächste Woche">&rsaquo;</button>
+                </div>
+                <button class="primary-button" data-view-jump="teamtime">Alle Stempelzeiten</button>
+              </div>
+            </header>
+            <div class="stamp-table-wrap">
+              <table class="clear-stamp-table">
+                <thead>
+                  <tr>
+                    <th>Mitarbeiter / Tag</th>
+                    <th>Start</th>
+                    <th>Pause</th>
+                    <th>Ende</th>
+                    <th>Gearbeitet</th>
+                    <th>Geplant</th>
+                    <th>Plus/Minus</th>
+                    <th>Status</th>
+                    <th>Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-category="normal">
+                    <td><div class="employee-day"><strong>Gabriela</strong><span>Di, 14.07.2026</span></div></td>
+                    <td class="clock-time">07:48</td>
+                    <td class="clock-time">12:01-12:32</td>
+                    <td class="clock-time">17:35</td>
+                    <td class="number">9h 16m</td>
+                    <td class="number">8h 30m</td>
+                    <td class="number pos">+0h 46m</td>
+                    <td><span class="clear-status"><span class="dot green"></span>Vollständig</span></td>
+                    <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                  </tr>
+                  <tr data-category="normal">
+                    <td><div class="employee-day"><strong>Gabriela</strong><span>Mi, 15.07.2026</span></div></td>
+                    <td class="clock-time">08:03</td>
+                    <td class="clock-time">12:15-12:45</td>
+                    <td class="clock-time">16:04</td>
+                    <td class="number">7h 31m</td>
+                    <td class="number">8h 30m</td>
+                    <td class="number neg">-0h 59m</td>
+                    <td><span class="clear-status"><span class="dot green"></span>Vollständig</span></td>
+                    <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                  </tr>
+                  <tr class="needs-attention" data-category="attention">
+                    <td><div class="employee-day"><strong>Nadine</strong><span>Heute, 17.07.2026</span></div></td>
+                    <td class="clock-time empty">-</td>
+                    <td class="clock-time empty">-</td>
+                    <td class="clock-time empty">-</td>
+                    <td class="number">0h 00m</td>
+                    <td class="number">0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td><span class="clear-status warning"><span class="dot red"></span>Prüfen</span></td>
+                    <td><button class="primary-button" data-action="new-entry">Eintragen</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi red">
+            <span class="label">Offene Entscheidungen</span>
+            <strong class="value">6</strong>
+            <span class="meta">6 Korrekturen, 0 Urlaub. Alles aktuell bei Rosa.</span>
+          </div>
+          <div class="kpi yellow">
+            <span class="label">Plus/Minus Woche</span>
+            <strong class="value">-0h 13m</strong>
+            <span class="meta">Teamwoche 13.07.-19.07.; nur Gabriela liegt knapp unter Plan.</span>
+          </div>
+          <div class="kpi red">
+            <span class="label">Zeitkonto negativ</span>
+            <strong class="value">1</strong>
+            <span class="meta">Gabriela: -27h 56m im gesamten Zeitkonto.</span>
+          </div>
+          <div class="kpi blue">
+            <span class="label">Abschlussreife</span>
+            <strong class="value">5/7</strong>
+            <span class="meta">Zwei Punkte noch prüfen: Rosa-Anträge und Gabriela-Zeitkonto.</span>
+          </div>
+        </div>
+
+        <div class="terms" aria-label="Begriffshilfe">
+          <div class="term"><strong>Gearbeitet</strong><span>Zeit, die gestempelt oder erfasst wurde.</span></div>
+          <div class="term"><strong>Geplant</strong><span>Zeit, die laut Arbeitsmodell erwartet wird.</span></div>
+          <div class="term"><strong>Plus/Minus</strong><span>Unterschied nur im gewählten Zeitraum.</span></div>
+          <div class="term"><strong>Zeitkonto</strong><span>Gesamter angesammelter Stand über längere Zeit.</span></div>
+        </div>
+
+        <section class="senior-flow" aria-label="Heute zuerst">
+          <header>
+            <div>
+              <h2>Heute zuerst</h2>
+              <p>Nur drei Schritte. Wenn diese erledigt sind, ist das Dashboard für heute praktisch sauber.</p>
+            </div>
+            <button class="primary-button" data-view-jump="requests">Mit Schritt 1 starten</button>
+          </header>
+          <div class="step-list">
+            <article class="step-card">
+              <strong><span class="step-number">1</span> Rosa-Korrekturen prüfen</strong>
+              <span>6 offene Korrekturen mit gleichem Grund. Als Gruppe öffnen, Kommentar prüfen, dann entscheiden.</span>
+              <button class="primary-button" data-drawer="rosa-group">Korrekturen öffnen</button>
+            </article>
+            <article class="step-card">
+              <strong><span class="step-number">2</span> Gabriela-Zeitkonto ansehen</strong>
+              <span>Die Woche passt fast. Das negative Zeitkonto kommt eher aus früheren Zeiträumen.</span>
+              <button class="ghost-button" data-drawer="gabriela">Zeitkonto ansehen</button>
+            </article>
+            <article class="step-card">
+              <strong><span class="step-number">3</span> Abschluss vorbereiten</strong>
+              <span>Erst wenn offene Anträge erledigt sind, lohnt sich Drucken, Export oder Monatsabschluss.</span>
+              <button class="ghost-button" data-view-jump="month">Monat prüfen</button>
+            </article>
+          </div>
+        </section>
+
+        <article class="panel section-gap">
+          <header class="panel-header">
+            <div>
+              <h2>Live-Funktionen im neuen Aufbau</h2>
+              <span>Alles bleibt erreichbar, aber nach Alltag sortiert</span>
+            </div>
+            <button class="ghost-button" data-view-jump="modules">Alle Module</button>
+          </header>
+          <div class="feature-grid">
+            <div class="feature-item"><span class="feature-tag">Zeit</span><strong>Wochen- und Monatsprüfung</strong><span>Gearbeitet, geplant, Plus/Minus, Zeitkonto und Problemfilter.</span></div>
+            <div class="feature-item"><span class="feature-tag">Stempel</span><strong>Tageskarten</strong><span>Start, Pause, Ende, automatische Enden und fehlende Stempel sichtbar.</span></div>
+            <div class="feature-item"><span class="feature-tag">Bearbeiten</span><strong>Zeiten ändern</strong><span>Bearbeiten, neuer Eintrag, Nutzer ausblenden und Mitarbeiterdetail.</span></div>
+            <div class="feature-item"><span class="feature-tag">Anträge</span><strong>Urlaub & Korrekturen</strong><span>Genehmigen, ablehnen, Kommentar, Gruppierung und Historie.</span></div>
+            <div class="feature-item"><span class="feature-tag">Kalender</span><strong>Urlaub, krank, Feiertage</strong><span>Abwesenheiten erklären Zeitwerte und zeigen Konflikte mit Stempeln.</span></div>
+            <div class="feature-item"><span class="feature-tag">Druck</span><strong>Berichte & Export</strong><span>Zeitenbericht pro Mitarbeiter, PDF/CSV und Monatsabschluss.</span></div>
+            <div class="feature-item"><span class="feature-tag">Admin</span><strong>Benutzer & Rechte</strong><span>Benutzerverwaltung, Passwort ändern, Firmeneinstellungen und Module.</span></div>
+            <div class="feature-item"><span class="feature-tag">Weitere</span><strong>Kunden, Projekte, Planung</strong><span>Projektzeiten, Dienstplan, Lohn, Analytics, CRM und Import als Startpunkte.</span></div>
+          </div>
+        </article>
+
+        <div class="grid-2">
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Team-Matrix</h2>
+                <span>Nach Handlungsbedarf sortiert, nicht alphabetisch</span>
+              </div>
+              <div class="panel-actions">
+                <button class="chip active" data-filter="all">Alle</button>
+                <button class="chip" data-filter="attention">Auffällig</button>
+                <button class="chip" data-filter="hourly">Stundenlohn</button>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 24%;">Mitarbeiter</th>
+                    <th style="width: 18%;">Status</th>
+                    <th style="width: 17%;">Gearbeitet / Geplant</th>
+                    <th style="width: 14%;">Plus/Minus</th>
+                    <th style="width: 14%;">Zeitkonto</th>
+                    <th style="width: 13%;">Nächster Schritt</th>
+                  </tr>
+                </thead>
+                <tbody id="team-rows">
+                  <tr class="selected" data-user="Rosa" data-category="attention" data-detail="requests">
+                    <td><div class="employee"><span class="avatar">R</span><div><strong>Rosa</strong><span>6 offene Korrekturen</span></div></div></td>
+                    <td><span class="status"><span class="dot red"></span>Anträge offen</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">51h 14m</td>
+                    <td><button class="ghost-button" data-view-jump="requests">Prüfen</button></td>
+                  </tr>
+                  <tr data-user="Gabriela" data-category="attention" data-detail="balance">
+                    <td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Zeitkonto-Fokus</span></div></div></td>
+                    <td><span class="status"><span class="dot yellow"></span>Zeitkonto prüfen</span></td>
+                    <td class="number">16h 47m / 17h 00m</td>
+                    <td class="number neg">-0h 13m</td>
+                    <td class="number neg">-27h 56m</td>
+                    <td><button class="ghost-button" data-drawer="gabriela">Öffnen</button></td>
+                  </tr>
+                  <tr data-user="Nadine" data-category="normal" data-detail="positive">
+                    <td><div class="employee"><span class="avatar">N</span><div><strong>Nadine</strong><span>Reguläre Zeitnutzerin</span></div></div></td>
+                    <td><span class="status"><span class="dot green"></span>Plus im Zeitkonto</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">53h 11m</td>
+                    <td><button class="ghost-button" data-drawer="nadine">Öffnen</button></td>
+                  </tr>
+                  <tr data-user="Mirjam" data-category="normal" data-detail="ok">
+                    <td><div class="employee"><span class="avatar">M</span><div><strong>Mirjam</strong><span>fast exakt im Monat</span></div></div></td>
+                    <td><span class="status"><span class="dot green"></span>Unauffällig</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">14h 45m</td>
+                    <td><button class="ghost-button" data-drawer="mirjam">Öffnen</button></td>
+                  </tr>
+                  <tr data-user="chris" data-category="hourly" data-detail="hourly">
+                    <td><div class="employee"><span class="avatar">C</span><div><strong>chris</strong><span>Stundenlohn</span></div></div></td>
+                    <td><span class="status"><span class="dot cyan"></span>ohne Planzeit</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">14h 37m</td>
+                    <td><button class="ghost-button" data-drawer="chris">Öffnen</button></td>
+                  </tr>
+                  <tr data-user="Wetzel" data-category="hourly" data-detail="hourly">
+                    <td><div class="employee"><span class="avatar">W</span><div><strong>Wetzel</strong><span>Stundenlohn</span></div></div></td>
+                    <td><span class="status"><span class="dot cyan"></span>ohne Planzeit</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">7h 30m</td>
+                    <td><button class="ghost-button" data-drawer="wetzel">Öffnen</button></td>
+                  </tr>
+                  <tr data-user="ItSupport" data-category="hourly" data-detail="admin">
+                    <td><div class="employee"><span class="avatar">I</span><div><strong>ItSupport</strong><span>Admin / Stundenlohn</span></div></div></td>
+                    <td><span class="status"><span class="dot blue"></span>Admin-Zeitkonto</span></td>
+                    <td class="number">0h 00m / 0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td class="number pos">8h 25m</td>
+                    <td><button class="ghost-button" data-drawer="itsupport">Öffnen</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Prioritäten</h2>
+                <span>Kurz, konkret, direkt ausführbar</span>
+              </div>
+              <button class="primary-button" data-view-jump="requests">Alle prüfen</button>
+            </header>
+            <div class="actions">
+              <div class="action-item">
+                <span class="action-icon red">1</span>
+                <div>
+                  <h3>Rosa: 6 Korrekturen bündeln</h3>
+                  <p>02.07. und 03.07., gleicher Grund: Stefan krank.</p>
+                  <div class="micro-note">Als Gruppe prüfen, damit der gleiche Kontext nicht sechsmal gelesen werden muss.</div>
+                </div>
+                <button class="ghost-button" data-view-jump="requests">Prüfen</button>
+              </div>
+              <div class="action-item">
+                <span class="action-icon yellow">2</span>
+                <div>
+                  <h3>Gabriela: Zeitkonto verstehen</h3>
+                  <p>Woche fast im Plan, aber Zeitkonto insgesamt -27h 56m.</p>
+                  <div class="micro-note">Im Monatsblick prüfen, ob Planzeit-Historie und Teilzeitmodell zusammenpassen.</div>
+                </div>
+                <button class="ghost-button" data-view-jump="month">Monat</button>
+              </div>
+              <div class="action-item">
+                <span class="action-icon blue">3</span>
+                <div>
+                  <h3>Stundenlohn getrennt halten</h3>
+                  <p>chris, Wetzel und ItSupport haben keine feste Planzeit.</p>
+                </div>
+                <button class="ghost-button" data-view-jump="teamtime">Zeitprüfung</button>
+              </div>
+              <div class="action-item">
+                <span class="action-icon green">4</span>
+                <div>
+                  <h3>Urlaub aktuell ruhig</h3>
+                  <p>0 offene Urlaubsanträge. Der Bereich kann im Hintergrund bleiben.</p>
+                </div>
+                <button class="ghost-button" data-view-jump="requests">Ansehen</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="grid-2 section-gap">
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Wochen-Scanner</h2>
+                <span>Mo-Fr als schnelle Plausibilitätsprüfung</span>
+              </div>
+              <button class="ghost-button" data-view-jump="teamtime">Zeitprüfung öffnen</button>
+            </header>
+            <div class="heatmap">
+              <div class="heat-row header"><span></span><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span></div>
+              <div class="heat-row">
+                <span class="heat-name">Gabriela</span>
+                <span class="heat-cell off">frei</span>
+                <span class="heat-cell ok">9h 16m</span>
+                <span class="heat-cell warn">7h 31m</span>
+                <span class="heat-cell off">frei</span>
+                <span class="heat-cell off">frei</span>
+              </div>
+              <div class="heat-row">
+                <span class="heat-name">Rosa</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell bad">Korr.</span>
+                <span class="heat-cell bad">Korr.</span>
+              </div>
+              <div class="heat-row">
+                <span class="heat-name">Nadine</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+                <span class="heat-cell off">0h</span>
+              </div>
+              <div class="heat-row">
+                <span class="heat-name">Stundenlohn</span>
+                <span class="heat-cell info">Plan frei</span>
+                <span class="heat-cell info">Plan frei</span>
+                <span class="heat-cell info">Plan frei</span>
+                <span class="heat-cell info">Plan frei</span>
+                <span class="heat-cell info">Plan frei</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Detail-Vorschau</h2>
+                <span>Beispiel: Gabriela</span>
+              </div>
+              <button class="primary-button" data-drawer="gabriela">Details</button>
+            </header>
+            <div class="detail">
+              <div class="detail-top">
+                <div>
+                  <h3>Woche fast ausgeglichen</h3>
+                  <p>Gearbeitet 16h 47m, geplant 17h 00m</p>
+                </div>
+              </div>
+              <div class="detail-stats">
+                <div class="stat"><span>Gearbeitet</span><strong>16h 47m</strong></div>
+                <div class="stat"><span>Geplant</span><strong>17h 00m</strong></div>
+                <div class="stat"><span>Zeitkonto</span><strong class="neg">-27h 56m</strong></div>
+              </div>
+              <div class="stamp-list" aria-label="Tages-Stempelzeiten">
+                <div class="stamp-row">
+                  <div class="stamp-heading"><strong>Di, 14.07.</strong><span>2 Arbeitsblöcke</span></div>
+                  <div class="stamp-points">
+                    <span class="stamp-chip start"><span>Start</span>07:48</span>
+                    <span class="stamp-chip break"><span>Pause</span>12:01-12:32</span>
+                    <span class="stamp-chip end"><span>Ende</span>17:35</span>
+                  </div>
+                  <div class="stamp-total pos">9h 16m</div>
+                </div>
+                <div class="stamp-row">
+                  <div class="stamp-heading"><strong>Mi, 15.07.</strong><span>2 Arbeitsblöcke</span></div>
+                  <div class="stamp-points">
+                    <span class="stamp-chip start"><span>Start</span>08:03</span>
+                    <span class="stamp-chip break"><span>Pause</span>12:15-12:45</span>
+                    <span class="stamp-chip end"><span>Ende</span>16:04</span>
+                  </div>
+                  <div class="stamp-total">7h 31m</div>
+                </div>
+              </div>
+              <div class="mini-bars">
+                <div class="mini-row"><span>Dienstag</span><div class="mini-bar"><span style="width: 100%"></span></div><strong>9h 16m</strong></div>
+                <div class="mini-row"><span>Mittwoch</span><div class="mini-bar"><span style="width: 82%"></span></div><strong>7h 31m</strong></div>
+                <div class="mini-row"><span>Rest</span><div class="mini-bar"><span style="width: 0%"></span></div><strong>0h 00m</strong></div>
+              </div>
+              <div class="hint warning">
+                <strong>Hinweis:</strong> Die Woche ist nicht das Problem. Das negative Zeitkonto kommt wahrscheinlich aus früheren Perioden oder dem Arbeitsmodell.
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="teamtime" class="view">
+        <div class="clean-view" aria-label="Klare Zeitprüfung">
+          <div class="clean-summary">
+            <article class="summary-card">
+              <span class="summary-label">Gearbeitet</span>
+              <strong class="summary-value">16h 47m</strong>
+              <span class="summary-note">Diese Woche</span>
+            </article>
+            <article class="summary-card">
+              <span class="summary-label">Geplant</span>
+              <strong class="summary-value">17h 00m</strong>
+              <span class="summary-note">Diese Woche</span>
+            </article>
+            <article class="summary-card warning">
+              <span class="summary-label">Plus/Minus</span>
+              <strong class="summary-value">-0h 13m</strong>
+              <span class="summary-note">Fast ausgeglichen</span>
+            </article>
+          </div>
+
+          <section class="clean-panel" aria-labelledby="all-stamps-title">
+            <header class="clean-panel-header">
+              <div>
+                <h2 id="all-stamps-title">Stempelzeiten der Woche</h2>
+                <span class="date-label">13.-19. Juli 2026</span>
+              </div>
+              <div class="clean-toolbar">
+                <div class="date-navigation" aria-label="Woche wechseln">
+                  <button class="icon-button" data-action="previous-week" aria-label="Vorherige Woche" title="Vorherige Woche">&lsaquo;</button>
+                  <button class="ghost-button" data-action="current-week">Heute</button>
+                  <button class="icon-button" data-action="next-week" aria-label="Nächste Woche" title="Nächste Woche">&rsaquo;</button>
+                </div>
+                <div class="filter-buttons panel-actions" aria-label="Stempelzeiten filtern">
+                  <button class="chip active" data-filter="all">Alle</button>
+                  <button class="chip" data-filter="attention">Nur prüfen</button>
+                </div>
+                <button class="ghost-button" data-action="print-times">Drucken</button>
+                <button class="primary-button" data-action="new-entry">Neuer Eintrag</button>
+              </div>
+            </header>
+            <div class="stamp-table-wrap">
+              <table class="clear-stamp-table">
+                <thead>
+                  <tr>
+                    <th>Mitarbeiter / Tag</th>
+                    <th>Start</th>
+                    <th>Pause</th>
+                    <th>Ende</th>
+                    <th>Gearbeitet</th>
+                    <th>Geplant</th>
+                    <th>Plus/Minus</th>
+                    <th>Status</th>
+                    <th>Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-category="normal">
+                    <td><div class="employee-day"><strong>Gabriela</strong><span>Di, 14.07.2026</span></div></td>
+                    <td class="clock-time">07:48</td>
+                    <td class="clock-time">12:01-12:32</td>
+                    <td class="clock-time">17:35</td>
+                    <td class="number">9h 16m</td>
+                    <td class="number">8h 30m</td>
+                    <td class="number pos">+0h 46m</td>
+                    <td><span class="clear-status"><span class="dot green"></span>Vollständig</span></td>
+                    <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                  </tr>
+                  <tr data-category="normal">
+                    <td><div class="employee-day"><strong>Gabriela</strong><span>Mi, 15.07.2026</span></div></td>
+                    <td class="clock-time">08:03</td>
+                    <td class="clock-time">12:15-12:45</td>
+                    <td class="clock-time">16:04</td>
+                    <td class="number">7h 31m</td>
+                    <td class="number">8h 30m</td>
+                    <td class="number neg">-0h 59m</td>
+                    <td><span class="clear-status"><span class="dot green"></span>Vollständig</span></td>
+                    <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                  </tr>
+                  <tr class="needs-attention" data-category="attention">
+                    <td><div class="employee-day"><strong>Nadine</strong><span>Heute, 17.07.2026</span></div></td>
+                    <td class="clock-time empty">-</td>
+                    <td class="clock-time empty">-</td>
+                    <td class="clock-time empty">-</td>
+                    <td class="number">0h 00m</td>
+                    <td class="number">0h 00m</td>
+                    <td class="number neutral">0h 00m</td>
+                    <td><span class="clear-status warning"><span class="dot red"></span>Prüfen</span></td>
+                    <td><button class="primary-button" data-action="new-entry">Eintragen</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="clean-panel" aria-labelledby="team-week-title">
+            <header class="clean-panel-header">
+              <div>
+                <h2 id="team-week-title">Wochenstand je Mitarbeiter</h2>
+                <span class="date-label">Gesamtes Zeitkonto bleibt getrennt vom Wochenwert</span>
+              </div>
+              <button class="ghost-button" data-drawer="employee-detail">Mitarbeiter öffnen</button>
+            </header>
+            <div class="table-wrap">
+              <table class="team-summary-table">
+                <thead>
+                  <tr>
+                    <th>Mitarbeiter</th>
+                    <th>Arbeitsmodell</th>
+                    <th>Gearbeitet</th>
+                    <th>Geplant</th>
+                    <th>Plus/Minus</th>
+                    <th>Zeitkonto</th>
+                    <th>Status</th>
+                    <th>Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-category="attention"><td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Teilzeit</span></div></div></td><td>Planzeit</td><td class="number">16h 47m</td><td class="number">17h 00m</td><td class="number neg">-0h 13m</td><td class="number neg">-27h 56m</td><td><span class="clear-status warning">Prüfen</span></td><td><button class="ghost-button" data-drawer="gabriela">Öffnen</button></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">C</span><div><strong>chris</strong><span>Stundenlohn</span></div></div></td><td>Ohne Planzeit</td><td class="number">0h 00m</td><td class="number">-</td><td class="number neutral">-</td><td class="number pos">14h 37m</td><td><span class="clear-status info">Ohne Plan</span></td><td><button class="ghost-button" data-drawer="chris">Öffnen</button></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">I</span><div><strong>ItSupport</strong><span>Admin</span></div></div></td><td>Ohne Planzeit</td><td class="number">0h 00m</td><td class="number">-</td><td class="number neutral">-</td><td class="number pos">8h 25m</td><td><span class="clear-status info">Admin</span></td><td><button class="ghost-button" data-drawer="itsupport">Öffnen</button></td></tr>
+                  <tr data-category="normal"><td><div class="employee"><span class="avatar">N</span><div><strong>Nadine</strong><span>Regulär</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">53h 11m</td><td><span class="clear-status">OK</span></td><td><button class="ghost-button" data-drawer="nadine">Öffnen</button></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">W</span><div><strong>Wetzel</strong><span>Stundenlohn</span></div></div></td><td>Ohne Planzeit</td><td class="number">0h 00m</td><td class="number">-</td><td class="number neutral">-</td><td class="number pos">7h 30m</td><td><span class="clear-status info">Ohne Plan</span></td><td><button class="ghost-button" data-drawer="wetzel">Öffnen</button></td></tr>
+                  <tr data-category="attention"><td><div class="employee"><span class="avatar">R</span><div><strong>Rosa</strong><span>6 Korrekturen</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">51h 14m</td><td><span class="clear-status warning">Antrag</span></td><td><button class="ghost-button" data-drawer="rosa-group">Prüfen</button></td></tr>
+                  <tr data-category="normal"><td><div class="employee"><span class="avatar">M</span><div><strong>Mirjam</strong><span>Regulär</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">14h 45m</td><td><span class="clear-status">OK</span></td><td><button class="ghost-button" data-drawer="mirjam">Öffnen</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi blue"><span class="label">Gearbeitet Woche</span><strong class="value">16h 47m</strong><span class="meta">Summe der sichtbaren Wochenzeiten.</span></div>
+          <div class="kpi yellow"><span class="label">Geplant Woche</span><strong class="value">17h 00m</strong><span class="meta">Nur Nutzer mit Planzeit zählen.</span></div>
+          <div class="kpi green"><span class="label">Ohne Planzeit</span><strong class="value">3</strong><span class="meta">chris, Wetzel und ItSupport.</span></div>
+          <div class="kpi red"><span class="label">Prüfen</span><strong class="value">2</strong><span class="meta">Rosa-Anträge und Gabriela-Zeitkonto.</span></div>
+        </div>
+
+        <article class="panel section-gap">
+          <header class="panel-header">
+            <div>
+              <h2>Zeitprüfung wie im Live</h2>
+              <span>Woche, Monat, Problemfilter und Tagesaktionen an einem Ort</span>
+            </div>
+            <div class="panel-actions">
+              <button class="chip active">Wochenansicht</button>
+              <button class="chip" data-view-jump="month">Monatsansicht</button>
+              <button class="ghost-button" data-action="print-times">Zeiten drucken</button>
+            </div>
+          </header>
+          <div class="feature-grid">
+            <div class="feature-item"><span class="feature-tag">Zeitraum</span><strong>Woche wechseln</strong><span>Zurück, aktuelle Woche, vorwärts oder direkt Datum eingeben.</span></div>
+            <div class="feature-item"><span class="feature-tag">Filter</span><strong>Problemfälle</strong><span>Fehlende Stempel, automatische Enden, Feiertag offen und große Plus/Minus-Werte.</span></div>
+            <div class="feature-item"><span class="feature-tag">Aktion</span><strong>Tag bearbeiten</strong><span>Stempel ändern, neuen Eintrag anlegen oder automatische Endzeit korrigieren.</span></div>
+            <div class="feature-item"><span class="feature-tag">Mitarbeiter</span><strong>Detail öffnen</strong><span>Mitarbeiterübersicht, Drucken und Nutzer in der Tabelle ausblenden.</span><button class="ghost-button" data-drawer="employee-detail">Mitarbeiterdetail</button></div>
+          </div>
+          <div class="detail">
+            <div class="chips">
+              <button class="chip active">Alle Probleme</button>
+              <button class="chip">Fehlende Stempel</button>
+              <button class="chip">Automatisch beendet</button>
+              <button class="chip">Feiertag offen</button>
+              <button class="chip">Plus/Minus auffällig</button>
+              <button class="ghost-button" data-action="reset-filters">Filter zurücksetzen</button>
+            </div>
+          </div>
+        </article>
+
+        <div class="grid-2">
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Zeiten im Team</h2>
+                <span>Arbeitsmodell, gearbeitete Zeit und Zeitkonto in einer Ansicht</span>
+              </div>
+              <div class="panel-actions">
+                <button class="chip active" data-filter="all">Alle</button>
+                <button class="chip" data-filter="attention">Nur prüfen</button>
+                <button class="chip" data-filter="hourly">Ohne Planzeit</button>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 23%;">Mitarbeiter</th>
+                    <th style="width: 13%;">Modell</th>
+                    <th style="width: 14%;">Gearbeitet</th>
+                    <th style="width: 14%;">Geplant</th>
+                    <th style="width: 14%;">Plus/Minus</th>
+                    <th style="width: 14%;">Zeitkonto</th>
+                    <th style="width: 8%;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-category="attention"><td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Teilzeit</span></div></div></td><td>Planzeit</td><td class="number">16h 47m</td><td class="number">17h 00m</td><td class="number neg">-0h 13m</td><td class="number neg">-27h 56m</td><td><span class="status"><span class="dot yellow"></span>prüfen</span></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">C</span><div><strong>chris</strong><span>Stundenlohn</span></div></div></td><td>frei</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">14h 37m</td><td><span class="status"><span class="dot cyan"></span>ok</span></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">I</span><div><strong>ItSupport</strong><span>Admin</span></div></div></td><td>frei</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">8h 25m</td><td><span class="status"><span class="dot blue"></span>admin</span></td></tr>
+                  <tr data-category="normal"><td><div class="employee"><span class="avatar">N</span><div><strong>Nadine</strong><span>Regulär</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">53h 11m</td><td><span class="status"><span class="dot green"></span>ok</span></td></tr>
+                  <tr data-category="hourly"><td><div class="employee"><span class="avatar">W</span><div><strong>Wetzel</strong><span>Stundenlohn</span></div></div></td><td>frei</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">7h 30m</td><td><span class="status"><span class="dot cyan"></span>ok</span></td></tr>
+                  <tr data-category="attention"><td><div class="employee"><span class="avatar">R</span><div><strong>Rosa</strong><span>Korrekturen</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">51h 14m</td><td><span class="status"><span class="dot red"></span>Antrag</span></td></tr>
+                  <tr data-category="normal"><td><div class="employee"><span class="avatar">M</span><div><strong>Mirjam</strong><span>Regulär</span></div></div></td><td>Planzeit</td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">14h 45m</td><td><span class="status"><span class="dot green"></span>ok</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Regeln für die Zeitprüfung</h2>
+                <span>Damit die Ansicht nicht missverstanden wird</span>
+              </div>
+            </header>
+            <div class="detail">
+              <div class="hint">
+                <strong>Ohne Planzeit:</strong> Stundenlohn-Nutzer bleiben sichtbar, aber sie erzeugen keine Minusstunden.
+              </div>
+              <div class="hint warning">
+                <strong>Rosa:</strong> Zeitwerte sind ruhig, aber die offenen Korrekturen haben Vorrang.
+              </div>
+              <div class="hint">
+                <strong>Zeitkonto:</strong> Hohe Pluswerte sind nicht automatisch Fehler. Sie gehören in einen separaten Filter, nicht in rote Warnungen.
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <article class="panel section-gap">
+          <header class="panel-header">
+            <div>
+              <h2>Tages-Stempelzeiten</h2>
+              <span>Die Rohzeiten hinter Gearbeitet, Pause und Plus/Minus</span>
+            </div>
+            <button class="ghost-button" data-drawer="gabriela">Gabriela öffnen</button>
+          </header>
+          <div class="table-wrap">
+            <table class="stamp-table">
+              <thead>
+                <tr>
+                  <th style="width: 16%;">Mitarbeiter / Tag</th>
+                  <th style="width: 34%;">Stempelungen</th>
+                  <th style="width: 10%;">Pause</th>
+                  <th style="width: 12%;">Gearbeitet</th>
+                  <th style="width: 12%;">Geplant</th>
+                  <th style="width: 10%;">Plus/Minus</th>
+                  <th style="width: 6%;">Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Di, 14.07.</span></div></div></td>
+                  <td>
+                    <div class="stamp-points">
+                      <span class="stamp-chip start"><span>Start</span>07:48</span>
+                      <span class="stamp-chip break"><span>Pause</span>12:01-12:32</span>
+                      <span class="stamp-chip end"><span>Ende</span>17:35</span>
+                    </div>
+                  </td>
+                  <td class="number">0h 31m</td>
+                  <td class="number">9h 16m</td>
+                  <td class="number">8h 30m</td>
+                  <td class="number pos">+0h 46m</td>
+                  <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                </tr>
+                <tr>
+                  <td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Mi, 15.07.</span></div></div></td>
+                  <td>
+                    <div class="stamp-points">
+                      <span class="stamp-chip start"><span>Start</span>08:03</span>
+                      <span class="stamp-chip break"><span>Pause</span>12:15-12:45</span>
+                      <span class="stamp-chip end"><span>Ende</span>16:04</span>
+                    </div>
+                  </td>
+                  <td class="number">0h 30m</td>
+                  <td class="number">7h 31m</td>
+                  <td class="number">8h 30m</td>
+                  <td class="number neg">-0h 59m</td>
+                  <td><button class="ghost-button" data-action="edit-day">Bearbeiten</button></td>
+                </tr>
+                <tr>
+                  <td><div class="employee"><span class="avatar">R</span><div><strong>Rosa</strong><span>02.07.-03.07.</span></div></div></td>
+                  <td>
+                    <div class="stamp-points">
+                      <span class="stamp-chip auto"><span>Status</span>6 Korrekturen offen</span>
+                      <span class="stamp-chip break"><span>Grund</span>Stefan krank</span>
+                    </div>
+                  </td>
+                  <td class="number">-</td>
+                  <td class="number">offen</td>
+                  <td class="number">prüfen</td>
+                  <td class="number neutral">-</td>
+                  <td><button class="ghost-button" data-drawer="rosa-group">Prüfen</button></td>
+                </tr>
+                <tr>
+                  <td><div class="employee"><span class="avatar">N</span><div><strong>Nadine</strong><span>Heute</span></div></div></td>
+                  <td>
+                    <div class="stamp-points">
+                      <span class="stamp-chip auto"><span>Status</span>keine Stempel</span>
+                      <span class="stamp-chip"><span>Hinweis</span>bei Bedarf nachtragen</span>
+                    </div>
+                  </td>
+                  <td class="number">0h 00m</td>
+                  <td class="number">0h 00m</td>
+                  <td class="number">0h 00m</td>
+                  <td class="number neutral">0h 00m</td>
+                  <td><button class="primary-button" data-action="new-entry">Neuer Eintrag</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="detail">
+            <div class="hint">
+              <strong>Warum hier:</strong> Die Admin-Übersicht zeigt erst die Summe. Diese Zeile erklärt direkt, aus welchen Start-/Ende-Stempeln die Summe entsteht.
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="month" class="view">
+        <div class="kpis">
+          <div class="kpi blue"><span class="label">Juli gearbeitet</span><strong class="value">38h 25m</strong><span class="meta">Summe bis 17.07.2026.</span></div>
+          <div class="kpi yellow"><span class="label">Juli geplant</span><strong class="value">104h 15m</strong><span class="meta">Nur vergangene/geprüfte Tage zählen.</span></div>
+          <div class="kpi red"><span class="label">Plus/Minus Monat</span><strong class="value">-65h 50m</strong><span class="meta">Stand bis heute, nicht kompletter Juli.</span></div>
+          <div class="kpi red"><span class="label">Größte Lücke</span><strong class="value">Gabriela</strong><span class="meta">-34h 13m im Juli bis heute.</span></div>
+        </div>
+
+        <div class="terms" aria-label="Monatsbegriffe">
+          <div class="term"><strong>Monat bis heute</strong><span>Zeigt nur Tage bis zum aktuellen Datum.</span></div>
+          <div class="term"><strong>Plus/Minus Monat</strong><span>Gearbeitet minus geplant für den Monat.</span></div>
+          <div class="term"><strong>Zeitkonto</strong><span>Gesamtstand, nicht nur dieser Monat.</span></div>
+          <div class="term"><strong>Ohne Planzeit</strong><span>Stundenlohn erzeugt keine Minusstunden.</span></div>
+        </div>
+
+        <article class="panel section-gap">
+          <header class="panel-header">
+            <div>
+              <h2>Zeitraum einstellen</h2>
+              <span>Entspricht der Live-Monatsansicht, aber mit klareren Namen</span>
+            </div>
+            <button class="ghost-button" data-action="reset-range">Zurücksetzen</button>
+          </header>
+          <div class="feature-grid">
+            <div class="feature-item"><span class="feature-tag">Standard</span><strong>Kalendermonat</strong><span>01.07. bis 31.07., gut für normale Monatsprüfung.</span></div>
+            <div class="feature-item"><span class="feature-tag">Firma</span><strong>Eigener Starttag</strong><span>Zum Beispiel 26.06. bis 25.07. für Lohnläufe.</span></div>
+            <div class="feature-item"><span class="feature-tag">Manuell</span><strong>Start und Ende wählen</strong><span>Für Sonderprüfung, Revision oder Nachkontrolle.</span></div>
+            <div class="feature-item"><span class="feature-tag">Sicher</span><strong>Bis heute</strong><span>Zukünftige Planzeiten werden nicht als Fehler gewertet.</span></div>
+          </div>
+        </article>
+
+        <div class="month-layout">
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Monatsprüfung: Juli bis heute</h2>
+                <span>Standardansicht für Abschluss und Plausibilität</span>
+              </div>
+              <div class="panel-actions">
+                <button class="chip active">Bis heute</button>
+                <button class="chip" data-action="full-month">Ganzer Monat</button>
+                <button class="primary-button" data-action="prepare-export">Export vorbereiten</button>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 26%;">Mitarbeiter</th>
+                    <th style="width: 16%;">Gearbeitet</th>
+                    <th style="width: 16%;">Geplant</th>
+                    <th style="width: 16%;">Plus/Minus</th>
+                    <th style="width: 16%;">Zeitkonto</th>
+                    <th style="width: 10%;">Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><div class="employee"><span class="avatar">G</span><div><strong>Gabriela</strong><span>Zeitkonto-Fokus</span></div></div></td><td class="number">16h 47m</td><td class="number">51h 00m</td><td class="number neg">-34h 13m</td><td class="number neg">-27h 56m</td><td><div class="bar danger"><span style="width: 33%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">N</span><div><strong>Nadine</strong><span>Zeitkonto Plus</span></div></div></td><td class="number">6h 05m</td><td class="number">24h 30m</td><td class="number neg">-18h 25m</td><td class="number pos">53h 11m</td><td><div class="bar warn"><span style="width: 25%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">R</span><div><strong>Rosa</strong><span>Anträge offen</span></div></div></td><td class="number">5h 29m</td><td class="number">24h 30m</td><td class="number neg">-19h 01m</td><td class="number pos">51h 14m</td><td><div class="bar warn"><span style="width: 22%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">M</span><div><strong>Mirjam</strong><span>fast exakt</span></div></div></td><td class="number">4h 12m</td><td class="number">4h 15m</td><td class="number neg">-0h 03m</td><td class="number pos">14h 45m</td><td><div class="bar"><span style="width: 99%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">W</span><div><strong>Wetzel</strong><span>Stundenlohn</span></div></div></td><td class="number">3h 42m</td><td class="number">0h 00m</td><td class="number pos">3h 42m</td><td class="number pos">7h 30m</td><td><div class="bar info"><span style="width: 100%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">I</span><div><strong>ItSupport</strong><span>Admin</span></div></div></td><td class="number">2h 10m</td><td class="number">0h 00m</td><td class="number pos">2h 10m</td><td class="number pos">8h 25m</td><td><div class="bar info"><span style="width: 100%"></span></div></td></tr>
+                  <tr><td><div class="employee"><span class="avatar">C</span><div><strong>chris</strong><span>Stundenlohn</span></div></div></td><td class="number">0h 00m</td><td class="number">0h 00m</td><td class="number neutral">0h 00m</td><td class="number pos">14h 37m</td><td><div class="bar info"><span style="width: 100%"></span></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Abschluss-Check</h2>
+                <span>Was vor Export und Lohnlauf geprüft wird</span>
+              </div>
+            </header>
+            <div class="month-strip">
+              <div class="month-card"><span>Plus/Minus</span><strong class="neg">-65h 50m</strong><p>Team gesamt bis 17.07.</p></div>
+              <div class="month-card"><span>Offen</span><strong>6</strong><p>Korrekturen blockieren den Abschluss.</p></div>
+              <div class="month-card"><span>Zeitkonto Plus</span><strong>4</strong><p>Nadine, Rosa, chris und Mirjam deutlich positiv.</p></div>
+              <div class="month-card"><span>Prüfen</span><strong>1</strong><p>Gabriela wegen negativem Langzeit-Zeitkonto.</p></div>
+            </div>
+            <div class="detail">
+              <div class="hint warning">
+                <strong>Monatslogik:</strong> Standard sollte “bis heute” sein. Der ganze Monat bleibt optional, sonst wirken zukünftige geplante Tage wie Fehler.
+              </div>
+              <div class="hint">
+                <strong>Nächster Schritt:</strong> Erst offene Korrekturen erledigen, dann Export/Monatsabschluss vorbereiten.
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <article class="panel section-gap">
+          <header class="panel-header">
+            <div>
+              <h2>Monatskalender kompakt</h2>
+              <span>Auffällige Tage farbig, normale Tage leise</span>
+            </div>
+            <button class="ghost-button" data-view-jump="calendar">Kalender öffnen</button>
+          </header>
+          <div class="calendar-grid">
+            <div class="day-head">Mo</div><div class="day-head">Di</div><div class="day-head">Mi</div><div class="day-head">Do</div><div class="day-head">Fr</div><div class="day-head">Sa</div><div class="day-head">So</div>
+            <div class="day-box"><strong>1</strong><span>ruhig</span></div>
+            <div class="day-box bad"><strong>2</strong><span>Rosa: 4 Korrekturen</span></div>
+            <div class="day-box bad"><strong>3</strong><span>Rosa: 2 Korrekturen</span></div>
+            <div class="day-box"><strong>4</strong><span>Wochenende</span></div>
+            <div class="day-box"><strong>5</strong><span>Wochenende</span></div>
+            <div class="day-box"><strong>6</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>7</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>8</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>9</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>10</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>11</strong><span>ruhig</span></div>
+            <div class="day-box"><strong>12</strong><span>Wochenende</span></div>
+            <div class="day-box"><strong>13</strong><span>frei</span></div>
+            <div class="day-box warn"><strong>14</strong><span>Gabriela 9h 16m</span></div>
+            <div class="day-box"><strong>15</strong><span>Gabriela 7h 31m</span></div>
+            <div class="day-box"><strong>16</strong><span>ruhig</span></div>
+            <div class="day-box warn"><strong>17</strong><span>Stand heute</span></div>
+            <div class="day-box"><strong>18</strong><span>Wochenende</span></div>
+            <div class="day-box"><strong>19</strong><span>Wochenende</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="requests" class="view">
+        <div class="kpis">
+          <div class="kpi red"><span class="label">Korrekturen offen</span><strong class="value">6</strong><span class="meta">Alle bei Rosa, zwei Tage, gleicher Grund.</span></div>
+          <div class="kpi green"><span class="label">Urlaub offen</span><strong class="value">0</strong><span class="meta">Kein akuter Urlaubsentscheid notwendig.</span></div>
+          <div class="kpi blue"><span class="label">Krankmeldungen</span><strong class="value">14</strong><span class="meta">Als Kontext für Korrekturen anzeigen.</span></div>
+          <div class="kpi yellow"><span class="label">Urlaub gesamt</span><strong class="value">111</strong><span class="meta">Historie bleibt filterbar.</span></div>
+        </div>
+
+        <div class="request-board">
+          <article class="panel request-column">
+            <header class="panel-header">
+              <div><h2>Korrekturen</h2><span>Offene Anträge zuerst, gruppiert</span></div>
+              <span class="badge red">6 offen</span>
+            </header>
+            <div class="request-card">
+              <div class="request-meta"><span class="badge red">offen</span><span class="badge">Rosa</span><span class="badge">02.07.2026</span></div>
+              <h3>4 Korrekturen mit gleichem Grund</h3>
+              <p>Grund: Stefan krank. Diese Gruppe sollte als ein Vorgang sichtbar sein, mit Einzelzeilen darunter.</p>
+              <div class="micro-note">Erst prüfen, ob eine Krankmeldung oder Admin-Notiz dazu existiert. Dann gesammelt entscheiden.</div>
+              <div class="chips">
+                <button class="primary-button" data-drawer="rosa-group">Gruppe prüfen</button>
+                <button class="ghost-button" data-action="show-lines">Einzelzeilen</button>
+                <button class="ghost-button" data-action="comment">Kommentar</button>
+              </div>
+            </div>
+            <div class="request-card">
+              <div class="request-meta"><span class="badge red">offen</span><span class="badge">Rosa</span><span class="badge">03.07.2026</span></div>
+              <h3>2 Korrekturen mit gleichem Grund</h3>
+              <p>Grund: Stefan krank. Wahrscheinlich gleicher Kontext wie 02.07.</p>
+              <div class="chips">
+                <button class="primary-button" data-drawer="rosa-group">Prüfen</button>
+                <button class="ghost-button" data-action="approve-low-risk">Low-Risk genehmigen</button>
+                <button class="danger-button" data-action="deny-request">Ablehnen</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel request-column">
+            <header class="panel-header">
+              <div><h2>Urlaub</h2><span>Aktuell kein Entscheid offen</span></div>
+              <span class="badge green">0 offen</span>
+            </header>
+            <div class="empty">Keine offenen Urlaubsanträge. Die Spalte bleibt sichtbar, damit sofort klar ist: hier ist nichts zu tun.</div>
+            <div class="request-card">
+              <div class="request-meta"><span class="badge blue">Historie</span><span class="badge">111 gesamt</span></div>
+              <h3>Archiv ruhig halten</h3>
+              <p>Vergangene und genehmigte Urlaube erst nach Suche oder Filter anzeigen.</p>
+              <div class="chips"><button class="ghost-button" data-action="archive">Archiv öffnen</button><button class="ghost-button" data-action="record-vacation">Urlaub eintragen</button></div>
+            </div>
+          </article>
+
+          <article class="panel request-column">
+            <header class="panel-header">
+              <div><h2>Krank / Abwesenheit</h2><span>Kontext für Zeitkorrekturen</span></div>
+              <span class="badge blue">14</span>
+            </header>
+            <div class="request-card">
+              <div class="request-meta"><span class="badge yellow">Kontext</span><span class="badge">Rosa</span></div>
+              <h3>Krank-Kontext neben Korrekturen</h3>
+              <p>Wenn der Grund “krank” enthält, sollte die passende Krankmeldung direkt daneben sichtbar sein.</p>
+              <div class="micro-note">Das spart den Sprung in Kalender oder Mitarbeiterdetail.</div>
+              <div class="chips"><button class="ghost-button" data-view-jump="calendar">Kalender</button><button class="ghost-button" data-action="record-sick">Krank eintragen</button></div>
+            </div>
+            <div class="request-card">
+              <div class="request-meta"><span class="badge green">Automatik</span></div>
+              <h3>Niedriges Risiko markieren</h3>
+              <p>Gleicher Benutzer, gleicher Grund, zusammenhängende Tage: als zusammengehörig markieren.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="calendar" class="view">
+        <div class="grid-2">
+          <article class="panel">
+            <header class="panel-header">
+              <div>
+                <h2>Kalender</h2>
+                <span>Abwesenheiten, Krankheit, Feiertage und offene Korrekturtage</span>
+              </div>
+              <button class="primary-button" data-action="new-absence">Abwesenheit erfassen</button>
+            </header>
+            <div class="calendar-grid">
+              <div class="day-head">Mo</div><div class="day-head">Di</div><div class="day-head">Mi</div><div class="day-head">Do</div><div class="day-head">Fr</div><div class="day-head">Sa</div><div class="day-head">So</div>
+              <div class="day-box"><strong>1</strong><span>ruhig</span></div>
+              <div class="day-box bad"><strong>2</strong><span>Rosa Korrektur</span></div>
+              <div class="day-box bad"><strong>3</strong><span>Rosa Korrektur</span></div>
+              <div class="day-box"><strong>4</strong><span>Wochenende</span></div>
+              <div class="day-box"><strong>5</strong><span>Wochenende</span></div>
+              <div class="day-box warn"><strong>14</strong><span>Gabriela viel Zeit</span></div>
+              <div class="day-box warn"><strong>17</strong><span>heute</span></div>
+            </div>
+          </article>
+          <aside class="panel">
+            <header class="panel-header">
+              <div><h2>Kalender-Regel</h2><span>Leise, aber hilfreich</span></div>
+            </header>
+            <div class="detail">
+              <div class="hint"><strong>Finale Idee:</strong> Kalender nicht als zweite Tabelle nutzen. Nur markieren, was Entscheidungen erklärt.</div>
+              <div class="hint warning"><strong>Rosa:</strong> Korrekturen am 02.07. und 03.07. direkt mit Krankheit/Abwesenheit verbinden.</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="modules" class="view">
+        <article class="panel">
+          <header class="panel-header">
+            <div>
+              <h2>Alle freigegebenen Admin-Bereiche</h2>
+              <span>Wie im Live: abhängig von Rollen und Seitenrechten</span>
+            </div>
+            <button class="ghost-button" data-action="open-command">Befehle öffnen</button>
+          </header>
+          <div class="feature-grid">
+            <div class="feature-item"><span class="feature-tag">Zeit</span><strong>Zeitprüfung</strong><span>Woche, Monat, Stempelzeiten, Bearbeiten, neuer Eintrag.</span><button class="primary-button" data-view-jump="teamtime">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Anträge</span><strong>Urlaub & Korrekturen</strong><span>Genehmigen, ablehnen, Kommentar, Archiv und Low-Risk.</span><button class="ghost-button" data-view-jump="requests">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Kalender</span><strong>Abwesenheiten</strong><span>Urlaub, Krankheit, Feiertage, Konflikte mit Stempeln.</span><button class="ghost-button" data-view-jump="calendar">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">User</span><strong>Benutzerverwaltung</strong><span>Nutzer, Rollen, Arbeitsmodell, Pausen, Rechte, Ausblenden.</span><button class="ghost-button" data-action="open-users">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Import</span><strong>Stempelzeiten importieren</strong><span>Excel-Import mit Fehlerliste und START/ENDE-Prüfung.</span><button class="ghost-button" data-action="open-import">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Druck</span><strong>Berichte</strong><span>Zeitenbericht pro Mitarbeiter, PDF/CSV, Monatsabschluss.</span><button class="ghost-button" data-action="print-times">Drucken</button></div>
+            <div class="feature-item"><span class="feature-tag">Planung</span><strong>Dienstplan</strong><span>Schichten, Regeln, Druckplan und Urlaubskonflikte.</span><button class="ghost-button" data-action="open-schedule">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Projekte</span><strong>Kunden, Projekte, Aufgaben</strong><span>Projektzeiten, Auswertung und Projektbericht.</span><button class="ghost-button" data-action="open-projects">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Lohn</span><strong>Lohn & Abrechnung</strong><span>Payslips, Accounting, Banking und Exportvorbereitung.</span><button class="ghost-button" data-action="open-payroll">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Firma</span><strong>Firmeneinstellungen</strong><span>Standardregeln, Rechte, Passwort ändern und Superadmin-Themen.</span><button class="ghost-button" data-action="open-settings">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Analyse</span><strong>Analytics</strong><span>Trends, Auswertungen, Problemhäufigkeit und Teamüberblick.</span><button class="ghost-button" data-action="open-analytics">Öffnen</button></div>
+            <div class="feature-item"><span class="feature-tag">Wissen</span><strong>Wissensbereich</strong><span>Admin-Hilfe, Regeln, Abläufe und interne Hinweise.</span><button class="ghost-button" data-action="open-knowledge">Öffnen</button></div>
+          </div>
+          <div class="detail">
+            <div class="hint">
+              <strong>Übersichtlichkeits-Regel:</strong> Module sind Startpunkte, nicht Teil der täglichen Zeitprüfung. Dadurch bleibt der wichtigste Tagesablauf ruhig.
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <header class="drawer-header">
+      <div>
+        <h2 id="drawer-title">Details</h2>
+        <p id="drawer-subtitle">Kontext und nächste Handlung</p>
+      </div>
+      <button class="close-button" id="drawer-close" aria-label="Schließen">X</button>
+    </header>
+    <div class="drawer-body" id="drawer-body"></div>
+    <footer class="drawer-footer" id="drawer-footer">
+      <button class="ghost-button" id="drawer-secondary">Schließen</button>
+      <button class="primary-button" id="drawer-primary">Übernehmen</button>
+    </footer>
+  </aside>
+
+  <div class="toast" id="toast">Aktion ausgeführt.</div>
+
+  <script>
+    const viewMeta = {
+      overview: {
+        title: "Admin Dashboard",
+        subtitle: "Alles Wichtige zuerst: offene Entscheidungen, auffällige Zeitkonten und Abschluss-Status."
+      },
+      teamtime: {
+        title: "Zeitprüfung",
+        subtitle: "Woche, Monat, Stempelzeiten, Bearbeitung und Problemfilter an einem Ort."
+      },
+      month: {
+        title: "Monatsprüfung",
+        subtitle: "Juli bis heute, damit zukünftige geplante Tage nicht wie Fehler aussehen."
+      },
+      requests: {
+        title: "Antragscenter",
+        subtitle: "Offene Entscheidungen gruppiert nach Kontext und Dringlichkeit."
+      },
+      calendar: {
+        title: "Kalender",
+        subtitle: "Abwesenheiten und Korrekturtage als Kontext für Entscheidungen."
+      },
+      modules: {
+        title: "Module",
+        subtitle: "Schnelle Einstiege ohne die Zeitübersicht zu überladen."
+      }
+    };
+
+    const drawerContent = {
+      "employee-detail": {
+        title: "Mitarbeiterübersicht: Gabriela",
+        subtitle: "Einzelansicht mit Zeit, Anträgen und Abwesenheiten",
+        primary: "Zeiten drucken",
+        secondary: "Schließen",
+        body: `
+          <div class="detail-stats">
+            <div class="stat"><span>Heute</span><strong>0h 00m</strong></div>
+            <div class="stat"><span>Woche</span><strong>16h 47m</strong></div>
+            <div class="stat"><span>Offen</span><strong>1 Hinweis</strong></div>
+          </div>
+          <div class="hint warning"><strong>Problemfokus:</strong> Zeitkonto negativ. Tagesstempel sind sauber, aber Monats-/Historienwerte sollten geprüft werden.</div>
+          <div class="feature-grid">
+            <div class="feature-item"><span class="feature-tag">Zeiten</span><strong>Woche / Monat</strong><span>Umschalten wie im Live, inklusive Tageskarten.</span></div>
+            <div class="feature-item"><span class="feature-tag">Stempel</span><strong>Gestempelte Zeiten</strong><span>Start, Pause, Ende und automatische Enden pro Tag.</span></div>
+            <div class="feature-item"><span class="feature-tag">Anträge</span><strong>Korrektur & Urlaub</strong><span>Offene Vorgänge mit Kommentar genehmigen oder ablehnen.</span></div>
+            <div class="feature-item"><span class="feature-tag">Erfassen</span><strong>Urlaub / Krank</strong><span>Direkt für diesen Mitarbeiter eintragen, auch Halbtag.</span></div>
+          </div>
+          <div class="chips">
+            <button class="ghost-button" data-action="edit-day">Tag bearbeiten</button>
+            <button class="ghost-button" data-action="record-vacation">Urlaub eintragen</button>
+            <button class="ghost-button" data-action="record-sick">Krank eintragen</button>
+          </div>
+        `,
+        primaryAction: () => showToast("Mockup: Zeitenbericht für Gabriela würde als PDF geöffnet.")
+      },
+      gabriela: {
+        title: "Gabriela",
+        subtitle: "Zeitkonto prüfen",
+        primary: "Monatsprüfung öffnen",
+        secondary: "Schließen",
+        body: `
+          <div class="detail-stats">
+            <div class="stat"><span>Woche gearbeitet</span><strong>16h 47m</strong></div>
+            <div class="stat"><span>Woche geplant</span><strong>17h 00m</strong></div>
+            <div class="stat"><span>Zeitkonto</span><strong class="neg">-27h 56m</strong></div>
+          </div>
+          <div class="hint warning"><strong>Lesart:</strong> Die aktuelle Woche ist fast ausgeglichen. Das negative Zeitkonto kommt eher aus früheren Zeiträumen oder einer Arbeitsmodell-Änderung.</div>
+          <div class="stamp-list" aria-label="Tages-Stempelzeiten">
+            <div class="stamp-row">
+              <div class="stamp-heading"><strong>Di, 14.07.2026</strong><span>Stempel ergeben +0h 46m</span></div>
+              <div class="stamp-points">
+                <span class="stamp-chip start"><span>Start</span>07:48</span>
+                <span class="stamp-chip break"><span>Pause</span>12:01-12:32</span>
+                <span class="stamp-chip end"><span>Ende</span>17:35</span>
+              </div>
+              <div class="stamp-total pos">9h 16m</div>
+            </div>
+            <div class="stamp-row">
+              <div class="stamp-heading"><strong>Mi, 15.07.2026</strong><span>Stempel ergeben -0h 59m</span></div>
+              <div class="stamp-points">
+                <span class="stamp-chip start"><span>Start</span>08:03</span>
+                <span class="stamp-chip break"><span>Pause</span>12:15-12:45</span>
+                <span class="stamp-chip end"><span>Ende</span>16:04</span>
+              </div>
+              <div class="stamp-total">7h 31m</div>
+            </div>
+          </div>
+          <div class="mini-bars">
+            <div class="mini-row"><span>Dienstag</span><div class="mini-bar"><span style="width: 100%"></span></div><strong>9h 16m</strong></div>
+            <div class="mini-row"><span>Mittwoch</span><div class="mini-bar"><span style="width: 82%"></span></div><strong>7h 31m</strong></div>
+            <div class="mini-row"><span>Rest</span><div class="mini-bar"><span style="width: 0%"></span></div><strong>0h 00m</strong></div>
+          </div>
+        `,
+        primaryAction: () => activateView("month")
+      },
+      "rosa-group": {
+        title: "Rosa: Korrekturgruppe",
+        subtitle: "6 offene Korrekturen, gleicher Kontext",
+        primary: "Gruppe genehmigen",
+        secondary: "Ablehnen mit Kommentar",
+        body: `
+          <div class="request-meta"><span class="badge red">6 offen</span><span class="badge">02.07.-03.07.</span><span class="badge yellow">Stefan krank</span></div>
+          <div class="hint warning"><strong>Prüfvorschlag:</strong> Gleicher Grund und zusammenhängende Tage. Als Gruppe prüfen, dann nur bei Abweichung einzelne Zeilen öffnen.</div>
+          <table>
+            <thead><tr><th>Datum</th><th>Anzahl</th><th>Grund</th></tr></thead>
+            <tbody>
+              <tr><td>02.07.2026</td><td class="number">4</td><td>Stefan krank</td></tr>
+              <tr><td>03.07.2026</td><td class="number">2</td><td>Stefan krank</td></tr>
+            </tbody>
+          </table>
+        `,
+        primaryAction: () => showToast("Mockup: Gruppe würde genehmigt und aus den Prioritäten verschwinden."),
+        secondaryAction: () => showToast("Mockup: Kommentar-Feld würde geöffnet.")
+      },
+      nadine: { title: "Nadine", subtitle: "Zeitkonto Plus", primary: "OK markieren", secondary: "Schließen", body: `<div class="hint"><strong>Unauffällig:</strong> Zeitkonto ist positiv. Kein akuter Handlungsbedarf.</div>` },
+      mirjam: { title: "Mirjam", subtitle: "Fast exakt im Monat", primary: "OK markieren", secondary: "Schließen", body: `<div class="hint"><strong>Unauffällig:</strong> Monatswerte liegen fast exakt im Plan.</div>` },
+      chris: { title: "chris", subtitle: "Stundenlohn ohne Planzeit", primary: "OK markieren", secondary: "Schließen", body: `<div class="hint"><strong>Wichtig:</strong> Keine feste Planzeit erzeugt keine Minusstunden. Das sollte im echten Dashboard klar markiert bleiben.</div>` },
+      wetzel: { title: "Wetzel", subtitle: "Stundenlohn ohne Planzeit", primary: "OK markieren", secondary: "Schließen", body: `<div class="hint"><strong>Wichtig:</strong> Diese Person gehört in die Zeitübersicht, aber nicht in Planzeit-Warnungen.</div>` },
+      itsupport: { title: "ItSupport", subtitle: "Admin-Zeitkonto", primary: "OK markieren", secondary: "Schließen", body: `<div class="hint"><strong>Admin-Konto:</strong> Sichtbar, aber in Auswertungen klar als Admin/Stundenlohn erklären.</div>` }
+    };
+
+    const viewButtons = document.querySelectorAll("[data-view]");
+    const jumpButtons = document.querySelectorAll("[data-view-jump]");
+    const views = document.querySelectorAll(".view");
+    const pageTitle = document.getElementById("page-title");
+    const pageSubtitle = document.getElementById("page-subtitle");
+    const searchInput = document.getElementById("global-search");
+    const drawer = document.getElementById("drawer");
+    const drawerBackdrop = document.getElementById("drawer-backdrop");
+    const drawerTitle = document.getElementById("drawer-title");
+    const drawerSubtitle = document.getElementById("drawer-subtitle");
+    const drawerBody = document.getElementById("drawer-body");
+    const drawerPrimary = document.getElementById("drawer-primary");
+    const drawerSecondary = document.getElementById("drawer-secondary");
+    const toast = document.getElementById("toast");
+    let toastTimer = null;
+    let activeDrawerConfig = null;
+
+    function activateView(id) {
+      views.forEach((view) => view.classList.toggle("active", view.id === id));
+      viewButtons.forEach((button) => button.classList.toggle("active", button.dataset.view === id));
+      const meta = viewMeta[id] || viewMeta.overview;
+      pageTitle.textContent = meta.title;
+      pageSubtitle.textContent = meta.subtitle;
+      searchInput.value = "";
+      applySearch("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function openDrawer(key) {
+      const config = drawerContent[key] || drawerContent.gabriela;
+      activeDrawerConfig = config;
+      drawerTitle.textContent = config.title;
+      drawerSubtitle.textContent = config.subtitle;
+      drawerBody.innerHTML = config.body;
+      drawerPrimary.textContent = config.primary || "Übernehmen";
+      drawerSecondary.textContent = config.secondary || "Schließen";
+      drawer.classList.add("open");
+      drawerBackdrop.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove("open");
+      drawerBackdrop.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      activeDrawerConfig = null;
+    }
+
+    function applySearch(value) {
+      const query = value.trim().toLowerCase();
+      document.querySelectorAll(".view.active tbody tr, .view.active .request-card").forEach((node) => {
+        const text = node.textContent.toLowerCase();
+        node.classList.toggle("hidden-by-search", query.length > 0 && !text.includes(query));
+      });
+    }
+
+    function applyCategoryFilter(filter) {
+      document.querySelectorAll(".panel-actions .chip[data-filter]").forEach((chip) => {
+        chip.classList.toggle("active", chip.dataset.filter === filter);
+      });
+      document.querySelectorAll(".view.active tbody tr[data-category]").forEach((row) => {
+        const category = row.dataset.category;
+        const visible = filter === "all" || category === filter || (filter === "attention" && category === "attention");
+        row.classList.toggle("hidden-by-search", !visible);
+      });
+    }
+
+    function handleAction(action) {
+      if (action === "close-week") openDrawer("rosa-group");
+      if (action === "prepare-export") showToast("Mockup: Export würde vorbereitet, sobald offene Korrekturen erledigt sind.");
+      if (action === "full-month") showToast("Mockup: Ganzer Monat zeigt zusätzlich zukünftige geplante Tage.");
+      if (action === "show-lines") showToast("Mockup: Einzelzeilen würden unter der Gruppe aufklappen.");
+      if (action === "comment") showToast("Mockup: Kommentar-Feld würde geöffnet.");
+      if (action === "archive") showToast("Mockup: Urlaubsarchiv würde mit Filtern geöffnet.");
+      if (action === "new-absence") showToast("Mockup: Formular für Urlaub/Krankheit würde geöffnet.");
+      if (action === "toggle-simple") {
+        document.body.classList.toggle("simple-mode");
+        const explanationsVisible = !document.body.classList.contains("simple-mode");
+        document.querySelectorAll('[data-action="toggle-simple"]').forEach((button) => {
+          button.textContent = explanationsVisible ? "Erklärungen ausblenden" : "Erklärungen";
+          button.setAttribute("aria-pressed", String(explanationsVisible));
+        });
+        showToast(explanationsVisible ? "Erklärungen sind eingeblendet." : "Erklärungen sind ausgeblendet.");
+      }
+      if (action === "previous-week") showToast("Mockup: Vorherige Woche wird geladen.");
+      if (action === "current-week") showToast("Aktuelle Woche ist ausgewählt.");
+      if (action === "next-week") showToast("Mockup: Nächste Woche wird geladen.");
+      if (action === "print-times") showToast("Mockup: Zeitenbericht/PDF-Auswahl würde geöffnet.");
+      if (action === "reset-filters") showToast("Mockup: Problemfilter werden zurückgesetzt.");
+      if (action === "edit-day") showToast("Mockup: Tagesbearbeitung mit START/ENDE/Pause würde geöffnet.");
+      if (action === "new-entry") showToast("Mockup: Neuer Stempel-/Zeiteintrag würde angelegt.");
+      if (action === "reset-range") showToast("Mockup: Monatsgrenzen werden auf Standard zurückgesetzt.");
+      if (action === "approve-low-risk") showToast("Mockup: Low-Risk-Anträge würden nach Prüfung gesammelt genehmigt.");
+      if (action === "deny-request") showToast("Mockup: Ablehnung mit Pflichtkommentar würde geöffnet.");
+      if (action === "record-vacation") showToast("Mockup: Urlaub für den Mitarbeiter würde erfasst.");
+      if (action === "record-sick") showToast("Mockup: Krankmeldung mit Halbtag-Option würde erfasst.");
+      if (action === "open-command") showToast("Mockup: Befehlsleiste wie Strg+K würde geöffnet.");
+      if (action === "open-users") showToast("Mockup: Benutzerverwaltung würde geöffnet.");
+      if (action === "open-import") showToast("Mockup: Stempelzeiten-Import würde geöffnet.");
+      if (action === "open-schedule") showToast("Mockup: Dienstplan-Modul würde geöffnet.");
+      if (action === "open-projects") showToast("Mockup: Kunden/Projekte/Aufgaben würden geöffnet.");
+      if (action === "open-payroll") showToast("Mockup: Lohn/Abrechnung/Banking würde geöffnet.");
+      if (action === "open-settings") showToast("Mockup: Firmeneinstellungen würden geöffnet.");
+      if (action === "open-analytics") showToast("Mockup: Analytics würde geöffnet.");
+      if (action === "open-knowledge") showToast("Mockup: Wissensbereich würde geöffnet.");
+    }
+
+    viewButtons.forEach((button) => button.addEventListener("click", () => activateView(button.dataset.view)));
+    jumpButtons.forEach((button) => button.addEventListener("click", () => activateView(button.dataset.viewJump)));
+
+    document.querySelectorAll("[data-drawer]").forEach((button) => {
+      button.addEventListener("click", () => openDrawer(button.dataset.drawer));
+    });
+
+    document.querySelectorAll("[data-period]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-period]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const labels = { today: "Heute", week: "Woche", month: "Monat" };
+        showToast(`Zeitraum gewechselt: ${labels[button.dataset.period]}. Im echten Dashboard würden die Werte neu geladen.`);
+      });
+    });
+
+    document.querySelectorAll(".panel-actions .chip[data-filter]").forEach((chip) => {
+      chip.addEventListener("click", () => applyCategoryFilter(chip.dataset.filter));
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => handleAction(button.dataset.action));
+    });
+
+    drawerBody.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      handleAction(button.dataset.action);
+    });
+
+    document.querySelectorAll("#team-rows tr").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("button")) return;
+        document.querySelectorAll("#team-rows tr").forEach((item) => item.classList.remove("selected"));
+        row.classList.add("selected");
+        const detail = row.dataset.detail;
+        if (detail === "requests") activateView("requests");
+        if (detail === "balance") openDrawer("gabriela");
+      });
+    });
+
+    searchInput.addEventListener("input", (event) => applySearch(event.target.value));
+    document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+    drawerBackdrop.addEventListener("click", closeDrawer);
+    drawerSecondary.addEventListener("click", () => {
+      if (activeDrawerConfig && typeof activeDrawerConfig.secondaryAction === "function") activeDrawerConfig.secondaryAction();
+      closeDrawer();
+    });
+    drawerPrimary.addEventListener("click", () => {
+      if (activeDrawerConfig && typeof activeDrawerConfig.primaryAction === "function") activeDrawerConfig.primaryAction();
+      else showToast("Mockup: Aktion würde ausgeführt.");
+      closeDrawer();
+    });
+  </script>
+</body>
+</html>

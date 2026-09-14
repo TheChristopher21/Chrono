@@ -6,6 +6,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.ProjectService;
 import com.chrono.chrono.services.TaskService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ public class TaskController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return u.getCompany() != null && Boolean.TRUE.equals(u.getCompany().getCustomerTrackingEnabled());
+        return RegistrationFeatures.isProjectsEnabled(u.getCompany());
     }
 
     @GetMapping
@@ -38,12 +39,13 @@ public class TaskController {
                                                Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (projectId != null) {
-            Optional<Project> project = projectService.findById(projectId);
-            if (project.isEmpty() || project.get().getCustomer() == null ||
-                !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
-                return ResponseEntity.status(403).build();
-            }
+        if (projectId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<Project> project = projectService.findById(projectId);
+        if (project.isEmpty() || project.get().getCustomer() == null ||
+            !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(taskService.getTasks(projectId));
     }

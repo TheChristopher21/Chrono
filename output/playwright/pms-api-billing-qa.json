@@ -1,0 +1,174 @@
+{
+  "environment": "Isolated MySQL 8.4 QA, chrono_migration_fresh_20260912_v48",
+  "baseUrl": "http://127.0.0.1:18086",
+  "syntheticDataOnly": true,
+  "checks": [
+    {
+      "name": "master_access",
+      "passed": true,
+      "details": {
+        "master": true
+      }
+    },
+    {
+      "name": "synthetic_chain_created",
+      "passed": true,
+      "details": {
+        "property": 2,
+        "roomType": 4,
+        "room": 1008,
+        "rate": 4,
+        "organization": 2,
+        "guest": 509,
+        "reservation": 510,
+        "folio": 510
+      }
+    },
+    {
+      "name": "invoice_issued",
+      "passed": true,
+      "details": {
+        "id": 2,
+        "number": "QABILL-2026-00001",
+        "gross": 216.2,
+        "net": 200.0,
+        "tax": 16.2,
+        "requestedLanguage": "FR"
+      }
+    },
+    {
+      "name": "pdf_repeat_is_byte_identical_after_guest_edit",
+      "passed": true,
+      "details": {
+        "bytes": 1720,
+        "sha256": "33465210a7ad45725a1a3ffbba88e563137ee8d9f307f1a0931b243a79ee580f",
+        "guestLanguageAfterEdit": "en"
+      }
+    },
+    {
+      "name": "ubl_stored_and_snapshot_bound",
+      "passed": true,
+      "details": {
+        "prepaidAmount": 0,
+        "sha256": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2",
+        "apiValidation": {
+          "invoiceId": 2,
+          "invoiceNumber": "QABILL-2026-00001",
+          "standard": "OASIS UBL 2.1",
+          "ready": true,
+          "stored": true,
+          "contentHash": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2",
+          "errors": [],
+          "scope": "Offizielles UBL-2.1-XSD, gespeicherte Rechnungsdaten, Pflichtfelder und Betragsabgleich. Keine Peppol-/Landesfreigabe und kein Versand."
+        },
+        "repeatHash": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2"
+      }
+    },
+    {
+      "name": "bank_preview_confirm_and_retry",
+      "passed": true,
+      "details": {
+        "receivableId": 1,
+        "bankImportId": 1,
+        "balance": 0.0,
+        "settlements": 1,
+        "duplicateImportSameId": true
+      }
+    },
+    {
+      "name": "persisted_accounting_export_and_local_ack",
+      "passed": true,
+      "details": {
+        "exportId": 1,
+        "bytes": 535,
+        "sha256": "a68d1262cbf5b5fcdac6b1b0863882e79e3edd70a2321e3ae33831ac3e353d82",
+        "status": "ACKNOWLEDGED",
+        "repeatPreservesBytes": true
+      }
+    },
+    {
+      "name": "pdf_french_labels_and_original_recipient",
+      "passed": true,
+      "details": {
+        "pages": 1,
+        "labels": [
+          "Facture",
+          "Échéance"
+        ],
+        "originalRecipientPreserved": true
+      }
+    },
+    {
+      "name": "independent_ubl_xsd_validation",
+      "passed": true,
+      "details": {
+        "validator": "Python lxml XMLSchema",
+        "schema": "Unmodified bundled official OASIS UBL 2.1 Invoice XSD",
+        "networkAccess": false
+      }
+    },
+    {
+      "name": "accounting_rows_balance",
+      "passed": true,
+      "details": {
+        "rows": 4,
+        "eachRowDebitEqualsCredit": true,
+        "includesBankSettlement": true
+      }
+    },
+    {
+      "name": "pdf_visual_review",
+      "passed": true,
+      "details": {
+        "renderer": "Poppler pdftoppm",
+        "pagesReviewed": 1,
+        "clippingOrOverlapObserved": false,
+        "preview": "pms-api-billing-invoice-preview.png"
+      }
+    }
+  ],
+  "ids": {
+    "property": 2,
+    "roomType": 4,
+    "room": 1008,
+    "rate": 4,
+    "organization": 2,
+    "guest": 509,
+    "reservation": 510,
+    "folio": 510,
+    "invoice": 2,
+    "receivable": 1,
+    "bankImport": 1,
+    "export": 1
+  },
+  "updatedAt": "2026-09-12T12:01:26.098153+00:00",
+  "businessDate": "2026-09-12",
+  "completed": true,
+  "invoice": {
+    "id": 2,
+    "folioId": 510,
+    "invoiceNumber": "QABILL-2026-00001",
+    "type": "INVOICE",
+    "originalInvoiceId": null,
+    "originalInvoiceNumber": null,
+    "issueDate": "2026-09-12",
+    "dueDate": "2026-09-26",
+    "recipientName": "QA Helvetia Consulting SAS",
+    "currencyCode": "CHF",
+    "netAmount": 200.0,
+    "vatAmount": 16.2,
+    "grossAmount": 216.2,
+    "vatRate": 8.1,
+    "status": "ISSUED",
+    "hasQrPaymentPart": false,
+    "correctionReason": null,
+    "correctedAt": null,
+    "correctedBy": null
+  },
+  "scopeLimitations": [
+    "All data and acknowledgement references are synthetic.",
+    "No message delivery, external accounting import, Stripe/Beds24 action or public link was requested.",
+    "UBL syntax validity does not assert Peppol, national fiscal certification or universal tax compliance.",
+    "PDF visual check covers this one-page French-language specimen; original service descriptions remain as saved."
+  ]
+}

@@ -10,8 +10,8 @@ import { useTranslation } from '../../context/LanguageContext';
  */
 function DeleteConfirmModal({
                                 visible,
-                                title = "Benutzer löschen",
-                                message = "Dieser Benutzer wird deaktiviert. Seine Daten bleiben bis zu einem Jahr gespeichert und werden danach endgültig gelöscht. Fortfahren?",
+                                title,
+                                message,
                                 userName = "",
                                 onConfirm,
                                 onCancel
@@ -19,12 +19,18 @@ function DeleteConfirmModal({
     const { t } = useTranslation();
     if (!visible) return null;
 
+    const modalTitle = title || t('userManagement.deleteConfirmTitle', 'Benutzer löschen');
+    const modalMessage = message || t(
+        'userManagement.deleteConfirmMessage',
+        'Dieser Benutzer wird deaktiviert. Seine Daten bleiben bis zu einem Jahr gespeichert und werden danach endgültig gelöscht. Fortfahren?'
+    );
+
     return (
         <ModalOverlay visible={visible}>
             <div className="modal-content delete-confirm-modal">
-                <h3>{title}</h3>
+                <h3>{modalTitle}</h3>
                 <p>
-                    {message}
+                    {modalMessage}
                     {userName && (
                         <strong style={{ marginLeft: "6px" }}>
                             {`"${userName}"`}

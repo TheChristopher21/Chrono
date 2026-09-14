@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -36,6 +37,9 @@ public class VacationService {
 
     @Autowired
     private WorkScheduleService workScheduleService; //
+
+    @Autowired
+    private TimeTrackingService timeTrackingService;
 
     @Autowired // NEU: HolidayService injizieren
     private HolidayService holidayService;
@@ -186,7 +190,7 @@ public class VacationService {
         if (halfDay && !start.isEqual(end)) {
             throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag beantragt werden.");
         }
-        List<User> users = userRepo.findByCompany_Id(company.getId());
+        List<User> users = userRepo.findOperationalUsersByCompanyIdAndDeletedFalse(company.getId());
         List<VacationRequest> created = new ArrayList<>();
         for (User user : users) {
             VacationRequest vr = new VacationRequest();
@@ -267,22 +271,11 @@ public class VacationService {
             return; //
         }
 
-        int totalMinutesToDeduct; //
+        int totalMinutesToDeduct = calculateAppliedOvertimeDeductionMinutes(vr, user, getCurrentBerlinDate()); //
 
-        if (Boolean.TRUE.equals(user.getIsPercentage()) && vr.isUsesOvertime() && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) { //
-            totalMinutesToDeduct = vr.getOvertimeDeductionMinutes(); //
-            logger.info("Verwende spezifische overtimeDeductionMinutes ({}) für prozentualen User {} (Antrag ID {}).", totalMinutesToDeduct, user.getUsername(), vr.getId()); //
-        } else {
-            int dailyMinutesValue = getDailyVacationMinutes(user); //
-
-            if (isHalfDay && actualWorkDaysInVacationPeriod == 1) { //
-                totalMinutesToDeduct = (int) Math.round(0.5 * dailyMinutesValue); //
-            } else {
-                totalMinutesToDeduct = (int) Math.round(actualWorkDaysInVacationPeriod * 1.0 * dailyMinutesValue); //
-            }
-            if (vr.isUsesOvertime() && vr.getOvertimeDeductionMinutes() == null) { //
-                vr.setOvertimeDeductionMinutes(totalMinutesToDeduct); //
-            }
+        if (Boolean.TRUE.equals(user.getIsPercentage()) && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) { //
+            logger.info("Verwende bis {} wirksame overtimeDeductionMinutes ({}) für prozentualen User {} (Antrag ID {}).",
+                    getCurrentBerlinDate(), totalMinutesToDeduct, user.getUsername(), vr.getId()); //
         }
 
 
@@ -296,6 +289,72 @@ public class VacationService {
                 (Boolean.TRUE.equals(user.getIsPercentage()) && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes().equals(totalMinutesToDeduct))); //
     }
 
+    protected LocalDate getCurrentBerlinDate() {
+        return LocalDate.now(ZoneId.of("Europe/Berlin"));
+    }
+
+    private int calculateAppliedOvertimeDeductionMinutes(VacationRequest vr, User user, LocalDate balanceCutoff) {
+        if (vr.getStartDate() == null || vr.getEndDate() == null || balanceCutoff == null) {
+            return 0;
+        }
+        if (vr.getStartDate().isAfter(balanceCutoff)) {
+            return 0;
+        }
+
+        int originalMinutes = getPlannedOvertimeDeductionMinutes(vr, user);
+        if (originalMinutes <= 0) {
+            return 0;
+        }
+        if (!vr.getEndDate().isAfter(balanceCutoff)) {
+            return originalMinutes;
+        }
+
+        long totalChargeableDays = countChargeableVacationDays(user, vr.getStartDate(), vr.getEndDate());
+        if (totalChargeableDays <= 0) {
+            return 0;
+        }
+
+        long elapsedChargeableDays = countChargeableVacationDays(user, vr.getStartDate(), balanceCutoff);
+        if (elapsedChargeableDays <= 0) {
+            return 0;
+        }
+
+        return Math.max((int) Math.round((double) originalMinutes * elapsedChargeableDays / totalChargeableDays), 0);
+    }
+
+    private int getPlannedOvertimeDeductionMinutes(VacationRequest vr, User user) {
+        Integer originalMinutes = vr.getOvertimeDeductionMinutes();
+        if (originalMinutes != null && originalMinutes > 0) {
+            return originalMinutes;
+        }
+
+        long chargeableDays = countChargeableVacationDays(user, vr.getStartDate(), vr.getEndDate());
+        if (chargeableDays <= 0) {
+            return 0;
+        }
+
+        int dailyMinutesValue = getDailyVacationMinutes(user);
+        if (vr.isHalfDay() && chargeableDays == 1) {
+            return Math.max((int) Math.round(0.5 * dailyMinutesValue), 0);
+        }
+
+        return Math.max((int) Math.round(chargeableDays * 1.0 * dailyMinutesValue), 0);
+    }
+
+    private long countChargeableVacationDays(User user, LocalDate start, LocalDate end) {
+        if (start == null || end == null || start.isAfter(end)) {
+            return 0;
+        }
+
+        long chargeableDays = 0;
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            if (isChargeableVacationDay(user, date)) {
+                chargeableDays++;
+            }
+        }
+        return chargeableDays;
+    }
+
     private int restoreOvertimeForVacation(VacationRequest vr, String logContext) {
         User user = vr.getUser();
         if (user == null) {
@@ -307,28 +366,13 @@ public class VacationService {
             return 0;
         }
 
-        int minutesToRestore;
+        int minutesToRestore = calculateAppliedOvertimeDeductionMinutes(vr, user, getCurrentBerlinDate());
         if (vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) {
-            minutesToRestore = vr.getOvertimeDeductionMinutes();
-            logger.info("{}: Stelle {} Minuten aus gespeicherten overtimeDeductionMinutes für User '{}' wieder her (VacationRequest ID {}).",
-                    logContext, minutesToRestore, user.getUsername(), vr.getId());
+            logger.info("{}: Stelle {} bis {} wirksame Minuten aus overtimeDeductionMinutes für User '{}' wieder her (VacationRequest ID {}).",
+                    logContext, minutesToRestore, getCurrentBerlinDate(), user.getUsername(), vr.getId());
         } else {
-            long actualWorkDaysInVacationPeriod = 0;
-            for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) {
-                if (isChargeableVacationDay(user, date)) {
-                    actualWorkDaysInVacationPeriod++;
-                }
-            }
-            if (actualWorkDaysInVacationPeriod > 0) {
-                int dailyMinutesValue = getDailyVacationMinutes(user);
-                minutesToRestore = (int) Math.round(actualWorkDaysInVacationPeriod * (vr.isHalfDay() && actualWorkDaysInVacationPeriod == 1 ? 0.5 : 1.0) * dailyMinutesValue);
-                logger.info("{}: Stelle {} Minuten (berechnet) für User '{}' wieder her (VacationRequest ID {}, Arbeitstage: {}).",
-                        logContext, minutesToRestore, user.getUsername(), vr.getId(), actualWorkDaysInVacationPeriod);
-            } else {
-                minutesToRestore = 0;
-                logger.info("{}: Keine Arbeitstage im Zeitraum für VacationRequest ID {}. Keine Minuten für User '{}' wiederherzustellen.",
-                        logContext, vr.getId(), user.getUsername());
-            }
+            logger.info("{}: Stelle {} bis {} wirksame berechnete Minuten für User '{}' wieder her (VacationRequest ID {}).",
+                    logContext, minutesToRestore, getCurrentBerlinDate(), user.getUsername(), vr.getId());
         }
 
         if (minutesToRestore > 0) {
@@ -354,7 +398,9 @@ public class VacationService {
             logger.warn("getAllVacationsInCompany aufgerufen mit companyId null."); //
             return Collections.emptyList(); //
         }
-        return vacationRepo.findByUser_Company_Id(companyId); //
+        return vacationRepo.findByUser_Company_Id(companyId).stream()
+                .filter(vacation -> !isSuperAdminUser(vacation.getUser()))
+                .toList(); //
     }
 
     @Transactional
@@ -418,6 +464,7 @@ public class VacationService {
         }
 
         vacationRepo.delete(vr); //
+        timeTrackingService.rebuildUserBalance(user);
         logger.info("VacationService: VacationRequest ID {} wurde gelöscht (admin='{}').", vacationId, adminUsername); //
         VacationRequest deletedRequest = new VacationRequest(); //
         deletedRequest.setId(vacationId); //
@@ -433,7 +480,8 @@ public class VacationService {
                                                Boolean usesOvertimeParam,
                                                Integer overtimeDeductionMinutesParam,
                                                Boolean approvedParam,
-                                               Boolean deniedParam) {
+                                               Boolean deniedParam,
+                                               String adminNoteParam) {
         VacationRequest vr = vacationRepo.findById(vacationId)
                 .orElseThrow(() -> new RuntimeException("Vacation request " + vacationId + " not found"));
         User admin = userRepo.findByUsername(adminUsername)
@@ -494,14 +542,22 @@ public class VacationService {
         vr.setUsesOvertime(newUsesOvertime);
         vr.setApproved(newApproved);
         vr.setDenied(newDenied);
+        if (adminNoteParam != null) {
+            String normalizedAdminNote = adminNoteParam.trim();
+            vr.setAdminNote(normalizedAdminNote.isEmpty() ? null : normalizedAdminNote);
+        }
+
+        Integer effectiveOvertimeDeductionMinutes = overtimeDeductionMinutesParam != null
+                ? overtimeDeductionMinutesParam
+                : vr.getOvertimeDeductionMinutes();
 
         if (!newUsesOvertime) {
             vr.setOvertimeDeductionMinutes(null);
         } else if (Boolean.TRUE.equals(targetUser.getIsPercentage())) {
-            if (overtimeDeductionMinutesParam == null || overtimeDeductionMinutesParam <= 0) {
+            if (effectiveOvertimeDeductionMinutes == null || effectiveOvertimeDeductionMinutes <= 0) {
                 throw new IllegalArgumentException("Für prozentuale Mitarbeitende müssen abzuziehende Überstunden-Minuten angegeben werden.");
             }
-            vr.setOvertimeDeductionMinutes(overtimeDeductionMinutesParam);
+            vr.setOvertimeDeductionMinutes(effectiveOvertimeDeductionMinutes);
         } else {
             vr.setOvertimeDeductionMinutes(null);
         }
@@ -520,19 +576,25 @@ public class VacationService {
 
 
     public List<VacationRequest> getAllVacations() {
-        return vacationRepo.findAll(); //
+        return vacationRepo.findAll().stream()
+                .filter(vacation -> !isSuperAdminUser(vacation.getUser()))
+                .toList(); //
+    }
+
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
     }
 
     public double calculateRemainingVacationDays(String username, int year) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username)); //
-        double annualVacationDays = (user.getAnnualVacationDays() != null)
-                ? user.getAnnualVacationDays()
-                : 25.0; //
+        double annualVacationDays = calculateAnnualVacationEntitlement(user, year);
         List<VacationRequest> vacations = vacationRepo.findByUserAndApprovedTrue(user); //
         double usedDays = 0.0; //
         for (VacationRequest vr : vacations) { //
-            if (!vr.isUsesOvertime() && !vr.isCompanyVacation()) { //
+            if (!vr.isUsesOvertime()) { //
                 LocalDate startDate = vr.getStartDate(); //
                 LocalDate endDate = vr.getEndDate(); //
 
@@ -545,9 +607,38 @@ public class VacationService {
                 }
             }
         }
-        logger.info("VacationService: Benutzer '{}' hat {} reguläre Urlaubstage von {} im Jahr {} genutzt.",
+        logger.info("VacationService: Benutzer '{}' hat {} Urlaubstage von {} im Jahr {} genutzt.",
                 username, usedDays, annualVacationDays, year); //
-        return annualVacationDays - usedDays; //
+        return Math.max(annualVacationDays - usedDays, 0.0); //
+    }
+
+    double calculateAnnualVacationEntitlement(User user, int year) {
+        double configuredAnnualVacationDays = (user.getAnnualVacationDays() != null)
+                ? user.getAnnualVacationDays()
+                : 25.0;
+
+        double fullYearEntitlement = configuredAnnualVacationDays;
+        LocalDate entryDate = user.getEntryDate();
+        if (entryDate == null) {
+            return fullYearEntitlement;
+        }
+
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        if (entryDate.isAfter(yearEnd)) {
+            return 0.0;
+        }
+        if (entryDate.isBefore(yearStart) || entryDate.isEqual(yearStart)) {
+            return fullYearEntitlement;
+        }
+
+        long daysInYear = java.time.temporal.ChronoUnit.DAYS.between(yearStart, yearEnd.plusDays(1));
+        long activeDays = java.time.temporal.ChronoUnit.DAYS.between(entryDate, yearEnd.plusDays(1));
+        if (daysInYear <= 0 || activeDays <= 0) {
+            return 0.0;
+        }
+
+        return fullYearEntitlement * ((double) activeDays / (double) daysInYear);
     }
 
     @Transactional
@@ -613,8 +704,13 @@ public class VacationService {
     }
 
     private boolean isChargeableVacationDay(User user, LocalDate date) {
+        boolean customHolidaySelection = user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled();
         String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+        boolean holiday = customHolidaySelection
+                ? holidayService.isCompanyHoliday(date, user.getCompany())
+                : holidayService.isHoliday(date, cantonAbbreviation);
+        boolean halfDayHoliday = customHolidaySelection && holidayService.isHalfDayHoliday(date, user.getCompany());
+        if (holiday && !halfDayHoliday) {
             return false;
         }
         return !workScheduleService.isDayOff(user, date);

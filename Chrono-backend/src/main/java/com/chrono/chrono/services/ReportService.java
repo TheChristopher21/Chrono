@@ -31,6 +31,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -67,6 +68,9 @@ public class ReportService {
         List<Project> projects = projectRepository.findByCustomerCompanyIdOrderByNameAsc(companyId);
         Map<Long, ProjectHierarchyNodeDTO> nodeMap = new java.util.LinkedHashMap<>();
         List<ProjectHierarchyNodeDTO> roots = new java.util.ArrayList<>();
+        Map<Long, List<Project>> projectsByCustomerId = projects.stream()
+                .filter(project -> project.getCustomer() != null && project.getCustomer().getId() != null)
+                .collect(Collectors.groupingBy(project -> project.getCustomer().getId(), HashMap::new, Collectors.toList()));
 
         for (Project project : projects) {
             String customerName = project.getCustomer() != null ? project.getCustomer().getName() : null;
@@ -116,7 +120,7 @@ public class ReportService {
 
             TimeTrackingEntry startEntry = openStartByUser.remove(userId);
 
-            Project project = resolveProject(entry, startEntry);
+            Project project = resolveProject(entry, startEntry, projectsByCustomerId);
             if (project == null || project.getId() == null) {
                 continue;
             }
@@ -150,7 +154,8 @@ public class ReportService {
         return roots;
     }
 
-    private Project resolveProject(TimeTrackingEntry endEntry, TimeTrackingEntry startEntry) {
+    private Project resolveProject(TimeTrackingEntry endEntry, TimeTrackingEntry startEntry,
+                                   Map<Long, List<Project>> projectsByCustomerId) {
         Project project = null;
         if (endEntry != null) {
             project = endEntry.getProject();
@@ -164,7 +169,22 @@ public class ReportService {
                 project = startEntry.getTask().getProject();
             }
         }
-        return project;
+        if (project != null) {
+            return project;
+        }
+        Project uniqueCustomerProject = resolveUniqueCustomerProject(endEntry, projectsByCustomerId);
+        if (uniqueCustomerProject != null) {
+            return uniqueCustomerProject;
+        }
+        return resolveUniqueCustomerProject(startEntry, projectsByCustomerId);
+    }
+
+    private Project resolveUniqueCustomerProject(TimeTrackingEntry entry, Map<Long, List<Project>> projectsByCustomerId) {
+        if (entry == null || entry.getCustomer() == null || entry.getCustomer().getId() == null) {
+            return null;
+        }
+        List<Project> customerProjects = projectsByCustomerId.getOrDefault(entry.getCustomer().getId(), Collections.emptyList());
+        return customerProjects.size() == 1 ? customerProjects.get(0) : null;
     }
 
     private long aggregateDurations(ProjectHierarchyNodeDTO node, Map<Long, Long> totalDurations,
@@ -385,7 +405,7 @@ public class ReportService {
                 .collect(Collectors.joining(" | "));
             sb.append("\"").append(stamps).append("\"").append(";");
 
-            sb.append(summary.getDailyNote() != null ? "\"" + summary.getDailyNote().replace("\"", "\"\"") + "\"" : "").append(";");
+            sb.append(csvCell(summary.getDailyNote())).append(";");
             sb.append(summary.isNeedsCorrection() ? "JA" : "NEIN").append("\n");
         }
         
@@ -443,6 +463,26 @@ public class ReportService {
 
         sb.append("END:VCALENDAR\r\n");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String csvCell(String value) {
+        if (value == null) {
+            return "";
+        }
+        String safeValue = neutralizeSpreadsheetFormula(value);
+        return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+    }
+
+    private String neutralizeSpreadsheetFormula(String value) {
+        String stripped = value.stripLeading();
+        if (stripped.isEmpty()) {
+            return value;
+        }
+        char first = stripped.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r' || first == '\n') {
+            return "'" + value;
+        }
+        return value;
     }
 
     public byte[] generateIcs(String username, LocalDate start, LocalDate end) {

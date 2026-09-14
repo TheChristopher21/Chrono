@@ -33,7 +33,7 @@ const AdminProjectReportPage = () => {
   return (
     <div className="admin-project-report">
       <h2>{t('projectReport', 'Projekt-Auswertung')}</h2>
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="admin-project-report-filters" style={{ marginBottom: '1rem' }}>
         <select value={projectId} onChange={e => setProjectId(e.target.value)}>
           <option value="">{t('selectProject', 'Projekt wählen')}</option>
           {projects.map(p => (
@@ -46,7 +46,7 @@ const AdminProjectReportPage = () => {
       </div>
 
       {report && (
-        <div>
+        <div className="admin-project-report-result">
           {report.budgetMinutes != null && (
             <div style={{ border: '1px solid #ccc', height: '20px', marginBottom: '0.5rem' }}>
               <div style={{ width: `${Math.min(100, overallPct)}%`, height: '100%', backgroundColor: '#4caf50' }} />
@@ -57,29 +57,31 @@ const AdminProjectReportPage = () => {
             {t('actual', 'Ist')}: {minsToHours(report.totalMinutes)} Std. |
             {t('remaining', 'Verbleibend')}: {minsToHours(report.remainingMinutes)} Std.
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>{t('task', 'Aufgabe')}</th>
-                <th>{t('budget', 'Budget')}</th>
-                <th>{t('actual', 'Ist')}</th>
-                <th>{t('progress', 'Fortschritt')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.tasks && report.tasks.map(task => {
-                const pct = task.budgetMinutes ? (task.totalMinutes / task.budgetMinutes) * 100 : null;
-                return (
-                  <tr key={task.taskId || task.taskName}>
-                    <td>{task.taskName}</td>
-                    <td>{minsToHours(task.budgetMinutes)}</td>
-                    <td>{minsToHours(task.totalMinutes)}</td>
-                    <td>{pct != null ? `${pct.toFixed(1)}%` : '-'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="admin-project-report-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('projectReportTask', 'Aufgabe')}</th>
+                  <th>{t('budget', 'Budget')}</th>
+                  <th>{t('actual', 'Ist')}</th>
+                  <th>{t('progress', 'Fortschritt')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.tasks && report.tasks.map(task => {
+                  const pct = task.budgetMinutes ? (task.totalMinutes / task.budgetMinutes) * 100 : null;
+                  return (
+                    <tr key={task.taskId || task.taskName}>
+                      <td>{task.taskName}</td>
+                      <td>{minsToHours(task.budgetMinutes)}</td>
+                      <td>{minsToHours(task.totalMinutes)}</td>
+                      <td>{pct != null ? `${pct.toFixed(1)}%` : '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

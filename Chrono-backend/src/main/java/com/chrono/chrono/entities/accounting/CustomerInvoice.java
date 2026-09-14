@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -40,6 +41,11 @@ public class CustomerInvoice {
     private InvoiceStatus status = InvoiceStatus.OPEN;
 
     private Long projectId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "journal_entry_id")
@@ -143,6 +149,14 @@ public class CustomerInvoice {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public JournalEntry getJournalEntry() {

@@ -9,13 +9,16 @@ import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -38,11 +41,18 @@ public class AuthService {
     @Autowired
     private DemoDataService demoDataService;
 
+    @Value("${app.demo-login.session-ttl:PT24H}")
+    private Duration demoSessionTtl;
+
     private static final String INVALID_CREDENTIALS_MESSAGE = "Benutzername oder Passwort ist falsch.";
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE));
+
+        if (user.isDeleted() || user.isDemoExpired(LocalDateTime.now())) {
+            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
+        }
 
         if (user.getPassword() == null) {
             throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
@@ -82,54 +92,39 @@ public class AuthService {
     }
 
     /**
-     * Logs in a demo user. If the demo account does not yet exist it will be
-     * created with a default password and basic ROLE_USER permissions.
+     * Creates an isolated, expiring demo tenant and logs in its demo admin.
      *
      * @return AuthResponse containing a JWT for the demo user
      */
     public AuthResponse demoLogin() {
-        final String username = "demo";
-        final String rawPassword = "demo";
+        String sessionId = UUID.randomUUID().toString().replace("-", "");
+        String username = "demo_" + sessionId.substring(0, 12);
+        String rawPassword = UUID.randomUUID().toString();
+        Duration sessionTtl = demoSessionTtl != null ? demoSessionTtl : Duration.ofHours(24);
+        LocalDateTime expiresAt = LocalDateTime.now().plus(sessionTtl);
 
-        // Find existing demo user or create a new one
-        User user = userRepository.findByUsername(username).orElseGet(() -> {
-            User demo = new User();
-            demo.setUsername(username);
-            demo.setPassword(passwordEncoder.encode(rawPassword));
-            demo.setFirstName("Demo");
-            demo.setLastName("User");
-            // Required fields
-            demo.setCountry("DE");
-            demo.setPersonnelNumber("0");
-
-            // Ensure the user has ROLE_USER and ROLE_ADMIN
-            Role userRole = roleRepository.findByRoleName("ROLE_USER")
-                    .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
-            Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
-                    .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
-            Set<Role> roles = new HashSet<>();
-            roles.add(userRole);
-            roles.add(adminRole);
-
-            demo.setRoles(roles);
-
-            return demo;
-        });
-
-        // Ensure demo user always has required roles
         Role userRole = roleRepository.findByRoleName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
         Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
-        Set<Role> roles = user.getRoles();
-        if (!roles.contains(userRole)) {
-            roles.add(userRole);
-        }
-        if (!roles.contains(adminRole)) {
-            roles.add(adminRole);
-        }
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+        roles.add(adminRole);
+
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setFirstName("Demo");
+        user.setLastName("Manager");
+        user.setEmail("demo+" + sessionId.substring(0, 12) + "@chrono-demo.ch");
+        user.setCountry("DE");
+        user.setPersonnelNumber("D-1000");
+        user.setRoles(roles);
 
         user.setDemo(true);
+        user.setDemoSessionId(sessionId);
+        user.setDemoExpiresAt(expiresAt);
         user = userRepository.save(user);
 
         demoDataService.resetDemoData(user);

@@ -32,6 +32,37 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS address_line1 VARCHAR(255);
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS address_line2 VARCHAR(255);
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS postal_code VARCHAR(50);
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS city VARCHAR(255);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS custom_holiday_selection_enabled BOOLEAN DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS company_holiday_preferences (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT NOT NULL,
+    holiday_code VARCHAR(80) NOT NULL,
+    half_day BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT uk_company_holiday_preferences_company_code UNIQUE (company_id, holiday_code),
+    CONSTRAINT fk_company_holiday_preferences_company FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+INSERT INTO company_holiday_preferences (company_id, holiday_code, half_day)
+SELECT c.id, sg_holidays.holiday_code, FALSE
+FROM companies c
+JOIN (
+    SELECT 'CH_NEUJAHR' AS holiday_code
+    UNION ALL SELECT 'CH_BERCHTOLDSTAG'
+    UNION ALL SELECT 'CH_KARFREITAG'
+    UNION ALL SELECT 'CH_OSTERMONTAG'
+    UNION ALL SELECT 'CH_TAG_DER_ARBEIT'
+    UNION ALL SELECT 'CH_AUFFAHRT'
+    UNION ALL SELECT 'CH_PFINGSTMONTAG'
+    UNION ALL SELECT 'CH_NATIONALFEIERTAG'
+    UNION ALL SELECT 'CH_ALLERHEILIGEN'
+    UNION ALL SELECT 'CH_WEIHNACHTEN'
+    UNION ALL SELECT 'CH_STEPHANSTAG'
+) sg_holidays
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM company_holiday_preferences existing
+    WHERE existing.company_id = c.id
+      AND existing.holiday_code = sg_holidays.holiday_code
+);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_customer_id BIGINT;
 ALTER TABLE users ADD CONSTRAINT fk_last_customer FOREIGN KEY (last_customer_id) REFERENCES customers(id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS include_in_time_tracking BOOLEAN DEFAULT TRUE;
@@ -45,6 +76,13 @@ WHERE include_in_time_tracking = FALSE
     INNER JOIN roles r ON r.id = ur.role_id
     WHERE r.role_name IN ('ROLE_ADMIN', 'ROLE_SUPERADMIN')
 );
+UPDATE users SET include_in_time_tracking = FALSE
+WHERE id IN (
+  SELECT ur.user_id
+  FROM user_roles ur
+  INNER JOIN roles r ON r.id = ur.role_id
+  WHERE r.role_name = 'ROLE_SUPERADMIN'
+);
 ALTER TABLE time_tracking_entries ADD COLUMN IF NOT EXISTS project_id BIGINT;
 ALTER TABLE time_tracking_entries ADD CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES projects(id);
 
@@ -55,4 +93,32 @@ CREATE TABLE IF NOT EXISTS daily_notes (
     content VARCHAR(2000),
     CONSTRAINT fk_daily_note_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT uc_daily_note UNIQUE (user_id, note_date)
+);
+
+CREATE TABLE IF NOT EXISTS analytics_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_type VARCHAR(32) NOT NULL,
+    visitor_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64),
+    path VARCHAR(512) NOT NULL,
+    page_title VARCHAR(256),
+    referrer VARCHAR(512),
+    referrer_host VARCHAR(255),
+    element_label VARCHAR(160),
+    element_target VARCHAR(512),
+    language VARCHAR(32),
+    viewport_width INT,
+    viewport_height INT,
+    created_at DATETIME NOT NULL,
+    INDEX idx_analytics_created_type (created_at, event_type),
+    INDEX idx_analytics_path_created (path, created_at),
+    INDEX idx_analytics_visitor_created (visitor_id, created_at)
+);
+
+CREATE TABLE IF NOT EXISTS analytics_excluded_ips (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL UNIQUE,
+    label VARCHAR(120),
+    created_at DATETIME NOT NULL,
+    INDEX idx_analytics_excluded_ip (ip_address)
 );

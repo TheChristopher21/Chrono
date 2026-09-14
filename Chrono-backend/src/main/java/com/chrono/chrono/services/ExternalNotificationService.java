@@ -16,7 +16,11 @@ import java.util.Map;
 public class ExternalNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalNotificationService.class);
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public ExternalNotificationService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public void sendVacationNotification(VacationRequest vr, String message) {
         if (vr == null || vr.getUser() == null) return;
@@ -24,6 +28,18 @@ public class ExternalNotificationService {
         if (company == null) return;
         if (Boolean.FALSE.equals(company.getNotifyVacation())) return;
 
+        if (company.getSlackWebhookUrl() != null && !company.getSlackWebhookUrl().isBlank()) {
+            sendSimpleMessage(company.getSlackWebhookUrl(), message);
+        }
+        if (company.getTeamsWebhookUrl() != null && !company.getTeamsWebhookUrl().isBlank()) {
+            sendSimpleMessage(company.getTeamsWebhookUrl(), message);
+        }
+    }
+
+    public void sendCompanyNotification(Company company, String message) {
+        if (company == null || message == null || message.isBlank()) {
+            return;
+        }
         if (company.getSlackWebhookUrl() != null && !company.getSlackWebhookUrl().isBlank()) {
             sendSimpleMessage(company.getSlackWebhookUrl(), message);
         }
@@ -40,6 +56,20 @@ public class ExternalNotificationService {
             restTemplate.postForEntity(url, entity, String.class);
         } catch (Exception e) {
             logger.warn("Failed to send webhook notification: {}", e.getMessage());
+        }
+    }
+
+    /** Send one channel so a failed Teams delivery does not replay a successful Slack delivery. */
+    public void sendOperationalWebhookChecked(String url, String text) {
+        if (url == null || url.isBlank() || text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Operational webhook destination and message are required.");
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(Map.of("text", text), headers);
+        var response = restTemplate.postForEntity(url, entity, String.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Operational webhook did not acknowledge delivery.");
         }
     }
 }

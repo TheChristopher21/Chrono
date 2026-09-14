@@ -1,0 +1,788 @@
+- generic [ref=f21e2]:
+  - generic [ref=f21e2960]:
+    - generic [ref=f21e2961]:
+      - navigation "Hauptnavigation" [ref=f21e2962]:
+        - link "Chrono PMS" [ref=f21e2964] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f21e2965]
+        - list [ref=f21e2966]:
+          - listitem [ref=f21e2967]:
+            - link "Zu Chrono wechseln" [ref=f21e2968] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f21e2969]:
+            - button "Was ist neu?" [ref=f21e2970] [cursor=pointer]
+          - listitem [ref=f21e2974]:
+            - button "Light Mode" [ref=f21e2975] [cursor=pointer]
+          - listitem [ref=f21e2980]:
+            - button "🌐" [ref=f21e2981] [cursor=pointer]
+          - listitem [ref=f21e2984]:
+            - button "Default Admin" [ref=f21e2985] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2986]: D
+        - button "PMS-Bereiche" [ref=f21e2991] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f21e2994]:
+        - generic [ref=f21e2995]:
+          - tablist "Offene Arbeitsbereiche" [ref=f21e2996]:
+            - generic [ref=f21e2997]:
+              - tab "Hotelverwaltung (PMS)" [ref=f21e2998] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2999]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f21e3001] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f21e3002] [cursor=pointer]'
+            - generic [ref=f21e3003]:
+              - tab "PMS · Zimmerplan" [ref=f21e3004] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3005]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f21e3007] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f21e3008] [cursor=pointer]'
+            - generic [ref=f21e3009]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f21e3010] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3011]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f21e3013] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f21e3014] [cursor=pointer]'
+            - generic [ref=f21e3015]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f21e3016] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3017]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f21e3019] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f21e3020] [cursor=pointer]'
+            - generic [ref=f21e3021]:
+              - tab "PMS · Rechnungen" [selected] [ref=f21e3022] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3023]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f21e3025] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f21e3026] [cursor=pointer]'
+            - generic [ref=f21e3027]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f21e3028] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3029]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f21e3031] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f21e3032] [cursor=pointer]'
+            - generic [ref=f21e3033]:
+              - tab "PMS · Berichte & Kennzahlen" [ref=f21e3034] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3035]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f21e3037] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f21e3038] [cursor=pointer]'
+            - generic [ref=f21e3039]:
+              - tab "PMS · Hotelportfolio" [ref=f21e3040] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3041]: PMS
+              - 'button "Tab anheften: PMS · Hotelportfolio" [ref=f21e3043] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Hotelportfolio" [ref=f21e3044] [cursor=pointer]'
+          - generic [ref=f21e3045]:
+            - button "Arbeitsbereich öffnen" [ref=f21e3046] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f21e3047] [cursor=pointer]
+    - generic [ref=f21e3048]:
+      - complementary "PMS-Navigation" [ref=f21e3049]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f21e3050] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f21e3051]: CH
+          - generic [ref=f21e3052]:
+            - generic [ref=f21e3053]: Aktives Hotel
+            - strong [ref=f21e3054]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f21e3055]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f21e3056]:
+          - generic [ref=f21e3057]:
+            - generic [ref=f21e3058]: Rezeption
+            - button "Übersicht" [ref=f21e3059] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3060]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f21e3061] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3062]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f21e3063] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3064]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f21e3065] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3066]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f21e3067] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3068]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f21e3069] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3070]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f21e3071]:
+            - generic [ref=f21e3072]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f21e3073] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3074]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f21e3075] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3076]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f21e3077] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3078]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f21e3079] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3080]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f21e3081]:
+            - generic [ref=f21e3082]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f21e3083] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3084]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f21e3085] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3086]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f21e3087] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3088]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f21e3089]:
+            - generic [ref=f21e3090]: Steuerung & System
+            - button "Hotelportfolio" [ref=f21e3091] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3092]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f21e3093] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3094]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f21e3095] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3096]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f21e3097] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3098]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f21e3099] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3100]: SYS
+              - text: Schnittstellen
+        - generic [ref=f21e3103]:
+          - strong [ref=f21e3104]: PMS betriebsbereit
+          - generic [ref=f21e3105]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f21e3106]:
+        - generic [ref=f21e3107]:
+          - generic [ref=f21e3108]:
+            - generic [ref=f21e3109]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f21e3110]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f21e3112] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f21e3113]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f21e3114]: Ctrl K
+        - region [ref=f21e3115]:
+          - generic [ref=f21e3117]:
+            - generic [ref=f21e3118]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Rechnungen" [level=2] [ref=f21e3119]
+            - paragraph [ref=f21e3120]: Rechnungen erstellen, ausgeben und korrigieren. · Betriebstag 12.09.2026
+          - generic [ref=f21e3121]:
+            - navigation "Bereiche im Rechnungswesen" [ref=f21e3122]:
+              - button "Rechnungen" [pressed] [ref=f21e3123] [cursor=pointer]
+              - button "Forderungen" [ref=f21e3124] [cursor=pointer]
+              - button "Versand & Mahnungen" [ref=f21e3125] [cursor=pointer]
+              - button "Bank & Buchhaltung" [ref=f21e3126] [cursor=pointer]
+              - button "Zahlungen" [ref=f21e3127] [cursor=pointer]
+              - button "Freigaben" [ref=f21e3128] [cursor=pointer]
+              - button "Länder & XML" [ref=f21e3129] [cursor=pointer]
+            - generic [ref=f21e3130]:
+              - generic [ref=f21e3131]:
+                - generic [ref=f21e3133]:
+                  - generic [ref=f21e3134]: Rechnungswesen
+                  - heading "Rechnung erstellen" [level=3] [ref=f21e3135]
+                - generic [ref=f21e3136]:
+                  - generic [ref=f21e3137]:
+                    - text: Gastkonto (Folio)
+                    - combobox "Gastkonto (Folio)" [ref=f21e3138]:
+                      - option "Gastkonto wählen" [selected]
+                      - option "Hauptkonto · CHR-9FCA0F61 · DENSELOAD Synthetic-10499"
+                      - option "Hauptkonto · CHR-43B074E6 · DENSELOAD Synthetic-10498"
+                      - option "Hauptkonto · CHR-683F5882 · DENSELOAD Synthetic-10497"
+                      - option "Hauptkonto · CHR-633FC15F · DENSELOAD Synthetic-10496"
+                      - option "Hauptkonto · CHR-E26E2EC3 · DENSELOAD Synthetic-10495"
+                      - option "Hauptkonto · CHR-8E9E1A55 · DENSELOAD Synthetic-10494"
+                      - option "Hauptkonto · CHR-DB8E0CB0 · DENSELOAD Synthetic-10493"
+                      - option "Hauptkonto · CHR-20E2A406 · DENSELOAD Synthetic-10492"
+                      - option "Hauptkonto · CHR-CD48E43D · DENSELOAD Synthetic-10491"
+                      - option "Hauptkonto · CHR-0BFD53D0 · DENSELOAD Synthetic-10490"
+                      - option "Hauptkonto · CHR-E955B1FB · DENSELOAD Synthetic-10489"
+                      - option "Hauptkonto · CHR-777D58A3 · DENSELOAD Synthetic-10488"
+                      - option "Hauptkonto · CHR-D5BDCFDA · DENSELOAD Synthetic-10487"
+                      - option "Hauptkonto · CHR-425B0556 · DENSELOAD Synthetic-10486"
+                      - option "Hauptkonto · CHR-E50EEB4C · DENSELOAD Synthetic-10485"
+                      - option "Hauptkonto · CHR-817CFDDA · DENSELOAD Synthetic-10484"
+                      - option "Hauptkonto · CHR-AF0A3BB0 · DENSELOAD Synthetic-10483"
+                      - option "Hauptkonto · CHR-B627ABB5 · DENSELOAD Synthetic-10482"
+                      - option "Hauptkonto · CHR-AA016BE9 · DENSELOAD Synthetic-10481"
+                      - option "Hauptkonto · CHR-8510FDD8 · DENSELOAD Synthetic-10480"
+                      - option "Hauptkonto · CHR-ABF8741F · DENSELOAD Synthetic-10479"
+                      - option "Hauptkonto · CHR-0B7F7826 · DENSELOAD Synthetic-10478"
+                      - option "Hauptkonto · CHR-6ABB3A2D · DENSELOAD Synthetic-10477"
+                      - option "Hauptkonto · CHR-275B7B7A · DENSELOAD Synthetic-10476"
+                      - option "Hauptkonto · CHR-3955CB38 · DENSELOAD Synthetic-10475"
+                      - option "Hauptkonto · CHR-0B883EE2 · DENSELOAD Synthetic-10474"
+                      - option "Hauptkonto · CHR-705DA55A · DENSELOAD Synthetic-10473"
+                      - option "Hauptkonto · CHR-9F08C1CC · DENSELOAD Synthetic-10472"
+                      - option "Hauptkonto · CHR-5A024C93 · DENSELOAD Synthetic-10471"
+                      - option "Hauptkonto · CHR-A8CCAA2A · DENSELOAD Synthetic-10470"
+                      - option "Hauptkonto · CHR-41AF100B · DENSELOAD Synthetic-10469"
+                      - option "Hauptkonto · CHR-9220FC73 · DENSELOAD Synthetic-10468"
+                      - option "Hauptkonto · CHR-14E8ACA7 · DENSELOAD Synthetic-10467"
+                      - option "Hauptkonto · CHR-E9A603EB · DENSELOAD Synthetic-10466"
+                      - option "Hauptkonto · CHR-BC2694C4 · DENSELOAD Synthetic-10465"
+                      - option "Hauptkonto · CHR-51614833 · DENSELOAD Synthetic-10464"
+                      - option "Hauptkonto · CHR-5E4058B1 · DENSELOAD Synthetic-10463"
+                      - option "Hauptkonto · CHR-DB66F086 · DENSELOAD Synthetic-10462"
+                      - option "Hauptkonto · CHR-2F9C31BB · DENSELOAD Synthetic-10461"
+                      - option "Hauptkonto · CHR-33960400 · DENSELOAD Synthetic-10460"
+                      - option "Hauptkonto · CHR-2E1D4752 · DENSELOAD Synthetic-10459"
+                      - option "Hauptkonto · CHR-E4F1F1C3 · DENSELOAD Synthetic-10458"
+                      - option "Hauptkonto · CHR-C11841E8 · DENSELOAD Synthetic-10457"
+                      - option "Hauptkonto · CHR-215A3FB2 · DENSELOAD Synthetic-10456"
+                      - option "Hauptkonto · CHR-80A8A7AE · DENSELOAD Synthetic-10455"
+                      - option "Hauptkonto · CHR-63E185CF · DENSELOAD Synthetic-10454"
+                      - option "Hauptkonto · CHR-F0C55173 · DENSELOAD Synthetic-10453"
+                      - option "Hauptkonto · CHR-5F914046 · DENSELOAD Synthetic-10452"
+                      - option "Hauptkonto · CHR-C2DC4276 · DENSELOAD Synthetic-10451"
+                      - option "Hauptkonto · CHR-A269ED1D · DENSELOAD Synthetic-10450"
+                      - option "Hauptkonto · CHR-1604315B · DENSELOAD Synthetic-10449"
+                      - option "Hauptkonto · CHR-BF9934C8 · DENSELOAD Synthetic-10448"
+                      - option "Hauptkonto · CHR-42276F02 · DENSELOAD Synthetic-10447"
+                      - option "Hauptkonto · CHR-8793E439 · DENSELOAD Synthetic-10446"
+                      - option "Hauptkonto · CHR-68FC3E96 · DENSELOAD Synthetic-10445"
+                      - option "Hauptkonto · CHR-B96EF246 · DENSELOAD Synthetic-10444"
+                      - option "Hauptkonto · CHR-C514C617 · DENSELOAD Synthetic-10443"
+                      - option "Hauptkonto · CHR-374927FD · DENSELOAD Synthetic-10442"
+                      - option "Hauptkonto · CHR-DBD2A047 · DENSELOAD Synthetic-10441"
+                      - option "Hauptkonto · CHR-1B8BB297 · DENSELOAD Synthetic-10440"
+                      - option "Hauptkonto · CHR-6F426320 · DENSELOAD Synthetic-10439"
+                      - option "Hauptkonto · CHR-C1402822 · DENSELOAD Synthetic-10438"
+                      - option "Hauptkonto · CHR-E878102E · DENSELOAD Synthetic-10437"
+                      - option "Hauptkonto · CHR-9ACEF086 · DENSELOAD Synthetic-10436"
+                      - option "Hauptkonto · CHR-3C1E2031 · DENSELOAD Synthetic-10435"
+                      - option "Hauptkonto · CHR-CB5CE31F · DENSELOAD Synthetic-10434"
+                      - option "Hauptkonto · CHR-86FBFBA9 · DENSELOAD Synthetic-10433"
+                      - option "Hauptkonto · CHR-C06480DF · DENSELOAD Synthetic-10432"
+                      - option "Hauptkonto · CHR-B0B7D13E · DENSELOAD Synthetic-10431"
+                      - option "Hauptkonto · CHR-4864DF39 · DENSELOAD Synthetic-10430"
+                      - option "Hauptkonto · CHR-4B0F9CF3 · DENSELOAD Synthetic-10429"
+                      - option "Hauptkonto · CHR-7278E28E · DENSELOAD Synthetic-10428"
+                      - option "Hauptkonto · CHR-D905A246 · DENSELOAD Synthetic-10427"
+                      - option "Hauptkonto · CHR-B763281B · DENSELOAD Synthetic-10426"
+                      - option "Hauptkonto · CHR-407886BE · DENSELOAD Synthetic-10425"
+                      - option "Hauptkonto · CHR-8016C356 · DENSELOAD Synthetic-10424"
+                      - option "Hauptkonto · CHR-66451615 · DENSELOAD Synthetic-10423"
+                      - option "Hauptkonto · CHR-22CE6EE0 · DENSELOAD Synthetic-10422"
+                      - option "Hauptkonto · CHR-6CD49699 · DENSELOAD Synthetic-10421"
+                      - option "Hauptkonto · CHR-E4D8DD61 · DENSELOAD Synthetic-10420"
+                      - option "Hauptkonto · CHR-66D5E2A1 · DENSELOAD Synthetic-10419"
+                      - option "Hauptkonto · CHR-5E0DAA8B · DENSELOAD Synthetic-10418"
+                      - option "Hauptkonto · CHR-2DB3EB13 · DENSELOAD Synthetic-10417"
+                      - option "Hauptkonto · CHR-72DC6F6D · DENSELOAD Synthetic-10416"
+                      - option "Hauptkonto · CHR-CAA2892D · DENSELOAD Synthetic-10415"
+                      - option "Hauptkonto · CHR-35D49AA3 · DENSELOAD Synthetic-10414"
+                      - option "Hauptkonto · CHR-A3287777 · DENSELOAD Synthetic-10413"
+                      - option "Hauptkonto · CHR-AAD6C776 · DENSELOAD Synthetic-10412"
+                      - option "Hauptkonto · CHR-6E41F773 · DENSELOAD Synthetic-10411"
+                      - option "Hauptkonto · CHR-FB991166 · DENSELOAD Synthetic-10410"
+                      - option "Hauptkonto · CHR-664EC52F · DENSELOAD Synthetic-10409"
+                      - option "Hauptkonto · CHR-81B7161E · DENSELOAD Synthetic-10408"
+                      - option "Hauptkonto · CHR-C98B9225 · DENSELOAD Synthetic-10407"
+                      - option "Hauptkonto · CHR-5132C5AB · DENSELOAD Synthetic-10406"
+                      - option "Hauptkonto · CHR-DCEB6CBA · DENSELOAD Synthetic-10405"
+                      - option "Hauptkonto · CHR-3E41D9AC · DENSELOAD Synthetic-10404"
+                      - option "Hauptkonto · CHR-4C802DFD · DENSELOAD Synthetic-10403"
+                      - option "Hauptkonto · CHR-4A0090FA · DENSELOAD Synthetic-10402"
+                      - option "Hauptkonto · CHR-3D54C927 · DENSELOAD Synthetic-10401"
+                      - option "Hauptkonto · CHR-FB9EFBD3 · DENSELOAD Synthetic-10400"
+                      - option "Hauptkonto · CHR-61D59A54 · DENSELOAD Synthetic-10399"
+                      - option "Hauptkonto · CHR-2A1DCF56 · DENSELOAD Synthetic-10398"
+                      - option "Hauptkonto · CHR-4A85363D · DENSELOAD Synthetic-10397"
+                      - option "Hauptkonto · CHR-D1162813 · DENSELOAD Synthetic-10396"
+                      - option "Hauptkonto · CHR-C50CF9DB · DENSELOAD Synthetic-10395"
+                      - option "Hauptkonto · CHR-403D3109 · DENSELOAD Synthetic-10394"
+                      - option "Hauptkonto · CHR-4F0C86B8 · DENSELOAD Synthetic-10393"
+                      - option "Hauptkonto · CHR-337A4F8C · DENSELOAD Synthetic-10392"
+                      - option "Hauptkonto · CHR-1A98F068 · DENSELOAD Synthetic-10391"
+                      - option "Hauptkonto · CHR-69F2DCB3 · DENSELOAD Synthetic-10390"
+                      - option "Hauptkonto · CHR-6ECB2975 · DENSELOAD Synthetic-10389"
+                      - option "Hauptkonto · CHR-8C07D7B9 · DENSELOAD Synthetic-10388"
+                      - option "Hauptkonto · CHR-B001816D · DENSELOAD Synthetic-10387"
+                      - option "Hauptkonto · CHR-78127517 · DENSELOAD Synthetic-10386"
+                      - option "Hauptkonto · CHR-F92B5C80 · DENSELOAD Synthetic-10385"
+                      - option "Hauptkonto · CHR-89E3F8AB · DENSELOAD Synthetic-10384"
+                      - option "Hauptkonto · CHR-F42DDA79 · DENSELOAD Synthetic-10383"
+                      - option "Hauptkonto · CHR-0178A13F · DENSELOAD Synthetic-10382"
+                      - option "Hauptkonto · CHR-C7A3CD51 · DENSELOAD Synthetic-10381"
+                      - option "Hauptkonto · CHR-57E10C72 · DENSELOAD Synthetic-10380"
+                      - option "Hauptkonto · CHR-87827B24 · DENSELOAD Synthetic-10379"
+                      - option "Hauptkonto · CHR-4361853B · DENSELOAD Synthetic-10378"
+                      - option "Hauptkonto · CHR-8A154653 · DENSELOAD Synthetic-10377"
+                      - option "Hauptkonto · CHR-4620C877 · DENSELOAD Synthetic-10376"
+                      - option "Hauptkonto · CHR-B20D0752 · DENSELOAD Synthetic-10375"
+                      - option "Hauptkonto · CHR-99426376 · DENSELOAD Synthetic-10374"
+                      - option "Hauptkonto · CHR-66809AAD · DENSELOAD Synthetic-10373"
+                      - option "Hauptkonto · CHR-CFA50271 · DENSELOAD Synthetic-10372"
+                      - option "Hauptkonto · CHR-BCDF6709 · DENSELOAD Synthetic-10371"
+                      - option "Hauptkonto · CHR-10F639DF · DENSELOAD Synthetic-10370"
+                      - option "Hauptkonto · CHR-CCE760E4 · DENSELOAD Synthetic-10369"
+                      - option "Hauptkonto · CHR-252DC879 · DENSELOAD Synthetic-10368"
+                      - option "Hauptkonto · CHR-8F5E54E7 · DENSELOAD Synthetic-10367"
+                      - option "Hauptkonto · CHR-ADFCDF4A · DENSELOAD Synthetic-10366"
+                      - option "Hauptkonto · CHR-65D1EB11 · DENSELOAD Synthetic-10365"
+                      - option "Hauptkonto · CHR-A5B20E4F · DENSELOAD Synthetic-10364"
+                      - option "Hauptkonto · CHR-53559A85 · DENSELOAD Synthetic-10363"
+                      - option "Hauptkonto · CHR-5CBC87B3 · DENSELOAD Synthetic-10362"
+                      - option "Hauptkonto · CHR-3455196F · DENSELOAD Synthetic-10361"
+                      - option "Hauptkonto · CHR-1104548E · DENSELOAD Synthetic-10360"
+                      - option "Hauptkonto · CHR-28C8F3A3 · DENSELOAD Synthetic-10359"
+                      - option "Hauptkonto · CHR-2B33E68E · DENSELOAD Synthetic-10358"
+                      - option "Hauptkonto · CHR-367FE5A9 · DENSELOAD Synthetic-10357"
+                      - option "Hauptkonto · CHR-A87596B9 · DENSELOAD Synthetic-10356"
+                      - option "Hauptkonto · CHR-6F746674 · DENSELOAD Synthetic-10355"
+                      - option "Hauptkonto · CHR-A1D7B11C · DENSELOAD Synthetic-10354"
+                      - option "Hauptkonto · CHR-56470A5A · DENSELOAD Synthetic-10353"
+                      - option "Hauptkonto · CHR-C74E0563 · DENSELOAD Synthetic-10352"
+                      - option "Hauptkonto · CHR-D941BCE1 · DENSELOAD Synthetic-10351"
+                      - option "Hauptkonto · CHR-B0E0D2F3 · DENSELOAD Synthetic-10350"
+                      - option "Hauptkonto · CHR-05BE3E88 · DENSELOAD Synthetic-10349"
+                      - option "Hauptkonto · CHR-E4BD3457 · DENSELOAD Synthetic-10348"
+                      - option "Hauptkonto · CHR-AD9FAAC2 · DENSELOAD Synthetic-10347"
+                      - option "Hauptkonto · CHR-3CA4F1B4 · DENSELOAD Synthetic-10346"
+                      - option "Hauptkonto · CHR-ABE63E6E · DENSELOAD Synthetic-10345"
+                      - option "Hauptkonto · CHR-973234CF · DENSELOAD Synthetic-10344"
+                      - option "Hauptkonto · CHR-04804ECF · DENSELOAD Synthetic-10343"
+                      - option "Hauptkonto · CHR-76FDE65B · DENSELOAD Synthetic-10342"
+                      - option "Hauptkonto · CHR-30C52BF3 · DENSELOAD Synthetic-10341"
+                      - option "Hauptkonto · CHR-966BCA60 · DENSELOAD Synthetic-10340"
+                      - option "Hauptkonto · CHR-D500F80C · DENSELOAD Synthetic-10339"
+                      - option "Hauptkonto · CHR-D5FCE116 · DENSELOAD Synthetic-10338"
+                      - option "Hauptkonto · CHR-0214C4D8 · DENSELOAD Synthetic-10337"
+                      - option "Hauptkonto · CHR-E00DF9B4 · DENSELOAD Synthetic-10336"
+                      - option "Hauptkonto · CHR-06810CF1 · DENSELOAD Synthetic-10335"
+                      - option "Hauptkonto · CHR-1DB76BBF · DENSELOAD Synthetic-10334"
+                      - option "Hauptkonto · CHR-D085502A · DENSELOAD Synthetic-10333"
+                      - option "Hauptkonto · CHR-E4FCD69D · DENSELOAD Synthetic-10332"
+                      - option "Hauptkonto · CHR-812CEB53 · DENSELOAD Synthetic-10331"
+                      - option "Hauptkonto · CHR-B0B3580A · DENSELOAD Synthetic-10330"
+                      - option "Hauptkonto · CHR-A8C2E288 · DENSELOAD Synthetic-10329"
+                      - option "Hauptkonto · CHR-9E9205EB · DENSELOAD Synthetic-10328"
+                      - option "Hauptkonto · CHR-0223348D · DENSELOAD Synthetic-10327"
+                      - option "Hauptkonto · CHR-D7EC176D · DENSELOAD Synthetic-10326"
+                      - option "Hauptkonto · CHR-5D5823EC · DENSELOAD Synthetic-10325"
+                      - option "Hauptkonto · CHR-047EF830 · DENSELOAD Synthetic-10324"
+                      - option "Hauptkonto · CHR-759077F4 · DENSELOAD Synthetic-10323"
+                      - option "Hauptkonto · CHR-23E90FEC · DENSELOAD Synthetic-10322"
+                      - option "Hauptkonto · CHR-90B161FA · DENSELOAD Synthetic-10321"
+                      - option "Hauptkonto · CHR-2F48F142 · DENSELOAD Synthetic-10320"
+                      - option "Hauptkonto · CHR-56A355E8 · DENSELOAD Synthetic-10319"
+                      - option "Hauptkonto · CHR-2594B8F8 · DENSELOAD Synthetic-10318"
+                      - option "Hauptkonto · CHR-DD819137 · DENSELOAD Synthetic-10317"
+                      - option "Hauptkonto · CHR-457D2F99 · DENSELOAD Synthetic-10316"
+                      - option "Hauptkonto · CHR-740AF29E · DENSELOAD Synthetic-10315"
+                      - option "Hauptkonto · CHR-4151A247 · DENSELOAD Synthetic-10314"
+                      - option "Hauptkonto · CHR-80175FE1 · DENSELOAD Synthetic-10313"
+                      - option "Hauptkonto · CHR-B01EC3DD · DENSELOAD Synthetic-10312"
+                      - option "Hauptkonto · CHR-AE9CFFE9 · DENSELOAD Synthetic-10311"
+                      - option "Hauptkonto · CHR-252704D4 · DENSELOAD Synthetic-10310"
+                      - option "Hauptkonto · CHR-309325C7 · DENSELOAD Synthetic-10309"
+                      - option "Hauptkonto · CHR-90522471 · DENSELOAD Synthetic-10308"
+                      - option "Hauptkonto · CHR-B2CBA8FE · DENSELOAD Synthetic-10307"
+                      - option "Hauptkonto · CHR-B1C815F0 · DENSELOAD Synthetic-10306"
+                      - option "Hauptkonto · CHR-C9D64EDB · DENSELOAD Synthetic-10305"
+                      - option "Hauptkonto · CHR-4DADD30D · DENSELOAD Synthetic-10304"
+                      - option "Hauptkonto · CHR-BC81BF6B · DENSELOAD Synthetic-10303"
+                      - option "Hauptkonto · CHR-467980BD · DENSELOAD Synthetic-10302"
+                      - option "Hauptkonto · CHR-7B2CB7EB · DENSELOAD Synthetic-10301"
+                      - option "Hauptkonto · CHR-E5C1645A · DENSELOAD Synthetic-10300"
+                      - option "Hauptkonto · CHR-CEA3C8B5 · DENSELOAD Synthetic-10299"
+                      - option "Hauptkonto · CHR-0272B834 · DENSELOAD Synthetic-10298"
+                      - option "Hauptkonto · CHR-D4EA9548 · DENSELOAD Synthetic-10297"
+                      - option "Hauptkonto · CHR-82D56367 · DENSELOAD Synthetic-10296"
+                      - option "Hauptkonto · CHR-364A9E8D · DENSELOAD Synthetic-10295"
+                      - option "Hauptkonto · CHR-88F86E29 · DENSELOAD Synthetic-10294"
+                      - option "Hauptkonto · CHR-B2877C0A · DENSELOAD Synthetic-10293"
+                      - option "Hauptkonto · CHR-AF906BD4 · DENSELOAD Synthetic-10292"
+                      - option "Hauptkonto · CHR-54CCE381 · DENSELOAD Synthetic-10291"
+                      - option "Hauptkonto · CHR-CB899668 · DENSELOAD Synthetic-10290"
+                      - option "Hauptkonto · CHR-522082BF · DENSELOAD Synthetic-10289"
+                      - option "Hauptkonto · CHR-7E479C5B · DENSELOAD Synthetic-10288"
+                      - option "Hauptkonto · CHR-86919F9D · DENSELOAD Synthetic-10287"
+                      - option "Hauptkonto · CHR-141F38D5 · DENSELOAD Synthetic-10286"
+                      - option "Hauptkonto · CHR-3DDD0886 · DENSELOAD Synthetic-10285"
+                      - option "Hauptkonto · CHR-94995AE8 · DENSELOAD Synthetic-10284"
+                      - option "Hauptkonto · CHR-9AFF366F · DENSELOAD Synthetic-10283"
+                      - option "Hauptkonto · CHR-9E3B717D · DENSELOAD Synthetic-10282"
+                      - option "Hauptkonto · CHR-3D32124B · DENSELOAD Synthetic-10281"
+                      - option "Hauptkonto · CHR-628FDC6F · DENSELOAD Synthetic-10280"
+                      - option "Hauptkonto · CHR-41B08823 · DENSELOAD Synthetic-10279"
+                      - option "Hauptkonto · CHR-EB2637DE · DENSELOAD Synthetic-10278"
+                      - option "Hauptkonto · CHR-7C6B3630 · DENSELOAD Synthetic-10277"
+                      - option "Hauptkonto · CHR-9A989E71 · DENSELOAD Synthetic-10276"
+                      - option "Hauptkonto · CHR-CC0D0820 · DENSELOAD Synthetic-10275"
+                      - option "Hauptkonto · CHR-935CB1EF · DENSELOAD Synthetic-10274"
+                      - option "Hauptkonto · CHR-B44673D6 · DENSELOAD Synthetic-10273"
+                      - option "Hauptkonto · CHR-3818A8F7 · DENSELOAD Synthetic-10272"
+                      - option "Hauptkonto · CHR-57F1AC8F · DENSELOAD Synthetic-10271"
+                      - option "Hauptkonto · CHR-0CFB7E13 · DENSELOAD Synthetic-10270"
+                      - option "Hauptkonto · CHR-DD3A9EF9 · DENSELOAD Synthetic-10269"
+                      - option "Hauptkonto · CHR-377244EC · DENSELOAD Synthetic-10268"
+                      - option "Hauptkonto · CHR-A0AABA68 · DENSELOAD Synthetic-10267"
+                      - option "Hauptkonto · CHR-F5550390 · DENSELOAD Synthetic-10266"
+                      - option "Hauptkonto · CHR-1B7F8979 · DENSELOAD Synthetic-10265"
+                      - option "Hauptkonto · CHR-1CA3BAD4 · DENSELOAD Synthetic-10264"
+                      - option "Hauptkonto · CHR-D0C8CD88 · DENSELOAD Synthetic-10263"
+                      - option "Hauptkonto · CHR-195CA1C2 · DENSELOAD Synthetic-10262"
+                      - option "Hauptkonto · CHR-284254A3 · DENSELOAD Synthetic-10261"
+                      - option "Hauptkonto · CHR-489DB86D · DENSELOAD Synthetic-10260"
+                      - option "Hauptkonto · CHR-B3C1228F · DENSELOAD Synthetic-10259"
+                      - option "Hauptkonto · CHR-A37A43E5 · DENSELOAD Synthetic-10258"
+                      - option "Hauptkonto · CHR-875AAE35 · DENSELOAD Synthetic-10257"
+                      - option "Hauptkonto · CHR-0D1AFE5F · DENSELOAD Synthetic-10256"
+                      - option "Hauptkonto · CHR-BC04A7A1 · DENSELOAD Synthetic-10255"
+                      - option "Hauptkonto · CHR-770CD361 · DENSELOAD Synthetic-10254"
+                      - option "Hauptkonto · CHR-0AA2E71A · DENSELOAD Synthetic-10253"
+                      - option "Hauptkonto · CHR-58DC795B · DENSELOAD Synthetic-10252"
+                      - option "Hauptkonto · CHR-F35B0DB6 · DENSELOAD Synthetic-10251"
+                      - option "Hauptkonto · CHR-9C0F02A5 · DENSELOAD Synthetic-10250"
+                      - option "Hauptkonto · CHR-3DEA0372 · DENSELOAD Synthetic-10249"
+                      - option "Hauptkonto · CHR-79DA6D0B · DENSELOAD Synthetic-10248"
+                      - option "Hauptkonto · CHR-85EE5F73 · DENSELOAD Synthetic-10247"
+                      - option "Hauptkonto · CHR-78DEDFDD · DENSELOAD Synthetic-10246"
+                      - option "Hauptkonto · CHR-EBECFAD7 · DENSELOAD Synthetic-10245"
+                      - option "Hauptkonto · CHR-BFA0200F · DENSELOAD Synthetic-10244"
+                      - option "Hauptkonto · CHR-B209D3FD · DENSELOAD Synthetic-10243"
+                      - option "Hauptkonto · CHR-0C280E34 · DENSELOAD Synthetic-10242"
+                      - option "Hauptkonto · CHR-37E5B1C5 · DENSELOAD Synthetic-10241"
+                      - option "Hauptkonto · CHR-73558F3D · DENSELOAD Synthetic-10240"
+                      - option "Hauptkonto · CHR-0E7490BC · DENSELOAD Synthetic-10239"
+                      - option "Hauptkonto · CHR-2E7F4CB2 · DENSELOAD Synthetic-10238"
+                      - option "Hauptkonto · CHR-151E4D1E · DENSELOAD Synthetic-10237"
+                      - option "Hauptkonto · CHR-416AF927 · DENSELOAD Synthetic-10236"
+                      - option "Hauptkonto · CHR-C3F93C62 · DENSELOAD Synthetic-10235"
+                      - option "Hauptkonto · CHR-C29C79E2 · DENSELOAD Synthetic-10234"
+                      - option "Hauptkonto · CHR-EA56398E · DENSELOAD Synthetic-10233"
+                      - option "Hauptkonto · CHR-585CCDA7 · DENSELOAD Synthetic-10232"
+                      - option "Hauptkonto · CHR-F7F2172A · DENSELOAD Synthetic-10231"
+                      - option "Hauptkonto · CHR-91446A0F · DENSELOAD Synthetic-10230"
+                      - option "Hauptkonto · CHR-7C468292 · DENSELOAD Synthetic-10229"
+                      - option "Hauptkonto · CHR-7922F5E5 · DENSELOAD Synthetic-10228"
+                      - option "Hauptkonto · CHR-74DE7AEB · DENSELOAD Synthetic-10227"
+                      - option "Hauptkonto · CHR-A790B352 · DENSELOAD Synthetic-10226"
+                      - option "Hauptkonto · CHR-D5C77D74 · DENSELOAD Synthetic-10225"
+                      - option "Hauptkonto · CHR-67B3FF9A · DENSELOAD Synthetic-10224"
+                      - option "Hauptkonto · CHR-19BC71B4 · DENSELOAD Synthetic-10223"
+                      - option "Hauptkonto · CHR-E19B2D95 · DENSELOAD Synthetic-10222"
+                      - option "Hauptkonto · CHR-1D8C313E · DENSELOAD Synthetic-10221"
+                      - option "Hauptkonto · CHR-186A43F9 · DENSELOAD Synthetic-10220"
+                      - option "Hauptkonto · CHR-CD1FC43D · DENSELOAD Synthetic-10219"
+                      - option "Hauptkonto · CHR-B38B4C12 · DENSELOAD Synthetic-10218"
+                      - option "Hauptkonto · CHR-D22B1275 · DENSELOAD Synthetic-10217"
+                      - option "Hauptkonto · CHR-C2A50157 · DENSELOAD Synthetic-10216"
+                      - option "Hauptkonto · CHR-591C34E8 · DENSELOAD Synthetic-10215"
+                      - option "Hauptkonto · CHR-AB9126A6 · DENSELOAD Synthetic-10214"
+                      - option "Hauptkonto · CHR-7814DAAA · DENSELOAD Synthetic-10213"
+                      - option "Hauptkonto · CHR-4F57EAFF · DENSELOAD Synthetic-10212"
+                      - option "Hauptkonto · CHR-85A78C56 · DENSELOAD Synthetic-10211"
+                      - option "Hauptkonto · CHR-D186EBE7 · DENSELOAD Synthetic-10210"
+                      - option "Hauptkonto · CHR-90A48196 · DENSELOAD Synthetic-10209"
+                      - option "Hauptkonto · CHR-68CED3E7 · DENSELOAD Synthetic-10208"
+                      - option "Hauptkonto · CHR-43A4C3CC · DENSELOAD Synthetic-10207"
+                      - option "Hauptkonto · CHR-DF04CEBE · DENSELOAD Synthetic-10206"
+                      - option "Hauptkonto · CHR-5E153B08 · DENSELOAD Synthetic-10205"
+                      - option "Hauptkonto · CHR-9289C842 · DENSELOAD Synthetic-10204"
+                      - option "Hauptkonto · CHR-3EAB2F32 · DENSELOAD Synthetic-10203"
+                      - option "Hauptkonto · CHR-7F5BA599 · DENSELOAD Synthetic-10202"
+                      - option "Hauptkonto · CHR-47D1EFFC · DENSELOAD Synthetic-10201"
+                      - option "Hauptkonto · CHR-5947B44F · DENSELOAD Synthetic-10200"
+                      - option "Hauptkonto · CHR-91A04B44 · DENSELOAD Synthetic-10199"
+                      - option "Hauptkonto · CHR-6C8EC349 · DENSELOAD Synthetic-10198"
+                      - option "Hauptkonto · CHR-2AAE8983 · DENSELOAD Synthetic-10197"
+                      - option "Hauptkonto · CHR-B27E0FFA · DENSELOAD Synthetic-10196"
+                      - option "Hauptkonto · CHR-9EC71AFC · DENSELOAD Synthetic-10195"
+                      - option "Hauptkonto · CHR-75C51A9A · DENSELOAD Synthetic-10194"
+                      - option "Hauptkonto · CHR-4FEF46F7 · DENSELOAD Synthetic-10193"
+                      - option "Hauptkonto · CHR-30ED9A79 · DENSELOAD Synthetic-10192"
+                      - option "Hauptkonto · CHR-183ADC85 · DENSELOAD Synthetic-10191"
+                      - option "Hauptkonto · CHR-07F1CDDB · DENSELOAD Synthetic-10190"
+                      - option "Hauptkonto · CHR-4DBD2B4A · DENSELOAD Synthetic-10189"
+                      - option "Hauptkonto · CHR-3BEDC1BB · DENSELOAD Synthetic-10188"
+                      - option "Hauptkonto · CHR-930EB1E0 · DENSELOAD Synthetic-10187"
+                      - option "Hauptkonto · CHR-1B3AB8D6 · DENSELOAD Synthetic-10186"
+                      - option "Hauptkonto · CHR-999FCEB8 · DENSELOAD Synthetic-10185"
+                      - option "Hauptkonto · CHR-E79FC693 · DENSELOAD Synthetic-10184"
+                      - option "Hauptkonto · CHR-21E5AA28 · DENSELOAD Synthetic-10183"
+                      - option "Hauptkonto · CHR-F2E6089B · DENSELOAD Synthetic-10182"
+                      - option "Hauptkonto · CHR-DC9F2B35 · DENSELOAD Synthetic-10181"
+                      - option "Hauptkonto · CHR-E1672FE8 · DENSELOAD Synthetic-10180"
+                      - option "Hauptkonto · CHR-56058E17 · DENSELOAD Synthetic-10179"
+                      - option "Hauptkonto · CHR-57D5B760 · DENSELOAD Synthetic-10178"
+                      - option "Hauptkonto · CHR-64077F85 · DENSELOAD Synthetic-10177"
+                      - option "Hauptkonto · CHR-B632B263 · DENSELOAD Synthetic-10176"
+                      - option "Hauptkonto · CHR-10B402E1 · DENSELOAD Synthetic-10175"
+                      - option "Hauptkonto · CHR-950699B7 · DENSELOAD Synthetic-10174"
+                      - option "Hauptkonto · CHR-C0FA71DE · DENSELOAD Synthetic-10173"
+                      - option "Hauptkonto · CHR-577FE840 · DENSELOAD Synthetic-10172"
+                      - option "Hauptkonto · CHR-6421999C · DENSELOAD Synthetic-10171"
+                      - option "Hauptkonto · CHR-373249C8 · DENSELOAD Synthetic-10170"
+                      - option "Hauptkonto · CHR-21273934 · DENSELOAD Synthetic-10169"
+                      - option "Hauptkonto · CHR-00456B57 · DENSELOAD Synthetic-10168"
+                      - option "Hauptkonto · CHR-B2185DB7 · DENSELOAD Synthetic-10167"
+                      - option "Hauptkonto · CHR-123317E5 · DENSELOAD Synthetic-10166"
+                      - option "Hauptkonto · CHR-43027AC9 · DENSELOAD Synthetic-10165"
+                      - option "Hauptkonto · CHR-E523DC2E · DENSELOAD Synthetic-10164"
+                      - option "Hauptkonto · CHR-B660DE89 · DENSELOAD Synthetic-10163"
+                      - option "Hauptkonto · CHR-794F55E5 · DENSELOAD Synthetic-10162"
+                      - option "Hauptkonto · CHR-153F2CA5 · DENSELOAD Synthetic-10161"
+                      - option "Hauptkonto · CHR-029325E7 · DENSELOAD Synthetic-10160"
+                      - option "Hauptkonto · CHR-40F279F9 · DENSELOAD Synthetic-10159"
+                      - option "Hauptkonto · CHR-FE730886 · DENSELOAD Synthetic-10158"
+                      - option "Hauptkonto · CHR-F5AD027A · DENSELOAD Synthetic-10157"
+                      - option "Hauptkonto · CHR-1C2D13BB · DENSELOAD Synthetic-10156"
+                      - option "Hauptkonto · CHR-FD9E52A6 · DENSELOAD Synthetic-10155"
+                      - option "Hauptkonto · CHR-AFA682B4 · DENSELOAD Synthetic-10154"
+                      - option "Hauptkonto · CHR-A047ABEC · DENSELOAD Synthetic-10153"
+                      - option "Hauptkonto · CHR-1AF4A56D · DENSELOAD Synthetic-10152"
+                      - option "Hauptkonto · CHR-AE2790C2 · DENSELOAD Synthetic-10151"
+                      - option "Hauptkonto · CHR-C2379152 · DENSELOAD Synthetic-10150"
+                      - option "Hauptkonto · CHR-C2800995 · DENSELOAD Synthetic-10149"
+                      - option "Hauptkonto · CHR-19248F72 · DENSELOAD Synthetic-10148"
+                      - option "Hauptkonto · CHR-45737300 · DENSELOAD Synthetic-10147"
+                      - option "Hauptkonto · CHR-DAEEC1C9 · DENSELOAD Synthetic-10146"
+                      - option "Hauptkonto · CHR-0DEC6D4A · DENSELOAD Synthetic-10145"
+                      - option "Hauptkonto · CHR-A049E846 · DENSELOAD Synthetic-10144"
+                      - option "Hauptkonto · CHR-AADF2D49 · DENSELOAD Synthetic-10143"
+                      - option "Hauptkonto · CHR-24974AD0 · DENSELOAD Synthetic-10142"
+                      - option "Hauptkonto · CHR-31947A76 · DENSELOAD Synthetic-10141"
+                      - option "Hauptkonto · CHR-56518489 · DENSELOAD Synthetic-10140"
+                      - option "Hauptkonto · CHR-A71E4F35 · DENSELOAD Synthetic-10139"
+                      - option "Hauptkonto · CHR-725C9A2F · DENSELOAD Synthetic-10138"
+                      - option "Hauptkonto · CHR-08A4873F · DENSELOAD Synthetic-10137"
+                      - option "Hauptkonto · CHR-8E031BD7 · DENSELOAD Synthetic-10136"
+                      - option "Hauptkonto · CHR-D1B813B3 · DENSELOAD Synthetic-10135"
+                      - option "Hauptkonto · CHR-CBDA89D0 · DENSELOAD Synthetic-10134"
+                      - option "Hauptkonto · CHR-C90FB9E6 · DENSELOAD Synthetic-10133"
+                      - option "Hauptkonto · CHR-FAE97982 · DENSELOAD Synthetic-10132"
+                      - option "Hauptkonto · CHR-A1A3F313 · DENSELOAD Synthetic-10131"
+                      - option "Hauptkonto · CHR-F87A2196 · DENSELOAD Synthetic-10130"
+                      - option "Hauptkonto · CHR-F9F6769C · DENSELOAD Synthetic-10129"
+                      - option "Hauptkonto · CHR-1CE6DB74 · DENSELOAD Synthetic-10128"
+                      - option "Hauptkonto · CHR-DAEA015E · DENSELOAD Synthetic-10127"
+                      - option "Hauptkonto · CHR-57FB64AE · DENSELOAD Synthetic-10126"
+                      - option "Hauptkonto · CHR-5C73E3F9 · DENSELOAD Synthetic-10125"
+                      - option "Hauptkonto · CHR-E8FE2A81 · DENSELOAD Synthetic-10124"
+                      - option "Hauptkonto · CHR-24810EBF · DENSELOAD Synthetic-10123"
+                      - option "Hauptkonto · CHR-AE9636A5 · DENSELOAD Synthetic-10122"
+                      - option "Hauptkonto · CHR-9D585E2A · DENSELOAD Synthetic-10121"
+                      - option "Hauptkonto · CHR-D6DB26EC · DENSELOAD Synthetic-10120"
+                      - option "Hauptkonto · CHR-954C6400 · DENSELOAD Synthetic-10119"
+                      - option "Hauptkonto · CHR-92F33B13 · DENSELOAD Synthetic-10118"
+                      - option "Hauptkonto · CHR-9EAA11C0 · DENSELOAD Synthetic-10117"
+                      - option "Hauptkonto · CHR-BD2C96B3 · DENSELOAD Synthetic-10116"
+                      - option "Hauptkonto · CHR-BAC23CF2 · DENSELOAD Synthetic-10115"
+                      - option "Hauptkonto · CHR-B2F77875 · DENSELOAD Synthetic-10114"
+                      - option "Hauptkonto · CHR-E92AEB05 · DENSELOAD Synthetic-10113"
+                      - option "Hauptkonto · CHR-976F3199 · DENSELOAD Synthetic-10112"
+                      - option "Hauptkonto · CHR-897BFAFF · DENSELOAD Synthetic-10111"
+                      - option "Hauptkonto · CHR-3AAC1902 · DENSELOAD Synthetic-10110"
+                      - option "Hauptkonto · CHR-8EACE119 · DENSELOAD Synthetic-10109"
+                      - option "Hauptkonto · CHR-BC02F097 · DENSELOAD Synthetic-10108"
+                      - option "Hauptkonto · CHR-622D8C52 · DENSELOAD Synthetic-10107"
+                      - option "Hauptkonto · CHR-8B749F04 · DENSELOAD Synthetic-10106"
+                      - option "Hauptkonto · CHR-F2313244 · DENSELOAD Synthetic-10105"
+                      - option "Hauptkonto · CHR-3C359FD5 · DENSELOAD Synthetic-10104"
+                      - option "Hauptkonto · CHR-D3F2B8AD · DENSELOAD Synthetic-10103"
+                      - option "Hauptkonto · CHR-47ABBABA · DENSELOAD Synthetic-10102"
+                      - option "Hauptkonto · CHR-FD9D5872 · DENSELOAD Synthetic-10101"
+                      - option "Hauptkonto · CHR-D88F61C8 · DENSELOAD Synthetic-10100"
+                      - option "Hauptkonto · CHR-D2E93A7F · DENSELOAD Synthetic-10099"
+                      - option "Hauptkonto · CHR-211EFBFD · DENSELOAD Synthetic-10098"
+                      - option "Hauptkonto · CHR-32B80355 · DENSELOAD Synthetic-10097"
+                      - option "Hauptkonto · CHR-6007DDC4 · DENSELOAD Synthetic-10096"
+                      - option "Hauptkonto · CHR-BE536667 · DENSELOAD Synthetic-10095"
+                      - option "Hauptkonto · CHR-C6F69E09 · DENSELOAD Synthetic-10094"
+                      - option "Hauptkonto · CHR-95B08FFA · DENSELOAD Synthetic-10093"
+                      - option "Hauptkonto · CHR-887A97A9 · DENSELOAD Synthetic-10092"
+                      - option "Hauptkonto · CHR-6206B24D · DENSELOAD Synthetic-10091"
+                      - option "Hauptkonto · CHR-618C0F56 · DENSELOAD Synthetic-10090"
+                      - option "Hauptkonto · CHR-FDA2A53B · DENSELOAD Synthetic-10089"
+                      - option "Hauptkonto · CHR-ED2235AA · DENSELOAD Synthetic-10088"
+                      - option "Hauptkonto · CHR-8586E6FB · DENSELOAD Synthetic-10087"
+                      - option "Hauptkonto · CHR-40A6EF7C · DENSELOAD Synthetic-10086"
+                      - option "Hauptkonto · CHR-1355D19D · DENSELOAD Synthetic-10085"
+                      - option "Hauptkonto · CHR-AB5D70C2 · DENSELOAD Synthetic-10084"
+                      - option "Hauptkonto · CHR-5AADA629 · DENSELOAD Synthetic-10083"
+                      - option "Hauptkonto · CHR-65280E36 · DENSELOAD Synthetic-10082"
+                      - option "Hauptkonto · CHR-AE044F6A · DENSELOAD Synthetic-10081"
+                      - option "Hauptkonto · CHR-695BB0BD · DENSELOAD Synthetic-10080"
+                      - option "Hauptkonto · CHR-A4CA0A3C · DENSELOAD Synthetic-10079"
+                      - option "Hauptkonto · CHR-F79DA204 · DENSELOAD Synthetic-10078"
+                      - option "Hauptkonto · CHR-2A9A2B98 · DENSELOAD Synthetic-10077"
+                      - option "Hauptkonto · CHR-F55CCD89 · DENSELOAD Synthetic-10076"
+                      - option "Hauptkonto · CHR-E03E861C · DENSELOAD Synthetic-10075"
+                      - option "Hauptkonto · CHR-ECF64B7C · DENSELOAD Synthetic-10074"
+                      - option "Hauptkonto · CHR-A4B3D075 · DENSELOAD Synthetic-10073"
+                      - option "Hauptkonto · CHR-BAAAF9E1 · DENSELOAD Synthetic-10072"
+                      - option "Hauptkonto · CHR-40F48CB4 · DENSELOAD Synthetic-10071"
+                      - option "Hauptkonto · CHR-46E057D0 · DENSELOAD Synthetic-10070"
+                      - option "Hauptkonto · CHR-DBFC0FF0 · DENSELOAD Synthetic-10069"
+                      - option "Hauptkonto · CHR-D5048DDA · DENSELOAD Synthetic-10068"
+                      - option "Hauptkonto · CHR-B84DED40 · DENSELOAD Synthetic-10067"
+                      - option "Hauptkonto · CHR-E4CE0EDE · DENSELOAD Synthetic-10066"
+                      - option "Hauptkonto · CHR-B727B989 · DENSELOAD Synthetic-10065"
+                      - option "Hauptkonto · CHR-25112688 · DENSELOAD Synthetic-10064"
+                      - option "Hauptkonto · CHR-664566EF · DENSELOAD Synthetic-10063"
+                      - option "Hauptkonto · CHR-3D983CB4 · DENSELOAD Synthetic-10062"
+                      - option "Hauptkonto · CHR-5FFB614C · DENSELOAD Synthetic-10061"
+                      - option "Hauptkonto · CHR-3E102B09 · DENSELOAD Synthetic-10060"
+                      - option "Hauptkonto · CHR-8F423F3E · DENSELOAD Synthetic-10059"
+                      - option "Hauptkonto · CHR-40C987C6 · DENSELOAD Synthetic-10058"
+                      - option "Hauptkonto · CHR-3E713FE4 · DENSELOAD Synthetic-10057"
+                      - option "Hauptkonto · CHR-73E0FE53 · DENSELOAD Synthetic-10056"
+                      - option "Hauptkonto · CHR-8325A50C · DENSELOAD Synthetic-10055"
+                      - option "Hauptkonto · CHR-A26CF733 · DENSELOAD Synthetic-10054"
+                      - option "Hauptkonto · CHR-482F0AA3 · DENSELOAD Synthetic-10053"
+                      - option "Hauptkonto · CHR-0BDAA491 · DENSELOAD Synthetic-10052"
+                      - option "Hauptkonto · CHR-19BCB0E3 · DENSELOAD Synthetic-10051"
+                      - option "Hauptkonto · CHR-2E403877 · DENSELOAD Synthetic-10050"
+                      - option "Hauptkonto · CHR-4BC9E437 · DENSELOAD Synthetic-10049"
+                      - option "Hauptkonto · CHR-97976475 · DENSELOAD Synthetic-10048"
+                      - option "Hauptkonto · CHR-B8870055 · DENSELOAD Synthetic-10047"
+                      - option "Hauptkonto · CHR-98E6E772 · DENSELOAD Synthetic-10046"
+                      - option "Hauptkonto · CHR-6532CC87 · DENSELOAD Synthetic-10045"
+                      - option "Hauptkonto · CHR-56CA71F6 · DENSELOAD Synthetic-10044"
+                      - option "Hauptkonto · CHR-733B2547 · DENSELOAD Synthetic-10043"
+                      - option "Hauptkonto · CHR-CD10DEC0 · DENSELOAD Synthetic-10042"
+                      - option "Hauptkonto · CHR-9D8300F5 · DENSELOAD Synthetic-10041"
+                      - option "Hauptkonto · CHR-399691D0 · DENSELOAD Synthetic-10040"
+                      - option "Hauptkonto · CHR-5DDDCAE8 · DENSELOAD Synthetic-10039"
+                      - option "Hauptkonto · CHR-A7401470 · DENSELOAD Synthetic-10038"
+                      - option "Hauptkonto · CHR-EF3CA06E · DENSELOAD Synthetic-10037"
+                      - option "Hauptkonto · CHR-1107A80C · DENSELOAD Synthetic-10036"
+                      - option "Hauptkonto · CHR-3C55B712 · DENSELOAD Synthetic-10035"
+                      - option "Hauptkonto · CHR-2C6CE912 · DENSELOAD Synthetic-10034"
+                      - option "Hauptkonto · CHR-DA8C2FCB · DENSELOAD Synthetic-10033"
+                      - option "Hauptkonto · CHR-52C58DD7 · DENSELOAD Synthetic-10032"
+                      - option "Hauptkonto · CHR-B77B2041 · DENSELOAD Synthetic-10031"
+                      - option "Hauptkonto · CHR-38D1E09B · DENSELOAD Synthetic-10030"
+                      - option "Hauptkonto · CHR-3DA8A8C3 · DENSELOAD Synthetic-10029"
+                      - option "Hauptkonto · CHR-A1EB744F · DENSELOAD Synthetic-10028"
+                      - option "Hauptkonto · CHR-EEE29C5A · DENSELOAD Synthetic-10027"
+                      - option "Hauptkonto · CHR-909BBD69 · DENSELOAD Synthetic-10026"
+                      - option "Hauptkonto · CHR-81E746AB · DENSELOAD Synthetic-10025"
+                      - option "Hauptkonto · CHR-DAC24C39 · DENSELOAD Synthetic-10024"
+                      - option "Hauptkonto · CHR-B51945BF · DENSELOAD Synthetic-10023"
+                      - option "Hauptkonto · CHR-C482A16C · DENSELOAD Synthetic-10022"
+                      - option "Hauptkonto · CHR-E6832364 · DENSELOAD Synthetic-10021"
+                      - option "Hauptkonto · CHR-E39B202D · DENSELOAD Synthetic-10020"
+                      - option "Hauptkonto · CHR-777CF7A1 · DENSELOAD Synthetic-10019"
+                      - option "Hauptkonto · CHR-51C1A2BB · DENSELOAD Synthetic-10018"
+                      - option "Hauptkonto · CHR-A90722F3 · DENSELOAD Synthetic-10017"
+                      - option "Hauptkonto · CHR-FA1ADBF0 · DENSELOAD Synthetic-10016"
+                      - option "Hauptkonto · CHR-FFF1C9CB · DENSELOAD Synthetic-10015"
+                      - option "Hauptkonto · CHR-04539F51 · DENSELOAD Synthetic-10014"
+                      - option "Hauptkonto · CHR-7007E75D · DENSELOAD Synthetic-10013"
+                      - option "Hauptkonto · CHR-306A7C85 · DENSELOAD Synthetic-10012"
+                      - option "Hauptkonto · CHR-27DE6459 · DENSELOAD Synthetic-10011"
+                      - option "Hauptkonto · CHR-0732DA14 · DENSELOAD Synthetic-10010"
+                      - option "Hauptkonto · CHR-A665C6E9 · DENSELOAD Synthetic-10009"
+                      - option "Hauptkonto · CHR-4E991715 · DENSELOAD Synthetic-10008"
+                      - option "Hauptkonto · CHR-9B4F33FC · DENSELOAD Synthetic-10007"
+                      - option "Hauptkonto · CHR-DEC2BE0E · DENSELOAD Synthetic-10006"
+                      - option "Hauptkonto · CHR-9F0FE70C · DENSELOAD Synthetic-10005"
+                      - option "Hauptkonto · CHR-2D965952 · DENSELOAD Synthetic-10004"
+                      - option "Hauptkonto · CHR-3B6727E5 · DENSELOAD Synthetic-10003"
+                      - option "Hauptkonto · CHR-4FD3355B · DENSELOAD Synthetic-10002"
+                      - option "Hauptkonto · CHR-A6DD74B8 · DENSELOAD Synthetic-10001"
+                      - option "Hauptkonto · CHR-1FF02F82 · DENSELOAD Synthetic-10000"
+                      - option "Hauptkonto · CHR-03CBB148 · Noah Schmid"
+                      - option "Hauptkonto · CHR-58371E1D · Jonas Wenger"
+                      - option "Hauptkonto · CHR-34497340 · Mia Rossi"
+                      - option "Hauptkonto · CHR-B4CA86AF · Lukas Frei"
+                      - option "Hauptkonto · CHR-232C1BFF · Sophie Keller"
+                      - option "Hauptkonto · CHR-06D793DB · Daniel Meier"
+                      - option "Hauptkonto · CHR-7415FA03 · Gabriela Tschopp"
+                  - generic [ref=f21e3139]:
+                    - checkbox "Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)" [checked] [ref=f21e3140]
+                    - text: Gespeicherte Firmen-/Gast-Rechnungsangaben verwenden (Mitarbeiterabweichung hat Vorrang)
+                  - generic [ref=f21e3141]:
+                    - text: Empfänger
+                    - textbox "Empfänger" [disabled] [ref=f21e3142]
+                  - generic [ref=f21e3143]:
+                    - text: Fällig am
+                    - textbox "Fällig am" [ref=f21e3144]: 2026-09-22
+                  - generic [ref=f21e3145]:
+                    - text: Rechnungssprache
+                    - combobox "Rechnungssprache" [ref=f21e3146]:
+                      - option "Deutsch" [selected]
+                      - option "English"
+                      - option "Français"
+                      - option "Italiano"
+                      - option "Español"
+                  - generic [ref=f21e3147]:
+                    - text: Steuersatz für Positionen ohne hinterlegten Satz (%)
+                    - spinbutton "Steuersatz für Positionen ohne hinterlegten Satz (%)" [ref=f21e3148]: "8.10"
+                  - generic [ref=f21e3149]:
+                    - text: IBAN
+                    - textbox "IBAN" [ref=f21e3150]:
+                      - /placeholder: optional für Schweizer QR-Rechnung
+                  - generic [ref=f21e3151]:
+                    - text: Adresse
+                    - textbox "Adresse" [disabled] [ref=f21e3152]
+                  - generic [ref=f21e3153]:
+                    - text: PLZ
+                    - textbox "PLZ" [disabled] [ref=f21e3154]
+                  - generic [ref=f21e3155]:
+                    - text: Ort
+                    - textbox "Ort" [disabled] [ref=f21e3156]
+                  - generic [ref=f21e3157]:
+                    - text: Empfängerland (ISO)
+                    - textbox "Empfängerland (ISO)" [disabled] [ref=f21e3158]: CH
+                  - paragraph [ref=f21e3159]: "Empfänger: · · · CH. Die Angaben werden bei Ausstellung unveränderlich gespeichert."
+                  - button "Rechnung ausstellen" [ref=f21e3161] [cursor=pointer]
+              - generic [ref=f21e3162]:
+                - generic [ref=f21e3164]:
+                  - generic [ref=f21e3165]: Rechnungsjournal
+                  - heading "1 Rechnungen" [level=3] [ref=f21e3166]
+                - article [ref=f21e3168]:
+                  - generic [ref=f21e3169]:
+                    - generic [ref=f21e3170]: INV-2026-00001 · Rechnung · Ausgestellt
+                    - strong [ref=f21e3171]: Emma Baumann
+                    - generic [ref=f21e3172]: Netto CHF 1'124.28 · MWST CHF 42.72 · Total CHF 1'167.00
+                  - generic [ref=f21e3173]:
+                    - button "PDF" [ref=f21e3174] [cursor=pointer]
+                    - button "Gutschrift" [ref=f21e3175] [cursor=pointer]
+            - region "Hotelverlauf" [ref=f21e3176]:
+              - generic [ref=f21e3177]:
+                - heading "Verlauf und ältere Einträge" [level=3] [ref=f21e3178]
+                - button "Verlauf aktualisieren" [ref=f21e3179]
+              - generic [ref=f21e3180]:
+                - generic [ref=f21e3181]:
+                  - text: Verlaufsbereich
+                  - combobox "Verlaufsbereich" [ref=f21e3182]:
+                    - option "Rechnungen" [selected]
+                - generic [ref=f21e3183]:
+                  - text: Verlauf durchsuchen
+                  - searchbox "Verlauf durchsuchen" [ref=f21e3184]
+                - generic [ref=f21e3185]:
+                  - text: Einträge pro Seite
+                  - combobox "Einträge pro Seite" [ref=f21e3186]:
+                    - option "10"
+                    - option "25" [selected]
+                    - option "50"
+                    - option "100"
+              - status [ref=f21e3187]: 1 passende Einträge
+              - table [ref=f21e3189]:
+                - rowgroup [ref=f21e3190]:
+                  - row [ref=f21e3191]:
+                    - columnheader "ID" [ref=f21e3192]
+                    - columnheader "Rechnungsnummer" [ref=f21e3193]
+                    - columnheader "Art" [ref=f21e3194]
+                    - columnheader "Ausgestellt" [ref=f21e3195]
+                    - columnheader "Fällig" [ref=f21e3196]
+                    - columnheader "Empfänger" [ref=f21e3197]
+                    - columnheader "Währung" [ref=f21e3198]
+                    - columnheader "Netto" [ref=f21e3199]
+                    - columnheader "Steuer" [ref=f21e3200]
+                    - columnheader "Brutto" [ref=f21e3201]
+                    - columnheader "Status" [ref=f21e3202]
+                - rowgroup [ref=f21e3203]:
+                  - row [ref=f21e3204]:
+                    - cell "1" [ref=f21e3205]
+                    - cell "INV-2026-00001" [ref=f21e3206]
+                    - cell "Rechnung" [ref=f21e3207]
+                    - cell "2026-09-12" [ref=f21e3208]
+                    - cell "2026-10-12" [ref=f21e3209]
+                    - cell "Emma Baumann" [ref=f21e3210]
+                    - cell "CHF" [ref=f21e3211]
+                    - cell "CHF 1'124.28" [ref=f21e3212]
+                    - cell "CHF 42.72" [ref=f21e3213]
+                    - cell "CHF 1'167.00" [ref=f21e3214]
+                    - cell "Ausgestellt" [ref=f21e3215]
+              - generic [ref=f21e3216]:
+                - button "Vorherige Seite" [disabled] [ref=f21e3217]
+                - generic [ref=f21e3218]: Seite 1 von 1
+                - button "Nächste Seite" [disabled] [ref=f21e3219]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

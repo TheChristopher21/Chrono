@@ -49,8 +49,8 @@ export const FEATURE_CATALOG = [
     {
         key: "crm",
         name: "CRM & Opportunity-Management",
-        price: 1.2,
-        priceType: "perEmployee",
+        price: 39,
+        priceType: "flat",
         required: false,
         description: "Leads, Aktivitäten, Kampagnen und Pipeline-Visualisierung mit Team-Zugriff.",
         alwaysAvailable: false,
@@ -126,6 +126,16 @@ export const FEATURE_CATALOG = [
         required: false,
         description:
             "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel.",
+        alwaysAvailable: false,
+    },
+    {
+        key: "pms",
+        name: "Hotelmanagement (PMS) (in finaler Entwicklungsphase)",
+        price: 249,
+        priceType: "flat",
+        required: false,
+        description:
+            "Reservierungen, Zimmer, Gäste, Housekeeping und Abrechnung zentral verwalten. Für den ersten Hotelbetrieb; Pilotkunden werden während der finalen Entwicklungsphase persönlich begleitet.",
         alwaysAvailable: false,
     },
 ];
