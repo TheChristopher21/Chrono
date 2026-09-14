@@ -83,6 +83,16 @@ describe('VacationCalendarAdmin employee vacation planning', () => {
         expect(api.post).not.toHaveBeenCalled();
     });
 
+    it('preselects the employee supplied by the employee action desk', async () => {
+        const ref = createRef();
+        render(<VacationCalendarAdmin ref={ref} vacationRequests={[]} companyUsers={companyUsers} />);
+        await act(async () => ref.current.createVacation({ username: 'employee2' }));
+        expect(within(screen.getByRole('dialog')).getByRole('combobox', { name: /Benutzer Auswahl/ })).toHaveValue('employee2');
+        await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Schließen' }));
+        await act(async () => ref.current.createVacation({ username: 'not-in-team' }));
+        expect(within(screen.getByRole('dialog')).getByRole('combobox', { name: /Benutzer Auswahl/ })).toHaveValue('');
+    });
+
     it('applies the selected team to sickness markers and the employee picker', async () => {
         const today = formatLocalDate(new Date());
         api.get.mockImplementation(url => Promise.resolve({ data: url.includes('/api/holidays/details') ? {} : url.includes('/sick-leave/') ? [

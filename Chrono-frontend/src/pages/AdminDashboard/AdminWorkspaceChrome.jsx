@@ -144,7 +144,7 @@ AdminWorkspaceSidebar.propTypes = {
     isPunching: PropTypes.bool,
 };
 
-export function AdminWorkspaceHeader({ t, activeTab, onCreateVacation, onPrint, onCommand, canManage = false }) {
+export function AdminWorkspaceHeader({ t, activeTab, onCreateVacation, onPrint, onCommand, canManage = false, context }) {
     const titles = {
         overview: t('adminWorkspace.title', 'Arbeitsübersicht'),
         requests: t('adminDashboard.tabs.requests', 'Anträge'),
@@ -157,13 +157,9 @@ export function AdminWorkspaceHeader({ t, activeTab, onCreateVacation, onPrint, 
     return (
         <header className="aw-header">
             <div className="aw-header-copy">
-                <p className="aw-breadcrumb">
-                    <span>{t('administration', 'Administration')}</span>
-                    <AdminWorkspaceIcon name="chevron" />
-                    <span>{activeTab === 'overview' ? t('adminWorkspace.start', 'Start') : titles[activeTab]}</span>
-                </p>
                 <h1>{titles[activeTab] || titles.overview}</h1>
             </div>
+            {context && <div className="aw-header-context">{context}</div>}
             <div className="aw-header-actions">
                 {onCreateVacation && <button type="button" className="aw-button aw-button-primary" onClick={onCreateVacation} disabled={!canManage}>
                     <AdminWorkspaceIcon name="plus" />
@@ -190,4 +186,5 @@ AdminWorkspaceHeader.propTypes = {
     onPrint: PropTypes.func,
     onCommand: PropTypes.func,
     canManage: PropTypes.bool,
+    context: PropTypes.node,
 };

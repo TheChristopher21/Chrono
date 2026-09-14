@@ -27,6 +27,7 @@ import AdminCorrectionsList from './AdminCorrectionsList';
 import AdminWorkspaceOverview from './AdminWorkspaceOverview';
 import { AdminWorkspaceSidebar, AdminWorkspaceHeader } from './AdminWorkspaceChrome';
 import AdminWorkspaceEmployees from './AdminWorkspaceEmployees';
+import AdminWorkspaceRequests from './AdminWorkspaceRequests';
 import { groupWorkspaceCorrections, isWorkspacePending } from './adminWorkspaceData.js';
 import './AdminWorkspace.css';
 
@@ -207,6 +208,19 @@ const AdminDashboard = ({ experience = 'classic' }) => {
     const location = useLocation();
     const workspace = useWorkspaceTabs();
     const paneActive = useWorkspacePaneActive();
+    const workspaceRootRef = useRef(null);
+    useEffect(() => {
+        if (!isWorkspace || !paneActive) return;
+        const root = workspaceRootRef.current;
+        const chrome = root?.querySelector('.chrono-navbar-shell');
+        if (!chrome) return;
+        const measure = () => root.style.setProperty('--aw-chrome-height', `${chrome.getBoundingClientRect().height}px`);
+        measure();
+        const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+        observer?.observe(chrome);
+        window.addEventListener('resize', measure);
+        return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+    }, [isWorkspace, paneActive]);
     const [searchParams] = useSearchParams();
     const canManageAdminDashboard = hasPageAccess(currentUser, 'adminDashboard', ACCESS_MANAGE);
 
@@ -230,6 +244,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
     const [workspaceIssueRows, setWorkspaceIssueRows] = useState(null);
     const [workspaceLoading, setWorkspaceLoading] = useState(isWorkspace);
     const [workspaceLoadError, setWorkspaceLoadError] = useState('');
+    const [workspaceUpdatedAt, setWorkspaceUpdatedAt] = useState(null);
     const workspaceRequestRef = useRef(null);
     const workspaceDataReadyRef = useRef(false);
     const workspaceCalendarRef = useRef(null);
@@ -1398,6 +1413,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
             if (controller.signal.aborted || workspaceRequestRef.current !== controller) return;
             const failed = results.some((result) => result.status !== 'fulfilled' || !Array.isArray(result.value.data));
             workspaceDataReadyRef.current = !failed;
+            if (!failed) setWorkspaceUpdatedAt(Date.now());
             results.forEach((result, index) => {
                 if (result.status === 'fulfilled' && Array.isArray(result.value.data)) resources[index][1](result.value.data);
             });
@@ -1658,11 +1674,18 @@ const AdminDashboard = ({ experience = 'classic' }) => {
     async function handleApproveCorrection(id, comment, { reload = false, throwOnError = false } = {}) {
         if (!ensureDecisionAllowed(throwOnError)) return;
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
+            const response = await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
+            // The API also returns HTTP 200 when another admin already decided.
+            // Refresh that decision instead of acknowledging an approval that did not happen.
+            if (response.data?.denied === true || response.data?.approved === false) {
+                await handleDataReloadNeeded();
+                throw new Error(t('adminWorkspace.correctionAlreadyDecided', 'Der Antrag wurde inzwischen anders bearbeitet. Die aktuelle Entscheidung wurde neu geladen.'));
+            }
             notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
             if (reload) {
                 await handleDataReloadNeeded();
             }
+            return response.data;
         } catch (error) {
             console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
@@ -1924,9 +1947,10 @@ const AdminDashboard = ({ experience = 'classic' }) => {
         { id: 'calendar', label: t('adminDashboard.tabs.calendar', 'Kalender') },
         { id: 'modules', label: t('adminDashboard.tabs.modules', 'Module') },
     ]), [inboxItems, isWorkspace, workspaceVacations, workspaceCorrections, t]);
-    const handleWorkspaceTeamChange = (team) => navigateDashboard({ team, focusUser: null, focusDate: null }, { preserve: true });
+    const handleWorkspaceTeamChange = (team) => navigateDashboard({ team, focusUser: null, focusDate: null, requestUser: null }, { preserve: true });
     const handleWorkspaceCalendarAction = (action, value) => {
-        navigateWorkspaceAction(action, action === 'openAbsence' ? { startDate: value?.startDate } : undefined);
+        navigateWorkspaceAction(action, action === 'openAbsence' ? { startDate: value?.startDate }
+            : value?.username ? { username: value.username } : undefined);
     };
     const handleWorkspaceFocusEmployee = (username, dateIso) => {
         if (!username) return;
@@ -1958,7 +1982,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
     };
 
     return (
-        <div className={`admin-dashboard scoped-dashboard${isWorkspace ? ' admin-workspace' : ''}`}>
+        <div ref={workspaceRootRef} data-workspace-tab={isWorkspace ? activeMainTab : undefined} className={`admin-dashboard scoped-dashboard${isWorkspace ? ' admin-workspace' : ''}`}>
             <Navbar />
             <div className="admin-dashboard-shell">
                 {isWorkspace && <AdminWorkspaceSidebar
@@ -1971,6 +1995,13 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                     t={t} activeTab={activeMainTab} canManage={canManageAdminDashboard && !workspaceLoadError && !workspaceLoading}
                     onCreateVacation={() => handleWorkspaceCalendarAction('createVacation')}
                     onPrint={handlePrintTimesFromHeader} onCommand={() => setPaletteOpen(true)}
+                    context={activeMainTab !== 'overview' ? <div className="aw-context-row">
+                        <span>{formatDateWithWeekday(new Date())}</span>
+                        <label>{t('adminWorkspace.team', 'Team')} <select value={workspaceTeam} onChange={event => handleWorkspaceTeamChange(event.target.value)}>
+                            <option value="">{t('adminWorkspace.allTeams', 'Alle Teams')}</option>
+                            {workspaceTeams.map(team => <option key={team.value} value={team.value}>{team.label}</option>)}
+                        </select></label>
+                    </div> : null}
                 /> : <header className="dashboard-header admin-command-header">
                     <div className="header-info">
                         <span className="header-eyebrow">{t('adminDashboard.header.eyebrow', 'Arbeitszentrale')}</span>
@@ -2043,13 +2074,6 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                 </nav>}
 
                 <main className="admin-dashboard-panels">
-                    {isWorkspace && activeMainTab !== 'overview' && <div className="aw-context-row">
-                        <span>{formatDateWithWeekday(new Date())}</span>
-                        <label>{t('adminWorkspace.team', 'Team')} <select value={workspaceTeam} onChange={event => handleWorkspaceTeamChange(event.target.value)}>
-                            <option value="">{t('adminWorkspace.allTeams', 'Alle Teams')}</option>
-                            {workspaceTeams.map(team => <option key={team.value} value={team.value}>{team.label}</option>)}
-                        </select></label>
-                    </div>}
                     {isWorkspace && activeMainTab !== 'overview' && workspaceLoadError && <div className="aw-load-error" role="alert">
                         <p>{workspaceLoadError}</p><button type="button" onClick={handleDataReloadNeeded} disabled={workspaceLoading}>{t('retry', 'Erneut versuchen')}</button>
                     </div>}
@@ -2060,6 +2084,8 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                             weeklyBalances={workspaceBalances} issueRows={workspaceIssueRows?.filter(inWorkspaceTeam) ?? null}
                             selectedTeam={workspaceTeam} teams={workspaceTeams} onTeamChange={handleWorkspaceTeamChange}
                             loading={workspaceLoading} loadError={workspaceLoadError} onRetry={handleDataReloadNeeded}
+                            initialLoading={workspaceUpdatedAt === null} dataUpdatedAt={workspaceUpdatedAt}
+                            timeRangeStart={formatLocalDateYMD(selectedMonday)} timeRangeEnd={formatLocalDateYMD(addDays(selectedMonday, 6))}
                             onOpenTime={() => openDashboardTab('time')} onOpenRequests={() => openDashboardTab('requests')}
                             onOpenCalendar={() => openDashboardTab('calendar')} onOpenModules={() => openDashboardTab('modules')}
                             onFocusEmployee={handleWorkspaceFocusEmployee} onOpenEmployee={handleOpenUserOverview}
@@ -2132,7 +2158,12 @@ const AdminDashboard = ({ experience = 'classic' }) => {
 
                     {isWorkspace && <section className={`dashboard-tab-panel ${activeMainTab === 'employees' ? 'is-active' : ''}`}>
                         <AdminWorkspaceEmployees t={t} users={workspaceUsers} balances={workspaceBalances}
-                            loading={workspaceLoading} onOpenEmployee={handleOpenUserOverview} />
+                            vacations={workspaceVacations} corrections={workspaceCorrections} sickLeaves={workspaceSickLeaves}
+                            issueRows={workspaceIssueRows?.filter(inWorkspaceTeam) ?? null}
+                            loading={workspaceLoading} loadError={workspaceLoadError} canManage={canManageAdminDashboard}
+                            onOpenEmployee={handleOpenUserOverview} onOpenTime={handleWorkspaceFocusEmployee}
+                            onOpenRequests={username => navigateDashboard({ tab: 'requests', requestUser: username })}
+                            onCreateVacation={username => handleWorkspaceCalendarAction('createVacation', { username })} />
                     </section>}
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'time' ? 'is-active' : ''}`}>
@@ -2185,6 +2216,20 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'requests' ? 'is-active' : ''}`}>
+                        {isWorkspace ? <AdminWorkspaceRequests
+                            t={t} currentUser={currentUser} users={workspaceUsers}
+                            allVacations={workspaceVacations} allCorrections={workspaceCorrections} allSickLeaves={workspaceSickLeaves}
+                            loading={workspaceLoading} loadError={workspaceLoadError}
+                            onRetry={handleDataReloadNeeded} onReload={handleDataReloadNeeded}
+                            onApproveVacation={(id, note) => handleApproveVacation(id, note, { reload: false, throwOnError: true })}
+                            onDenyVacation={(id, note) => handleDenyVacation(id, note, { reload: false, throwOnError: true })}
+                            onApproveCorrection={(id, note) => handleApproveCorrection(id, note, { reload: false, throwOnError: true })}
+                            onDenyCorrection={(id, note) => handleDenyCorrection(id, note, { reload: false, throwOnError: true })}
+                            onOpenEmployee={handleOpenUserOverview} onOpenInTimeReview={handleOpenRequestInTimeReview}
+                            vacationOpenSignal={vacationOpenSignal} correctionOpenSignal={correctionOpenSignal}
+                            focusedRequest={focusedRequest} employeeFilter={searchParams.get('requestUser') || ''}
+                            onEmployeeFilterChange={username => navigateDashboard({ requestUser: username }, { preserve: true, replace: true })}
+                        /> : <>
                         <div className="dashboard-panel-intro">
                             <span>{t('adminDashboard.tabs.requests', 'Anträge')}</span>
                             <h3>{t('adminDashboard.requestsCenterTitle', 'Antragscenter')}</h3>
@@ -2242,6 +2287,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                                 },
                             ]}
                         />
+                        </>}
                     </section>
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'calendar' ? 'is-active' : ''}`}>

@@ -27,20 +27,40 @@ describe('workspace projections of real dashboard data', () => {
         expect(workspaceDate('2026-02-30')).toBeNull();
     });
 
-    it('groups by user, request day and reason, keeps processed context, and targets only pending members', () => {
+    it('groups by the server approval scope: person and desired calendar day, irrespective of reason or requestDate', () => {
         const base = { username: 'Mirjam', requestDate: '2026-09-12', reason: 'Vergessen' };
         const rows = groupWorkspaceCorrections([
             { ...base, id: 2, desiredTimestamp: '2026-09-11T17:00:00' },
             { ...base, id: 1, desiredTimestamp: '2026-09-11T08:00:00', approved: true },
             { ...base, id: 3, desiredTimestamp: '2026-09-11T12:00:00' },
             { ...base, id: 3, desiredTimestamp: '2026-09-11T12:00:00' },
-            { ...base, id: 4, reason: 'Anderer Grund', desiredTimestamp: '2026-09-11T09:00:00' },
+            { ...base, id: 4, requestDate: '2026-08-20', reason: 'Anderer Grund', desiredTimestamp: '2026-09-11T09:00:00' },
+            { ...base, id: 5, username: 'Luca', desiredTimestamp: '2026-09-11T09:00:00' },
+            { ...base, id: 6, desiredTimestamp: '2026-09-12T00:01:00' },
         ]);
-        expect(rows).toHaveLength(2);
-        expect(rows[0].entries.map(entry => entry.id)).toEqual([1, 3, 2]);
-        expect(rows[0].pendingEntries.map(entry => entry.id)).toEqual([3, 2]);
+        expect(rows).toHaveLength(3);
+        expect(rows[0].entries.map(entry => entry.id)).toEqual([1, 4, 3, 2]);
+        expect(rows[0].pendingEntries.map(entry => entry.id)).toEqual([4, 3, 2]);
         expect(rows[0].dateIso).toBe('2026-09-11');
+        expect(rows[0].decisionDate).toBe('2026-09-11');
+        expect(rows[0].reasons).toEqual(['Vergessen', 'Anderer Grund']);
+        expect(rows[1].username).toBe('Luca');
+        expect(rows[2].decisionDate).toBe('2026-09-12');
         expect(groupWorkspaceCorrections([{ ...base, id: 5, denied: true }])).toEqual([]);
+    });
+
+    it('never combines records when their desired calendar day is missing or invalid', () => {
+        const base = { username: 'Mirjam', requestDate: '2026-09-11', reason: 'Gleicher Grund' };
+        const rows = groupWorkspaceCorrections([
+            { ...base, id: 0 }, { ...base, id: 1, desiredTimestamp: 'invalid' },
+            { ...base, id: 2, desiredTimestamp: '2026-02-30T09:00:00' },
+            { ...base, id: 3, desiredTimestamp: '2026-09-11T09:00:00' },
+        ]);
+        expect(rows).toHaveLength(4);
+        expect(new Set(rows.map(row => row.key)).size).toBe(4);
+        expect(rows.every(row => row.entries.length === 1)).toBe(true);
+        expect(rows.slice(0, 3).map(row => row.decisionDate)).toEqual([null, null, null]);
+        expect(rows[3].decisionDate).toBe('2026-09-11');
     });
 
     it('excludes pending, denied and invalid absences and retains half-day/overtime/source fields', () => {

@@ -31,6 +31,13 @@ vi.mock('../AdminVacationRequests', () => ({ default: ({ openSignal, canManage, 
 vi.mock('../AdminCorrectionsList', () => ({ default: ({ openSignal, canManage }) => <div>
     <output data-testid="correction-signal">{openSignal}</output><output data-testid="correction-can-manage">{String(canManage)}</output>
 </div> }));
+vi.mock('../AdminWorkspaceRequests', () => ({ default: ({ vacationOpenSignal, correctionOpenSignal, loading, loadError, employeeFilter, onEmployeeFilterChange, onOpenInTimeReview, onApproveCorrection }) => <div>
+    <output data-testid="vacation-signal">{vacationOpenSignal}</output><output data-testid="correction-signal">{correctionOpenSignal}</output>
+    <output data-testid="vacation-can-manage">{String(!loading && !loadError)}</output><output data-testid="correction-can-manage">{String(!loading && !loadError)}</output>
+    <output data-testid="request-user">{employeeFilter}</output><button onClick={() => onEmployeeFilterChange('')}>Personenfilter entfernen</button>
+    <button onClick={() => onOpenInTimeReview({ type: 'vacation', id: 12, username: 'Mirjam', startDate: '2026-09-21' })}>Antrag in Zeitprüfung</button>
+    <button onClick={() => onApproveCorrection(14, 'Passt').catch(() => {})}>Test Korrektur genehmigen</button>
+</div> }));
 vi.mock('../EditTimeModal', () => ({ default: () => null }));
 vi.mock('../PrintUserTimesModal', () => ({ default: () => null }));
 vi.mock('../AdminWeekSection', async () => {
@@ -60,7 +67,7 @@ vi.mock('../../../components/VacationCalendarAdmin', async () => {
         const location = useLocation();
         const [dialog, setDialog] = useState('');
         useImperativeHandle(ref, () => ({
-            createVacation: () => { mocks.createVacation(); mocks.action({ type: 'createVacation', pane: location.state?.workspaceTabId }); setDialog('create'); },
+            createVacation: value => { mocks.createVacation(value); mocks.action({ type: 'createVacation', value, pane: location.state?.workspaceTabId }); setDialog('create'); },
             openAbsence: value => { mocks.action({ type: 'openAbsence', value, pane: location.state?.workspaceTabId }); setDialog(value.startDate); },
         }));
         return <div>Calendar<output data-testid="calendar-dialog">{dialog}</output></div>;
@@ -214,9 +221,52 @@ describe('separate admin workspace integration', () => {
         await act(async () => { old.resolve({ data: [{ id: 999, username: 'Mirjam' }] }); });
         expect(data().vacations).toEqual([12, 13]);
     });
+
+    it('reloads a concurrently denied correction instead of reporting a false approval', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        mount(); await loaded();
+        mocks.api.get.mockClear();
+        mocks.api.post.mockResolvedValue({ data: { id: 14, approved: false, denied: true } });
+        fireEvent.click(screen.getByRole('button', { name: 'Anträge 2' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Test Korrektur genehmigen' }));
+        await waitFor(() => expect(mocks.notify).toHaveBeenCalledWith(expect.any(String), 'error'));
+        expect(mocks.notify).not.toHaveBeenCalledWith(expect.any(String), 'success');
+        expect(mocks.api.get).toHaveBeenCalledWith('/api/correction/all', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    });
 });
 
 describe('dashboard actions across real cached workspace panes', () => {
+    it('opens the chosen employee’s requests and clears that filter on a team change', async () => {
+        mountPanes(); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Mitarbeitende', exact: true }));
+        await paneLoaded();
+        const person = activePane().querySelector('[data-employee="Mirjam"]');
+        fireEvent.click(within(person).getByRole('button', { name: '1 Antrag', exact: true }));
+        await paneLoaded();
+        expect(active().getByTestId('request-user')).toHaveTextContent('Mirjam');
+        expect(screen.getByTestId('location')).toHaveTextContent('requestUser=Mirjam');
+        fireEvent.change(active().getByRole('combobox', { name: 'Team' }), { target: { value: 'Beratung' } });
+        await paneLoaded();
+        expect(active().getByTestId('request-user')).toBeEmptyDOMElement();
+        expect(screen.getByTestId('location').textContent).not.toContain('requestUser');
+    });
+
+    it('preselects the chosen employee once in the destination calendar pane', async () => {
+        mountPanes(); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Mitarbeitende', exact: true }));
+        await paneLoaded();
+        const source = activePane();
+        const person = source.querySelector('[data-employee="Mirjam"]');
+        fireEvent.click(within(person).getByRole('button', { name: '+ Urlaub', exact: true }));
+        await paneLoaded();
+        await waitFor(() => expect(mocks.createVacation).toHaveBeenCalledExactlyOnceWith({ username: 'Mirjam' }));
+        expect(activePane()).not.toBe(source);
+        expect(mocks.action).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'createVacation', value: { username: 'Mirjam' }, pane: activePane().dataset.workspacePane }));
+        expect(within(source).getByTestId('calendar-dialog')).toBeEmptyDOMElement();
+        await act(async () => { await mocks.refresh(); });
+        expect(mocks.createVacation).toHaveBeenCalledTimes(1);
+    });
+
     it.each([
         ['Urlaub eintragen', 'createVacation', 'create'],
         ['Abwesenheit öffnen', 'openAbsence', '2026-09-21'],

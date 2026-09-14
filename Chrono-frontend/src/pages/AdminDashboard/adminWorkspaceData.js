@@ -59,10 +59,14 @@ export function groupWorkspaceCorrections(corrections = []) {
     const groups = new Map();
     corrections.forEach(request => {
         if (!request?.username || request.id == null) return;
-        const key = JSON.stringify([request.username, request.requestDate || '', request.reason || '']);
+        // approveRequest replaces all pending corrections of this person on the
+        // desired LocalDateTime's calendar day, regardless of reason/requestDate.
+        // A missing day cannot establish that scope, so keep such records isolated.
+        const decisionDate = workspaceDate(request.desiredTimestamp);
+        const key = JSON.stringify([request.username, decisionDate || `id:${request.id}`]);
         if (!groups.has(key)) groups.set(key, {
             key: `correction:${key}`, kind: 'correction', username: request.username,
-            requestDate: request.requestDate, reason: request.reason, entries: [],
+            decisionDate, entries: [],
         });
         groups.get(key).entries.push(request);
     });
@@ -76,8 +80,9 @@ export function groupWorkspaceCorrections(corrections = []) {
         const pendingEntries = entries.filter(isWorkspacePending);
         return {
             ...group, entries, pendingEntries,
-            dateIso: workspaceDate(entries[0]?.desiredTimestamp) || workspaceDate(group.requestDate) || workspaceDate(entries[0]?.originalTimestamp),
-            sortDate: workspaceDate(group.requestDate) || workspaceDate(entries[0]?.desiredTimestamp) || '',
+            reasons: [...new Set(entries.map(entry => typeof entry.reason === 'string' ? entry.reason.trim() : ''))],
+            dateIso: group.decisionDate || workspaceDate(entries[0]?.requestDate) || workspaceDate(entries[0]?.originalTimestamp),
+            sortDate: group.decisionDate || '',
         };
     }).filter(group => group.pendingEntries.length);
 }

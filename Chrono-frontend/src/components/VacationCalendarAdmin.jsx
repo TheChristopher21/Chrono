@@ -818,7 +818,8 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             const hiddenCount = dayEntries.length - visibleEntries.length;
 
             return (
-                <div className="vacation-markers">
+                <div className="vacation-markers" data-entry-count={dayEntries.length}>
+                    <span className="aw-calendar-count" style={{ display: 'none' }}>{dayEntries.length} {dayEntries.length === 1 ? t('adminCalendar.entry', 'Eintrag') : t('adminCalendar.entries', 'Einträge')}</span>
                     {visibleEntries.map((entry) => {
                         if (entry.type === 'holiday') {
                             return (
@@ -922,8 +923,9 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
         }
     };
 
-    const openVacationModalAndReset = (dateClicked = null) => {
+    const openVacationModalAndReset = (dateClicked = null, username = null) => {
         resetVacationForm();
+        if (!focusUsername && scopedUsers.some(user => user.username === username)) setNewVacationUser(username);
         setVacationCalendarMonth(startOfMonth(dateClicked || activeStartDate));
         if (dateClicked) {
             const dateStr = formatLocalDate(dateClicked);
@@ -981,7 +983,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     };
 
     useImperativeHandle(ref, () => ({
-        createVacation: () => openVacationModalAndReset(),
+        createVacation: options => openVacationModalAndReset(null, options?.username),
         createSickLeave: () => openSickLeaveModalAndReset(),
         openAbsence: (absence) => {
             const dateValue = absence?.startDate || absence?.dateIso || absence?.raw?.startDate || absence?.item?.startDate;
