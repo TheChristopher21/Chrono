@@ -39,11 +39,15 @@
 }
 
 .employee-overview-main {
-  max-width: 1600px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem clamp(1rem, 2vw, 3rem);
   display: grid;
   gap: 1rem;
+  /* Updated absence rows must not move the background viewport under an open dialog. */
+  overflow-anchor: none;
 }
 
 .employee-overview-page .card-style {

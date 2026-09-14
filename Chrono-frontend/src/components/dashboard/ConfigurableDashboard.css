@@ -43,7 +43,9 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    overscroll-behavior: contain;
+    /* Continue scrolling the overview at a card's edge, including cards that fit. */
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
     scrollbar-width: thin;
 }
 

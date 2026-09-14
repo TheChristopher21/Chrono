@@ -35,6 +35,9 @@ const ADMIN_TAB_LABELS = {
     calendar: 'Kalender',
     modules: 'Module',
 };
+const WORKSPACE_ADMIN_TAB_LABELS = { ...ADMIN_TAB_LABELS, employees: 'Mitarbeitende' };
+const getAdminTabLabels = (pageKey) => pageKey === 'adminDashboardWorkspace'
+    ? WORKSPACE_ADMIN_TAB_LABELS : ADMIN_TAB_LABELS;
 
 const SERVER_TAB_ID_PATTERN = /[^A-Za-z0-9._:-]/g;
 const WORKSPACE_PATH_ALIASES = {
@@ -116,19 +119,20 @@ export const resolveWorkspaceRoute = (urlLike, user, t) => {
             : translatedPage.label;
     }
 
-    const employeeMatch = pathname.match(/^\/admin\/dashboard\/mitarbeiter\/([^/]+)$/);
+    const employeeMatch = pathname.match(/^\/admin\/dashboard(?:-neu)?\/mitarbeiter\/([^/]+)$/);
     if (employeeMatch) {
         const username = safeDecode(employeeMatch[1]);
-        instanceKey = `adminDashboard:employee:${username}`;
+        instanceKey = `${page.key}:employee:${username}`;
         title = `${typeof t === 'function' ? t('workspaceTabs.employee', 'Mitarbeiter') : 'Mitarbeiter'} · ${username}`;
+        if (page.key === 'adminDashboardWorkspace') title = `${translatedPage.label} · ${title}`;
         // Usernames are deliberately not restored from browser storage.
         persist = false;
-    } else if (page.key === 'adminDashboard') {
+    } else if (page.key === 'adminDashboard' || page.key === 'adminDashboardWorkspace') {
         const tabKey = searchParams.get('tab') || 'overview';
-        instanceKey = `adminDashboard:${tabKey}`;
+        instanceKey = `${page.key}:${tabKey}`;
         title = tabKey === 'overview'
             ? translatedPage.label
-            : `${translatedPage.label} · ${ADMIN_TAB_LABELS[tabKey] ?? tabKey}`;
+            : `${translatedPage.label} · ${getAdminTabLabels(page.key)[tabKey] ?? tabKey}`;
     }
 
     if (page.key === 'pms') {
@@ -240,11 +244,13 @@ export const serializeWorkspace = (state) => ({
 const getServerTabParams = (tab) => {
     const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://chrono.local';
     const parsed = new URL(tab.url || '/', fallbackOrigin);
-    if (tab.pageKey === 'adminDashboard') {
+    if (tab.pageKey === 'adminDashboard' || tab.pageKey === 'adminDashboardWorkspace') {
         const requestedTab = parsed.searchParams.get('tab');
-        return requestedTab && Object.hasOwn(ADMIN_TAB_LABELS, requestedTab)
+        const params = requestedTab && Object.hasOwn(getAdminTabLabels(tab.pageKey), requestedTab)
             ? { tab: requestedTab }
             : {};
+        // Reuse the server's known view key while keeping the new route distinct.
+        return tab.pageKey === 'adminDashboardWorkspace' ? { ...params, experience: 'workspace' } : params;
     }
     if (tab.pageKey === 'pms') {
         const section = pmsSectionDefinition(parsed.searchParams.get('section') || 'overview');
@@ -283,7 +289,7 @@ export const serializeWorkspacePreference = (state) => {
             const params = getServerTabParams(tab);
             return {
                 id,
-                viewKey: tab.pageKey,
+                viewKey: tab.pageKey === 'adminDashboardWorkspace' ? 'adminDashboard' : tab.pageKey,
                 ...(Object.keys(params).length ? { params } : {}),
                 pinned: Boolean(tab.pinned),
             };
@@ -297,14 +303,17 @@ export const serializeWorkspacePreference = (state) => {
 };
 
 const getServerTabUrl = (serverTab, user) => {
-    const page = PAGE_CATALOG.find((candidate) => candidate.key === serverTab?.viewKey);
+    const pageKey = serverTab?.viewKey === 'adminDashboard' && serverTab?.params?.experience === 'workspace'
+        ? 'adminDashboardWorkspace'
+        : serverTab?.viewKey;
+    const page = PAGE_CATALOG.find((candidate) => candidate.key === pageKey);
     if (!canUsePage(user, page)) return null;
     if (page.key === 'dashboard') {
         return user?.isPercentage ? '/percentage-punch' : page.path;
     }
-    if (page.key === 'adminDashboard') {
+    if (page.key === 'adminDashboard' || page.key === 'adminDashboardWorkspace') {
         const requestedTab = serverTab?.params?.tab;
-        const tabKey = requestedTab && Object.hasOwn(ADMIN_TAB_LABELS, requestedTab)
+        const tabKey = requestedTab && Object.hasOwn(getAdminTabLabels(page.key), requestedTab)
             ? requestedTab
             : 'overview';
         return tabKey === 'overview' ? page.path : `${page.path}?tab=${encodeURIComponent(tabKey)}`;

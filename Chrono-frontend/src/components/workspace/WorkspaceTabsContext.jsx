@@ -157,7 +157,28 @@ export const WorkspaceTabsProvider = ({ children }) => {
         serverWriteTimerRef.current = window.setTimeout(() => {
             const save = async () => {
                 if (serverIdentityRef.current !== capturedIdentity) return;
-                let payloadToSave = payload;
+                if (JSON.stringify(serializeWorkspacePreference(stateRef.current)) === JSON.stringify(lastServerPayloadRef.current)) return;
+                // A queued write may outlive several newer edits or another browser's save.
+                // Read the current state when the queue runs and refresh the server revision
+                // before writing, rather than using a payload captured by an old timer.
+                let payloadToSave;
+                const refreshPreference = async () => {
+                    const latest = await api.get('/api/ui/preferences/APP_TABS', {
+                        params: { context: 'workspace' },
+                    });
+                    if (serverIdentityRef.current !== capturedIdentity) return false;
+                    const latestRevision = Number(latest?.data?.revision || 0);
+                    if (latestRevision !== preferenceRevisionRef.current) {
+                        const latestState = deserializeWorkspacePreference(latest?.data?.payload, currentUser, t);
+                        commitState((current) => mergeWorkspaceStates(latestState, current, {
+                            preferLocalPinned: true,
+                        }));
+                    }
+                    preferenceRevisionRef.current = latestRevision;
+                    lastServerPayloadRef.current = latest?.data?.payload || { tabs: [] };
+                    payloadToSave = serializeWorkspacePreference(stateRef.current);
+                    return JSON.stringify(payloadToSave) !== JSON.stringify(lastServerPayloadRef.current);
+                };
                 const putPreference = () => api.put('/api/ui/preferences/APP_TABS', {
                     schemaVersion: 1,
                     revision: preferenceRevisionRef.current,
@@ -165,20 +186,13 @@ export const WorkspaceTabsProvider = ({ children }) => {
                 }, { params: { context: 'workspace' } });
 
                 try {
+                    if (!await refreshPreference()) return;
                     let response;
                     try {
                         response = await putPreference();
                     } catch (error) {
                         if (error?.response?.status !== 409) throw error;
-                        const latest = await api.get('/api/ui/preferences/APP_TABS', {
-                            params: { context: 'workspace' },
-                        });
-                        preferenceRevisionRef.current = Number(latest?.data?.revision || 0);
-                        const latestState = deserializeWorkspacePreference(latest?.data?.payload, currentUser, t);
-                        const mergedState = mergeWorkspaceStates(latestState, stateRef.current, {
-                            preferLocalPinned: true,
-                        });
-                        payloadToSave = serializeWorkspacePreference(mergedState);
+                        if (!await refreshPreference()) return;
                         response = await putPreference();
                     }
                     if (serverIdentityRef.current !== capturedIdentity) return;
@@ -201,7 +215,7 @@ export const WorkspaceTabsProvider = ({ children }) => {
                 serverWriteTimerRef.current = null;
             }
         };
-    }, [currentUser, identity, serverLoadedIdentity, state, t]);
+    }, [commitState, currentUser, identity, serverLoadedIdentity, state, t]);
 
     const visitTab = useCallback((tab, options = {}) => {
         navigate(tab.url, {

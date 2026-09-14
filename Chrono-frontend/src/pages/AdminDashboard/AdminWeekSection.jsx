@@ -31,6 +31,7 @@ import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
 import { formatEntrySourceIndicator } from '../../utils/correctionActor';
+import { deriveWorkspaceIssueRows } from './adminWorkspaceData';
 import CalculationStatusNotice, {
     CALCULATION_STATUS,
     formatCalculatedMinutes,
@@ -393,6 +394,7 @@ const AdminWeekSection = forwardRef(({
                                          openNewEntryModal, // For creating entries for a day from scratch
                                          onDataReloadNeeded,
                                          onIssueSummaryChange,
+                                         onIssueRowsChange,
                                          showSmartOverview = true,
                                          onOpenUserOverview,
                                      }, ref) => {
@@ -1068,6 +1070,22 @@ const AdminWeekSection = forwardRef(({
     }, [userAnalytics]);
 
     const lastIssueSummaryRef = useRef(issueSummary);
+
+    const workspaceIssueRows = useMemo(
+        () => typeof onIssueRowsChange === 'function'
+            ? deriveWorkspaceIssueRows(userAnalytics, weekStartIso, weekEndIso)
+            : null,
+        [userAnalytics, weekStartIso, weekEndIso, onIssueRowsChange],
+    );
+    const lastWorkspaceIssueRowsRef = useRef(null);
+
+    useEffect(() => {
+        if (!workspaceIssueRows || typeof onIssueRowsChange !== 'function') return;
+        const serialized = JSON.stringify(workspaceIssueRows);
+        if (serialized === lastWorkspaceIssueRowsRef.current) return;
+        lastWorkspaceIssueRowsRef.current = serialized;
+        onIssueRowsChange(workspaceIssueRows);
+    }, [workspaceIssueRows, onIssueRowsChange]);
 
     useEffect(() => {
         const previousSummary = lastIssueSummaryRef.current;
@@ -2644,6 +2662,7 @@ AdminWeekSection.propTypes = {
     openNewEntryModal: PropTypes.func.isRequired,
     onDataReloadNeeded: PropTypes.func,
     onIssueSummaryChange: PropTypes.func,
+    onIssueRowsChange: PropTypes.func,
     showSmartOverview: PropTypes.bool,
     onOpenUserOverview: PropTypes.func,
 };

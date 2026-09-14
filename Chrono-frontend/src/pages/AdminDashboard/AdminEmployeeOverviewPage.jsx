@@ -184,7 +184,7 @@ const calculateAnnualVacationEntitlement = (employee, year) => {
     return fullYearEntitlement * (activeDays / daysInYear);
 };
 
-const AdminEmployeeOverviewPage = () => {
+const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) => {
     const { username: encodedUsername } = useParams();
     const username = decodeURIComponent(encodedUsername || '');
     const todayYmd = formatLocalDateYMD(new Date());
@@ -201,7 +201,9 @@ const AdminEmployeeOverviewPage = () => {
         sunday: t('daysShort.sunday', 'So'),
     }), [t]);
 
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [dataRevision, setDataRevision] = useState(0);
+    const dataRequestRef = useRef(null);
     const [users, setUsers] = useState([]);
     const [dailySummaries, setDailySummaries] = useState([]);
     const [vacations, setVacations] = useState([]);
@@ -230,30 +232,49 @@ const AdminEmployeeOverviewPage = () => {
     const timeTrackingSectionRef = useRef(null);
     const problemDateItemRefs = useRef(new Map());
 
-    const fetchAllData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [usersRes, summariesRes, vacationsRes, correctionsRes, balancesRes, sickLeaveRes] = await Promise.all([
-                api.get('/api/admin/users'),
-                api.get('/api/admin/timetracking/all-summaries'),
-                api.get('/api/vacation/all'),
-                api.get('/api/correction/all'),
-                api.get('/api/admin/timetracking/admin/tracking-balances'),
-                api.get('/api/sick-leave/company'),
-            ]);
+    const fetchAllData = useCallback(() => {
+        // Keep the calendar and any open dialog mounted during reconciliation.
+        // A newer refresh supersedes an initial or otherwise overlapping request.
+        dataRequestRef.current?.controller.abort();
+        const controller = new AbortController();
+        const request = { controller, promise: null };
+        dataRequestRef.current = request;
+        const config = { signal: controller.signal };
+        request.promise = (async () => {
+            try {
+                const [usersRes, summariesRes, vacationsRes, correctionsRes, balancesRes, sickLeaveRes] = await Promise.all([
+                    api.get('/api/admin/users', config),
+                    api.get('/api/admin/timetracking/all-summaries', config),
+                    api.get('/api/vacation/all', config),
+                    api.get('/api/correction/all', config),
+                    api.get('/api/admin/timetracking/admin/tracking-balances', config),
+                    api.get('/api/sick-leave/company', config),
+                ]);
 
-            setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-            setDailySummaries(Array.isArray(summariesRes.data) ? summariesRes.data : []);
-            setVacations(Array.isArray(vacationsRes.data) ? vacationsRes.data : []);
-            setCorrections(Array.isArray(correctionsRes.data) ? correctionsRes.data : []);
-            setTrackingBalances(Array.isArray(balancesRes.data) ? balancesRes.data : []);
-            setSickLeaves(Array.isArray(sickLeaveRes.data) ? sickLeaveRes.data : []);
-        } catch (error) {
-            console.error('Fehler beim Laden der Mitarbeiter-Übersicht:', error);
-            notify(t('adminEmployeeOverview.fetchError', 'Mitarbeiter-Übersicht konnte nicht geladen werden.'), 'error');
-        } finally {
-            setLoading(false);
-        }
+                if (controller.signal.aborted || dataRequestRef.current !== request) {
+                    return dataRequestRef.current !== request ? dataRequestRef.current?.promise : undefined;
+                }
+                setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+                setDailySummaries(Array.isArray(summariesRes.data) ? summariesRes.data : []);
+                setVacations(Array.isArray(vacationsRes.data) ? vacationsRes.data : []);
+                setCorrections(Array.isArray(correctionsRes.data) ? correctionsRes.data : []);
+                setTrackingBalances(Array.isArray(balancesRes.data) ? balancesRes.data : []);
+                setSickLeaves(Array.isArray(sickLeaveRes.data) ? sickLeaveRes.data : []);
+                setDataRevision((revision) => revision + 1);
+            } catch (error) {
+                if (controller.signal.aborted || dataRequestRef.current !== request) {
+                    return dataRequestRef.current !== request ? dataRequestRef.current?.promise : undefined;
+                }
+                console.error('Fehler beim Laden der Mitarbeiter-Übersicht:', error);
+                notify(t('adminEmployeeOverview.fetchError', 'Mitarbeiter-Übersicht konnte nicht geladen werden.'), 'error');
+            } finally {
+                if (dataRequestRef.current === request) {
+                    dataRequestRef.current = null;
+                    if (!controller.signal.aborted) setInitialLoading(false);
+                }
+            }
+        })();
+        return request.promise;
     }, [notify, t]);
 
     useRefreshOnMutation(
@@ -269,6 +290,7 @@ const AdminEmployeeOverviewPage = () => {
 
     useEffect(() => {
         fetchAllData();
+        return () => dataRequestRef.current?.controller.abort();
     }, [fetchAllData]);
 
     const employee = useMemo(
@@ -367,7 +389,7 @@ const AdminEmployeeOverviewPage = () => {
         return () => {
             cancelled = true;
         };
-    }, [employee?.username, accountingVisibleDates]);
+    }, [employee?.username, accountingVisibleDates, dataRevision]);
 
     useEffect(() => {
         const fetchHolidayDetails = async () => {
@@ -1053,11 +1075,11 @@ const AdminEmployeeOverviewPage = () => {
                     </div>
                     <div className="header-right-actions">
                         <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
-                        <Link className="back-to-dashboard-button" to="/admin/dashboard">{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
+                        <Link className="back-to-dashboard-button" to={dashboardBasePath}>{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
                     </div>
                 </section>
 
-                {loading ? (
+                {initialLoading ? (
                     <section className="employee-overview-skeleton-grid">
                         {Array.from({ length: 8 }).map((_, idx) => <div key={idx} className="skeleton-card card-style" />)}
                     </section>
@@ -1275,6 +1297,7 @@ const AdminEmployeeOverviewPage = () => {
                                         <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
                                         <VacationCalendarAdmin
                                             vacationRequests={employeeVacations}
+                                            onReloadVacations={fetchAllData}
                                             companyUsers={users}
                                             focusUsername={username}
                                         />

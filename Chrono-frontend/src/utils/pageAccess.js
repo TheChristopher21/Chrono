@@ -132,6 +132,20 @@ export const PAGE_CATALOG = [
         icon: "Admin",
     },
     {
+        key: "adminDashboardWorkspace",
+        label: "Neues Dashboard",
+        description: "Neue Arbeitsübersicht für Zeitprüfung, Anträge und Urlaubsplanung.",
+        path: "/admin/dashboard-neu",
+        requiredRole: "ROLE_SUPERADMIN",
+        audiences: ["superadmin"],
+        dashboardContexts: ["admin"],
+        mobileContexts: [],
+        order: 101,
+        supportsManage: true,
+        group: "Admin",
+        icon: "Admin",
+    },
+    {
         key: "adminUsers",
         label: "Benutzerverwaltung",
         description: "Benutzer, Rollen und Zugriffe verwalten.",
@@ -483,6 +497,8 @@ export const hasFeatureAccess = (user, featureKey) => {
 
 export const hasPageAccess = (user, pageKey, requiredLevel = ACCESS_VIEW) => {
     if (!pageKey) return true;
+    const requiredRole = PAGE_CATALOG.find((page) => page.key === pageKey)?.requiredRole;
+    if (requiredRole && !user?.roles?.includes(requiredRole)) return false;
     if (isSuperAdminUser(user)) return true;
     const grantedLevel = normalizeAccessLevel(user?.pagePermissions?.[pageKey]);
     return (ACCESS_RANK[grantedLevel] ?? 0) >= (ACCESS_RANK[normalizeAccessLevel(requiredLevel)] ?? 0);

@@ -16,6 +16,7 @@ const PrivateRoute = ({
     requiredPagePermission,
     requiredAccess = 'VIEW',
     redirectTo = '/',
+    roleRedirectTo = '/',
 }) => {
     const { authToken, currentUser, isAuthLoading } = useAuth();
     const location = useLocation();
@@ -53,7 +54,7 @@ const PrivateRoute = ({
             : roles.includes(requiredRole);
 
         if (!allowed) {
-            return <Navigate to="/" replace />;
+            return <Navigate to={roleRedirectTo} replace />;
         }
     }
 

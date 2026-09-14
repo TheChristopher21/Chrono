@@ -16,9 +16,10 @@ public class PmsLiveUpdateController {
     private final PmsLiveUpdateService live; private final JwtUtil jwt;
     public PmsLiveUpdateController(PmsLiveUpdateService live, JwtUtil jwt) { this.live = live; this.jwt = jwt; }
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<SseEmitter> subscribe(@PathVariable Long propertyId, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization, Principal principal, HttpServletRequest request) {
+    public ResponseEntity<SseEmitter> subscribe(@PathVariable Long propertyId, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestParam(required = false) String clientId, Principal principal, HttpServletRequest request) {
         if (principal == null || !authorization.startsWith("Bearer ")) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        SseEmitter emitter = live.subscribe(principal.getName(), propertyId, jwt.extractExpiration(authorization.substring(7)).toInstant());
+        SseEmitter emitter = live.subscribe(principal.getName(), propertyId, jwt.extractExpiration(authorization.substring(7)).toInstant(), clientId);
         request.setAttribute(PmsAccessPolicy.LIVE_AUTHORIZED, true);
         return ResponseEntity.ok().header(HttpHeaders.CACHE_CONTROL, "no-store").header("X-Accel-Buffering", "no")
                 .body(emitter);

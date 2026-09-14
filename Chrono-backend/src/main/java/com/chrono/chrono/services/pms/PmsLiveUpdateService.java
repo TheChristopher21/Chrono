@@ -28,16 +28,31 @@ public class PmsLiveUpdateService {
     @PostConstruct void start() { scheduler.scheduleWithFixedDelay(() -> { try { poll(Instant.now()); } catch (RuntimeException ignored) { /* Clients keep the bounded HTTP refresh fallback. */ } }, 1, 1, TimeUnit.SECONDS); }
     @PreDestroy void stop() { scheduler.shutdownNow(); connections.forEach(this::close); senders.shutdownNow(); }
 
-    public synchronized SseEmitter subscribe(String username, Long propertyId, Instant tokenExpiresAt) {
+    public SseEmitter subscribe(String username, Long propertyId, Instant tokenExpiresAt) {
+        return subscribe(username, propertyId, tokenExpiresAt, null);
+    }
+
+    public synchronized SseEmitter subscribe(String username, Long propertyId, Instant tokenExpiresAt, String clientId) {
         var actor = access.access(username); access.require(actor, propertyId, null, false);
-        if (!tokenExpiresAt.isAfter(Instant.now())) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        Instant now = Instant.now();
+        if (!tokenExpiresAt.isAfter(now)) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        if (clientId != null && !clientId.matches("[A-Za-z0-9-]{1,80}"))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ungültige Live-Client-ID.");
+        // A browser abort is only discovered on the next socket write. Rapid workspace
+        // navigation must replace its own old stream instead of consuming another slot
+        // until the heartbeat detects the disconnect. Other users/windows stay intact.
+        connections.stream().filter(value -> !value.expiresAt.isAfter(now)
+                || (clientId != null && clientId.equals(value.clientId)
+                && value.username.equals(username) && value.propertyId.equals(propertyId))).toList().forEach(this::close);
         if (connections.size() >= 1000 || connections.stream().filter(value -> value.username.equals(username)).count() >= 12)
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Zu viele Live-Verbindungen.");
         // Rotate every five minutes, and never retain a connection beyond its JWT lifetime.
-        long timeout = Math.max(1, Math.min(300_000, tokenExpiresAt.toEpochMilli() - System.currentTimeMillis()));
+        Instant expiresAt = tokenExpiresAt.isBefore(now.plusSeconds(300)) ? tokenExpiresAt : now.plusSeconds(300);
+        long timeout = Math.max(1, expiresAt.toEpochMilli() - now.toEpochMilli());
         SseEmitter emitter = new SseEmitter(timeout);
         Long sequence = audit.findMaximumSequence(propertyId);
-        Connection connection = new Connection(username, actor.companyId(), propertyId, tokenExpiresAt, emitter, sequence == null ? 0 : sequence);
+        Connection connection = new Connection(username, actor.companyId(), propertyId, clientId,
+                expiresAt, emitter, sequence == null ? 0 : sequence);
         connections.add(connection);
         emitter.onCompletion(() -> connections.remove(connection)); emitter.onTimeout(() -> close(connection)); emitter.onError(error -> connections.remove(connection));
         try { emitter.send(SseEmitter.event().name("ready").data("{}").reconnectTime(3000)); }
@@ -73,12 +88,20 @@ public class PmsLiveUpdateService {
             }
         }
     }
-    private void close(Connection connection) { connections.remove(connection); connection.emitter.complete(); }
+    private void close(Connection connection) {
+        if (!connections.remove(connection)) return;
+        try { connection.emitter.complete(); }
+        catch (IllegalStateException alreadyCompleted) {
+            // Timeout, client disconnect and replacement can race with servlet cleanup.
+            // The slot is already released even if Tomcat has recycled its response.
+        }
+    }
     private static final class Connection {
-        final String username; final Long companyId; final Long propertyId; final Instant expiresAt; final SseEmitter emitter;
+        final String username; final Long companyId; final Long propertyId; final String clientId; final Instant expiresAt; final SseEmitter emitter;
         final AtomicBoolean sending = new AtomicBoolean(); volatile long sequence; volatile long lastSent = System.currentTimeMillis();
-        Connection(String username, Long companyId, Long propertyId, Instant expiresAt, SseEmitter emitter, long sequence) {
-            this.username = username; this.companyId = companyId; this.propertyId = propertyId; this.expiresAt = expiresAt; this.emitter = emitter; this.sequence = sequence;
+        Connection(String username, Long companyId, Long propertyId, String clientId, Instant expiresAt, SseEmitter emitter, long sequence) {
+            this.username = username; this.companyId = companyId; this.propertyId = propertyId; this.clientId = clientId;
+            this.expiresAt = expiresAt; this.emitter = emitter; this.sequence = sequence;
         }
     }
 }

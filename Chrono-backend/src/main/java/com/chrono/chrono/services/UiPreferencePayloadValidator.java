@@ -43,7 +43,8 @@ public class UiPreferencePayloadValidator {
     private static final Set<String> PMS_GRID_FIELDS = Set.of("x", "y", "w", "h");
     private static final Set<String> DASHBOARD_WIDGET_SIZES = Set.of("S", "M", "L", "full");
     private static final Set<String> ADMIN_DASHBOARD_SCOPES = Set.of(
-            "overview", "time", "requests", "calendar", "modules"
+            "overview", "time", "requests", "calendar", "modules",
+            "workspace-time", "workspace-requests", "workspace-calendar", "workspace-modules"
     );
     private static final String DASHBOARD_PAYLOAD_TYPE = "chrono-dashboard-layouts";
 

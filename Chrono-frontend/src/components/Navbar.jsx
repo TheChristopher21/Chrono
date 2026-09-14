@@ -205,6 +205,7 @@ const NavbarContents = () => {
 
     const adminMenuItems = useMemo(() => ([
         { key: 'adminDashboard', to: '/admin/dashboard', label: t('navbar.adminStart', 'Admin-Start') },
+        { key: 'adminDashboardWorkspace', to: '/admin/dashboard-neu', label: t('navbar.newDashboard', 'Neues Dashboard') },
         { key: 'adminUsers', to: '/admin/users', label: t('navbar.userManagement', 'Benutzerverwaltung') },
         { key: 'adminProjects', to: '/admin/projects', label: t('navbar.workManagement', 'Kunden · Projekte · Aufgaben') },
         { key: 'adminAccounting', to: '/admin/accounting', label: t('navbar.accounting', 'Finanzbuchhaltung') },
@@ -262,7 +263,7 @@ const NavbarContents = () => {
                 key: 'timeTeam',
                 title: t('navbar.platformTimeTeam', 'Zeit & Team'),
                 subtitle: t('navbar.platformPeoplePlanning', 'Personal & Planung'),
-                items: pick(['adminUsers', 'adminSchedule', 'adminPayslips']),
+                items: pick(['adminDashboardWorkspace', 'adminUsers', 'adminSchedule', 'adminPayslips']),
             },
             {
                 key: 'finance',

@@ -126,6 +126,8 @@ function App() {
 
                         {/* Admin-Routen */}
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminDashboard /></PrivateRoute>} />
+                        <Route path="/admin/dashboard-neu" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><AdminDashboard experience="workspace" /></PrivateRoute>} />
+                        <Route path="/admin/dashboard-neu/mitarbeiter/:username" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><AdminEmployeeOverviewPage dashboardBasePath="/admin/dashboard-neu" /></PrivateRoute>} />
                         <Route path="/admin/dashboard/mitarbeiter/:username" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminEmployeeOverviewPage /></PrivateRoute>} />
                         <Route path="/admin/users" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminUsers"><AdminUserManagementPage /></PrivateRoute>} />
                         <Route path="/admin/change-password" element={<PrivateRoute requiredPagePermission="adminChangePassword"><AdminChangePassword /></PrivateRoute>} />

@@ -1,0 +1,759 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - navigation "Hauptnavigation" [ref=e6]:
+      - link "Chrono" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img "Chrono" [ref=e9]
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - link "Plattform" [ref=e12] [cursor=pointer]:
+            - /url: /#platform
+        - listitem [ref=e13]:
+          - link "Lösungen" [ref=e14] [cursor=pointer]:
+            - /url: /#features
+        - listitem [ref=e15]:
+          - link "Preise" [ref=e16] [cursor=pointer]:
+            - /url: /#preise
+        - listitem [ref=e17]:
+          - link "Arbeitszeit-Rechner" [ref=e18] [cursor=pointer]:
+            - /url: /arbeitszeit-rechner
+        - listitem [ref=e19]:
+          - link "Login" [ref=e20] [cursor=pointer]:
+            - /url: /login
+        - listitem [ref=e21]:
+          - link "Demo anfragen" [ref=e22] [cursor=pointer]:
+            - /url: /register
+        - listitem [ref=e23]:
+          - button "Dark Mode" [ref=e24] [cursor=pointer]
+        - listitem [ref=e28]:
+          - button "🌐" [ref=e29] [cursor=pointer]
+    - main [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e35]:
+          - strong [ref=e40]: Chrono
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - heading [level=3] [ref=e44]: Admin-Dashboard
+                - paragraph [ref=e45]: Eingeloggt als admin
+              - generic [ref=e46]: Befehlspalette öffnen
+            - generic [ref=e47]:
+              - generic [ref=e48]: Benutzerverwaltung
+              - generic [ref=e49]: Dienstplan
+              - generic [ref=e50]: Abrechnungen
+            - region [ref=e51]:
+              - article [ref=e52]:
+                - generic [ref=e53]: Offene Anträge
+                - strong [ref=e54]: "4"
+                - emphasis [ref=e55]: "Urlaub: 2 · Korrekturen: 2"
+              - article [ref=e56]:
+                - generic [ref=e57]: Ø Überstundensaldo
+                - strong [ref=e58]: +02:35
+                - emphasis [ref=e59]: "Grundlage: 18"
+              - article [ref=e60]:
+                - generic [ref=e61]: Negative Salden
+                - strong [ref=e62]: "1"
+                - emphasis [ref=e63]: "sarah: -00:25"
+              - article [ref=e64]:
+                - generic [ref=e65]: Höchster Saldo
+                - strong [ref=e66]: +12:40
+                - emphasis [ref=e67]: marc
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]:
+                  - heading [level=4] [ref=e71]: Team-Wochenübersicht
+                  - paragraph [ref=e72]: 27.04.2026 - 03.05.2026
+                - generic [ref=e73]: Drucken
+              - generic [ref=e74]:
+                - generic [ref=e75]: ← Vorige Woche
+                - strong [ref=e76]: 27.04.2026
+                - generic [ref=e77]: Nächste Woche →
+              - generic [aria-hidden] [ref=e78]:
+                - generic [ref=e79]:
+                  - generic [ref=e80]: Mitarbeitende
+                  - generic [ref=e81]: Mo
+                  - generic [ref=e82]: Di
+                  - generic [ref=e83]: Mi
+                  - generic [ref=e84]: Saldo
+                - generic [ref=e85]:
+                  - strong [ref=e86]: Christopher
+                  - generic [ref=e87]: 08:25
+                  - generic [ref=e88]: 08:04
+                  - generic [ref=e89]: Urlaub
+                  - emphasis [ref=e90]: +04:15
+                - generic [ref=e91]:
+                  - strong [ref=e92]: Sarah
+                  - generic [ref=e93]: 07:55
+                  - generic [ref=e94]: 08:10
+                  - generic [ref=e95]: 08:00
+                  - emphasis [ref=e96]: "-00:25"
+                - generic [ref=e97]:
+                  - strong [ref=e98]: Marc
+                  - generic [ref=e99]: Krankheit
+                  - generic [ref=e100]: 08:20
+                  - generic [ref=e101]: 08:15
+                  - emphasis [ref=e102]: +01:10
+        - generic [ref=e103]:
+          - generic [ref=e104]: Schweizer Software für KMU
+          - heading "Arbeitszeit, Abwesenheiten und Lohnprozesse – ohne Excel-Chaos." [level=1] [ref=e105]
+          - paragraph [ref=e106]: Chrono verbindet Zeiterfassung, Urlaubsfreigaben und Lohnvorbereitung in einer zentralen Plattform. Für Schweizer und deutsche Teams, persönlich eingeführt und modular erweiterbar.
+          - generic [ref=e107]:
+            - link "Kostenlose Demo anfragen" [ref=e108] [cursor=pointer]:
+              - /url: /register
+            - button "Interaktive Produktdemo starten" [ref=e109] [cursor=pointer]
+          - paragraph [ref=e110]: Persönliche Freischaltung · Rückmeldung in der Regel innerhalb eines Werktags
+          - link "PMS neu Chrono Hotelmanagement (PMS) In finaler Entwicklungsphase" [ref=e111] [cursor=pointer]:
+            - /url: "#pms"
+            - generic [ref=e112]: PMS neu
+            - strong [ref=e113]: Chrono Hotelmanagement (PMS)
+            - emphasis [ref=e114]: In finaler Entwicklungsphase
+            - generic [aria-hidden] [ref=e115]: →
+          - generic "Kurzüberblick" [ref=e116]:
+            - generic [ref=e117]: Ab CHF 5 pro Mitarbeitendem
+            - generic [ref=e118]: Keine Kreditkarte im Anfrageprozess
+            - generic [ref=e119]: Entwickelt in der Schweiz
+          - generic "Chrono Kennzahlen" [ref=e120]:
+            - generic [ref=e121]:
+              - strong [ref=e122]: Live
+              - generic [ref=e123]: interaktive Demo
+            - generic [ref=e124]:
+              - strong [ref=e125]: "1"
+              - generic [ref=e126]: zentraler Datenfluss
+            - generic [ref=e127]:
+              - strong [ref=e128]: CH/DE
+              - generic [ref=e129]: persönlich betreut
+        - complementary "Gründerhinweis" [ref=e130]:
+          - img "Christopher Siefert" [ref=e131]
+          - generic [ref=e132]:
+            - strong [ref=e133]: Entwickelt von Christopher Siefert
+            - paragraph [ref=e134]: Für Unternehmen, die klare Prozesse statt Excel-Chaos wollen.
+      - region "Vertrauen für den Alltag in CH & DE" [ref=e135]:
+        - list [ref=e137]:
+          - listitem [ref=e138]:
+            - generic [aria-hidden] [ref=e139]: TLS
+            - generic [ref=e140]:
+              - generic [ref=e141]: Übertragung
+              - strong [ref=e142]: TLS & HSTS
+          - listitem [ref=e143]:
+            - generic [aria-hidden] [ref=e144]: RB
+            - generic [ref=e145]:
+              - generic [ref=e146]: Zugriff
+              - strong [ref=e147]: Rollen & Rechte
+          - listitem [ref=e148]:
+            - generic [aria-hidden] [ref=e149]: CH
+            - generic [ref=e150]:
+              - generic [ref=e151]: Datenschutz
+              - strong [ref=e152]: revDSG & DSGVO
+          - listitem [ref=e153]:
+            - generic [aria-hidden] [ref=e154]: EX
+            - generic [ref=e155]:
+              - generic [ref=e156]: Daten
+              - strong [ref=e157]: Export geregelt
+      - region [ref=e158]:
+        - generic [ref=e159]:
+          - generic [ref=e160]: Drei klare Einstiege
+          - heading "Welcher Aufwand kostet Sie heute Zeit?" [level=2] [ref=e161]
+          - paragraph [ref=e162]: Chrono startet bei einem konkreten Problem – nicht bei einer möglichst langen Modulliste.
+        - generic [ref=e163]:
+          - article [ref=e164]:
+            - generic [aria-hidden] [ref=e165]: ZE
+            - heading "Arbeitszeit ohne Excel" [level=3] [ref=e166]
+            - generic [ref=e167]:
+              - text: Heute
+              - paragraph [ref=e168]: Stunden aus Listen, Nachträgen und Rückfragen zusammensuchen.
+            - generic [ref=e169]:
+              - text: Mit Chrono
+              - paragraph [ref=e170]: Einmal erfassen und Soll/Ist, Salden sowie Korrekturen zentral prüfen.
+          - article [ref=e171]:
+            - generic [aria-hidden] [ref=e172]: UR
+            - heading "Urlaub ohne Rückfragen" [level=3] [ref=e173]
+            - generic [ref=e174]:
+              - text: Heute
+              - paragraph [ref=e175]: Anträge, Resttage und Vertretungen über mehrere Kanäle klären.
+            - generic [ref=e176]:
+              - text: Mit Chrono
+              - paragraph [ref=e177]: Antrag, Übersicht und Freigabe in einem nachvollziehbaren Workflow.
+          - article [ref=e178]:
+            - generic [aria-hidden] [ref=e179]: LO
+            - heading "Lohnvorbereitung ohne Doppelerfassung" [level=3] [ref=e180]
+            - generic [ref=e181]:
+              - text: Heute
+              - paragraph [ref=e182]: Zeit- und Abwesenheitsdaten für den Lohnlauf erneut übertragen.
+            - generic [ref=e183]:
+              - text: Mit Chrono
+              - paragraph [ref=e184]: Geprüfte Daten aus demselben System für die Abrechnung weiterverwenden.
+      - generic [ref=e185]:
+        - generic [ref=e186]:
+          - generic [ref=e187]: Produktgefühl
+          - heading "So sieht Chrono im Alltag aus." [level=2] [ref=e188]
+          - paragraph [ref=e189]: "Nicht nur Text: Chrono führt Zeit, Abwesenheiten, Lohn und operative Prozesse in einer gemeinsamen Oberfläche zusammen."
+        - generic [ref=e190]:
+          - generic "Chrono Produktvorschau" [ref=e192]:
+            - strong [ref=e197]: Chrono
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - generic [ref=e200]:
+                  - heading "Willkommen, Christopher" [level=3] [ref=e201]
+                  - generic [ref=e202]:
+                    - generic [ref=e203]:
+                      - strong [ref=e204]: "Benutzername:"
+                      - text: christopher
+                    - generic [ref=e205]:
+                      - strong [ref=e206]: "Überstundensaldo:"
+                      - text: +05:15
+                - generic [ref=e207]: Bericht drucken
+              - generic [ref=e208]:
+                - heading "Wochenübersicht" [level=4] [ref=e209]
+                - generic [ref=e210]:
+                  - strong [ref=e211]: Manuelles Stempeln
+                  - generic [ref=e212]: Jetzt stempeln
+                - generic [ref=e213]:
+                  - generic [ref=e214]: ← Vorige Woche
+                  - strong [ref=e215]: 27.04.2026
+                  - generic [ref=e216]: Nächste Woche →
+                  - emphasis [ref=e217]: Aktuelle Woche
+                - generic [ref=e218]:
+                  - generic [ref=e219]:
+                    - generic [ref=e220]: Ist-Zeit
+                    - strong [ref=e221]: 38:15
+                  - generic [ref=e222]:
+                    - generic [ref=e223]: Soll-Zeit
+                    - strong [ref=e224]: 34:00
+                  - generic [ref=e225]:
+                    - generic [ref=e226]: Wochensaldo
+                    - strong [ref=e227]: +04:15
+                - generic [ref=e228]:
+                  - article [ref=e229]:
+                    - generic [ref=e230]:
+                      - strong [ref=e231]: Montag
+                      - generic [ref=e232]: 27.04.
+                    - list [ref=e233]:
+                      - listitem [ref=e234]:
+                        - generic [ref=e235]: Einstempeln
+                        - strong [ref=e236]: 07:58
+                      - listitem [ref=e237]:
+                        - generic [ref=e238]: Ausstempeln
+                        - strong [ref=e239]: 12:04
+                      - listitem [ref=e240]:
+                        - generic [ref=e241]: Einstempeln
+                        - strong [ref=e242]: 12:42
+                      - listitem [ref=e243]:
+                        - generic [ref=e244]: Ausstempeln
+                        - strong [ref=e245]: 17:01
+                    - generic [ref=e246]:
+                      - generic [ref=e247]: Gearbeitet
+                      - strong [ref=e248]: 08:25
+                  - article [ref=e249]:
+                    - generic [ref=e250]:
+                      - strong [ref=e251]: Dienstag
+                      - generic [ref=e252]: 28.04.
+                    - generic [ref=e253]: Kundenprojekt
+                    - list [ref=e255]:
+                      - listitem [ref=e256]:
+                        - generic [ref=e257]: Einstempeln
+                        - strong [ref=e258]: 08:10
+                      - listitem [ref=e259]:
+                        - generic [ref=e260]: Ausstempeln
+                        - strong [ref=e261]: 16:44
+                    - generic [ref=e262]:
+                      - generic [ref=e263]: Gearbeitet
+                      - strong [ref=e264]: 08:04
+          - generic [ref=e265]:
+            - article [ref=e266]:
+              - generic [ref=e267]:
+                - generic [ref=e268]: WO
+                - generic [ref=e269]: wie im Dashboard
+              - heading "Wochenübersicht" [level=3] [ref=e270]
+              - paragraph [ref=e271]: "So sieht der echte Tagesfluss im User-Dashboard aus: Stempelzeiten, Soll/Ist und Tageskarte."
+              - generic [aria-hidden] [ref=e272]:
+                - generic [ref=e273]:
+                  - generic [ref=e274]:
+                    - emphasis [ref=e275]: Ist-Zeit
+                    - strong [ref=e276]: 38:15
+                  - generic [ref=e277]:
+                    - emphasis [ref=e278]: Soll-Zeit
+                    - strong [ref=e279]: 34:00
+                  - generic [ref=e280]:
+                    - emphasis [ref=e281]: Wochensaldo
+                    - strong [ref=e282]: +04:15
+                - generic [ref=e283]:
+                  - generic [ref=e284]:
+                    - strong [ref=e285]: Montag, 27.04.
+                    - generic [ref=e286]: 08:25 gearbeitet
+                  - list [ref=e287]:
+                    - listitem [ref=e288]:
+                      - generic [ref=e289]: Einstempeln
+                      - strong [ref=e290]: 07:58
+                    - listitem [ref=e291]:
+                      - generic [ref=e292]: Ausstempeln
+                      - strong [ref=e293]: 12:04
+                    - listitem [ref=e294]:
+                      - generic [ref=e295]: Einstempeln
+                      - strong [ref=e296]: 12:42
+                    - listitem [ref=e297]:
+                      - generic [ref=e298]: Ausstempeln
+                      - strong [ref=e299]: 17:01
+                  - generic [ref=e300]: Korrektur beantragen
+            - article [ref=e301]:
+              - generic [ref=e302]:
+                - generic [ref=e303]: KO
+                - generic [ref=e304]: wie im Dashboard
+              - heading "Korrekturen" [level=3] [ref=e305]
+              - paragraph [ref=e306]: Korrekturanträge erscheinen im Dashboard als eigener Verlauf mit Status und Detailansicht.
+              - generic [aria-hidden] [ref=e307]:
+                - generic [ref=e308]:
+                  - strong [ref=e309]: Korrekturanträge
+                  - generic [ref=e310]: 2 offen
+                - list [ref=e311]:
+                  - listitem [ref=e312]:
+                    - generic [ref=e313]: Offen
+                    - strong [ref=e314]: 28.04.2026
+                    - paragraph [ref=e315]: Ausstempeln 16:44 auf 17:01 ändern
+                  - listitem [ref=e316]:
+                    - generic [ref=e317]: Genehmigt
+                    - strong [ref=e318]: 25.04.2026
+                    - paragraph [ref=e319]: Vergessene Mittagspause ergänzt
+            - article [ref=e320]:
+              - generic [ref=e321]:
+                - generic [ref=e322]: UR
+                - generic [ref=e323]: wie im Dashboard
+              - heading "Urlaub" [level=3] [ref=e324]
+              - paragraph [ref=e325]: Anträge, Resttage und Abwesenheiten sofort sichtbar für Team und Admin.
+              - generic [aria-hidden] [ref=e326]:
+                - generic [ref=e327]:
+                  - strong [ref=e328]: April 2026
+                  - generic [ref=e329]: 1 Antrag offen
+                - generic [ref=e330]:
+                  - strong [ref=e331]: Mo
+                  - strong [ref=e332]: Di
+                  - strong [ref=e333]: Mi
+                  - strong [ref=e334]: Do
+                  - strong [ref=e335]: Fr
+                  - strong [ref=e336]: Sa
+                  - strong [ref=e337]: So
+                - generic [ref=e352]:
+                  - generic [ref=e353]: Urlaub 02.05. - 03.05.
+                  - strong [ref=e354]: in Prüfung
+      - region [ref=e355]:
+        - generic [ref=e356]:
+          - generic [ref=e357]:
+            - img "Christopher Siefert" [ref=e358]
+            - generic [ref=e359]:
+              - strong [ref=e360]: Christopher Siefert
+              - generic [ref=e361]: Gründer & Entwickler von Chrono
+          - generic [ref=e362]:
+            - generic [ref=e363]: Persönlich betreut
+            - heading "Entwickelt in der Schweiz - mit direktem Ansprechpartner." [level=2] [ref=e364]
+            - paragraph [ref=e365]: Chrono-Logisch wird von Christopher Siefert in Mogelsberg, St. Gallen entwickelt. Der Einstieg konzentriert sich auf Arbeitszeit, Abwesenheiten und Lohnvorbereitung; weitere Prozesse werden erst nach Bedarf ergänzt.
+            - list [ref=e366]:
+              - listitem [ref=e367]: Direkte Betreuung bei Demo, Einführung und Fragen
+              - listitem [ref=e368]: Schnelle Weiterentwicklung aus echtem Kundenfeedback
+              - listitem [ref=e369]: Unterstützung beim Wechsel aus bestehenden Programmen
+            - generic [ref=e370]:
+              - link "Kontakt aufnehmen" [ref=e371] [cursor=pointer]:
+                - /url: "#kontakt"
+              - link "Über Chrono-Logisch" [ref=e372] [cursor=pointer]:
+                - /url: /ueber-chrono-logisch
+      - region [ref=e373]:
+        - generic [ref=e374]:
+          - generic [ref=e375]:
+            - generic [ref=e376]: Sicherheit & Datenschutz
+            - heading "Klare Massnahmen statt pauschaler Versprechen." [level=2] [ref=e377]
+            - paragraph [ref=e378]: Für sensible Personal- und Lohndaten zählt, was technisch und vertraglich nachvollziehbar geregelt ist.
+            - generic [ref=e379]:
+              - link "Datenschutz ansehen" [ref=e380] [cursor=pointer]:
+                - /url: /datenschutz
+              - link "AGB & Datenexport" [ref=e381] [cursor=pointer]:
+                - /url: /agb
+          - generic [ref=e382]:
+            - article [ref=e383]:
+              - generic [aria-hidden] [ref=e384]: "01"
+              - generic [ref=e385]:
+                - heading "Verschlüsselte Übertragung" [level=3] [ref=e386]
+                - paragraph [ref=e387]: TLS und HSTS schützen die Verbindung zwischen Browser und Chrono.
+            - article [ref=e388]:
+              - generic [aria-hidden] [ref=e389]: "02"
+              - generic [ref=e390]:
+                - heading "Rollenbasierter Zugriff" [level=3] [ref=e391]
+                - paragraph [ref=e392]: Rollen, Seitenfreigaben und administrative Zugriffe werden getrennt gesteuert.
+            - article [ref=e393]:
+              - generic [aria-hidden] [ref=e394]: "03"
+              - generic [ref=e395]:
+                - heading "Datenschutz vertraglich geregelt" [level=3] [ref=e396]
+                - paragraph [ref=e397]: revDSG und DSGVO werden berücksichtigt; bei Auftragsverarbeitung ist ein AVV/DPA vorgesehen.
+            - article [ref=e398]:
+              - generic [aria-hidden] [ref=e399]: "04"
+              - generic [ref=e400]:
+                - heading "Daten bleiben exportierbar" [level=3] [ref=e401]
+                - paragraph [ref=e402]: Der Datenexport während der Vertragslaufzeit und der Umgang nach Vertragsende sind in den AGB beschrieben.
+      - generic [ref=e403]:
+        - generic [ref=e404]:
+          - generic [ref=e405]: Kern & Erweiterungen
+          - heading "Vom Kernprozess zur passenden Erweiterung." [level=2] [ref=e406]
+          - paragraph [ref=e407]: Zeit, Team und Freigaben bilden den Kern. Weitere Bereiche sind transparent als verfügbar oder auf Anfrage gekennzeichnet.
+        - generic "Chrono Modulübersicht" [ref=e408]:
+          - generic [ref=e409]:
+            - generic [ref=e410]:
+              - generic [ref=e411]: Modul-Kompass
+              - heading "Erst Grundlage, dann Erweiterungen." [level=3] [ref=e412]
+              - list [ref=e413]:
+                - listitem [ref=e414]:
+                  - strong [ref=e415]: Kern
+                  - generic [ref=e416]: Zeit, Team, Rechte
+                - listitem [ref=e417]:
+                  - strong [ref=e418]: Daten
+                  - generic [ref=e419]: einmal erfassen, mehrfach nutzen
+                - listitem [ref=e420]:
+                  - strong [ref=e421]: Add-ons
+                  - generic [ref=e422]: nur aktivieren, was gebraucht wird
+            - list [ref=e423]:
+              - article [ref=e424]:
+                - generic [ref=e425]:
+                  - generic [ref=e426]: "01"
+                  - paragraph [ref=e427]: Rechte, Modelle, Module
+                - heading "Setup" [level=3] [ref=e428]
+                - generic [ref=e429]:
+                  - generic [ref=e430]: Firmeneinstellungen
+                  - generic [ref=e431]: Benutzerverwaltung
+                  - generic [ref=e432]: Firmenwissen
+              - article [ref=e433]:
+                - generic [ref=e434]:
+                  - generic [ref=e435]: "02"
+                  - paragraph [ref=e436]: Arbeitszeit & Abwesenheiten
+                - heading "Zeit & Planung" [level=3] [ref=e437]
+                - generic [ref=e438]:
+                  - generic [ref=e439]: Zeiterfassung
+                  - generic [ref=e440]: Dienstplan
+                  - generic [ref=e441]: Urlaub & Abwesenheiten
+              - article [ref=e442]:
+                - generic [ref=e443]:
+                  - generic [ref=e444]: "03"
+                  - paragraph [ref=e445]: Auftragsbezug
+                - heading "Kunden & Projekte" [level=3] [ref=e446]
+                - generic [ref=e447]:
+                  - generic [ref=e448]: Kunden, Projekte & Aufgaben
+                  - generic [ref=e449]: CRM & Marketing
+              - article [ref=e450]:
+                - generic [ref=e451]:
+                  - generic [ref=e452]: "04"
+                  - paragraph [ref=e453]: Abrechnung & Zahlung
+                - heading "Lohn & Finanzen" [level=3] [ref=e454]
+                - generic [ref=e455]:
+                  - generic [ref=e456]: Abrechnungen
+                  - generic [ref=e457]: Finanzbuchhaltung
+                  - generic [ref=e458]: Zahlungsverkehr
+              - article [ref=e459]:
+                - generic [ref=e460]:
+                  - generic [ref=e461]: "05"
+                  - paragraph [ref=e462]: Warenfluss & Service
+                - heading "Betrieb & Waren" [level=3] [ref=e463]
+                - generic [ref=e464]:
+                  - generic [ref=e465]: Supply Chain
+                  - generic [ref=e466]: Chrono 2.0
+          - list [ref=e467]:
+            - article [ref=e468]:
+              - generic [ref=e469]:
+                - heading "Zeit & Team" [level=3] [ref=e470]
+                - generic [ref=e471]: Kern
+              - list [ref=e472]:
+                - listitem [ref=e473]:
+                  - generic [ref=e474]: ZE
+                  - strong [ref=e475]: Zeiterfassung
+                  - emphasis [ref=e476]: Basis
+                - listitem [ref=e477]:
+                  - generic [ref=e478]: DI
+                  - strong [ref=e479]: Dienstplan
+                  - emphasis [ref=e480]: Auf Anfrage
+                - listitem [ref=e481]:
+                  - generic [ref=e482]: UR
+                  - strong [ref=e483]: Urlaub & Abwesenheiten
+                  - emphasis [ref=e484]: Verfügbar
+                - listitem [ref=e485]:
+                  - generic [ref=e486]: PE
+                  - strong [ref=e487]: Benutzerverwaltung
+                  - emphasis [ref=e488]: Verfügbar
+            - article [ref=e489]:
+              - generic [ref=e490]:
+                - heading "Kunden & Projekte" [level=3] [ref=e491]
+                - generic [ref=e492]: Kundenarbeit
+              - list [ref=e493]:
+                - listitem [ref=e494]:
+                  - generic [ref=e495]: PR
+                  - strong [ref=e496]: Kunden, Projekte & Aufgaben
+                  - emphasis [ref=e497]: Auf Anfrage
+                - listitem [ref=e498]:
+                  - generic [ref=e499]: CM
+                  - strong [ref=e500]: CRM & Marketing
+                  - emphasis [ref=e501]: Auf Anfrage
+                - listitem [ref=e502]:
+                  - generic [ref=e503]: BI
+                  - strong [ref=e504]: Analytics & Berichte
+                  - emphasis [ref=e505]: Auf Anfrage
+            - article [ref=e506]:
+              - generic [ref=e507]:
+                - heading "Lohn & Finanzen" [level=3] [ref=e508]
+                - generic [ref=e509]: Abschluss
+              - list [ref=e510]:
+                - listitem [ref=e511]:
+                  - generic [ref=e512]: LO
+                  - strong [ref=e513]: Abrechnungen
+                  - emphasis [ref=e514]: Auf Anfrage
+                - listitem [ref=e515]:
+                  - generic [ref=e516]: FI
+                  - strong [ref=e517]: Finanzbuchhaltung
+                  - emphasis [ref=e518]: Auf Anfrage
+                - listitem [ref=e519]:
+                  - generic [ref=e520]: ZA
+                  - strong [ref=e521]: Zahlungsverkehr
+                  - emphasis [ref=e522]: Auf Anfrage
+            - article [ref=e523]:
+              - generic [ref=e524]:
+                - heading "Waren & Betrieb" [level=3] [ref=e525]
+                - generic [ref=e526]: Warenfluss
+              - list [ref=e527]:
+                - listitem [ref=e528]:
+                  - generic [ref=e529]: SC
+                  - strong [ref=e530]: Supply Chain
+                  - emphasis [ref=e531]: Auf Anfrage
+                - listitem [ref=e532]:
+                  - generic [ref=e533]: EK
+                  - strong [ref=e534]: Einkauf
+                  - emphasis [ref=e535]: Auf Anfrage
+                - listitem [ref=e536]:
+                  - generic [ref=e537]: VK
+                  - strong [ref=e538]: Verkauf
+                  - emphasis [ref=e539]: Auf Anfrage
+                - listitem [ref=e540]:
+                  - generic [ref=e541]: SV
+                  - strong [ref=e542]: Service
+                  - emphasis [ref=e543]: Auf Anfrage
+                - listitem [ref=e544]:
+                  - generic [ref=e545]: PMS
+                  - strong [ref=e546]: Hotelmanagement (PMS)
+                  - emphasis [ref=e547]: In finaler Entwicklungsphase
+            - article [ref=e548]:
+              - generic [ref=e549]:
+                - heading "Setup & Wissen" [level=3] [ref=e550]
+                - generic [ref=e551]: Steuerung
+              - list [ref=e552]:
+                - listitem [ref=e553]:
+                  - generic [ref=e554]: AD
+                  - strong [ref=e555]: Firmeneinstellungen
+                  - emphasis [ref=e556]: Verfügbar
+                - listitem [ref=e557]:
+                  - generic [ref=e558]: KI
+                  - strong [ref=e559]: Firmenwissen
+                  - emphasis [ref=e560]: Auf Anfrage
+                - listitem [ref=e561]:
+                  - generic [ref=e562]: C2
+                  - strong [ref=e563]: Chrono 2.0
+                  - emphasis [ref=e564]: Auf Anfrage
+          - generic [ref=e565]:
+            - generic [ref=e566]:
+              - generic [ref=e567]: Kurzlogik
+              - heading "Was muss man verstehen?" [level=3] [ref=e568]
+              - paragraph [ref=e569]: Eine Plattform, mehrere zuschaltbare Bereiche.
+            - list [ref=e570]:
+              - listitem [ref=e571]: Setup legt Rechte, Arbeitsmodelle und aktive Module fest.
+              - listitem [ref=e572]: Zeitdaten werden geprüft und direkt weiterverwendet.
+              - listitem [ref=e573]: Projekte, Lohn, CRM und Supply Chain nutzen dieselbe Datenbasis.
+        - generic [ref=e574]:
+          - paragraph [ref=e575]:
+            - strong [ref=e576]: Chrono wächst mit Ihrem Unternehmen.
+            - generic [ref=e577]: Starten Sie mit dem Kern aus Zeit, Team und Rechten - und schalten Sie danach genau die Prozessbereiche frei, die Ihr Unternehmen wirklich nutzt.
+          - generic [ref=e578]:
+            - link "Alle Module ansehen" [ref=e579] [cursor=pointer]:
+              - /url: "#preise"
+            - link "Kostenlose Demo anfragen" [ref=e580] [cursor=pointer]:
+              - /url: /register
+      - region [ref=e581]:
+        - generic [ref=e582]:
+          - generic [ref=e583]:
+            - generic [ref=e584]: Neu · In finaler Entwicklungsphase
+            - heading "Chrono Hotelmanagement (PMS)" [level=2] [ref=e585]
+            - paragraph [ref=e586]: Das neue PMS bündelt Reservierungen, Zimmerbelegung, Gästedaten, Housekeeping und Abrechnung in Chrono. Die Kernfunktionen stehen – aktuell bereiten wir das System gemeinsam mit Pilotbetrieben auf den produktiven Hoteleinsatz vor.
+            - list [ref=e587]:
+              - listitem [ref=e588]: Reservierungen, Anreisen und Abreisen zentral steuern
+              - listitem [ref=e589]: Zimmerstatus und Housekeeping live koordinieren
+              - listitem [ref=e590]: Gäste, Leistungen und Rechnungen ohne Medienbruch verwalten
+              - listitem [ref=e591]: Persönliche Begleitung und direkter Einfluss als Pilotbetrieb
+            - generic [ref=e592]:
+              - button "PMS als Pilotbetrieb testen" [ref=e593] [cursor=pointer]
+              - link "PMS-Modul konfigurieren" [ref=e594] [cursor=pointer]:
+                - /url: /register
+            - generic [ref=e595]: Pilotplätze sind begrenzt und werden persönlich abgestimmt.
+          - complementary "Vorschau des PMS-Dashboards" [ref=e596]:
+            - text: PMS
+            - generic [ref=e597]:
+              - generic [ref=e598]:
+                - generic [ref=e599]: Hotelbetrieb heute
+                - strong [ref=e600]: Front Office Übersicht
+              - emphasis [ref=e601]: Pilot
+            - generic [ref=e602]:
+              - generic [ref=e603]:
+                - generic [ref=e604]: Anreisen
+                - strong [ref=e605]: "14"
+                - generic [ref=e606]: heute
+              - generic [ref=e607]:
+                - generic [ref=e608]: Auslastung
+                - strong [ref=e609]: 82%
+                - generic [ref=e610]: 41 / 50
+              - generic [ref=e611]:
+                - generic [ref=e612]: Reinigung
+                - strong [ref=e613]: "7"
+                - generic [ref=e614]: offen
+            - generic [ref=e615]:
+              - generic [ref=e616]:
+                - strong [ref=e617]: "204"
+                - generic [ref=e618]: M. Keller · 2 Nächte
+                - emphasis [ref=e619]: Eingecheckt
+              - generic [ref=e620]:
+                - strong [ref=e621]: "305"
+                - generic [ref=e622]: Abreise 11:00
+                - emphasis [ref=e623]: Reinigung
+              - generic [ref=e624]:
+                - strong [ref=e625]: "418"
+                - generic [ref=e626]: Anreise 15:00
+                - emphasis [ref=e627]: Bereit
+            - generic [ref=e628]:
+              - generic [ref=e629]: Einführungspreis
+              - strong [ref=e630]: CHF 249
+              - generic [ref=e631]: pro Hotel / Monat, exkl. MwSt.
+      - generic [ref=e632]:
+        - generic [ref=e633]:
+          - generic [ref=e634]: Start
+          - heading "So starten Sie mit Chrono." [level=2] [ref=e635]
+          - paragraph [ref=e636]: Transparent von der Anfrage bis zum eingerichteten Zugang.
+        - generic [ref=e637]:
+          - article [ref=e638]:
+            - generic [ref=e639]: "01"
+            - heading "Bedarf konfigurieren" [level=3] [ref=e641]
+            - paragraph [ref=e642]: Teamgrösse und gewünschte Bereiche auswählen. Noch entsteht kein automatischer Account.
+          - article [ref=e643]:
+            - generic [ref=e644]: "02"
+            - heading "Zugang persönlich einrichten" [level=3] [ref=e646]
+            - paragraph [ref=e647]: Wir prüfen die Angaben, klären Rückfragen und stellen das passende Setup bereit.
+          - article [ref=e648]:
+            - generic [ref=e649]: "03"
+            - heading "Mit dem Team starten" [level=3] [ref=e651]
+            - paragraph [ref=e652]: Nach der Freischaltung Zeit erfassen, Abwesenheiten freigeben und Daten weiterverwenden.
+      - generic [ref=e655]:
+        - generic [ref=e656]:
+          - generic [ref=e657]: Aufwand sichtbar machen
+          - heading "Was kostet Ihre heutige Administration?" [level=2] [ref=e658]
+          - paragraph [ref=e659]: Vergleichen Sie Ihren geschätzten monatlichen Verwaltungsaufwand mit dem Chrono-Basispaket.
+          - generic [ref=e660]:
+            - generic [ref=e661]:
+              - generic [ref=e662]: Mitarbeitende
+              - spinbutton "Mitarbeitende" [ref=e663]: "10"
+            - generic [ref=e664]:
+              - generic [ref=e665]: Admin-Minuten pro Person/Woche
+              - spinbutton "Admin-Minuten pro Person/Woche" [ref=e666]: "30"
+            - generic [ref=e667]:
+              - generic [ref=e668]: Interner Stundensatz (CHF)
+              - spinbutton "Interner Stundensatz (CHF)" [ref=e669]: "60"
+        - complementary [ref=e670]:
+          - generic [ref=e671]:
+            - generic [ref=e672]: Geschätzter heutiger Aufwand
+            - strong [ref=e673]: CHF 1'299
+            - emphasis [ref=e674]: 21.6 Std./Monat
+          - generic [ref=e675]:
+            - generic [ref=e676]: Chrono Basis ab
+            - strong [ref=e677]: CHF 50
+            - emphasis [ref=e678]: pro Monat
+          - generic [ref=e679]:
+            - generic [ref=e680]: Rechnerische Differenz
+            - strong [ref=e681]: CHF 1'249
+          - paragraph [ref=e682]: Orientierungswert, keine Einspargarantie. Zusatzmodule und Einführungsaufwand sind nicht berücksichtigt.
+      - generic [ref=e684]:
+        - generic [ref=e685]:
+          - generic [ref=e686]: Preise
+          - heading "Modular ab 5 CHF pro Mitarbeitendem." [level=2] [ref=e687]
+          - paragraph [ref=e688]: Sie zahlen nur für die Bereiche, die Ihr Unternehmen wirklich braucht. Weitere Module für Urlaub, Lohn, CRM oder Supply Chain lassen sich später ergänzen.
+          - link "Preise ansehen & Konfiguration starten" [ref=e689] [cursor=pointer]:
+            - /url: /register
+        - complementary [ref=e690]:
+          - text: Startpaket
+          - emphasis [ref=e691]: Beliebter Einstieg
+          - strong [ref=e692]: ab 5 CHF
+          - paragraph [ref=e693]: pro Mitarbeitendem / Monat
+          - generic [ref=e694]: Ideal für kleine Teams, monatlich skalierbar.
+          - list [ref=e695]:
+            - listitem [ref=e696]: Zeiterfassung
+            - listitem [ref=e697]: Urlaub
+            - listitem [ref=e698]: Projekte
+            - listitem [ref=e699]: Lohn optional
+            - listitem [ref=e700]: CRM / Supply Chain optional
+            - listitem [ref=e701]: Hotelmanagement (PMS) optional
+          - link "Konfiguration starten" [ref=e702] [cursor=pointer]:
+            - /url: /register
+      - region [ref=e703]:
+        - generic [ref=e704]:
+          - generic [ref=e705]:
+            - generic [ref=e706]: Chrono-Logisch
+            - heading "Kurz erklärt." [level=2] [ref=e707]
+            - paragraph [ref=e708]: Die wichtigsten Begriffe rund um Chrono-Logisch und den fokussierten Einstieg.
+          - generic [ref=e709]:
+            - article [ref=e710]:
+              - heading "Was ist Chrono-Logisch?" [level=3] [ref=e711]
+              - paragraph [ref=e712]: Chrono-Logisch ist eine Schweizer Unternehmensplattform für Arbeitszeit, Abwesenheiten und Lohnvorbereitung. Weitere Bereiche werden modular nach Bedarf ergänzt.
+            - article [ref=e713]:
+              - heading "Wird Chrono-Logisch auch \"Chrono logisch\" geschrieben?" [level=3] [ref=e714]
+              - paragraph [ref=e715]: Ja. Viele suchen nach "Chrono logisch" oder "chrono logisch". Die offizielle Schreibweise ist Chrono-Logisch.
+      - region [ref=e716]:
+        - generic [ref=e717]:
+          - generic [ref=e718]:
+            - generic [ref=e719]: Demo & Kontakt
+            - heading "Lassen Sie uns über Ihr Unternehmen sprechen." [level=2] [ref=e720]
+            - paragraph [ref=e721]: Sie möchten Chrono zuerst sehen oder haben Fragen zur Einführung, Migration oder Lohnabrechnung in CH/DE? Schreiben Sie uns - wir melden uns in der Regel noch am selben Werktag.
+            - generic [ref=e722]:
+              - button "Interaktive Demo starten" [ref=e723] [cursor=pointer]
+              - link "siefertchristopher@chrono-logisch.ch" [ref=e724] [cursor=pointer]:
+                - /url: mailto:siefertchristopher@chrono-logisch.ch
+              - link "+41 76 546 79 60" [ref=e725] [cursor=pointer]:
+                - /url: tel:+41765467960
+            - list "Kontakt Vorteile" [ref=e726]:
+              - listitem [ref=e727]: Antwort meist am selben Werktag
+              - listitem [ref=e728]: Live-Demo mit echtem Workflow
+              - listitem [ref=e729]: Fokus auf Teams in CH & DE
+          - generic [ref=e730]:
+            - generic [ref=e731]:
+              - generic [ref=e732]:
+                - generic [ref=e733]: Name
+                - textbox "Name" [ref=e734]
+              - generic [ref=e735]:
+                - generic [ref=e736]: E-Mail
+                - textbox "E-Mail" [ref=e737]
+            - generic [ref=e738]:
+              - generic [ref=e739]: Nachricht
+              - textbox "Nachricht" [ref=e740]:
+                - /placeholder: Wie können wir helfen?
+            - generic [ref=e741]:
+              - button "Nachricht senden" [ref=e742] [cursor=pointer]
+              - generic [ref=e743]: Antwort meist am selben Werktag.
+    - contentinfo [ref=e744]:
+      - generic [ref=e745]:
+        - img "Chrono" [ref=e746]
+        - navigation "Footer Navigation" [ref=e747]:
+          - link "Über Chrono-Logisch" [ref=e748] [cursor=pointer]:
+            - /url: /ueber-chrono-logisch
+          - link "Impressum" [ref=e749] [cursor=pointer]:
+            - /url: /impressum
+          - link "Datenschutz" [ref=e750] [cursor=pointer]:
+            - /url: /datenschutz
+          - link "AGB" [ref=e751] [cursor=pointer]:
+            - /url: /agb
+        - generic "Social Media" [ref=e752]:
+          - link "Christopher Siefert auf LinkedIn" [ref=e753] [cursor=pointer]:
+            - /url: https://www.linkedin.com/in/christopher-siefert-20903b377/
+            - generic [ref=e756]: LinkedIn
+          - link "Chrono auf Instagram" [ref=e757] [cursor=pointer]:
+            - /url: https://www.instagram.com/itschronologisch/
+            - generic [ref=e760]: Instagram
+        - generic [ref=e761]: © 2026
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

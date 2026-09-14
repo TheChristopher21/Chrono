@@ -28,6 +28,81 @@ const user = {
 };
 
 describe('workspaceRoutes', () => {
+    const superadmin = { ...user, roles: ['ROLE_SUPERADMIN'] };
+
+    it('keeps new and classic dashboard areas in separate workspace tabs', () => {
+        const classic = resolveWorkspaceRoute('/admin/dashboard?tab=time', superadmin);
+        const workspace = resolveWorkspaceRoute('/admin/dashboard-neu?tab=time', superadmin);
+        expect(classic.instanceKey).toBe('adminDashboard:time');
+        expect(workspace).toMatchObject({ pageKey: 'adminDashboardWorkspace', instanceKey: 'adminDashboardWorkspace:time', title: 'Neues Dashboard · Zeitprüfung' });
+        const merged = mergeWorkspaceStates(
+            { tabs: [{ ...classic, id: 'classic' }], activeTabId: 'classic' },
+            { tabs: [{ ...workspace, id: 'new' }], activeTabId: 'new' },
+        );
+        expect(merged.tabs).toHaveLength(2);
+        expect(merged.activeTabId).toBe('new');
+    });
+
+    it('keeps employee identities separate and excludes both profiles from persistence', () => {
+        const classic = resolveWorkspaceRoute('/admin/dashboard/mitarbeiter/mirjam', superadmin);
+        const workspace = resolveWorkspaceRoute('/admin/dashboard-neu/mitarbeiter/mirjam', superadmin);
+        expect(classic).toMatchObject({ instanceKey: 'adminDashboard:employee:mirjam', persist: false });
+        expect(workspace).toMatchObject({ instanceKey: 'adminDashboardWorkspace:employee:mirjam', persist: false, title: 'Neues Dashboard · Mitarbeiter · mirjam' });
+    });
+
+    it('restores the new employee directory as its own labeled area without adding it to classic tabs', () => {
+        const route = resolveWorkspaceRoute('/admin/dashboard-neu?tab=employees', superadmin);
+        expect(route).toMatchObject({ instanceKey: 'adminDashboardWorkspace:employees', title: 'Neues Dashboard · Mitarbeitende', persist: true });
+        const payload = serializeWorkspacePreference({ activeTabId: 'people', tabs: [{ ...route, id: 'people', pinned: true }] });
+        expect(payload.tabs[0].params).toEqual({ tab: 'employees', experience: 'workspace' });
+        expect(deserializeWorkspacePreference(payload, superadmin).tabs[0]).toMatchObject({
+            url: '/admin/dashboard-neu?tab=employees', instanceKey: route.instanceKey, pinned: true,
+        });
+        expect(deserializeWorkspacePreference({ tabs: [{ id: 'classic', viewKey: 'adminDashboard', params: { tab: 'employees' } }] }, superadmin).tabs[0].url).toBe('/admin/dashboard');
+    });
+
+    it('exposes the new launcher only to superadmins and rejects forged grants in direct links', () => {
+        expect(getWorkspaceLaunchItems(superadmin)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ pageKey: 'adminDashboardWorkspace', label: 'Neues Dashboard', url: '/admin/dashboard-neu' }),
+        ]));
+        const restricted = { ...user, pagePermissions: { ...user.pagePermissions, adminDashboardWorkspace: 'MANAGE' } };
+        expect(getWorkspaceLaunchItems(restricted).some(item => item.pageKey === 'adminDashboardWorkspace')).toBe(false);
+        expect(resolveWorkspaceRoute('/admin/dashboard-neu', restricted)).toBeNull();
+        expect(resolveWorkspaceRoute('/admin/dashboard-neu/mitarbeiter/mirjam', restricted)).toBeNull();
+    });
+
+    it('roundtrips the new experience through the existing server view key without changing classic tabs', () => {
+        const source = { activeTabId: 'new', tabs: [
+            { ...resolveWorkspaceRoute('/admin/dashboard?tab=calendar', superadmin), id: 'classic', pinned: false },
+            { ...resolveWorkspaceRoute('/admin/dashboard-neu?tab=time', superadmin), id: 'new', pinned: true },
+        ] };
+        const payload = serializeWorkspacePreference(source);
+        expect(payload).toEqual({ activeTabId: 'new', tabs: [
+            { id: 'classic', viewKey: 'adminDashboard', params: { tab: 'calendar' }, pinned: false },
+            { id: 'new', viewKey: 'adminDashboard', params: { tab: 'time', experience: 'workspace' }, pinned: true },
+        ] });
+        const restored = deserializeWorkspacePreference(payload, superadmin);
+        expect(restored.tabs.map(tab => tab.url)).toEqual(['/admin/dashboard?tab=calendar', '/admin/dashboard-neu?tab=time']);
+        expect(restored.activeTabId).toBe('new');
+        expect(deserializeWorkspacePreference(serializeWorkspacePreference({ tabs: [
+            { ...resolveWorkspaceRoute('/admin/dashboard-neu', superadmin), id: 'home', pinned: false },
+        ] }), superadmin).tabs[0].url).toBe('/admin/dashboard-neu');
+    });
+
+    it('removes new dashboard tabs from local and remote restoration when the superadmin role is lost', () => {
+        const source = { activeTabId: 'new', tabs: [
+            { ...resolveWorkspaceRoute('/admin/dashboard', superadmin), id: 'classic', pinned: false },
+            { ...resolveWorkspaceRoute('/admin/dashboard-neu', superadmin), id: 'new', pinned: true },
+        ] };
+        const restricted = { ...user, pagePermissions: { ...user.pagePermissions, adminDashboardWorkspace: 'MANAGE' } };
+        const local = sanitizeStoredWorkspace(serializeWorkspace(source), restricted);
+        const remote = deserializeWorkspacePreference(serializeWorkspacePreference(source), restricted);
+        for (const restored of [local, remote]) {
+            expect(restored.tabs.map(tab => tab.id)).toEqual(['classic']);
+            expect(restored.activeTabId).toBe('classic');
+        }
+    });
+
     it('resolves admin and PMS subareas to stable tab descriptors', () => {
         expect(resolveWorkspaceRoute('/admin/dashboard?tab=time', user)?.title).toContain('Zeitprüfung');
         expect(resolveWorkspaceRoute('/admin/dashboard?tab=time', user)?.instanceKey).toBe('adminDashboard:time');

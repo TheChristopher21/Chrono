@@ -333,6 +333,160 @@
   max-width: 800px;
 }
 
+/* The date picker uses compact cells; overview cells have room for absence details. */
+.vacation-calendar-admin.scoped-vacation .vacation-entry-overlay {
+  z-index: 10000;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-modal {
+  width: min(100%, 800px);
+  padding: clamp(1rem, 2vw, 1.75rem);
+  box-sizing: border-box;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-modal h3 {
+  margin-bottom: 0.65rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-hint {
+  color: var(--c-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-range-calendar .react-calendar__tile {
+  min-height: 0;
+  height: 42px;
+  padding: 0.4rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-range-calendar .react-calendar__navigation button {
+  padding: 0.25rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-range-calendar .react-calendar__navigation__label {
+  white-space: nowrap;
+  font-size: clamp(0.85rem, 2vw, 1.05rem);
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-range-calendar .vacation-day-saved {
+  box-shadow: inset 0 -4px #22a06b;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-range-calendar .vacation-day-queued {
+  box-shadow: inset 0 -4px #d89a16;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.6rem 0 1rem;
+  color: var(--c-muted);
+  font-size: 0.78rem;
+}
+
+.vacation-calendar-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 3px;
+  margin-right: 0.4rem;
+}
+.vacation-legend-saved::before { background: #22a06b; }
+.vacation-legend-queued::before { background: #d89a16; }
+
+.vacation-calendar-admin.scoped-vacation .vacation-date-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-save-status {
+  color: var(--c-text);
+  background: color-mix(in srgb, #22a06b 14%, var(--c-card));
+  border: 1px solid color-mix(in srgb, #22a06b 60%, var(--c-border));
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-add-period {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px dashed var(--c-pri);
+  border-radius: 8px;
+  color: var(--c-text);
+  background: var(--c-surface);
+  cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-period-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-period-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  font-size: 0.85rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-period-list small {
+  display: block;
+  color: var(--c-muted);
+  margin-top: 0.2rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-period-list button {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  color: var(--c-text);
+  background: var(--c-card);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-modal .modal-buttons {
+  position: sticky;
+  bottom: -1px;
+  background: var(--c-card);
+  border-top: 1px solid var(--c-line);
+  padding-top: 0.85rem;
+  padding-bottom: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 1;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-entry-fields:disabled { opacity: 0.75; }
+.vacation-calendar-admin.scoped-vacation .vacation-add-period:disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .vacation-calendar-admin.scoped-vacation .vacation-date-inputs { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
 .vacation-calendar-admin.scoped-vacation .modal-content h3 {
   margin: 0 0 1.8rem; /* Mehr Abstand nach unten */
   font-size: clamp(1.1rem, 4vw, 1.35rem); /* Responsive Schriftgröße */

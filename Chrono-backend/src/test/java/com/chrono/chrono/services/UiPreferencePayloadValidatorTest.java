@@ -86,6 +86,44 @@ class UiPreferencePayloadValidatorTest {
         assertEquals(payload, assertDoesNotThrow(() -> objectMapper.readTree(serialized)));
     }
 
+    @Test
+    void roundTripsClassicAndWorkspaceAdminLayoutsWithoutMixingTheirPreferences() {
+        ObjectNode payload = dashboardPayload("overview");
+        ObjectNode layouts = (ObjectNode) payload.path("layouts");
+        for (String scope : new String[]{"time", "requests", "calendar", "modules",
+                "workspace-time", "workspace-requests", "workspace-calendar", "workspace-modules"}) {
+            ObjectNode layout = (ObjectNode) dashboardPayload(scope).path("layouts").path(scope);
+            ((ObjectNode) layout.path("widgets").path(0))
+                    .put("visible", !scope.startsWith("workspace-"))
+                    .put("size", scope.startsWith("workspace-") ? "full" : "M");
+            layouts.set(scope, layout);
+        }
+
+        String serialized = validator.validateAndSerialize(
+                UserUiPreferenceArea.TIME_ADMIN_DASHBOARD, "ADMIN", payload);
+
+        assertEquals(9, payload.path("layouts").size());
+        assertEquals(payload, validator.deserializeAndValidate(
+                UserUiPreferenceArea.TIME_ADMIN_DASHBOARD, "ADMIN", serialized));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"workspace-time", "workspace-requests", "workspace-calendar", "workspace-modules"})
+    void workspaceAdminScopesDoNotExpandUserOrPmsDashboardScopes(String scope) {
+        ObjectNode payload = dashboardPayload(scope);
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.TIME_USER_DASHBOARD, "USER_STANDARD", payload));
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.PMS_DASHBOARD, "property:42", payload));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"workspace", "workspace-overview", "workspace-settings", "workspace-time-extra"})
+    void workspaceScopesRemainAnExactAllowlist(String scope) {
+        assertThrows(IllegalArgumentException.class, () -> validator.validateAndSerialize(
+                UserUiPreferenceArea.TIME_ADMIN_DASHBOARD, "ADMIN", dashboardPayload(scope)));
+    }
+
     @ParameterizedTest
     @CsvSource({"0,0,12,24", "11,199,1,1", "3,176,9,24"})
     void pmsGridRoundTripsBoundaryPositionsWithoutNormalization(int x, int y, int w, int h) {

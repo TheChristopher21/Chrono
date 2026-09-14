@@ -116,6 +116,45 @@ class PmsLiveConnectionPoolIntegrationTest {
     }
 
     @Test
+    void replacingTheSameBrowserStreamAtTheConnectionLimitClosesTheOldResponse() throws Exception {
+        String token = jwt.generateToken(User.withUsername("reconnect-staff").password("unused").roles("USER").build());
+        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+        List<InputStream> streams = new ArrayList<>();
+        try {
+            BufferedReader replaced = null;
+            for (int index = 0; index < 12; index++) {
+                HttpResponse<InputStream> response = client.send(request("/api/pms/properties/9/live?clientId=browser-" + index, token),
+                        HttpResponse.BodyHandlers.ofInputStream());
+                streams.add(response.body());
+                assertThat(response.statusCode()).isEqualTo(200);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+                assertThat(reader.readLine()).isEqualTo("event:ready");
+                if (index == 0) replaced = reader;
+            }
+            for (int reconnect = 0; reconnect < 15; reconnect++) {
+                HttpResponse<InputStream> response = client.send(request("/api/pms/properties/9/live?clientId=browser-0", token),
+                        HttpResponse.BodyHandlers.ofInputStream());
+                streams.add(response.body());
+                assertThat(response.statusCode()).isEqualTo(200);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+                assertThat(reader.readLine()).isEqualTo("event:ready");
+                // Fully consume the old response: replacement completes it promptly,
+                // rather than waiting fifteen seconds for a heartbeat/socket failure.
+                assertThat(replaced.lines().toList()).contains("data:{}");
+                replaced = reader;
+            }
+            HttpResponse<String> limited = client.send(request("/api/pms/properties/9/live?clientId=thirteenth-browser", token),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(limited.statusCode()).isEqualTo(429);
+            assertThat(limited.headers().firstValue("Retry-After")).contains("15");
+            await().atMost(Duration.ofSeconds(3)).untilAsserted(() ->
+                    assertThat(dataSource.getHikariPoolMXBean().getActiveConnections()).isZero());
+        } finally {
+            for (InputStream stream : streams) stream.close();
+        }
+    }
+
+    @Test
     void frameworkControlConfirmsNontransactionalReadRetainsItsConnectionUntilAsyncCompletion() {
         OpenEntityManagerInViewInterceptor original = new OpenEntityManagerInViewInterceptor();
         original.setEntityManagerFactory(factory);
@@ -139,7 +178,7 @@ class PmsLiveConnectionPoolIntegrationTest {
     private HttpRequest request(String path, String token) {
         var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                 .timeout(Duration.ofSeconds(5)).header("Authorization", "Bearer " + token);
-        if (path.endsWith("/live")) request.header("Accept", "text/event-stream");
+        if (path.contains("/live")) request.header("Accept", "text/event-stream");
         return request.GET().build();
     }
 
@@ -160,12 +199,16 @@ class PmsLiveConnectionPoolIntegrationTest {
             CustomUserDetailsService users = mock(CustomUserDetailsService.class);
             when(users.loadUserByUsername("pool-staff")).thenReturn(
                     User.withUsername("pool-staff").password("unused").roles("USER").build());
+            when(users.loadUserByUsername("reconnect-staff")).thenReturn(
+                    User.withUsername("reconnect-staff").password("unused").roles("USER").build());
             return users;
         }
         @Bean PmsPropertyAccessService access(Probe probe) {
             PmsPropertyAccessService access = mock(PmsPropertyAccessService.class);
             when(access.access("pool-staff")).thenReturn(new PmsPropertyAccessService.Access(
                     1L, 4L, false, Map.of(9L, Map.of("HOUSEKEEPING", "VIEW"))));
+            when(access.access("reconnect-staff")).thenReturn(new PmsPropertyAccessService.Access(
+                    2L, 4L, false, Map.of(9L, Map.of("HOUSEKEEPING", "VIEW"))));
             doAnswer(call -> { probe.query(); return null; }).when(access).require(any(), eq(9L), isNull(), eq(false));
             return access;
         }

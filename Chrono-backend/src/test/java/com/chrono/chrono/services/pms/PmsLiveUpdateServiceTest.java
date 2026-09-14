@@ -41,4 +41,53 @@ class PmsLiveUpdateServiceTest {
         doNothing().when(access).require(actor, 9L, null, false);
         assertThatCode(() -> live.subscribe("staff", 9L, Instant.now().plusSeconds(60))).doesNotThrowAnyException();
     }
+    @Test void rapidReconnectsReplaceOnlyTheSameBrowsersHotelStreamWithoutRaisingTheQuota() {
+        Instant expiry = Instant.now().plusSeconds(120);
+        for (int browser = 0; browser < 12; browser++) live.subscribe("staff", 9L, expiry, "browser-" + browser);
+        for (int reconnect = 0; reconnect < 30; reconnect++) {
+            assertThatCode(() -> live.subscribe("staff", 9L, expiry, "browser-0")).doesNotThrowAnyException();
+        }
+        assertThatThrownBy(() -> live.subscribe("staff", 9L, expiry, "new-browser"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+        // Reusing a client ID on a different property cannot evict another property's stream.
+        assertThatThrownBy(() -> live.subscribe("staff", 8L, expiry, "browser-0"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+    }
+    @Test void anUnauthorizedReconnectCannotCloseTheExistingConnection() {
+        Instant expiry = Instant.now().plusSeconds(120);
+        for (int browser = 0; browser < 12; browser++) live.subscribe("staff", 9L, expiry, "browser-" + browser);
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN)).when(access).require(actor, 9L, null, false);
+        assertThatThrownBy(() -> live.subscribe("staff", 9L, expiry, "browser-0"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        doNothing().when(access).require(actor, 9L, null, false);
+        assertThatThrownBy(() -> live.subscribe("staff", 9L, expiry, "new-browser"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+    }
+    @Test void anotherUserCannotReplaceTheOriginalUsersConnectionWithTheSameClientId() {
+        Instant expiry = Instant.now().plusSeconds(120);
+        for (int browser = 0; browser < 12; browser++) live.subscribe("staff", 9L, expiry, "browser-" + browser);
+        when(access.access("other-staff")).thenReturn(actor);
+        assertThatCode(() -> live.subscribe("other-staff", 9L, expiry, "browser-0")).doesNotThrowAnyException();
+        assertThatThrownBy(() -> live.subscribe("staff", 9L, expiry, "new-browser"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+    }
+    @Test void releasesRotatedStreamsEvenIfTheServletHasNotReportedCompletion() {
+        for (int browser = 0; browser < 12; browser++) live.subscribe("staff", 9L, Instant.now().plusSeconds(3600));
+        live.poll(Instant.now().plusSeconds(301));
+        assertThatCode(() -> live.subscribe("staff", 9L, Instant.now().plusSeconds(60))).doesNotThrowAnyException();
+    }
+    @Test void rejectsMalformedClientIds() {
+        assertThatThrownBy(() -> live.subscribe("staff", 9L, Instant.now().plusSeconds(60), "x".repeat(81)))
+                .isInstanceOfSatisfying(ResponseStatusException.class, error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+    @Test void aRecycledServletResponseCannotBlockReplacementOrShutdownOfOtherStreams() {
+        try (var emitters = mockConstruction(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.class,
+                (emitter, context) -> doThrow(new IllegalStateException("Response already recycled")).when(emitter).complete())) {
+            live.subscribe("staff", 9L, Instant.now().plusSeconds(60), "browser-0");
+            assertThatCode(() -> live.subscribe("staff", 9L, Instant.now().plusSeconds(60), "browser-0")).doesNotThrowAnyException();
+            live.subscribe("staff", 9L, Instant.now().plusSeconds(60), "browser-1");
+            assertThatCode(live::stop).doesNotThrowAnyException();
+            emitters.constructed().forEach(emitter -> verify(emitter).complete());
+        }
+    }
 }

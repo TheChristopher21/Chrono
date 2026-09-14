@@ -1,12 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import {
     ACCESS_MANAGE,
+    ACCESS_NONE,
     ACCESS_VIEW,
+    buildDefaultPagePermissions,
+    getDashboardPagesForContext,
     getDefaultLandingPage,
+    getPermissionSectionsForRole,
     getRouteForPage,
     hasFeatureAccess,
+    hasPageAccess,
     hasProjectsFeature,
+    normalizePagePermissionsForRole,
 } from '../pageAccess.js';
+
+describe('superadmin dashboard access', () => {
+    it.each(['ROLE_ADMIN', 'ROLE_USER', 'ROLE_PAYROLL_ADMIN'])('does not allow %s page grants to bypass the superadmin role', (role) => {
+        const user = { roles: [role], pagePermissions: { adminDashboardWorkspace: ACCESS_MANAGE } };
+        expect(hasPageAccess(user, 'adminDashboardWorkspace', ACCESS_VIEW)).toBe(false);
+        expect(hasPageAccess(user, 'adminDashboardWorkspace', ACCESS_MANAGE)).toBe(false);
+        expect(getDashboardPagesForContext(user, 'admin').some(page => page.key === 'adminDashboardWorkspace')).toBe(false);
+        expect(buildDefaultPagePermissions(role).adminDashboardWorkspace).toBe(ACCESS_NONE);
+        expect(normalizePagePermissionsForRole(role, [], user.pagePermissions).adminDashboardWorkspace).toBe(ACCESS_NONE);
+        expect(getPermissionSectionsForRole(role).flatMap(section => section.pages).some(page => page.key === 'adminDashboardWorkspace')).toBe(false);
+    });
+
+    it('grants a superadmin access without requiring a new server permission', () => {
+        const user = { roles: ['ROLE_SUPERADMIN'], pagePermissions: { adminDashboardWorkspace: ACCESS_NONE } };
+        expect(hasPageAccess(user, 'adminDashboardWorkspace', ACCESS_MANAGE)).toBe(true);
+        expect(getDashboardPagesForContext(user, 'admin')).toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'adminDashboardWorkspace', path: '/admin/dashboard-neu', label: 'Neues Dashboard' }),
+        ]));
+        expect(getRouteForPage('adminDashboard')).toBe('/admin/dashboard');
+    });
+});
 
 describe('hasProjectsFeature', () => {
     it('accepts the legacy customer-tracking flag during a rolling deployment', () => {

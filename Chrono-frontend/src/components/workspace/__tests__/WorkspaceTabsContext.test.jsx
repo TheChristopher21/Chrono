@@ -128,6 +128,7 @@ describe('WorkspaceTabsProvider', () => {
         };
         apiMock.get
             .mockResolvedValueOnce({ data: { schemaVersion: 1, revision: 1, payload: initialPayload } })
+            .mockResolvedValueOnce({ data: { schemaVersion: 1, revision: 1, payload: initialPayload } })
             .mockResolvedValueOnce({ data: { schemaVersion: 1, revision: 2, payload: concurrentPayload } });
         apiMock.put
             .mockRejectedValueOnce({ response: { status: 409 } })
@@ -149,6 +150,48 @@ describe('WorkspaceTabsProvider', () => {
             params: { tab: 'requests' },
             pinned: true,
         });
+        const localTabs = JSON.parse(window.sessionStorage.getItem('chrono.workspaceTabs.v2.23:7')).tabs;
+        expect(localTabs.find((tab) => tab.id === 'requests')).toMatchObject({ pinned: true });
+    });
+
+    it('refreshes a changed server revision before saving and retains merged tabs on later edits', async () => {
+        let serverPreference = {
+            schemaVersion: 1,
+            revision: 1,
+            payload: { tabs: [{ id: 'dashboard', viewKey: 'dashboard', pinned: false }], activeTabId: 'dashboard' },
+        };
+        apiMock.get.mockImplementation(() => Promise.resolve({ data: serverPreference }));
+        apiMock.put.mockImplementation((_url, body) => {
+            expect(body.revision).toBe(serverPreference.revision);
+            serverPreference = { ...body, revision: body.revision + 1 };
+            return Promise.resolve({ data: serverPreference });
+        });
+
+        const user = userEvent.setup();
+        renderProvider('/dashboard');
+        await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(1));
+        serverPreference = {
+            ...serverPreference,
+            revision: 2,
+            payload: {
+                tabs: [
+                    ...serverPreference.payload.tabs,
+                    { id: 'requests', viewKey: 'adminDashboard', params: { tab: 'requests' }, pinned: true },
+                ],
+                activeTabId: 'requests',
+            },
+        };
+        await user.click(screen.getByRole('button', { name: 'Open time' }));
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1), { timeout: 2500 });
+        expect(apiMock.put.mock.calls[0][1].revision).toBe(2);
+        expect(readState().tabs.find((tab) => tab.id === 'requests')).toMatchObject({ pinned: true });
+
+        await user.click(screen.getByRole('button', { name: 'Open PMS' }));
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(2), { timeout: 2500 });
+        expect(serverPreference.payload.tabs.map((tab) => tab.viewKey)).toEqual(
+            expect.arrayContaining(['dashboard', 'adminDashboard', 'pms'])
+        );
+        expect(serverPreference.payload.tabs.find((tab) => tab.id === 'requests')).toMatchObject({ pinned: true });
     });
 
     it('reuses a saved tab and its filters while explicit duplication creates another identity', async () => {

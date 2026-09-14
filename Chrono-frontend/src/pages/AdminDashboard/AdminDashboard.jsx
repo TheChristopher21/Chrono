@@ -9,7 +9,10 @@ import api from '../../utils/api';
 import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess.js';
 import { getUserDisplayName } from '../../utils/userDisplay';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useWorkspaceTabs } from '../../components/workspace/WorkspaceTabsContext.jsx';
+import { useWorkspacePaneActive } from '../../components/workspace/WorkspacePaneContext.jsx';
+import { WORKSPACE_TAB_STATE_KEY } from '../../components/workspace/workspaceRoutes.js';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -21,6 +24,11 @@ import AdminDashboardKpis from './AdminDashboardKpis';
 import AdminDashboardOverview from './AdminDashboardOverview';
 import AdminVacationRequests from './AdminVacationRequests';
 import AdminCorrectionsList from './AdminCorrectionsList';
+import AdminWorkspaceOverview from './AdminWorkspaceOverview';
+import { AdminWorkspaceSidebar, AdminWorkspaceHeader } from './AdminWorkspaceChrome';
+import AdminWorkspaceEmployees from './AdminWorkspaceEmployees';
+import { groupWorkspaceCorrections, isWorkspacePending } from './adminWorkspaceData.js';
+import './AdminWorkspace.css';
 
 import {
     getMondayOfWeek,
@@ -38,6 +46,15 @@ import {
 const INBOX_FILTER_STORAGE_KEY = 'adminDashboard_inboxFilters_v1';
 const INBOX_VIEWS_STORAGE_KEY = 'adminDashboard_savedViews_v1';
 const DASHBOARD_TAB_KEYS = ['overview', 'time', 'requests', 'calendar', 'modules'];
+const getWorkspaceTeamKey = (user) => user?.departmentName?.trim() || '__unassigned__';
+const WORKSPACE_ACTION_STATE_KEY = 'adminDashboardAction';
+// Only presentation actions can travel between dashboard panes; never mutations.
+const WORKSPACE_ACTION_TABS = {
+    createVacation: 'calendar', openAbsence: 'calendar',
+    printOverview: 'time', focusNegativeBalances: 'time', focusPositiveBalances: 'time',
+    focusIssueType: 'time', focusUser: 'time', focusUserDate: 'time',
+    openVacations: 'requests', openCorrections: 'requests',
+};
 const ADMIN_DASHBOARD_REFRESH_SCOPES = [
     'time',
     'absence',
@@ -58,8 +75,8 @@ const DEFAULT_INBOX_FILTERS = {
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && !!window.localStorage;
 
-const getValidDashboardTab = (tabId) => (
-    DASHBOARD_TAB_KEYS.includes(tabId) ? tabId : 'overview'
+const getValidDashboardTab = (tabId, workspace = false) => (
+    DASHBOARD_TAB_KEYS.includes(tabId) || (workspace && tabId === 'employees') ? tabId : 'overview'
 );
 
 const extractIsoDate = (value) => {
@@ -180,11 +197,16 @@ const isLowRiskCorrection = (corr) => {
     return deltaMinutes <= 15 && withinWindow && singlePair && !corr.denied && !corr.approved;
 };
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ experience = 'classic' }) => {
+    const isWorkspace = experience === 'workspace';
+    const dashboardBasePath = isWorkspace ? '/admin/dashboard-neu' : '/admin/dashboard';
     const { currentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
+    const workspace = useWorkspaceTabs();
+    const paneActive = useWorkspacePaneActive();
     const [searchParams] = useSearchParams();
     const canManageAdminDashboard = hasPageAccess(currentUser, 'adminDashboard', ACCESS_MANAGE);
 
@@ -205,6 +227,30 @@ const AdminDashboard = () => {
     const [allSickLeaves, setAllSickLeaves] = useState([]);
     const [holidaysByCanton, setHolidaysByCanton] = useState({});
     const [isAdminPunching, setIsAdminPunching] = useState(false);
+    const [workspaceIssueRows, setWorkspaceIssueRows] = useState(null);
+    const [workspaceLoading, setWorkspaceLoading] = useState(isWorkspace);
+    const [workspaceLoadError, setWorkspaceLoadError] = useState('');
+    const workspaceRequestRef = useRef(null);
+    const workspaceDataReadyRef = useRef(false);
+    const workspaceCalendarRef = useRef(null);
+    const consumedWorkspaceActionRef = useRef(null);
+    const consumedWorkspaceFocusRef = useRef(null);
+    const [workspaceTargetsReady, setWorkspaceTargetsReady] = useState({ time: false, calendar: false });
+    const workspaceTeam = isWorkspace ? (searchParams.get('team') || '') : '';
+    const ensureDecisionAllowed = useCallback((throwOnError = false) => {
+        if (isWorkspace && (workspaceLoading || workspaceLoadError || !workspaceDataReadyRef.current)) {
+            const message = t('adminWorkspace.decisionsUnavailable', 'Freigaben sind erst nach dem vollständigen Laden der Daten möglich. Bitte erneut laden.');
+            notify(message, 'warning');
+            if (throwOnError) throw new Error(message);
+            return false;
+        }
+        if (!canManageAdminDashboard) {
+            notifyAdminDashboardReadOnly();
+            if (throwOnError) throw new Error('Dashboard is read-only');
+            return false;
+        }
+        return true;
+    }, [isWorkspace, workspaceLoading, workspaceLoadError, canManageAdminDashboard, notifyAdminDashboardReadOnly, notify, t]);
 
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [editModalVisible, setEditModalVisible] = useState(false);
@@ -248,11 +294,19 @@ const AdminDashboard = () => {
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
-    const [activeMainTab, setActiveMainTab] = useState(() => getValidDashboardTab(searchParams.get('tab')));
+    const [activeMainTab, setActiveMainTab] = useState(() => getValidDashboardTab(searchParams.get('tab'), isWorkspace));
     const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
     const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
     const weekSectionRef = useRef(null);
+    const attachWorkspaceWeek = useCallback((instance) => {
+        weekSectionRef.current = instance;
+        if (instance) setWorkspaceTargetsReady(previous => previous.time ? previous : { ...previous, time: true });
+    }, []);
+    const attachWorkspaceCalendar = useCallback((instance) => {
+        workspaceCalendarRef.current = instance;
+        if (instance) setWorkspaceTargetsReady(previous => previous.calendar ? previous : { ...previous, calendar: true });
+    }, []);
     const vacationSectionRef = useRef(null);
     const correctionSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
@@ -265,18 +319,21 @@ const AdminDashboard = () => {
     }, []);
 
     const navigateDashboard = useCallback((updates = {}, options = {}) => {
-        const search = makeDashboardSearch(searchParams, updates, { preserve: options.preserve });
+        const search = makeDashboardSearch(searchParams, {
+            ...(isWorkspace && workspaceTeam ? { team: workspaceTeam } : {}),
+            ...updates,
+        }, { preserve: options.preserve });
         navigate({
-            pathname: '/admin/dashboard',
+            pathname: dashboardBasePath,
             search: search ? `?${search}` : '',
         }, {
             replace: !!options.replace,
             state: options.state,
         });
-    }, [navigate, searchParams]);
+    }, [navigate, searchParams, dashboardBasePath, isWorkspace, workspaceTeam]);
 
     const openDashboardTab = useCallback((tabId, options = {}) => {
-        const normalizedTab = getValidDashboardTab(tabId);
+        const normalizedTab = getValidDashboardTab(tabId, isWorkspace);
         setActiveMainTab(normalizedTab);
         setActiveIssuePill(null);
         navigateDashboard({
@@ -286,25 +343,38 @@ const AdminDashboard = () => {
             focusDate: null,
             requestType: null,
             requestId: null,
+            ...(isWorkspace && workspaceTeam ? { team: workspaceTeam } : {}),
         }, options);
+    }, [navigateDashboard, isWorkspace, workspaceTeam]);
+
+    const navigateWorkspaceAction = useCallback((type, value, updates = {}) => {
+        const tab = WORKSPACE_ACTION_TABS[type];
+        if (!tab) return;
+        navigateDashboard({ tab, ...updates }, {
+            state: { [WORKSPACE_ACTION_STATE_KEY]: {
+                id: crypto.randomUUID(), type, value,
+            } },
+        });
     }, [navigateDashboard]);
 
     const handleNavigateToVacations = useCallback(() => {
+        if (isWorkspace) return navigateWorkspaceAction('openVacations');
         openDashboardTab('requests');
         setVacationOpenSignal((prev) => prev + 1);
         queueScrollTo(vacationSectionRef);
-    }, [openDashboardTab, queueScrollTo]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, queueScrollTo]);
 
     const handleNavigateToCorrections = useCallback(() => {
+        if (isWorkspace) return navigateWorkspaceAction('openCorrections');
         openDashboardTab('requests');
         setCorrectionOpenSignal((prev) => prev + 1);
         queueScrollTo(correctionSectionRef);
-    }, [openDashboardTab, queueScrollTo]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, queueScrollTo]);
 
     const handleOpenUserOverview = useCallback((username) => {
         if (!username) return;
-        navigate(`/admin/dashboard/mitarbeiter/${encodeURIComponent(username)}`);
-    }, [navigate]);
+        navigate(`${dashboardBasePath}/mitarbeiter/${encodeURIComponent(username)}`);
+    }, [navigate, dashboardBasePath]);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
@@ -398,8 +468,11 @@ const AdminDashboard = () => {
         return [...vacationItems, ...correctionItems].sort((a, b) => a.priority - b.priority);
     }, [allVacations, allCorrections, userMap]);
 
+    const belongsToActiveTeam = useCallback(item => !isWorkspace || !workspaceTeam
+        || getWorkspaceTeamKey(userMap.get(item.username)) === workspaceTeam, [isWorkspace, workspaceTeam, userMap]);
+
     const filteredInboxItems = useMemo(() => {
-        let list = [...inboxItems];
+        let list = inboxItems.filter(belongsToActiveTeam);
         const { status, types, user, department, lowRiskOnly } = inboxFilters;
         if (status && status !== 'all') {
             list = list.filter((item) => item.status === status);
@@ -430,7 +503,7 @@ const AdminDashboard = () => {
             });
         }
         return list;
-    }, [inboxItems, inboxFilters, inboxSearch]);
+    }, [inboxItems, inboxFilters, inboxSearch, belongsToActiveTeam]);
 
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [paletteQuery, setPaletteQuery] = useState('');
@@ -445,7 +518,8 @@ const AdminDashboard = () => {
     const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
     const [decisionDrafts, setDecisionDrafts] = useState({});
 
-    const lowRiskPending = useMemo(() => inboxItems.filter((item) => item.type === 'correction' && item.isLowRisk && item.status === 'pending'), [inboxItems]);
+    const lowRiskPending = useMemo(() => inboxItems.filter((item) => belongsToActiveTeam(item)
+        && item.type === 'correction' && item.isLowRisk && item.status === 'pending'), [inboxItems, belongsToActiveTeam]);
 
     useEffect(() => {
         setSelectedInboxIds((prev) => prev.filter((id) => filteredInboxItems.some((item) => item.id === id)));
@@ -703,10 +777,7 @@ const AdminDashboard = () => {
     }, [handleDenyVacation, handleDenyCorrection]);
 
     const handleBulkApproveSelection = useCallback(async () => {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+        if (!ensureDecisionAllowed()) return;
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
         await Promise.all(candidates.map((item) => approveItem(
@@ -715,13 +786,10 @@ const AdminDashboard = () => {
             { reload: false },
         )));
         clearSelection();
-    }, [approveItem, canManageAdminDashboard, clearSelection, decisionDrafts, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
+    }, [approveItem, ensureDecisionAllowed, clearSelection, decisionDrafts, filteredInboxItems, selectedInboxIds]);
 
     const handleBulkDenySelection = useCallback(async () => {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+        if (!ensureDecisionAllowed()) return;
         const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
         if (candidates.length === 0) return;
         await Promise.all(candidates.map((item) => denyItem(
@@ -730,13 +798,10 @@ const AdminDashboard = () => {
             { reload: false },
         )));
         clearSelection();
-    }, [canManageAdminDashboard, clearSelection, decisionDrafts, denyItem, filteredInboxItems, notifyAdminDashboardReadOnly, selectedInboxIds]);
+    }, [ensureDecisionAllowed, clearSelection, decisionDrafts, denyItem, filteredInboxItems, selectedInboxIds]);
 
     const handleAutoApproveLowRisk = useCallback(async () => {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+        if (!ensureDecisionAllowed()) return;
         const candidates = lowRiskPending.filter((item) => item.status === 'pending' && item.isLowRisk);
         if (candidates.length === 0) {
             notify(t('adminDashboard.actionStream.noLowRisk', 'Keine Low-Risk-Korrekturen gefunden.'), 'info');
@@ -756,7 +821,7 @@ const AdminDashboard = () => {
             }),
             'success',
         );
-    }, [approveItem, canManageAdminDashboard, clearSelection, decisionDrafts, lowRiskPending, notify, notifyAdminDashboardReadOnly, t]);
+    }, [approveItem, ensureDecisionAllowed, clearSelection, decisionDrafts, lowRiskPending, notify, t]);
 
     const commandList = useMemo(() => {
         const base = [
@@ -1014,6 +1079,7 @@ const AdminDashboard = () => {
     }, []);
 
     const handleFocusIssues = useCallback((filterKey) => {
+        if (isWorkspace) return navigateWorkspaceAction('focusIssueType', filterKey);
         openDashboardTab('time');
         setActiveIssuePill(filterKey);
         scheduleNextFrame(() => {
@@ -1021,7 +1087,7 @@ const AdminDashboard = () => {
                 weekSectionRef.current.focusIssueType(filterKey);
             }
         });
-    }, [openDashboardTab, scheduleNextFrame]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, scheduleNextFrame]);
 
     const handleResetIssueFilters = useCallback(() => {
         setActiveIssuePill(null);
@@ -1033,23 +1099,26 @@ const AdminDashboard = () => {
     }, [handleFocusIssues]);
 
     const handleFocusNegativeBalances = useCallback(() => {
+        if (isWorkspace) return navigateWorkspaceAction('focusNegativeBalances');
         openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusNegativeBalances?.();
         });
-    }, [openDashboardTab, scheduleNextFrame]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, scheduleNextFrame]);
 
     const handleFocusPositiveBalances = useCallback(() => {
+        if (isWorkspace) return navigateWorkspaceAction('focusPositiveBalances');
         openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusPositiveBalances?.();
         });
-    }, [openDashboardTab, scheduleNextFrame]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, scheduleNextFrame]);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
+        if (isWorkspace) return navigateWorkspaceAction('focusUser', username);
         openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
@@ -1147,7 +1216,7 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         const params = new URLSearchParams(dashboardSearchKey);
-        const nextTab = getValidDashboardTab(params.get('tab'));
+        const nextTab = getValidDashboardTab(params.get('tab'), isWorkspace);
         setActiveMainTab(prev => (prev === nextTab ? prev : nextTab));
 
         const weekIso = extractIsoDate(params.get('week'));
@@ -1160,10 +1229,10 @@ const AdminDashboard = () => {
                 ));
             }
         }
-    }, [dashboardSearchKey]);
+    }, [dashboardSearchKey, isWorkspace]);
 
     useEffect(() => {
-        if (activeMainTab !== 'time' || !timeFocusTarget?.username) return undefined;
+        if (isWorkspace || activeMainTab !== 'time' || !timeFocusTarget?.username) return undefined;
 
         let cancelled = false;
         const runFocus = () => {
@@ -1183,6 +1252,7 @@ const AdminDashboard = () => {
             window.clearTimeout(timeoutId);
         };
     }, [
+        isWorkspace,
         activeMainTab,
         timeFocusTarget,
         selectedMonday,
@@ -1191,20 +1261,13 @@ const AdminDashboard = () => {
         scheduleNextFrame,
     ]);
 
-    const dashboardTabs = useMemo(() => ([
-        { id: 'overview', label: t('adminDashboard.tabs.overview', 'Übersicht') },
-        { id: 'time', label: t('adminDashboard.tabs.timeReview', 'Zeitprüfung') },
-        { id: 'requests', label: t('adminDashboard.tabs.requests', 'Anträge'), count: inboxItems.filter(item => item.status === 'pending').length },
-        { id: 'calendar', label: t('adminDashboard.tabs.calendar', 'Kalender') },
-        { id: 'modules', label: t('adminDashboard.tabs.modules', 'Module') },
-    ]), [inboxItems, t]);
-
     const handlePrintTimesFromHeader = useCallback(() => {
+        if (isWorkspace) return navigateWorkspaceAction('printOverview');
         openDashboardTab('time');
         scheduleNextFrame(() => {
             weekSectionRef.current?.printOverview?.();
         });
-    }, [openDashboardTab, scheduleNextFrame]);
+    }, [isWorkspace, navigateWorkspaceAction, openDashboardTab, scheduleNextFrame]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -1317,6 +1380,34 @@ const AdminDashboard = () => {
     }, [selectedMonday, currentUser, users, t, holidaysByCanton]);
 
     const handleDataReloadNeeded = useCallback(async () => {
+        if (isWorkspace) {
+            workspaceRequestRef.current?.abort();
+            const controller = new AbortController();
+            workspaceRequestRef.current = controller;
+            workspaceDataReadyRef.current = false;
+            setWorkspaceLoading(true);
+            const resources = [
+                ['/api/admin/timetracking/all-summaries', setDailySummaries],
+                ['/api/vacation/all', setAllVacations],
+                ['/api/correction/all', setAllCorrections],
+                ['/api/sick-leave/company', setAllSickLeaves],
+                ['/api/admin/timetracking/admin/tracking-balances', setWeeklyBalances],
+                ['/api/admin/users', setUsers],
+            ];
+            const results = await Promise.allSettled(resources.map(([url]) => api.get(url, { signal: controller.signal })));
+            if (controller.signal.aborted || workspaceRequestRef.current !== controller) return;
+            const failed = results.some((result) => result.status !== 'fulfilled' || !Array.isArray(result.value.data));
+            workspaceDataReadyRef.current = !failed;
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled' && Array.isArray(result.value.data)) resources[index][1](result.value.data);
+            });
+            setWorkspaceLoadError(failed
+                ? t('adminWorkspace.loadError', 'Einige Daten konnten nicht aktualisiert werden. Die angezeigten Informationen sind möglicherweise unvollständig oder nicht aktuell.')
+                : '');
+            setWorkspaceLoading(false);
+            setHolidaysByCanton({});
+            return;
+        }
         // Feiertage werden pro Jahr/Kanton gecacht. Bei fachlichen Änderungen und
         // Fokus-Revalidierungen muss auch dieser Cache bewusst neu aufgebaut werden.
         setHolidaysByCanton({});
@@ -1328,7 +1419,9 @@ const AdminDashboard = () => {
             fetchTrackingBalances(),
             fetchUsers(),
         ]);
-    }, [fetchAllDailySummaries, fetchAllVacations, fetchAllCorrections, fetchAllSickLeavesForAdmin, fetchTrackingBalances, fetchUsers]);
+    }, [fetchAllDailySummaries, fetchAllVacations, fetchAllCorrections, fetchAllSickLeavesForAdmin, fetchTrackingBalances, fetchUsers, isWorkspace, t]);
+
+    useEffect(() => () => workspaceRequestRef.current?.abort(), []);
 
     useRefreshOnMutation(
         ADMIN_DASHBOARD_REFRESH_SCOPES,
@@ -1379,6 +1472,57 @@ const AdminDashboard = () => {
     }, [currentUser, handleDataReloadNeeded]);
 
     useEffect(() => {
+        if (!isWorkspace) return;
+        const focusKey = timeFocusTarget
+            ? JSON.stringify([timeFocusTarget, searchParams.get('week'), workspaceTeam]) : null;
+        if (!focusKey) consumedWorkspaceFocusRef.current = null;
+
+        // Route views briefly render an unbound route while a new tab is created.
+        // Only the active, bound destination may consume its navigation action.
+        if (!paneActive || (workspace && (!location.state?.[WORKSPACE_TAB_STATE_KEY]
+            || workspace.activeTabId !== location.state[WORKSPACE_TAB_STATE_KEY]))) return;
+        if (workspaceLoading || workspaceLoadError || !workspaceDataReadyRef.current) return;
+        const routeTab = getValidDashboardTab(searchParams.get('tab'), true);
+        if (activeMainTab !== routeTab) return;
+        const targetWeek = getMondayIsoForDate(searchParams.get('week'));
+        if (routeTab === 'time' && targetWeek && formatLocalDateYMD(selectedMonday) !== targetWeek) return;
+
+        const action = location.state?.[WORKSPACE_ACTION_STATE_KEY];
+        if (action?.id && WORKSPACE_ACTION_TABS[action.type] === routeTab
+            && consumedWorkspaceActionRef.current !== action.id) {
+            const target = routeTab === 'time' ? weekSectionRef.current : workspaceCalendarRef.current;
+            if (routeTab !== 'requests' && typeof target?.[action.type] !== 'function') return;
+            consumedWorkspaceActionRef.current = action.id;
+            if (action.type === 'openVacations') {
+                setVacationOpenSignal(previous => previous + 1);
+                queueScrollTo(vacationSectionRef);
+            } else if (action.type === 'openCorrections') {
+                setCorrectionOpenSignal(previous => previous + 1);
+                queueScrollTo(correctionSectionRef);
+            } else if (action.type === 'focusUserDate') {
+                target.focusUserDate(action.value?.username, action.value?.dateIso, 'request_focus');
+            } else {
+                target[action.type](action.value);
+            }
+            setActiveIssuePill(action.type === 'focusIssueType' ? action.value : null);
+            consumedWorkspaceFocusRef.current = focusKey;
+            const nextState = { ...location.state };
+            delete nextState[WORKSPACE_ACTION_STATE_KEY];
+            navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, {
+                replace: true, state: nextState,
+            });
+        } else if (!action && focusKey && consumedWorkspaceFocusRef.current !== focusKey
+            && typeof weekSectionRef.current?.focusUserDate === 'function') {
+            // Bookmarked request/employee links still focus once, without replaying
+            // on a mutation refresh or when returning to the cached pane.
+            consumedWorkspaceFocusRef.current = focusKey;
+            weekSectionRef.current.focusUserDate(timeFocusTarget.username, timeFocusTarget.dateIso, 'request_focus');
+        }
+    }, [isWorkspace, paneActive, workspace?.activeTabId, location, navigate, workspaceLoading,
+        workspaceLoadError, activeMainTab, searchParams, selectedMonday, timeFocusTarget,
+        workspaceTeam, workspaceTargetsReady, queueScrollTo]);
+
+    useEffect(() => {
         if (currentUser) {
             fetchHolidaysForAllRelevantCantons();
         }
@@ -1415,6 +1559,13 @@ const AdminDashboard = () => {
             return;
         }
 
+        if (isWorkspace) {
+            navigateWorkspaceAction('focusUserDate', { username: request.username, dateIso: targetDateIso }, {
+                focusUser: request.username, focusDate: targetDateIso, week: targetWeekIso,
+            });
+            return;
+        }
+
         navigateDashboard({
             tab: 'requests',
             requestType,
@@ -1448,7 +1599,7 @@ const AdminDashboard = () => {
                 },
             });
         });
-    }, [navigateDashboard, notify, scheduleNextFrame, t]);
+    }, [isWorkspace, navigateWorkspaceAction, navigateDashboard, notify, scheduleNextFrame, t]);
 
     function handlePrevWeek() {
         updateSelectedWeek(addDays(selectedMonday, -7));
@@ -1467,11 +1618,8 @@ const AdminDashboard = () => {
         updateSelectedWeek(new Date());
     }
 
-    async function handleApproveVacation(id, adminNote = '', { reload = false } = {}) {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+    async function handleApproveVacation(id, adminNote = '', { reload = false, throwOnError = false } = {}) {
+        if (!ensureDecisionAllowed(throwOnError)) return;
         try {
             await api.put(`/api/vacation/${id}`, {
                 approved: true,
@@ -1485,13 +1633,11 @@ const AdminDashboard = () => {
         } catch (err) {
             console.error('Error approving vacation', err);
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+            if (throwOnError) throw err;
         }
     }
-    async function handleDenyVacation(id, adminNote = '', { reload = false } = {}) {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+    async function handleDenyVacation(id, adminNote = '', { reload = false, throwOnError = false } = {}) {
+        if (!ensureDecisionAllowed(throwOnError)) return;
         try {
             await api.put(`/api/vacation/${id}`, {
                 approved: false,
@@ -1505,14 +1651,12 @@ const AdminDashboard = () => {
         } catch (err) {
             console.error('Error denying vacation', err);
             notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+            if (throwOnError) throw err;
         }
     }
 
-    async function handleApproveCorrection(id, comment, { reload = false } = {}) {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+    async function handleApproveCorrection(id, comment, { reload = false, throwOnError = false } = {}) {
+        if (!ensureDecisionAllowed(throwOnError)) return;
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
@@ -1522,14 +1666,12 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
+            if (throwOnError) throw error;
         }
     }
 
-    async function handleDenyCorrection(id, comment, { reload = false } = {}) {
-        if (!canManageAdminDashboard) {
-            notifyAdminDashboardReadOnly();
-            return;
-        }
+    async function handleDenyCorrection(id, comment, { reload = false, throwOnError = false } = {}) {
+        if (!ensureDecisionAllowed(throwOnError)) return;
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg')} #${id}`, "success");
@@ -1539,6 +1681,7 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error(`Fehler beim Ablehnen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
+            if (throwOnError) throw error;
         }
     }
 
@@ -1762,6 +1905,36 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
+    const workspaceTeams = useMemo(() => [...new Set(users.filter(user => user?.username).map(getWorkspaceTeamKey))]
+        .sort((a, b) => a.localeCompare(b, 'de'))
+        .map(value => ({ value, label: value === '__unassigned__' ? t('adminWorkspace.noTeam', 'Ohne Team') : value })), [users, t]);
+    const workspaceUsers = useMemo(() => workspaceTeam ? users.filter(user => getWorkspaceTeamKey(user) === workspaceTeam) : users, [workspaceTeam, users]);
+    const workspaceUsernames = useMemo(() => new Set(workspaceUsers.map(user => user.username)), [workspaceUsers]);
+    const inWorkspaceTeam = useCallback((record) => !workspaceTeam || workspaceUsernames.has(record.username), [workspaceTeam, workspaceUsernames]);
+    const workspaceVacations = useMemo(() => allVacations.filter(inWorkspaceTeam), [allVacations, inWorkspaceTeam]);
+    const workspaceCorrections = useMemo(() => allCorrections.filter(inWorkspaceTeam), [allCorrections, inWorkspaceTeam]);
+    const workspaceSickLeaves = useMemo(() => allSickLeaves.filter(inWorkspaceTeam), [allSickLeaves, inWorkspaceTeam]);
+    const workspaceBalances = useMemo(() => filteredWeeklyBalances.filter(inWorkspaceTeam), [filteredWeeklyBalances, inWorkspaceTeam]);
+    const dashboardTabs = useMemo(() => ([
+        { id: 'overview', label: t('adminDashboard.tabs.overview', 'Übersicht') },
+        { id: 'time', label: t('adminDashboard.tabs.timeReview', 'Zeitprüfung') },
+        { id: 'requests', label: t('adminDashboard.tabs.requests', 'Anträge'), count: isWorkspace
+            ? workspaceVacations.filter(isWorkspacePending).length + groupWorkspaceCorrections(workspaceCorrections).length
+            : inboxItems.filter(item => item.status === 'pending').length },
+        { id: 'calendar', label: t('adminDashboard.tabs.calendar', 'Kalender') },
+        { id: 'modules', label: t('adminDashboard.tabs.modules', 'Module') },
+    ]), [inboxItems, isWorkspace, workspaceVacations, workspaceCorrections, t]);
+    const handleWorkspaceTeamChange = (team) => navigateDashboard({ team, focusUser: null, focusDate: null }, { preserve: true });
+    const handleWorkspaceCalendarAction = (action, value) => {
+        navigateWorkspaceAction(action, action === 'openAbsence' ? { startDate: value?.startDate } : undefined);
+    };
+    const handleWorkspaceFocusEmployee = (username, dateIso) => {
+        if (!username) return;
+        navigateWorkspaceAction('focusUserDate', { username, dateIso }, {
+            focusUser: username, focusDate: dateIso, week: getMondayIsoForDate(dateIso),
+        });
+    };
+
     const adminOverviewProps = {
         t,
         currentUser,
@@ -1785,10 +1958,20 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div className="admin-dashboard scoped-dashboard">
+        <div className={`admin-dashboard scoped-dashboard${isWorkspace ? ' admin-workspace' : ''}`}>
             <Navbar />
             <div className="admin-dashboard-shell">
-                <header className="dashboard-header admin-command-header">
+                {isWorkspace && <AdminWorkspaceSidebar
+                    t={t} currentUser={currentUser} activeTab={activeMainTab} tabs={dashboardTabs}
+                    onOpenTab={openDashboardTab} onOpenEmployees={() => openDashboardTab('employees')}
+                    onCommand={() => setPaletteOpen(true)} onPunch={handleAdminPunch}
+                    canPunch={canCurrentAdminPunch} isPunching={isAdminPunching}
+                />}
+                {isWorkspace ? <AdminWorkspaceHeader
+                    t={t} activeTab={activeMainTab} canManage={canManageAdminDashboard && !workspaceLoadError && !workspaceLoading}
+                    onCreateVacation={() => handleWorkspaceCalendarAction('createVacation')}
+                    onPrint={handlePrintTimesFromHeader} onCommand={() => setPaletteOpen(true)}
+                /> : <header className="dashboard-header admin-command-header">
                     <div className="header-info">
                         <span className="header-eyebrow">{t('adminDashboard.header.eyebrow', 'Arbeitszentrale')}</span>
                         <h2>{t('adminDashboard.title', 'Admin-Dashboard')}</h2>
@@ -1830,7 +2013,7 @@ const AdminDashboard = () => {
                             {t('adminDashboard.commandPalette.buttonLabel', 'Befehle (Strg+K)')}
                         </button>
                     </div>
-                </header>
+                </header>}
 
             {!canManageAdminDashboard && (
                 <section className="admin-permission-banner" aria-live="polite">
@@ -1844,7 +2027,7 @@ const AdminDashboard = () => {
                 </section>
             )}
 
-                <nav className="dashboard-tab-navigation" aria-label={t('adminDashboard.tabs.label', 'Admin-Dashboard Bereiche')}>
+                {!isWorkspace && <nav className="dashboard-tab-navigation" aria-label={t('adminDashboard.tabs.label', 'Admin-Dashboard Bereiche')}>
                     {dashboardTabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -1857,11 +2040,37 @@ const AdminDashboard = () => {
                             {tab.count > 0 && <span className="tab-count">{tab.count}</span>}
                         </button>
                     ))}
-                </nav>
+                </nav>}
 
                 <main className="admin-dashboard-panels">
+                    {isWorkspace && activeMainTab !== 'overview' && <div className="aw-context-row">
+                        <span>{formatDateWithWeekday(new Date())}</span>
+                        <label>{t('adminWorkspace.team', 'Team')} <select value={workspaceTeam} onChange={event => handleWorkspaceTeamChange(event.target.value)}>
+                            <option value="">{t('adminWorkspace.allTeams', 'Alle Teams')}</option>
+                            {workspaceTeams.map(team => <option key={team.value} value={team.value}>{team.label}</option>)}
+                        </select></label>
+                    </div>}
+                    {isWorkspace && activeMainTab !== 'overview' && workspaceLoadError && <div className="aw-load-error" role="alert">
+                        <p>{workspaceLoadError}</p><button type="button" onClick={handleDataReloadNeeded} disabled={workspaceLoading}>{t('retry', 'Erneut versuchen')}</button>
+                    </div>}
                     <section className={`dashboard-tab-panel ${activeMainTab === 'overview' ? 'is-active' : ''}`}>
-                        <ConfigurableDashboard
+                        {isWorkspace ? <AdminWorkspaceOverview
+                            t={t} currentUser={currentUser} users={workspaceUsers}
+                            allVacations={workspaceVacations} allCorrections={workspaceCorrections} allSickLeaves={workspaceSickLeaves}
+                            weeklyBalances={workspaceBalances} issueRows={workspaceIssueRows?.filter(inWorkspaceTeam) ?? null}
+                            selectedTeam={workspaceTeam} teams={workspaceTeams} onTeamChange={handleWorkspaceTeamChange}
+                            loading={workspaceLoading} loadError={workspaceLoadError} onRetry={handleDataReloadNeeded}
+                            onOpenTime={() => openDashboardTab('time')} onOpenRequests={() => openDashboardTab('requests')}
+                            onOpenCalendar={() => openDashboardTab('calendar')} onOpenModules={() => openDashboardTab('modules')}
+                            onFocusEmployee={handleWorkspaceFocusEmployee} onOpenEmployee={handleOpenUserOverview}
+                            onOpenAbsence={absence => handleWorkspaceCalendarAction('openAbsence', absence)}
+                            onApproveVacation={(id, note) => handleApproveVacation(id, note, { reload: true, throwOnError: true })}
+                            onDenyVacation={(id, note) => handleDenyVacation(id, note, { reload: true, throwOnError: true })}
+                            onApproveCorrection={(id, note) => handleApproveCorrection(id, note, { reload: true, throwOnError: true })}
+                            onDenyCorrection={(id, note) => handleDenyCorrection(id, note, { reload: true, throwOnError: true })}
+                            onPrint={handlePrintTimesFromHeader} onFocusNegativeBalances={handleFocusNegativeBalances}
+                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                        /> : <ConfigurableDashboard
                             context="ADMIN"
                             scope="overview"
                             permissionContext={currentUser}
@@ -1918,17 +2127,23 @@ const AdminDashboard = () => {
                                     component: <AdminDashboardOverview {...adminOverviewProps} section="shortcuts" />,
                                 },
                             ]}
-                        />
+                        />}
                     </section>
+
+                    {isWorkspace && <section className={`dashboard-tab-panel ${activeMainTab === 'employees' ? 'is-active' : ''}`}>
+                        <AdminWorkspaceEmployees t={t} users={workspaceUsers} balances={workspaceBalances}
+                            loading={workspaceLoading} onOpenEmployee={handleOpenUserOverview} />
+                    </section>}
 
                     <section className={`dashboard-tab-panel ${activeMainTab === 'time' ? 'is-active' : ''}`}>
                         <ConfigurableDashboard
                             context="ADMIN"
-                            scope="time"
+                            scope={isWorkspace ? 'workspace-time' : 'time'}
                             permissionContext={currentUser}
                             storageIdentity={currentUser?.id || currentUser?.username}
                             registry={[{
                                 id: 'team-time-review',
+                                lockedVisibility: isWorkspace,
                                 title: t('dashboardWidgets.teamTime', 'Team-Zeitprüfung'),
                                 requiredPagePermission: 'adminDashboard',
                                 defaultSize: 'full',
@@ -1937,7 +2152,8 @@ const AdminDashboard = () => {
                                     <div className="team-overview-content">
                                         <section className="team-overview-main">
                                             <AdminWeekSection
-                                                ref={weekSectionRef}
+                                                key={isWorkspace ? workspaceTeam : undefined}
+                                                ref={isWorkspace ? attachWorkspaceWeek : weekSectionRef}
                                                 t={t}
                                                 weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
                                                 selectedMonday={selectedMonday}
@@ -1950,13 +2166,14 @@ const AdminDashboard = () => {
                                                 allVacations={allVacations}
                                                 allSickLeaves={allSickLeaves}
                                                 allHolidays={holidaysByCanton}
-                                                users={users}
+                                                users={isWorkspace ? workspaceUsers : users}
                                                 defaultExpectedHours={defaultExpectedHours}
                                                 openEditModal={openEditModal}
                                                 openPrintUserModal={openPrintUserModal}
                                                 rawUserTrackingBalances={filteredWeeklyBalances}
                                                 openNewEntryModal={openNewEntryModal}
                                                 onIssueSummaryChange={handleIssueSummaryUpdate}
+                                                onIssueRowsChange={isWorkspace ? setWorkspaceIssueRows : undefined}
                                                 showSmartOverview={false}
                                                 onOpenUserOverview={handleOpenUserOverview}
                                             />
@@ -1975,7 +2192,7 @@ const AdminDashboard = () => {
                         </div>
                         <ConfigurableDashboard
                             context="ADMIN"
-                            scope="requests"
+                            scope={isWorkspace ? 'workspace-requests' : 'requests'}
                             permissionContext={currentUser}
                             storageIdentity={currentUser?.id || currentUser?.username}
                             registry={[
@@ -1989,11 +2206,11 @@ const AdminDashboard = () => {
                                         <div ref={vacationSectionRef}>
                                             <AdminVacationRequests
                                                 t={t}
-                                                allVacations={allVacations}
+                                                allVacations={isWorkspace ? workspaceVacations : allVacations}
                                                 handleApproveVacation={handleApproveVacation}
                                                 handleDenyVacation={handleDenyVacation}
                                                 openSignal={vacationOpenSignal}
-                                                canManage={canManageAdminDashboard}
+                                                canManage={canManageAdminDashboard && (!isWorkspace || (!workspaceLoadError && !workspaceLoading))}
                                                 users={users}
                                                 focusedRequest={focusedRequest}
                                                 onOpenInTimeReview={handleOpenRequestInTimeReview}
@@ -2011,11 +2228,11 @@ const AdminDashboard = () => {
                                         <div ref={correctionSectionRef}>
                                             <AdminCorrectionsList
                                                 t={t}
-                                                allCorrections={allCorrections}
+                                                allCorrections={isWorkspace ? workspaceCorrections : allCorrections}
                                                 onApprove={handleApproveCorrection}
                                                 onDeny={handleDenyCorrection}
                                                 openSignal={correctionOpenSignal}
-                                                canManage={canManageAdminDashboard}
+                                                canManage={canManageAdminDashboard && (!isWorkspace || (!workspaceLoadError && !workspaceLoading))}
                                                 users={users}
                                                 focusedRequest={focusedRequest}
                                                 onOpenInTimeReview={handleOpenRequestInTimeReview}
@@ -2030,11 +2247,12 @@ const AdminDashboard = () => {
                     <section className={`dashboard-tab-panel ${activeMainTab === 'calendar' ? 'is-active' : ''}`}>
                         <ConfigurableDashboard
                             context="ADMIN"
-                            scope="calendar"
+                            scope={isWorkspace ? 'workspace-calendar' : 'calendar'}
                             permissionContext={currentUser}
                             storageIdentity={currentUser?.id || currentUser?.username}
                             registry={[{
                                 id: 'absence-calendar',
+                                lockedVisibility: isWorkspace,
                                 title: t('adminDashboard.vacationCalendarTitle', 'Abwesenheitskalender'),
                                 requiredPagePermission: 'adminDashboard',
                                 defaultSize: 'full',
@@ -2051,8 +2269,11 @@ const AdminDashboard = () => {
                                                 <p>{t('adminDashboard.calendarPanelSubtitle', 'Detailansicht für Urlaub, Krankheit und geplante Abwesenheiten.')}</p>
                                             </div>
                                             <VacationCalendarAdmin
-                                                vacationRequests={allVacations.filter(v => v.approved)}
-                                                companyUsers={users}
+                                                ref={isWorkspace ? attachWorkspaceCalendar : undefined}
+                                                vacationRequests={(isWorkspace ? workspaceVacations : allVacations).filter(v => v.approved)}
+                                                companyUsers={isWorkspace ? workspaceUsers : users}
+                                                visibleUsernames={isWorkspace && workspaceTeam ? [...workspaceUsernames] : null}
+                                                onReloadVacations={isWorkspace ? handleDataReloadNeeded : undefined}
                                             />
                                         </div>
                                     </section>
@@ -2064,7 +2285,7 @@ const AdminDashboard = () => {
                     <section className={`dashboard-tab-panel ${activeMainTab === 'modules' ? 'is-active' : ''}`}>
                         <ConfigurableDashboard
                             context="ADMIN"
-                            scope="modules"
+                            scope={isWorkspace ? 'workspace-modules' : 'modules'}
                             permissionContext={currentUser}
                             storageIdentity={currentUser?.id || currentUser?.username}
                             registry={[{

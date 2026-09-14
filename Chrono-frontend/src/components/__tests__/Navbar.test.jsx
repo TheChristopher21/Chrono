@@ -32,6 +32,25 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 };
 
 describe('Navbar', () => {
+    it('offers the new dashboard to superadmins while retaining the classic dashboard link', async () => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Superadmin', roles: ['ROLE_SUPERADMIN'], pagePermissions: {} },
+        }, '/admin/dashboard');
+        await userEvent.click(screen.getByRole('button', { name: /Plattform/i }));
+        expect(screen.getByRole('link', { name: 'Neues Dashboard' })).toHaveAttribute('href', '/admin/dashboard-neu');
+        expect(screen.getByRole('link', { name: /Zum Dashboard/i })).toHaveAttribute('href', '/admin/dashboard');
+    });
+
+    it.each(['ROLE_ADMIN', 'ROLE_USER'])('hides the new dashboard from %s even with an explicit grant', async (role) => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Restricted', roles: [role], pagePermissions: { adminDashboard: 'VIEW', adminDashboardWorkspace: 'MANAGE' } },
+        }, '/admin/dashboard');
+        await userEvent.click(screen.getByRole('button', { name: /Plattform/i }));
+        expect(screen.queryByRole('link', { name: 'Neues Dashboard' })).not.toBeInTheDocument();
+    });
+
     it('shows only PMS workspace navigation and an explicit switch back to Chrono inside PMS', async () => {
         renderNavbar({
             authToken: 'token', logout: vi.fn(),

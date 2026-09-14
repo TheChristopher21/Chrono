@@ -17,8 +17,12 @@ vi.mock('../pages/Registration.jsx', () => ({ default: () => <div>Registration p
 vi.mock('../pages/UserDashboard/UserDashboard.jsx', () => ({ default: () => <div>User dashboard</div> }));
 vi.mock('../pages/PercentageDashboard/PercentageDashboard.jsx', () => ({ default: () => <div>Percentage punch</div> }));
 vi.mock('../pages/PersonalDataPage.jsx', () => ({ default: () => <div>Personal data</div> }));
-vi.mock('../pages/AdminDashboard/AdminDashboard.jsx', () => ({ default: () => <div>Admin dashboard</div> }));
-vi.mock('../pages/AdminDashboard/AdminEmployeeOverviewPage.jsx', () => ({ default: () => <div>Admin employee overview</div> }));
+vi.mock('../pages/AdminDashboard/AdminDashboard.jsx', () => ({
+    default: ({ experience }) => <div>{experience === 'workspace' ? 'New admin dashboard' : 'Admin dashboard'}</div>,
+}));
+vi.mock('../pages/AdminDashboard/AdminEmployeeOverviewPage.jsx', () => ({
+    default: ({ dashboardBasePath = '/admin/dashboard' }) => <div data-dashboard-base={dashboardBasePath}>Admin employee overview</div>,
+}));
 vi.mock('../pages/AdminUserManagement/AdminUserManagementPage.jsx', () => ({ default: () => <div>Admin users</div> }));
 vi.mock('../pages/AdminChangePassword.jsx', () => ({ default: () => <div>Admin change password</div> }));
 vi.mock('../pages/AdminCustomers/AdminCustomersPage.jsx', () => ({ default: () => <div>Admin customers</div> }));
@@ -62,6 +66,67 @@ function renderApp(authValue, initialPath) {
         </AuthContext.Provider>
     );
 }
+
+describe('App superadmin dashboard routing', () => {
+    const authenticated = (roles, overrides = {}) => ({
+        authToken: 'token',
+        currentUser: {
+            username: 'dashboard-tester',
+            roles,
+            pagePermissions: { adminDashboard: 'MANAGE', adminDashboardWorkspace: 'MANAGE' },
+            ...overrides,
+        },
+        isAuthLoading: false,
+    });
+
+    it('opens the workspace experience only through the new superadmin route', () => {
+        renderApp(authenticated(['ROLE_SUPERADMIN'], { pagePermissions: {} }), '/admin/dashboard-neu?tab=time');
+        expect(screen.getByText('New admin dashboard')).toBeInTheDocument();
+        expect(screen.queryByText('Admin dashboard')).not.toBeInTheDocument();
+    });
+
+    it.each(['ROLE_ADMIN', 'ROLE_SUPERADMIN'])('keeps the classic dashboard unchanged for %s', (role) => {
+        renderApp(authenticated([role]), '/admin/dashboard');
+        expect(screen.getByText('Admin dashboard')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+    });
+
+    it.each(['/admin/dashboard-neu', '/admin/dashboard-neu/mitarbeiter/mirjam'])('redirects an admin with explicit page grants from %s to the classic dashboard', (path) => {
+        renderApp(authenticated(['ROLE_ADMIN']), path);
+        expect(screen.getByText('Admin dashboard')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Admin employee overview')).not.toBeInTheDocument();
+    });
+
+    it.each(['ROLE_USER', 'ROLE_PAYROLL_ADMIN'])('rejects a %s even with both dashboard permissions', (role) => {
+        renderApp(authenticated([role]), '/admin/dashboard-neu');
+        expect(screen.getByText('Landing page')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+    });
+
+    it('keeps superadmin employee navigation inside the new dashboard', () => {
+        renderApp(authenticated(['ROLE_SUPERADMIN']), '/admin/dashboard-neu/mitarbeiter/mirjam');
+        expect(screen.getByText('Admin employee overview')).toHaveAttribute('data-dashboard-base', '/admin/dashboard-neu');
+    });
+
+    it('keeps the existing employee route on the classic dashboard', () => {
+        renderApp(authenticated(['ROLE_ADMIN']), '/admin/dashboard/mitarbeiter/mirjam');
+        expect(screen.getByText('Admin employee overview')).toHaveAttribute('data-dashboard-base', '/admin/dashboard');
+    });
+
+    it('requires authentication for a direct link to the new dashboard', () => {
+        renderApp({ authToken: null, currentUser: null, isAuthLoading: false }, '/admin/dashboard-neu');
+        expect(screen.getByText('Login page')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+    });
+
+    it('waits for the authenticated profile before evaluating the role', () => {
+        renderApp({ authToken: 'token', currentUser: null, isAuthLoading: true }, '/admin/dashboard-neu');
+        expect(screen.getByTestId('route-auth-loading')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Landing page')).not.toBeInTheDocument();
+    });
+});
 
 describe('App print report routing', () => {
     it('redirects anonymous users from print report to login', () => {
