@@ -73,12 +73,17 @@ public class PurchaseOrderDTO {
         private final Long id;
         private final Long productId;
         private final BigDecimal quantity;
+        private final BigDecimal receivedQuantity;
+        private final BigDecimal openQuantity;
         private final BigDecimal unitCost;
 
-        public PurchaseOrderLineDTO(Long id, Long productId, BigDecimal quantity, BigDecimal unitCost) {
+        public PurchaseOrderLineDTO(Long id, Long productId, BigDecimal quantity, BigDecimal receivedQuantity,
+                                    BigDecimal openQuantity, BigDecimal unitCost) {
             this.id = id;
             this.productId = productId;
             this.quantity = quantity;
+            this.receivedQuantity = receivedQuantity;
+            this.openQuantity = openQuantity;
             this.unitCost = unitCost;
         }
 
@@ -87,6 +92,8 @@ public class PurchaseOrderDTO {
                     line.getId(),
                     line.getProduct() != null ? line.getProduct().getId() : null,
                     line.getQuantity(),
+                    line.getReceivedQuantity(),
+                    line.getOpenQuantity(),
                     line.getUnitCost());
         }
 
@@ -101,6 +108,10 @@ public class PurchaseOrderDTO {
         public BigDecimal getQuantity() {
             return quantity;
         }
+
+        public BigDecimal getReceivedQuantity() { return receivedQuantity; }
+
+        public BigDecimal getOpenQuantity() { return openQuantity; }
 
         public BigDecimal getUnitCost() {
             return unitCost;

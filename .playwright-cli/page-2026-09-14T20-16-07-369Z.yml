@@ -1,0 +1,165 @@
+- iframe [ref=e2]:
+  - generic "Chrono Admin · Arbeitsübersicht" [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]: c
+        - strong [ref=f1e6]: chrono
+      - generic [ref=f1e7]: Aare Atelier AG
+      - generic [ref=f1e8]:
+        - button "Mitarbeitende und Funktionen suchen" [ref=f1e9] [cursor=pointer]:
+          - text: Suchen …
+          - generic [ref=f1e13]: Strg K
+        - button "Arbeitsbereiche öffnen" [ref=f1e14] [cursor=pointer]:
+          - text: Arbeitsbereiche
+          - generic [ref=f1e17]: "2"
+        - button "Weitere Funktionen" [ref=f1e18] [cursor=pointer]
+        - button "Mein Konto" [ref=f1e23] [cursor=pointer]:
+          - generic [ref=f1e24]: CS
+    - generic [ref=f1e25]:
+      - navigation "Hauptnavigation" [ref=f1e26]:
+        - generic [ref=f1e27]: Arbeitsplatz
+        - button "Übersicht" [ref=f1e28] [cursor=pointer]
+        - button "Anträge 4" [ref=f1e35] [cursor=pointer]:
+          - generic [ref=f1e39]: Anträge
+          - generic [ref=f1e40]: "4"
+        - button "Zeitprüfung" [ref=f1e41] [cursor=pointer]
+        - button "Kalender" [ref=f1e46] [cursor=pointer]
+        - button "Mitarbeitende" [ref=f1e50] [cursor=pointer]
+        - button "Alle Module" [ref=f1e56] [cursor=pointer]
+        - generic [ref=f1e59]:
+          - generic [ref=f1e60]: Schnellzugriff
+          - button "Dienstplan" [ref=f1e61] [cursor=pointer]
+          - button "Payroll" [ref=f1e64] [cursor=pointer]
+          - button "Analytics" [ref=f1e68] [cursor=pointer]
+        - generic [ref=f1e71]:
+          - button "Einstempeln" [ref=f1e72] [cursor=pointer]
+          - button "Einstellungen & mehr" [ref=f1e76] [cursor=pointer]
+      - main [ref=f1e80]:
+        - generic [ref=f1e81]:
+          - generic [ref=f1e82]:
+            - generic [ref=f1e83]: Administration Start
+            - heading "Arbeitsübersicht" [level=1] [ref=f1e86]
+          - button "Urlaub eintragen" [ref=f1e88] [cursor=pointer]
+        - generic [ref=f1e90]:
+          - generic [ref=f1e91]:
+            - generic [ref=f1e92]: Montag, 14. September 2026
+            - generic [ref=f1e95]:
+              - text: Team
+              - combobox "Team für die Übersicht" [ref=f1e96]:
+                - option "Alle Teams" [selected]
+                - option "Atelier"
+                - option "Beratung"
+          - generic [ref=f1e97]:
+            - generic [ref=f1e98]:
+              - generic [ref=f1e100]:
+                - heading "Zu erledigen" [level=2] [ref=f1e101]
+                - paragraph [ref=f1e102]: Offene Anträge und ungeklärte Zeiten
+              - group "Vorgänge filtern" [ref=f1e106]:
+                - button "Alle" [pressed] [ref=f1e107] [cursor=pointer]
+                - button "Anträge 4" [ref=f1e108] [cursor=pointer]:
+                  - text: Anträge
+                  - generic [ref=f1e109]: "4"
+                - button "Zeitprüfung 5" [ref=f1e110] [cursor=pointer]:
+                  - text: Zeitprüfung
+                  - generic [ref=f1e111]: "5"
+              - generic [ref=f1e112]:
+                - article [ref=f1e113]:
+                  - button "MB Mirjam Burkart Ende fehlt Atelier · Zeitprüfung Prüfen" [ref=f1e114] [cursor=pointer]:
+                    - generic [ref=f1e115]: MB
+                    - generic [ref=f1e116]:
+                      - strong [ref=f1e117]: Mirjam Burkart
+                      - generic [ref=f1e118]: Ende fehlt
+                      - generic [ref=f1e122]: Atelier · Zeitprüfung
+                    - generic [ref=f1e123]: Prüfen
+                - article [ref=f1e126]:
+                  - button "MB Mirjam Burkart Zeitkorrektur beantragt 11. Sept. · 16:30 → 16:45 Prüfen" [ref=f1e127] [cursor=pointer]:
+                    - generic [ref=f1e128]: MB
+                    - generic [ref=f1e129]:
+                      - strong [ref=f1e130]: Mirjam Burkart
+                      - generic [ref=f1e131]: Zeitkorrektur beantragt
+                      - generic [ref=f1e136]: 11. Sept. · 16:30 → 16:45
+                    - generic [ref=f1e137]: Prüfen
+                - article [ref=f1e140]:
+                  - button "LM Luca Meier Urlaub beantragt 23. Sept. – 25. Sept. Prüfen" [ref=f1e141] [cursor=pointer]:
+                    - generic [ref=f1e142]: LM
+                    - generic [ref=f1e143]:
+                      - strong [ref=f1e144]: Luca Meier
+                      - generic [ref=f1e145]: Urlaub beantragt
+                      - generic [ref=f1e152]: 23. Sept. – 25. Sept.
+                    - generic [ref=f1e153]: Prüfen
+                - article [ref=f1e156]:
+                  - button "LM Luca Meier Fehlende Stempel Atelier · Zeitprüfung Prüfen" [ref=f1e157] [cursor=pointer]:
+                    - generic [ref=f1e158]: LM
+                    - generic [ref=f1e159]:
+                      - strong [ref=f1e160]: Luca Meier
+                      - generic [ref=f1e161]: Fehlende Stempel
+                      - generic [ref=f1e165]: Atelier · Zeitprüfung
+                    - generic [ref=f1e166]: Prüfen
+                - article [ref=f1e169]:
+                  - button "NK Nina Keller Zeitkorrektur beantragt 10. Sept. · — → 17:00 Prüfen" [ref=f1e170] [cursor=pointer]:
+                    - generic [ref=f1e171]: NK
+                    - generic [ref=f1e172]:
+                      - strong [ref=f1e173]: Nina Keller
+                      - generic [ref=f1e174]: Zeitkorrektur beantragt
+                      - generic [ref=f1e179]: 10. Sept. · — → 17:00
+                    - generic [ref=f1e180]: Prüfen
+              - generic [ref=f1e183]:
+                - generic [ref=f1e184]: 5 von 9 Vorgängen
+                - button "Weitere 4 anzeigen" [ref=f1e185] [cursor=pointer]
+            - complementary [ref=f1e188]:
+              - generic [ref=f1e189]:
+                - generic [ref=f1e190]:
+                  - heading "Team im Blick" [level=2] [ref=f1e191]
+                  - paragraph [ref=f1e192]: Alle Teams · 6 Mitarbeitende
+                - button "Teammitglieder ansehen" [ref=f1e193] [cursor=pointer]
+              - generic [ref=f1e199]:
+                - generic [ref=f1e200]:
+                  - heading "Heute abwesend" [level=3] [ref=f1e202]
+                  - strong [ref=f1e203]: 1 / 6
+                - button "JW Jonas Weber Krank bis 16. Sept." [ref=f1e204] [cursor=pointer]:
+                  - generic [ref=f1e205]: JW
+                  - generic [ref=f1e206]:
+                    - strong [ref=f1e207]: Jonas Weber
+                    - generic [ref=f1e208]: Krank
+                    - generic [ref=f1e209]: bis 16. Sept.
+              - generic [ref=f1e212]:
+                - generic [ref=f1e213]:
+                  - heading "Als Nächstes" [level=3] [ref=f1e214]
+                  - generic [ref=f1e215]: Bis 14. Okt.
+                - button "21 Sep Mirjam Burkart Urlaub 21. Sept. – 25. Sept." [ref=f1e216] [cursor=pointer]:
+                  - generic [ref=f1e217]:
+                    - strong [ref=f1e218]: "21"
+                    - generic [ref=f1e219]: Sep
+                    - generic [ref=f1e220]:
+                      - strong [ref=f1e221]: Mirjam Burkart
+                      - generic [ref=f1e222]: Urlaub
+                      - generic [ref=f1e223]: 21. Sept. – 25. Sept.
+                - button "28 Sep Nina Keller Überstundenfrei 28. Sept. – 30. Sept." [ref=f1e226] [cursor=pointer]:
+                  - generic [ref=f1e227]:
+                    - strong [ref=f1e228]: "28"
+                    - generic [ref=f1e229]: Sep
+                    - generic [ref=f1e230]:
+                      - strong [ref=f1e231]: Nina Keller
+                      - generic [ref=f1e232]: Überstundenfrei
+                      - generic [ref=f1e233]: 28. Sept. – 30. Sept.
+              - generic [ref=f1e236]:
+                - button "Kalender öffnen" [ref=f1e237] [cursor=pointer]
+                - button "Krankheit erfassen" [ref=f1e240] [cursor=pointer]
+          - generic [ref=f1e241]:
+            - generic [ref=f1e242]:
+              - heading "Zeitkonten" [level=2] [ref=f1e243]
+              - generic [ref=f1e244]: Aktueller Gesamtstand
+            - button "Ø Team-Saldo −0:23 h" [ref=f1e245] [cursor=pointer]:
+              - generic [ref=f1e246]: Ø Team-Saldo
+              - strong [ref=f1e247]: −0:23 h
+            - button "Negative Zeitkonten 3 von 6" [ref=f1e248] [cursor=pointer]:
+              - generic [ref=f1e249]: Negative Zeitkonten
+              - strong [ref=f1e250]: 3 von 6
+            - button "Höchster Saldo · Nina Keller +9:00 h" [ref=f1e251] [cursor=pointer]:
+              - generic [ref=f1e252]: Höchster Saldo · Nina Keller
+              - strong [ref=f1e253]: +9:00 h
+            - button "Zeitkonten in Analytics öffnen" [ref=f1e254] [cursor=pointer]
+          - generic [ref=f1e258]:
+            - generic [ref=f1e259]: Entwurf · Beispieldaten
+            - button "Zeiten drucken" [ref=f1e260] [cursor=pointer]
+            - button "Ansicht anpassen" [ref=f1e265] [cursor=pointer]

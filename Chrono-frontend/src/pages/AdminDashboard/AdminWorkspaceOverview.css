@@ -1,0 +1,120 @@
+/* Overview only: a compact working surface, independent of the legacy dashboard. */
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview { container: aw-overview / inline-size; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { min-height: 30px; margin-bottom: 10px; gap: 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-data-context { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-select select { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; border: 1px solid var(--aw-border); border-radius: 9px; background: var(--aw-card); overflow: hidden; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; align-items: baseline; column-gap: 9px; row-gap: 5px; min-width: 0; margin: 0; padding: 12px 16px; border: 0; border-right: 1px solid var(--aw-border); border-radius: 0; background: transparent; color: var(--aw-text); text-align: left; box-shadow: none; cursor: pointer; transition: background-color 120ms; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:last-child { border-right: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:hover:not(:disabled) { background: var(--aw-soft); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:focus-visible { position: relative; outline-offset: -4px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label { display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; gap: 8px; color: var(--aw-muted); font-size: 12px; line-height: 1.4; font-weight: 400; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label > span { color: var(--aw-primary); font-size: 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > strong { font-size: 26px; font-weight: 500; line-height: 1.15; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { color: var(--aw-muted); font-size: 11px; font-weight: 400; line-height: 1.4; overflow-wrap: anywhere; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-denominator { color: var(--aw-muted); font-size: 15px; font-weight: 400; letter-spacing: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-negative { color: var(--aw-negative); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-positive { color: var(--aw-positive); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid { grid-template-columns: minmax(0, 1fr) minmax(265px, .46fr); gap: 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid-single { grid-template-columns: minmax(0, 1fr); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-inbox, .aw-team-panel) { border-radius: 9px; box-shadow: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox:focus { outline: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading { padding: 13px 16px 10px; gap: 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading h2 { font-size: 16px; font-weight: 500; line-height: 1.35; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading p { margin-top: 3px; font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-preview-label { color: var(--aw-muted); font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { justify-content: flex-start; margin: 0 16px 0; padding: 2px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex: 0 1 auto; min-height: 30px; padding: 4px 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 8px; min-height: 29px; margin: 0 16px; padding: 4px 0; color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context .aw-text-button { min-height: 24px; padding: 2px 0; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-list { padding: 0 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { align-items: center; gap: 10px; min-height: 60px; padding: 10px 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-avatar { width: 29px; height: 29px; flex-basis: 29px; margin: 0; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1px 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-name { font-size: 13px; font-weight: 500; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing { color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing.is-near { color: var(--aw-warning); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing.is-near::before { display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 2px; content: ''; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-meta { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-meta > span { display: inline; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-button { min-height: 32px; margin-top: 0; font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { margin: 0 0 12px 39px; padding: 13px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot { min-height: 40px; padding: 5px 16px; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot > div { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot .aw-text-button { font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-empty, .aw-loading) { padding: 15px 0; font-size: 12px; line-height: 1.55; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox > .aw-empty { padding: 8px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-today { padding: 10px 16px; background: var(--aw-card); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { padding: 10px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head { gap: 8px; margin-bottom: 3px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head h3 { font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head h3::before { display: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head > span { font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-count { font-size: 13px; font-weight: 500; color: var(--aw-muted); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence { gap: 8px; padding: 9px 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy { display: block; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy p { margin: 2px 0 0; font-size: 11px; line-height: 1.45; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-kind { display: inline-block; margin-top: 2px; font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-more-absences { margin: 0; padding: 2px 0; min-height: 28px; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balances { grid-template-columns: minmax(120px, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; gap: 0; margin-top: 12px; padding: 0; border-radius: 9px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title { padding: 10px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title h3 { font-size: 13px; font-weight: 500; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title small { font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; min-height: 60px; padding: 10px 16px; border-radius: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat small { grid-column: 1 / -1; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat strong { font-size: 16px; font-weight: 500; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat > span { align-self: center; font-size: 11px; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-footer { gap: 4px 16px; margin-top: 5px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-footer .aw-text-button { font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-feedback, .aw-error) { margin-bottom: 10px; padding: 9px 12px; }
+
+/* Keep the first working decisions and account summary in view on laptops.
+   Content and expanded forms retain their natural height; nothing is clipped. */
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-toolbar { min-height: 28px; margin-bottom: 6px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metrics { margin-bottom: 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metric { padding-block: 9px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metric > strong { font-size: 24px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-section-heading { padding-top: 10px; padding-bottom: 7px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-review-context { padding-block: 2px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-task-row { min-height: 56px; padding-block: 8px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-inbox-foot { min-height: 36px; padding-block: 3px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balances { margin-top: 9px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balance-title,
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balance-stat { min-height: 54px; padding-block: 7px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-today,
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-coming { padding-block: 8px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-footer { margin-top: 2px; }
+
+@container aw-overview (max-width: 850px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid { grid-template-columns: minmax(0, 1fr); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel > .aw-section-heading { grid-column: 1 / -1; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { border-top: 1px solid var(--aw-border); border-left: 1px solid var(--aw-border); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-today { border-bottom: 0; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { padding: 11px 12px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: 1 / -1; }
+}
+@container aw-overview (max-width: 570px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { align-items: flex-start; flex-wrap: wrap; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:nth-child(2) { border-right: 0; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:nth-child(-n+2) { border-bottom: 1px solid var(--aw-border); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: auto; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-preview-label { display: none; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balances { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title { grid-column: 1 / -1; border-bottom: 1px solid var(--aw-border); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat { grid-template-columns: minmax(0, 1fr); }
+}
+@container aw-overview (max-width: 400px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: 1 / -1; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel { grid-template-columns: minmax(0, 1fr); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { border-left: 0; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-avatar { display: none; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { flex-wrap: wrap; column-gap: 6px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-copy { flex: 1 1 100%; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row > .aw-review-button { margin-left: auto; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { margin-left: 0; padding: 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { justify-content: space-between; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { margin-inline: 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex: 1; padding-inline: 5px; }
+}

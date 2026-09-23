@@ -6,6 +6,7 @@ export default defineConfig({
     plugins: [react()],                 // <- sorgt für korrekten JSX-Transform im Test
     test: {
         environment: 'jsdom',
+        pool: 'threads',
         setupFiles: ['src/test/setup.js'], // <- jest-dom & Mocks laden
         exclude: [
             '**/node_modules/**',

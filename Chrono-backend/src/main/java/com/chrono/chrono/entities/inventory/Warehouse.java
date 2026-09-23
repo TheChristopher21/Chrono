@@ -1,16 +1,21 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "inv_warehouses")
+@Table(
+        name = "inv_warehouses",
+        uniqueConstraints = @UniqueConstraint(name = "uk_inv_warehouses_company_code", columnNames = {"company_id", "code"}),
+        indexes = @Index(name = "idx_inv_warehouses_company", columnList = "company_id")
+)
 public class Warehouse {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String code;
 
     @Column(nullable = false)
@@ -18,6 +23,10 @@ public class Warehouse {
 
     @Column(length = 512)
     private String location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     public Long getId() {
         return id;
@@ -49,5 +58,13 @@ public class Warehouse {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 }

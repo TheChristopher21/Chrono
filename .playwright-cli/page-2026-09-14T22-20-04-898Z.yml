@@ -1,0 +1,117 @@
+- generic [ref=f28e2]:
+  - generic [ref=f28e5]:
+    - generic [ref=f28e6]:
+      - navigation "Hauptnavigation" [ref=f28e7]:
+        - link "Chrono" [ref=f28e9] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=f28e10]
+        - list [ref=f28e11]:
+          - listitem [ref=f28e12]:
+            - link "Arbeitszeit-Rechner" [ref=f28e13] [cursor=pointer]:
+              - /url: /arbeitszeit-rechner
+          - listitem [ref=f28e14]:
+            - button "Was ist neu?" [ref=f28e15] [cursor=pointer]
+          - listitem [ref=f28e19]:
+            - button "Dark Mode" [ref=f28e20] [cursor=pointer]
+          - listitem [ref=f28e24]:
+            - button "🌐" [ref=f28e25] [cursor=pointer]
+          - listitem [ref=f28e28]:
+            - button "Super Admin" [ref=f28e29] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f28e30]: S
+        - button "Plattform" [ref=f28e35] [cursor=pointer]
+      - region "Chrono Arbeitsbereiche" [ref=f28e38]:
+        - generic [ref=f28e39]:
+          - tablist "Offene Arbeitsbereiche" [ref=f28e40]:
+            - generic [ref=f28e41]:
+              - tab "Neues Dashboard" [ref=f28e42] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f28e43]: Admin
+              - 'button "Tab anheften: Neues Dashboard" [ref=f28e45] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard" [ref=f28e46] [cursor=pointer]'
+            - generic [ref=f28e47]:
+              - tab "Neues Dashboard · Kalender" [ref=f28e48] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f28e49]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Kalender" [ref=f28e51] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Kalender" [ref=f28e52] [cursor=pointer]'
+            - generic [ref=f28e53]:
+              - tab "Neues Dashboard · Mitarbeitende" [ref=f28e54] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f28e55]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Mitarbeitende" [ref=f28e57] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Mitarbeitende" [ref=f28e58] [cursor=pointer]'
+            - generic [ref=f28e59]:
+              - tab "Neues Dashboard · Anträge" [ref=f28e60] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f28e61]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Anträge" [ref=f28e63] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Anträge" [ref=f28e64] [cursor=pointer]'
+            - generic [ref=f28e65]:
+              - tab "Neues Dashboard · Zeitprüfung" [selected] [ref=f28e66] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f28e67]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Zeitprüfung" [ref=f28e69] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Zeitprüfung" [ref=f28e70] [cursor=pointer]'
+          - generic [ref=f28e71]:
+            - button "Arbeitsbereich öffnen" [ref=f28e72] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f28e73] [cursor=pointer]
+    - generic [ref=f28e74]:
+      - complementary "Arbeitsplatz-Navigation" [ref=f28e75]:
+        - generic [ref=f28e76]: Arbeitsplatz
+        - navigation "Admin-Dashboard Bereiche" [ref=f28e77]:
+          - button "Übersicht" [ref=f28e78] [cursor=pointer]
+          - button "Anträge" [ref=f28e82] [cursor=pointer]
+          - button "Zeitprüfung" [ref=f28e86] [cursor=pointer]
+          - button "Kalender" [ref=f28e90] [cursor=pointer]
+          - button "Mitarbeitende" [ref=f28e94] [cursor=pointer]
+          - button "Alle Module" [ref=f28e98] [cursor=pointer]
+        - generic [ref=f28e102]:
+          - generic [ref=f28e103]:
+            - generic [ref=f28e104]: Schnellzugriff
+            - navigation "Schnellzugriff" [ref=f28e105]:
+              - link "Dienstplan" [ref=f28e106] [cursor=pointer]:
+                - /url: /admin/schedule
+              - link "Payroll" [ref=f28e110] [cursor=pointer]:
+                - /url: /admin/payslips
+              - link "Analytics" [ref=f28e114] [cursor=pointer]:
+                - /url: /admin/analytics
+          - generic [ref=f28e118]:
+            - button "Befehle suchen" [ref=f28e119] [cursor=pointer]
+            - link "Zur bisherigen Übersicht" [ref=f28e123] [cursor=pointer]:
+              - /url: /admin/dashboard
+      - banner [ref=f28e126]:
+        - heading "Zeitprüfung" [level=1] [ref=f28e128]
+        - generic [ref=f28e131]:
+          - text: Team
+          - combobox "Team" [ref=f28e132]:
+            - option "Alle Teams" [selected]
+        - generic [ref=f28e133]:
+          - button "Urlaub eintragen" [disabled] [ref=f28e134]
+          - group [ref=f28e137]:
+            - generic "Weitere Aktionen" [ref=f28e138] [cursor=pointer]
+      - main [ref=f28e144]:
+        - generic [ref=f28e146]:
+          - generic [ref=f28e147]:
+            - button "Dashboard anpassen" [ref=f28e148] [cursor=pointer]
+            - status [ref=f28e149]: Einstellungen werden geladen
+          - region "Team-Zeitprüfung" [ref=f28e151]:
+            - generic [ref=f28e155]:
+              - generic [ref=f28e156]:
+                - button "Zeiten drucken" [disabled] [ref=f28e158]:
+                  - generic [aria-hidden] [ref=f28e159]: 🖨️
+                  - text: Zeiten drucken
+                - heading "Zeiterfassung – Aktuelle Woche" [level=3] [ref=f28e160]
+              - generic [ref=f28e161]:
+                - button "Wochenansicht" [ref=f28e162] [cursor=pointer]
+                - button "Monatsansicht" [ref=f28e163] [cursor=pointer]
+              - generic [ref=f28e165]:
+                - textbox "Benutzer suchen…" [ref=f28e166]
+                - button "Nur Problemfälle" [ref=f28e167] [cursor=pointer]
+              - generic [ref=f28e168]:
+                - button "Vorherige Woche" [ref=f28e169] [cursor=pointer]: ←
+                - textbox "Datum auswählen" [ref=f28e170]: 2026-09-14
+                - button "Nächste Woche" [ref=f28e171] [cursor=pointer]: →
+                - button "Aktuelle Woche" [ref=f28e172] [cursor=pointer]
+              - status [ref=f28e173]: "Laufende Woche: Ist, Soll und Saldo werden nur bis heute berechnet."
+              - paragraph [ref=f28e174]: Keine Benutzerdaten für diese Woche.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

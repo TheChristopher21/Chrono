@@ -1,55 +1,47 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import WorkspaceLink from "./workspace/WorkspaceLink.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../context/LanguageContext.jsx";
+import { getMobilePagesForContext, isAdminUser } from "../utils/pageAccess.js";
 import "../styles/MobileTabBar.css";
 
-const USER_NAV = [
-    { to: "/dashboard", label: "Start", icon: "🏠" },
-    { to: "/percentage-punch", label: "Zeit", icon: "⏱️" },
-    { to: "/payslips", label: "Lohn", icon: "📄" },
-    { to: "/personal-data", label: "Profil", icon: "👤" },
-];
-
-const ADMIN_NAV = [
-    { to: "/admin/dashboard", label: "Admin", icon: "📊" },
-    { to: "/admin/projects", label: "Projekte", icon: "🗂️" },
-    { to: "/admin/users", label: "Team", icon: "👥" },
-    { to: "/admin/analytics", label: "Reports", icon: "📈" },
-];
-
-const USER_PATHS = USER_NAV.map((item) => item.to);
-
-function MobileTabBar() {
+const MobileTabBar = () => {
     const location = useLocation();
+    const { currentUser } = useAuth();
+    const { t } = useTranslation();
     const { pathname } = location;
 
     const inAdminArea = pathname.startsWith("/admin");
-    const inUserArea = USER_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+    const context = inAdminArea || isAdminUser(currentUser) ? "admin" : "user";
+    const navItems = getMobilePagesForContext(currentUser, context, t);
+    const inKnownArea = navItems.some((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
+        || pathname === "/workspace/supply-chain";
 
-    if (!inAdminArea && !inUserArea) {
+    if (/^\/pms(?:\/|$)/.test(pathname) || !inKnownArea || !navItems.length) {
         return null;
     }
-
-    const navItems = inAdminArea ? ADMIN_NAV : USER_NAV;
 
     return (
         <>
             <div className="mobile-tab-spacer" aria-hidden="true" />
-            <nav className="mobile-tab-bar" aria-label="Mobile Navigation">
+            <nav className="mobile-tab-bar" aria-label={t("mobileTabBar.ariaLabel", "Mobile Navigation")}>
                 {navItems.map((item) => (
-                    <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) => `mobile-tab-link${isActive ? " is-active" : ""}`}
+                    <WorkspaceLink
+                        key={item.key}
+                        to={item.path}
+                        className={`mobile-tab-link${pathname === item.path || pathname.startsWith(`${item.path}/`) ? " is-active" : ""}`}
+                        aria-current={pathname === item.path || pathname.startsWith(`${item.path}/`) ? 'page' : undefined}
                         aria-label={item.label}
                     >
                         <span className="mobile-tab-icon" aria-hidden="true">
                             {item.icon}
                         </span>
                         <span className="mobile-tab-label">{item.label}</span>
-                    </NavLink>
+                    </WorkspaceLink>
                 ))}
             </nav>
         </>
     );
-}
+};
 
 export default MobileTabBar;

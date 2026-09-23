@@ -25,6 +25,9 @@ public class PurchaseOrderLine {
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity;
 
+    @Column(name = "received_quantity", precision = 19, scale = 4, nullable = false)
+    private BigDecimal receivedQuantity = BigDecimal.ZERO;
+
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal unitCost;
 
@@ -58,6 +61,14 @@ public class PurchaseOrderLine {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public BigDecimal getReceivedQuantity() { return receivedQuantity; }
+
+    public void setReceivedQuantity(BigDecimal receivedQuantity) { this.receivedQuantity = receivedQuantity; }
+
+    public BigDecimal getOpenQuantity() {
+        return quantity.subtract(receivedQuantity == null ? BigDecimal.ZERO : receivedQuantity);
     }
 
     public BigDecimal getUnitCost() {

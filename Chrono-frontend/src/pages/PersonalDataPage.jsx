@@ -1,5 +1,5 @@
 // src/pages/PersonalDataPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -9,57 +9,103 @@ import CalendarExportModal from '../components/CalendarExportModal';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 
+const personalDataFromUser = (user) => ({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    address: user?.address || '',
+    mobilePhone: user?.mobilePhone || '',
+    landlinePhone: user?.landlinePhone || '',
+    civilStatus: user?.civilStatus || '',
+    children: user?.children ?? 0,
+    bankAccount: user?.bankAccount || '',
+    emailNotifications: user?.emailNotifications ?? true,
+});
+
 const PersonalDataPage = () => {
     const { currentUser, setCurrentUser } = useAuth();
-    const [personalData, setPersonalData] = useState({
-        firstName: currentUser?.firstName || '',
-        lastName: currentUser?.lastName || '',
-        email: currentUser?.email || '',
-        address: currentUser?.address || '',
-        mobilePhone: currentUser?.mobilePhone || '',
-        landlinePhone: currentUser?.landlinePhone || '',
-        civilStatus: currentUser?.civilStatus || '',
-        children: currentUser?.children ?? 0,
-        bankAccount: currentUser?.bankAccount || '',
-        emailNotifications: currentUser?.emailNotifications ?? true,
-    });
+    const identity = currentUser ? `${currentUser.company?.id ?? currentUser.companyId ?? 'global'}:${currentUser.id ?? currentUser.username}` : null;
+    const [personalData, setPersonalData] = useState(() => personalDataFromUser(currentUser));
+    const latestIdentityRef = useRef(identity);
+    latestIdentityRef.current = identity;
+    const profileLoadRef = useRef(null);
+    const draftFieldsRef = useRef(new Set());
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
     });
     const [message, setMessage] = useState('');
     const [showExportModal, setShowExportModal] = useState(false);
+    const [icsFeedToken, setIcsFeedToken] = useState('');
 
     const { notify } = useNotification();
     const { t } = useTranslation();
 
     useEffect(() => {
-        if (currentUser) {
-            fetchPersonalData();
+        if (profileLoadRef.current?.identity !== identity) {
+            profileLoadRef.current?.controller.abort();
+            profileLoadRef.current = null;
+            draftFieldsRef.current.clear();
+            setPersonalData(personalDataFromUser(currentUser));
+            setPasswordData({ currentPassword: '', newPassword: '' });
+            setMessage('');
         }
-        // eslint-disable-next-line
-    }, [currentUser]);
+        if (!identity) return undefined;
+        let load = profileLoadRef.current;
+        if (!load) {
+            load = { identity, controller: new AbortController() };
+            profileLoadRef.current = load;
+            api.get('/api/auth/me', { signal: load.controller.signal })
+                .then((res) => {
+                    if (load.controller.signal.aborted || latestIdentityRef.current !== identity) return;
+                    const fetched = personalDataFromUser(res.data);
+                    setPersonalData((draft) => Object.fromEntries(Object.entries(fetched).map(([key, value]) => [
+                        key, draftFieldsRef.current.has(key) ? draft[key] : value,
+                    ])));
+                })
+                .catch((err) => {
+                    if (load.controller.signal.aborted || latestIdentityRef.current !== identity) return;
+                    profileLoadRef.current = null;
+                    console.error(t('personalData.errorLoading'), err);
+                    notify(t('personalData.errorLoading'));
+                });
+        }
+        return () => {
+            // Activity disconnects effects when a tab is hidden. Keep its request
+            // and draft; a different signed-in identity invalidates the request.
+            if (latestIdentityRef.current !== identity) load.controller.abort();
+        };
+        // Hydrate once per identity, not on token/profile object refresh or tab activation.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [identity]);
 
-    async function fetchPersonalData() {
-        try {
-            const res = await api.get('/api/auth/me');
-            setPersonalData({
-                firstName: res.data.firstName,
-                lastName: res.data.lastName,
-                email: res.data.email,
-                address: res.data.address,
-                mobilePhone: res.data.mobilePhone,
-                landlinePhone: res.data.landlinePhone,
-                civilStatus: res.data.civilStatus,
-                children: res.data.children,
-                bankAccount: res.data.bankAccount,
-                emailNotifications: res.data.emailNotifications,
-            });
-        } catch (err) {
-            console.error(t("personalData.errorLoading"), err);
-            notify(t("personalData.errorLoading"));
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchIcsFeedToken() {
+            if (!currentUser?.username) {
+                setIcsFeedToken('');
+                return;
+            }
+            try {
+                const username = encodeURIComponent(currentUser.username);
+                const res = await api.get(`/api/report/timesheet/ics-feed-token/${username}`);
+                if (!cancelled) {
+                    setIcsFeedToken(res.data?.token || '');
+                }
+            } catch (err) {
+                console.error('Could not load ICS feed token', err);
+                if (!cancelled) {
+                    setIcsFeedToken('');
+                }
+            }
         }
-    }
+
+        fetchIcsFeedToken();
+        return () => {
+            cancelled = true;
+        };
+    }, [currentUser?.username]);
 
     async function handlePersonalDataUpdate(e) {
         e.preventDefault();
@@ -77,6 +123,7 @@ const PersonalDataPage = () => {
                 bankAccount: personalData.bankAccount,
                 emailNotifications: personalData.emailNotifications,
             });
+            if (latestIdentityRef.current !== identity) return;
             notify(t("personalData.saved", "Gespeichert"));
             setCurrentUser(res.data);
         } catch (err) {
@@ -105,8 +152,9 @@ const PersonalDataPage = () => {
 
     const baseUrl = api.defaults.baseURL.replace(/\/$/, "");
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tokenParam = icsFeedToken ? `&token=${encodeURIComponent(icsFeedToken)}` : '';
     const icsUrl = currentUser
-        ? `${baseUrl}/api/report/timesheet/ics-feed/${currentUser.username}?zone=${encodeURIComponent(timeZone)}`
+        ? `${baseUrl}/api/report/timesheet/ics-feed/${encodeURIComponent(currentUser.username)}?zone=${encodeURIComponent(timeZone)}${tokenParam}`
         : '';
 
     function handleCopyLink() {
@@ -123,7 +171,8 @@ const PersonalDataPage = () => {
             </header>
 
             <section className="personal-data-section">
-                <form onSubmit={handlePersonalDataUpdate} className="form-personal">
+                <form onSubmit={handlePersonalDataUpdate} className="form-personal"
+                    onChangeCapture={(event) => draftFieldsRef.current.add(event.target.name)}>
                     <div className="form-group">
                         <label>{t("personalData.firstName", "Vorname")}:</label>
                         <input
@@ -242,6 +291,7 @@ const PersonalDataPage = () => {
                         </label>
                         <input
                             type="checkbox"
+                            name="emailNotifications"
                             checked={personalData.emailNotifications}
                             onChange={(e) =>
                                 setPersonalData({ ...personalData, emailNotifications: e.target.checked })

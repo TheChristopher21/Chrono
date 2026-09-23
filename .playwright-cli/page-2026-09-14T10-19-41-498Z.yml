@@ -1,0 +1,51 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - navigation "Hauptnavigation" [ref=e6]:
+      - link "Chrono" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img "Chrono" [ref=e9]
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - link "Plattform" [ref=e12] [cursor=pointer]:
+            - /url: /#platform
+        - listitem [ref=e13]:
+          - link "Lösungen" [ref=e14] [cursor=pointer]:
+            - /url: /#features
+        - listitem [ref=e15]:
+          - link "Preise" [ref=e16] [cursor=pointer]:
+            - /url: /#preise
+        - listitem [ref=e17]:
+          - link "Arbeitszeit-Rechner" [ref=e18] [cursor=pointer]:
+            - /url: /arbeitszeit-rechner
+        - listitem [ref=e19]:
+          - link "Login" [ref=e20] [cursor=pointer]:
+            - /url: /login
+        - listitem [ref=e21]:
+          - link "Demo anfragen" [ref=e22] [cursor=pointer]:
+            - /url: /register
+        - listitem [ref=e23]:
+          - button "Dark Mode" [ref=e24] [cursor=pointer]
+        - listitem [ref=e28]:
+          - button "🌐" [ref=e29] [cursor=pointer]
+    - main [ref=e32]:
+      - generic [ref=e33]:
+        - link [ref=e34] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=e35]
+        - generic [ref=e36]:
+          - heading "Willkommen zurück!" [level=1] [ref=e37]
+          - paragraph [ref=e38]: Melde dich an, um fortzufahren.
+        - generic [ref=e39]:
+          - generic [ref=e40]: Benutzername
+          - textbox "Benutzername" [ref=e41]:
+            - /placeholder: z. B. max.meier
+          - generic [ref=e42]: Passwort
+          - textbox "Passwort" [ref=e43]:
+            - /placeholder: "********"
+          - button "Login" [ref=e44] [cursor=pointer]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

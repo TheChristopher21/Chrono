@@ -1,0 +1,28 @@
+.pms-revenue-planning { min-width: 0; --planning-line: var(--pms-line); }
+.pms-revenue-planning button { min-height: 40px; padding: .65rem .9rem; border: 1px solid var(--pms-line); border-radius: 8px; background: var(--pms-surface); color: var(--pms-ink); font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.pms-revenue-planning button:hover:not(:disabled) { border-color: var(--pms-green); color: var(--pms-accent-text); }
+.pms-revenue-planning button:disabled { opacity: .5; cursor: default; }
+.pms-planning-filters { display: grid; grid-template-columns: 1fr 1fr minmax(15rem, 2fr) auto; gap: .9rem; align-items: end; margin: 1.3rem 0; }
+.pms-planning-filters label, .pms-planning-management label { display: grid; min-width: 0; gap: .4rem; font-size: .85rem; }
+.pms-planning-filters input, .pms-planning-filters select, .pms-planning-management input, .pms-planning-management select { min-width: 0; width: 100%; padding: .65rem .7rem; border: 1px solid var(--planning-line); border-radius: .55rem; color: var(--pms-ink); background: var(--pms-surface); }
+.pms-planning-empty { padding: 1rem 1.15rem; border: 1px dashed var(--planning-line); border-radius: .8rem; font-size: .9rem; margin: 1rem 0; }
+.pms-planning-kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0; }
+.pms-planning-kpis > div { display: grid; gap: .5rem; padding: 1.2rem; border: 1px solid var(--planning-line); border-radius: .9rem; background: color-mix(in srgb, #168776 5%, transparent); }
+.pms-planning-kpis span, .pms-planning-kpis small { color: var(--pms-muted); font-size: .82rem; }
+.pms-planning-kpis strong { font-size: clamp(1.15rem, 2vw, 1.75rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pms-planning-chart { margin: 1.5rem 0; border: 1px solid var(--planning-line); border-radius: .9rem; padding: 1rem; }
+.pms-planning-chart svg { width: 100%; display: block; margin: .8rem 0; }
+.pms-planning-chart-labels, .pms-planning-chart figcaption { display: flex; justify-content: space-between; gap: .7rem; font-size: .78rem; color: var(--pms-muted); flex-wrap: wrap; }
+.pms-planning-legend { margin-left: 1rem; }
+.pms-planning-legend::before { content: ''; display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .4rem; }
+.pms-planning-legend.current::before { background: #168776; }.pms-planning-legend.previous::before { background: #b58335; }
+.pms-planning-table { overflow-x: auto; margin: 1rem 0; max-height: 30rem; }
+.pms-planning-table table { width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.pms-planning-table caption { text-align: left; padding-bottom: .7rem; color: var(--pms-muted); }
+.pms-planning-table th, .pms-planning-table td { text-align: right; padding: .85rem .7rem; border-bottom: 1px solid var(--planning-line); white-space: nowrap; }
+.pms-planning-table th:first-child { text-align: left; }.pms-planning-table thead { font-size: .75rem; color: var(--pms-muted); }
+.pms-planning-table small { display: block; font-weight: 400; color: var(--pms-muted); font-size: .74rem; margin-top: .25rem; }
+.pms-planning-management { display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; border-top: 1px solid var(--planning-line); padding-top: 1.2rem; margin-top: 1.2rem; }
+.pms-planning-management h4 { margin: .25rem 0 .7rem; }.pms-planning-management button { margin-top: .8rem; }
+@media (max-width: 850px) { .pms-planning-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pms-planning-kpis, .pms-planning-management { grid-template-columns: minmax(0, 1fr); }.pms-planning-kpis { gap: .6rem; }.pms-planning-legend { margin-left: 0; } }
+@media (max-width: 480px) { .pms-planning-filters { grid-template-columns: minmax(0,1fr); } }

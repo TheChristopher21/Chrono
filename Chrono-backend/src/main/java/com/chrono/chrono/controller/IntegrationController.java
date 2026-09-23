@@ -9,6 +9,7 @@ import com.chrono.chrono.services.ComplianceAuditService;
 import com.chrono.chrono.services.IntegrationConfigService;
 import com.chrono.chrono.services.ReportService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +40,7 @@ public class IntegrationController {
     private ComplianceAuditService complianceAuditService;
 
     private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
     }
 
     private boolean isAdmin(User user) {
@@ -81,7 +82,9 @@ public class IntegrationController {
         config.setName(request.getName());
         config.setType(request.getType());
         config.setEndpointUrl(request.getEndpointUrl());
-        config.setAuthHeader(request.getAuthHeader());
+        if (request.getAuthHeader() != null && !"********".equals(request.getAuthHeader())) {
+            config.setAuthHeader(request.getAuthHeader());
+        }
         config.setActive(request.getActive() != null ? request.getActive() : Boolean.TRUE);
         config.setAutoSync(request.getAutoSync() != null ? request.getAutoSync() : Boolean.FALSE);
         IntegrationConfig saved = integrationConfigService.save(config);
@@ -116,7 +119,9 @@ public class IntegrationController {
             config.setType(request.getType());
         }
         config.setEndpointUrl(request.getEndpointUrl());
-        config.setAuthHeader(request.getAuthHeader());
+        if (request.getAuthHeader() != null && !"********".equals(request.getAuthHeader())) {
+            config.setAuthHeader(request.getAuthHeader());
+        }
         if (request.getActive() != null) {
             config.setActive(request.getActive());
         }

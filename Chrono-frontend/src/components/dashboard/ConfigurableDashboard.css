@@ -1,0 +1,587 @@
+.configurable-dashboard {
+    --dashboard-config-primary: var(--ud-c-primary, var(--c-pri, #2563eb));
+    --dashboard-config-primary-text: #ffffff;
+    --dashboard-config-text: var(--ud-c-text, var(--c-text, #172033));
+    --dashboard-config-muted: var(--ud-c-text-muted, var(--c-muted, #5d687d));
+    --dashboard-config-card: var(--ud-c-card, var(--c-card, #ffffff));
+    --dashboard-config-surface: var(--ud-c-surface, var(--c-surface, #f4f6fb));
+    --dashboard-config-border: var(--ud-c-border, var(--c-border, #d9dfeb));
+    --dashboard-config-radius: var(--ud-radius-lg, var(--u-radius-md, 12px));
+    --dashboard-config-gap: var(--ud-gap-lg, var(--u-gap-md, 1.25rem));
+    width: 100%;
+    min-width: 0;
+}
+
+/* Free placement is opt-in; the legacy ordered dashboard rules remain unchanged. */
+.dashboard-free .dashboard-free-grid {
+    position: relative;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--dashboard-free-rows), var(--dashboard-free-row));
+    align-items: stretch;
+}
+
+.dashboard-free.is-editing .dashboard-free-grid {
+    --dashboard-free-step-x: calc((100% + var(--dashboard-config-gap)) / 12);
+    --dashboard-free-step-y: calc(var(--dashboard-free-row) + var(--dashboard-config-gap));
+    background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--dashboard-config-primary) 12%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--dashboard-config-primary) 12%, transparent) 1px, transparent 1px);
+    background-size: var(--dashboard-free-step-x) var(--dashboard-free-step-y);
+    border-radius: var(--dashboard-config-radius);
+}
+
+.dashboard-free .dashboard-free-widget {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--dashboard-config-radius);
+}
+
+.dashboard-free .dashboard-free-widget > .dashboard-widget-content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    /* Continue scrolling the overview at a card's edge, including cards that fit. */
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    scrollbar-width: thin;
+}
+
+.dashboard-free .dashboard-free-widget > .dashboard-widget-content > :only-child {
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.dashboard-free .dashboard-free-widget.is-selected {
+    border-color: var(--dashboard-config-primary);
+}
+
+.dashboard-free .dashboard-widget-edit-bar {
+    flex: 0 0 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+}
+
+.dashboard-free .dashboard-widget-edit-bar button {
+    flex: 0 0 auto;
+    padding: 0.25rem 0.5rem;
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+}
+
+.dashboard-free .dashboard-widget-edit-bar .dashboard-free-title {
+    flex: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: left;
+    background: transparent;
+    border-color: transparent;
+}
+
+.dashboard-free .dashboard-free-move,
+.dashboard-free .dashboard-free-resize {
+    touch-action: none;
+    user-select: none;
+}
+
+.dashboard-free .dashboard-free-move { cursor: grab; font-size: 1.2rem; }
+.dashboard-free .dashboard-free-move:active { cursor: grabbing; }
+
+.dashboard-free .dashboard-free-resize {
+    position: absolute;
+    z-index: 4;
+    bottom: 0;
+    right: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--dashboard-config-border);
+    border-radius: 0.7rem 0 0.7rem 0;
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+    cursor: nwse-resize;
+    font-size: 1.3rem;
+}
+
+.dashboard-free .dashboard-free-resize:focus-visible {
+    outline: 3px solid var(--dashboard-config-primary);
+    outline-offset: -3px;
+}
+
+.dashboard-free .dashboard-free-preview {
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-start;
+    padding: 0.6rem;
+    border: 2px solid var(--dashboard-config-primary);
+    border-radius: var(--dashboard-config-radius);
+    background: color-mix(in srgb, var(--dashboard-config-primary) 14%, transparent);
+}
+
+.dashboard-free .dashboard-free-preview span {
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    color: var(--dashboard-config-primary-text);
+    background: var(--dashboard-config-primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.dashboard-free .dashboard-free-preview.is-blocked {
+    border-color: #b42318;
+    background: color-mix(in srgb, #b42318 12%, transparent);
+}
+.dashboard-free .dashboard-free-preview.is-blocked span { background: #b42318; }
+
+.dashboard-free .dashboard-config-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.dashboard-free .dashboard-free-editor input,
+.dashboard-free .dashboard-free-editor select {
+    min-height: 2.5rem;
+    min-width: 0;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--dashboard-config-border);
+    border-radius: 0.6rem;
+    background: var(--dashboard-config-card);
+    color: var(--dashboard-config-text);
+    font: inherit;
+}
+
+.dashboard-free .dashboard-free-palette {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: start;
+    gap: 0.45rem;
+    max-height: 12rem;
+    overflow: auto;
+    margin: 1rem 0;
+    padding: 0.2rem;
+}
+
+.dashboard-free .dashboard-free-palette button {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--dashboard-config-muted);
+    background: var(--dashboard-config-surface);
+}
+
+.dashboard-free .dashboard-free-palette button.is-added {
+    color: var(--dashboard-config-text);
+    border-color: color-mix(in srgb, var(--dashboard-config-primary) 45%, var(--dashboard-config-border));
+    background: color-mix(in srgb, var(--dashboard-config-primary) 9%, var(--dashboard-config-card));
+}
+
+.dashboard-free .dashboard-free-inspector,
+.dashboard-free .dashboard-free-position {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.dashboard-free .dashboard-free-inspector {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--dashboard-config-border);
+}
+
+.dashboard-free .dashboard-free-inspector label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--dashboard-config-muted);
+}
+.dashboard-free .dashboard-free-selection { flex: 1 1 12rem; }
+.dashboard-free .dashboard-free-position input { width: 5.3rem; }
+.dashboard-free .dashboard-free-position button {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.7rem;
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-surface);
+}
+
+.dashboard-free .dashboard-free-help { margin: 0.85rem 0 0; color: var(--dashboard-config-muted); font-size: 0.78rem; line-height: 1.6; }
+.dashboard-free .dashboard-free-error { color: #b42318; font-size: 0.85rem; }
+.dashboard-free .dashboard-free-placeholder { grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--dashboard-config-muted); }
+.dashboard-free button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    .dashboard-free .dashboard-free-grid {
+        display: flex;
+        flex-direction: column;
+        background: none !important;
+    }
+    .dashboard-free .dashboard-free-widget > .dashboard-widget-content { flex: none; max-height: 42rem; }
+    .dashboard-free .dashboard-free-widget > .dashboard-widget-content > :only-child { min-height: 0; }
+    .dashboard-free .dashboard-free-widget { min-height: 0; }
+    .dashboard-free .dashboard-free-resize { position: static; align-self: flex-end; width: 2.75rem; height: 2.75rem; }
+    .dashboard-free .dashboard-free-move { cursor: default; }
+    .dashboard-free .dashboard-free-position { width: 100%; }
+    .dashboard-free .dashboard-free-position label { flex: 1 1 20%; }
+    .dashboard-free .dashboard-free-position input { width: 100%; box-sizing: border-box; }
+    .dashboard-free .dashboard-free-editor input[type="search"] { width: 100%; }
+}
+
+.dashboard-config-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+}
+
+.dashboard-config-toolbar button,
+.dashboard-config-panel button,
+.dashboard-widget-edit-bar button,
+.dashboard-config-panel select,
+.dashboard-widget-edit-bar select {
+    min-height: 2.35rem;
+    border: 1px solid var(--dashboard-config-border);
+    border-radius: 0.6rem;
+    font: inherit;
+}
+
+.dashboard-config-toolbar button,
+.dashboard-config-panel button,
+.dashboard-widget-edit-bar button {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.dashboard-config-toolbar button:focus-visible,
+.dashboard-config-panel button:focus-visible,
+.dashboard-config-panel input:focus-visible,
+.dashboard-config-panel select:focus-visible,
+.dashboard-widget:focus-visible,
+.dashboard-widget-edit-bar button:focus-visible,
+.dashboard-widget-edit-bar select:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--dashboard-config-primary) 28%, transparent);
+    outline-offset: 2px;
+}
+
+.dashboard-config-primary,
+.dashboard-config-secondary {
+    padding: 0.55rem 0.9rem;
+}
+
+.dashboard-config-primary {
+    color: var(--dashboard-config-primary-text);
+    background: var(--dashboard-config-primary);
+    border-color: var(--dashboard-config-primary) !important;
+}
+
+.dashboard-config-secondary {
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+}
+
+.dashboard-persistence-status {
+    color: var(--dashboard-config-muted);
+    font-size: 0.78rem;
+}
+
+.dashboard-persistence-status::before {
+    content: '';
+    display: inline-block;
+    width: 0.48rem;
+    height: 0.48rem;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background: #94a3b8;
+}
+
+.dashboard-persistence-status.is-server::before {
+    background: #16a34a;
+}
+
+.dashboard-persistence-status.is-local::before {
+    background: #d97706;
+}
+
+.dashboard-persistence-status.is-saving::before {
+    background: var(--dashboard-config-primary);
+}
+
+.dashboard-config-panel {
+    margin-bottom: var(--dashboard-config-gap);
+    padding: clamp(0.9rem, 2vw, 1.25rem);
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+    border: 1px solid var(--dashboard-config-border);
+    border-radius: var(--dashboard-config-radius);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-config-panel-heading h3,
+.dashboard-config-panel-heading p {
+    margin: 0;
+}
+
+.dashboard-config-panel-heading p {
+    margin-top: 0.3rem;
+    color: var(--dashboard-config-muted);
+    font-size: 0.88rem;
+}
+
+.dashboard-config-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+    gap: 0.65rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dashboard-config-list > li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.7rem;
+    background: var(--dashboard-config-surface);
+    border: 1px solid var(--dashboard-config-border);
+    border-radius: 0.75rem;
+}
+
+.dashboard-config-list > li.is-hidden {
+    opacity: 0.72;
+}
+
+.dashboard-config-visibility {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.dashboard-config-visibility input {
+    flex: 0 0 auto;
+    width: 1.1rem !important;
+    height: 1.1rem;
+    margin-top: 0.15rem;
+    accent-color: var(--dashboard-config-primary);
+}
+
+.dashboard-config-visibility span,
+.dashboard-config-visibility small {
+    display: block;
+    min-width: 0;
+}
+
+.dashboard-config-visibility small {
+    margin-top: 0.18rem;
+    color: var(--dashboard-config-muted);
+    font-size: 0.76rem;
+    line-height: 1.3;
+}
+
+.dashboard-config-item-actions,
+.dashboard-widget-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+}
+
+.dashboard-config-item-actions select,
+.dashboard-widget-edit-actions select {
+    width: auto !important;
+    min-width: 4.5rem;
+    padding: 0.35rem 0.5rem !important;
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+}
+
+.dashboard-config-item-actions button,
+.dashboard-widget-edit-actions button {
+    min-width: 2.35rem;
+    padding: 0.25rem 0.55rem;
+    color: var(--dashboard-config-text);
+    background: var(--dashboard-config-card);
+}
+
+.dashboard-config-item-actions button:disabled,
+.dashboard-widget-edit-actions button:disabled,
+.dashboard-config-item-actions select:disabled,
+.dashboard-widget-edit-actions select:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.dashboard-widget-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--dashboard-config-gap);
+    min-width: 0;
+}
+
+.dashboard-widget {
+    grid-column: span 12;
+    min-width: 0;
+}
+
+.dashboard-widget--size-s {
+    grid-column: span 3;
+}
+
+.dashboard-widget--size-m {
+    grid-column: span 6;
+}
+
+.dashboard-widget--size-l {
+    grid-column: span 9;
+}
+
+.dashboard-widget--size-full {
+    grid-column: 1 / -1;
+}
+
+.dashboard-widget-content {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-widget:not(.dashboard-widget--size-full) .dashboard-widget-content {
+    overflow-x: auto;
+}
+
+.configurable-dashboard.is-editing .dashboard-widget {
+    padding: 0.55rem;
+    background: color-mix(in srgb, var(--dashboard-config-primary) 5%, var(--dashboard-config-card));
+    border: 2px dashed color-mix(in srgb, var(--dashboard-config-primary) 55%, var(--dashboard-config-border));
+    border-radius: var(--dashboard-config-radius);
+}
+
+.configurable-dashboard.is-editing .dashboard-widget[draggable='true'] {
+    cursor: grab;
+}
+
+.configurable-dashboard.is-editing .dashboard-widget[draggable='true']:active {
+    cursor: grabbing;
+}
+
+.dashboard-widget.is-dragging {
+    opacity: 0.45;
+}
+
+.dashboard-widget-edit-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    margin: -0.1rem -0.1rem 0.55rem;
+    padding: 0.35rem;
+    color: var(--dashboard-config-text);
+}
+
+.dashboard-widget-edit-bar > strong {
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-widget-drag-handle {
+    color: var(--dashboard-config-muted);
+    font-size: 1.2rem;
+    letter-spacing: -0.25rem;
+}
+
+.dashboard-config-empty {
+    padding: 1rem;
+    color: var(--dashboard-config-muted);
+    text-align: center;
+    background: var(--dashboard-config-surface);
+    border: 1px dashed var(--dashboard-config-border);
+    border-radius: var(--dashboard-config-radius);
+}
+
+.configurable-dashboard .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+@media (max-width: 1100px) {
+    .dashboard-widget--size-s {
+        grid-column: span 6;
+    }
+
+    .dashboard-widget--size-l {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 720px) {
+    .dashboard-config-toolbar {
+        justify-content: stretch;
+    }
+
+    .dashboard-config-toolbar button {
+        flex: 1 1 auto;
+    }
+
+    .dashboard-persistence-status {
+        flex: 1 0 100%;
+        text-align: right;
+    }
+
+    .dashboard-widget--size-s,
+    .dashboard-widget--size-m,
+    .dashboard-widget--size-l,
+    .dashboard-widget--size-full {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard-config-list > li {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dashboard-config-item-actions {
+        justify-content: flex-end;
+    }
+
+    .dashboard-widget-edit-bar {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-widget-edit-actions {
+        flex: 1 0 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .configurable-dashboard *,
+    .configurable-dashboard *::before,
+    .configurable-dashboard *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

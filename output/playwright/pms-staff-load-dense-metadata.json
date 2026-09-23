@@ -1,0 +1,164 @@
+{
+  "capturedAtUtc": "2026-09-12T10:14:22.3585591Z",
+  "api": "http://127.0.0.1:18085",
+  "propertyId": 1,
+  "businessDate": "2026-09-12",
+  "initialRooms": 1007,
+  "additionalRooms": 0,
+  "totalRooms": 1007,
+  "configuredVus": 12,
+  "configuredDurationSeconds": 45,
+  "writeProbabilityPerEligibleIteration": 0.05,
+  "users": [
+    {
+      "userId": 6,
+      "role": "reception",
+      "master": false,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "FRONT_DESK": "MANAGE",
+            "GUESTS": "MANAGE"
+          }
+        }
+      ]
+    },
+    {
+      "userId": 7,
+      "role": "housekeeping",
+      "master": false,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "HOUSEKEEPING": "MANAGE"
+          }
+        }
+      ]
+    },
+    {
+      "userId": 8,
+      "role": "finance",
+      "master": false,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "FINANCE": "MANAGE"
+          }
+        }
+      ]
+    },
+    {
+      "userId": 9,
+      "role": "management",
+      "master": false,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "REPORTS": "VIEW"
+          }
+        }
+      ]
+    }
+  ],
+  "roleChecks": [
+    {
+      "role": "reception",
+      "expected": 403,
+      "actual": 403,
+      "operation": "master access administration denied"
+    },
+    {
+      "role": "reception",
+      "expected": 403,
+      "actual": 403,
+      "operation": "ungranted hotel area denied"
+    },
+    {
+      "role": "housekeeping",
+      "expected": 403,
+      "actual": 403,
+      "operation": "master access administration denied"
+    },
+    {
+      "role": "housekeeping",
+      "expected": 403,
+      "actual": 403,
+      "operation": "ungranted hotel area denied"
+    },
+    {
+      "role": "finance",
+      "expected": 403,
+      "actual": 403,
+      "operation": "master access administration denied"
+    },
+    {
+      "role": "finance",
+      "expected": 403,
+      "actual": 403,
+      "operation": "ungranted hotel area denied"
+    },
+    {
+      "role": "management",
+      "expected": 403,
+      "actual": 403,
+      "operation": "master access administration denied"
+    },
+    {
+      "role": "management",
+      "expected": 403,
+      "actual": 403,
+      "operation": "ungranted hotel area denied"
+    }
+  ],
+  "before": {
+    "invoiceHistory": 1,
+    "housekeepingOrders": 3,
+    "guestProfilesVisible": 200,
+    "foliosVisible": 509,
+    "reservationsVisible": 509
+  },
+  "limitations": [
+    "Single local API instance and isolated synthetic data; not distributed production capacity certification.",
+    "Only guest creation and housekeeping state updates are write workloads; no booking/payment contention or external provider calls.",
+    "Five percent write probability applies to eligible reception/housekeeping iterations, not all HTTP calls.",
+    "Invoice/receivable history remains small; 500 synthetic confirmed stays add 1500 room nights and at least 1500 ledger lines.",
+    "Frozen QA server predates the final legacy housekeeping fix; new work-order endpoints are used.",
+    "Operations guestProfilesVisible is capped at 200; it is not the total number of guest profiles in the database."
+  ],
+  "denseSeedEvidence": "pms-staff-dense-seed.json",
+  "loadExitCode": 99,
+  "after": {
+    "housekeepingFixtureVersion": 17,
+    "housekeepingOrders": 3,
+    "guestProfilesVisible": 200,
+    "foliosVisible": 509,
+    "reservationsVisible": 509
+  },
+  "results": {
+    "httpRequests": 1304,
+    "workloadOperations": 1300,
+    "writes": 23,
+    "guestCreateWrites": 6,
+    "housekeepingWrites": 17,
+    "observedWriteSharePercent": 1.77,
+    "readP95Ms": 101.83055920000007,
+    "writeP95Ms": 2771.5669675,
+    "httpErrorRate": 0,
+    "workloadErrorRate": 0,
+    "authorizationErrorRate": 0,
+    "negativeRoleProbesPassed": 8,
+    "allK6ThresholdsPassed": false,
+    "failedThresholds": [
+      "write p95 <1500 ms",
+      "write p99 <3000 ms"
+    ]
+  }
+}

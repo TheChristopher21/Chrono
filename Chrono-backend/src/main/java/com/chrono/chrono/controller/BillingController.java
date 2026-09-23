@@ -7,6 +7,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.BillingService;
 import com.chrono.chrono.services.ProjectService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,7 @@ public class BillingController {
     private UserService userService;
 
     private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
     }
 
     private boolean isAdmin(User user) {

@@ -5,6 +5,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.CustomerService;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,16 +44,9 @@ public class CustomerController {
      * Akzeptiert jetzt ein User-Objekt direkt.
      */
     private boolean featureEnabled(User user) {
-        if (user == null || user.getCompany() == null) {
-            return false;
-        }
-
-        if (Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
-            return true;
-        }
-
-        return user.getCompany().getEnabledFeatures() != null
-                && user.getCompany().getEnabledFeatures().contains("crm");
+        return user != null
+                && (RegistrationFeatures.isProjectsEnabled(user.getCompany())
+                    || RegistrationFeatures.isCompanyFeatureEnabled(user.getCompany(), "crm"));
     }
 
     /**

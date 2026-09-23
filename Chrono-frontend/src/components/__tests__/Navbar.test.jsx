@@ -4,6 +4,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return { ...actual, useNavigate: () => mockNavigate };
+});
+
 vi.mock('../../utils/api', () => ({ default: { get: vi.fn().mockResolvedValue({ data: null }) } }));
 vi.mock('../ChangelogModal.jsx', () => ({ default: () => null }));
 
@@ -25,17 +32,62 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 };
 
 describe('Navbar', () => {
-    it('shows login and register links when unauthenticated', () => {
+    it('offers the new dashboard to superadmins while retaining the classic dashboard link', async () => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Superadmin', roles: ['ROLE_SUPERADMIN'], pagePermissions: {} },
+        }, '/admin/dashboard');
+        await userEvent.click(screen.getByRole('button', { name: /Plattform/i }));
+        expect(screen.getByRole('link', { name: 'Neues Dashboard' })).toHaveAttribute('href', '/admin/dashboard-neu');
+        expect(screen.getByRole('link', { name: /Zum Dashboard/i })).toHaveAttribute('href', '/admin/dashboard');
+    });
+
+    it.each(['ROLE_ADMIN', 'ROLE_USER'])('hides the new dashboard from %s even with an explicit grant', async (role) => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Restricted', roles: [role], pagePermissions: { adminDashboard: 'VIEW', adminDashboardWorkspace: 'MANAGE' } },
+        }, '/admin/dashboard');
+        await userEvent.click(screen.getByRole('button', { name: /Plattform/i }));
+        expect(screen.queryByRole('link', { name: 'Neues Dashboard' })).not.toBeInTheDocument();
+    });
+
+    it('shows only PMS workspace navigation and an explicit switch back to Chrono inside PMS', async () => {
+        renderNavbar({
+            authToken: 'token', logout: vi.fn(),
+            currentUser: { username: 'Reception', roles: ['ROLE_ADMIN'], companyFeatureKeys: ['pms'],
+                pagePermissions: { adminDashboard: 'VIEW', pms: 'MANAGE' } },
+        }, '/pms?section=guests');
+        expect(screen.getByRole('link', { name: 'Zu Chrono wechseln' })).toHaveAttribute('href', '/admin/dashboard');
+        expect(screen.queryByRole('link', { name: 'Arbeitszeit-Rechner' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Plattform/i })).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: /PMS-Bereiche/i }));
+        expect(screen.getByRole('link', { name: /Zimmerplan/i })).toHaveAttribute('href', '/pms?section=room-plan');
+        expect(screen.getByRole('link', { name: /Hotelportfolio/i })).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /Benutzerverwaltung/i })).not.toBeInTheDocument();
+    });
+
+    it('shows login and an honest demo request CTA when unauthenticated', () => {
+        mockNavigate.mockReset();
         renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');
         expect(screen.getByText(/Login/i)).toBeInTheDocument();
-        expect(screen.getByText(/Registrieren/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Demo anfragen' })).toHaveAttribute('href', '/register');
+        expect(screen.queryByText('Registrieren')).not.toBeInTheDocument();
         expect(screen.queryByText(/Abmelden/i)).toBeNull();
     });
 
     it('displays username and triggers logout when authenticated', async () => {
+        mockNavigate.mockReset();
         const logoutMock = vi.fn();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Alice',
+                    roles: [],
+                    pagePermissions: { dashboard: 'VIEW', personalData: 'VIEW' },
+                },
+                logout: logoutMock,
+            },
             '/dashboard'
         );
 
@@ -51,26 +103,70 @@ describe('Navbar', () => {
         await userEvent.click(logoutButton);
 
         expect(logoutMock).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
     });
 
-    it('shows user navigation for admin on user dashboard', () => {
+    it('shows platform navigation for admin on user dashboard', async () => {
+        mockNavigate.mockReset();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'] }, logout: vi.fn() },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Admin',
+                    roles: ['ROLE_ADMIN'],
+                    pagePermissions: { adminDashboard: 'VIEW' },
+                },
+                logout: vi.fn(),
+            },
             '/dashboard'
         );
-        const dashboardLink = screen.getByRole('link', { name: /Mein Dashboard/i });
+        const platformTrigger = screen.getByRole('button', { name: /Plattform/i });
+        await userEvent.click(platformTrigger);
+
+        const dashboardLink = screen.getByRole('link', { name: /Zum Dashboard/i });
         expect(dashboardLink).toBeInTheDocument();
         expect(dashboardLink).toHaveAttribute('href', '/admin/dashboard');
-        expect(screen.queryByText(/Admin-Start/i)).toBeNull();
+        expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
     });
 
     it('shows admin navigation for admin on admin dashboard', () => {
+        mockNavigate.mockReset();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'], customerTrackingEnabled: true }, logout: vi.fn() },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Admin',
+                    roles: ['ROLE_ADMIN'],
+                    customerTrackingEnabled: true,
+                    pagePermissions: { adminDashboard: 'VIEW' },
+                },
+                logout: vi.fn(),
+            },
             '/admin/dashboard'
         );
-        expect(screen.getAllByRole('button', { name: /Admin/i })[0]).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Plattform/i })).toBeInTheDocument();
         expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
+    });
+
+    it('shows the PMS button in the user menu only with PMS access', async () => {
+        mockNavigate.mockReset();
+        renderNavbar(
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Christopher',
+                    roles: ['ROLE_USER'],
+                    companyFeatureKeys: ['pms'],
+                    pagePermissions: { dashboard: 'VIEW', pms: 'MANAGE' },
+                },
+                logout: vi.fn(),
+            },
+            '/dashboard'
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /Christopher/i }));
+
+        expect(screen.getByRole('link', { name: 'Hotelverwaltung (PMS)' })).toHaveAttribute('href', '/pms');
     });
 
 });
