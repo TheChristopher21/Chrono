@@ -37,8 +37,8 @@ export const PAGE_CATALOG = [
     },
     {
         key: "payslips",
-        label: "Abrechnungen",
-        description: "Lohnabrechnungen und Dokumente ansehen.",
+        label: "Meine Abrechnungen",
+        description: "Eigene Lohnabrechnungen und Dokumente ansehen.",
         path: "/payslips",
         audiences: ["user", "admin"],
         dashboardContexts: ["user"],
@@ -306,8 +306,8 @@ export const PAGE_CATALOG = [
     },
     {
         key: "adminPayslips",
-        label: "Payroll",
-        description: "Abrechnungen erstellen und verwalten.",
+        label: "Lohnabrechnungen verwalten",
+        description: "Ansehen oder Verwalten: Lohnabrechnungen erstellen, bearbeiten und freigeben.",
         path: "/admin/payslips",
         featureKey: "payroll",
         audiences: ["admin", "payroll"],

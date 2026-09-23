@@ -101,6 +101,32 @@ describe('AdminUserManagementPage complete user management', () => {
         apiMock.patch.mockResolvedValue({ data: { ...managedUser, includeInTimeTracking: false } });
     });
 
+    it('allows assigning payroll management separately from personal payslip access', async () => {
+        const payrollUser = {
+            ...managedUser,
+            companyFeatureKeys: ['payroll'],
+            pagePermissions: { adminUsers: 'MANAGE', adminPayslips: 'VIEW', payslips: 'VIEW' },
+        };
+        apiMock.get.mockResolvedValue({ data: [payrollUser] });
+        apiMock.put.mockResolvedValue({ data: payrollUser });
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        await userEvent.click(screen.getByRole('tab', { name: 'Rechte' }));
+        const payrollAccess = screen.getByRole('combobox', { name: 'Lohnabrechnungen verwalten Zugriff' });
+        expect(payrollAccess).toHaveValue('VIEW');
+        await userEvent.selectOptions(payrollAccess, 'MANAGE');
+        expect(screen.getByRole('combobox', { name: 'Meine Abrechnungen Zugriff' })).toHaveValue('VIEW');
+
+        const saveButtons = screen.getAllByRole('button', { name: /Speichern|Änderungen speichern/i });
+        await userEvent.click(saveButtons[saveButtons.length - 1]);
+        await waitFor(() => expect(apiMock.put).toHaveBeenCalledTimes(1));
+        expect(apiMock.put.mock.calls[0][1].pagePermissions).toMatchObject({
+            adminPayslips: 'MANAGE', payslips: 'VIEW',
+        });
+    });
+
     it('saves a visibility-only toggle through the dedicated endpoint', async () => {
         render(<AdminUserManagementPage />);
 

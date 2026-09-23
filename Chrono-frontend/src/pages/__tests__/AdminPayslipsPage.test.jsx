@@ -196,14 +196,14 @@ describe('AdminPayslipsPage', () => {
     render(<AdminPayslipsPage />);
 
     await screen.findByText('Anna Offen');
-    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
     await user.type(within(dialog).getByLabelText('Auszahlung'), '2026-09-05');
-    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnung erstellen' }));
 
     await waitFor(() => {
       expect(apiMock.post).toHaveBeenCalledWith('/api/payslips/generate', null, {
@@ -224,15 +224,15 @@ describe('AdminPayslipsPage', () => {
     render(<AdminPayslipsPage />);
 
     await screen.findByText('Anna Offen');
-    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
     await user.click(within(dialog).getByLabelText('Ueberstunden auszahlen'));
     await user.type(within(dialog).getByLabelText('Ueberstunden (Std:Min.)'), '16:41');
-    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnung erstellen' }));
 
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
       '/api/payslips/generate',
@@ -251,15 +251,15 @@ describe('AdminPayslipsPage', () => {
     render(<AdminPayslipsPage />);
 
     await screen.findByText('Anna Offen');
-    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
     await user.click(within(dialog).getByLabelText('Ueberstunden auszahlen'));
     await user.type(within(dialog).getByLabelText('Ueberstunden (Std:Min.)'), '16:75');
-    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnung erstellen' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Stunden:Minuten/);
     expect(apiMock.post).not.toHaveBeenCalledWith('/api/payslips/generate', null, expect.anything());
@@ -277,14 +277,14 @@ describe('AdminPayslipsPage', () => {
     render(<AdminPayslipsPage />);
 
     await screen.findByText('Anna Offen');
-    await user.click(screen.getByRole('button', { name: '+ Neuer Abrechnungslauf' }));
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neuen Abrechnungslauf erstellen' });
+    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
-    await user.click(within(dialog).getByRole('button', { name: 'Abrechnungslauf erstellen' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Abrechnung erstellen' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/positiver Stundenansatz/);
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(/positiver Stundenansatz/);
   });
 });

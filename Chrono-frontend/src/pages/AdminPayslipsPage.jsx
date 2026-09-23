@@ -472,7 +472,7 @@ const AdminPayslipsPage = () => {
         <div className="payroll-title-block">
           <p className="payroll-eyebrow">{t('adminPayslips.centerEyebrow', 'Payroll-Center')}</p>
           <h1>{t('adminPayslips.centerTitle', 'Lohnabrechnung')}</h1>
-          <p>{t('adminPayslips.centerSubtitle', 'Abrechnungslauf vorbereiten, pruefen, freigeben und archivieren.')}</p>
+          <p>{t('adminPayslips.centerSubtitle', 'Lohnabrechnungen erstellen, prüfen, freigeben und archivieren.')}</p>
           <div className="payroll-run-summary">
             <span>{t('adminPayslips.employeeCount', '{{count}} Mitarbeitende', { count: totals.uniqueUsers || allPayslips.length })}</span>
             <span>{t('adminPayslips.nextPayout', 'Auszahlung {{date}}', { date: formatDate(totals.firstPayout) })}</span>
@@ -483,8 +483,8 @@ const AdminPayslipsPage = () => {
           <button type="button" className="secondary-btn" onClick={() => setSettingsOpen(true)}>
             {t('adminPayslips.documentDesign', 'Dokumentdesign')}
           </button>
-          <button type="button" className="primary-btn" onClick={() => setCreateOpen(true)}>
-            {t('adminPayslips.newPayrollRun', '+ Neuer Abrechnungslauf')}
+          <button type="button" className="primary-btn" onClick={() => { setActionError(''); setCreateOpen(true); }}>
+            {t('adminPayslips.newPayrollRun', '+ Neue Abrechnung')}
           </button>
         </div>
       </header>
@@ -592,7 +592,7 @@ const AdminPayslipsPage = () => {
           <button type="button" onClick={() => setActiveTab('archive')}>{t('adminPayslips.tabs.archive', 'Archiv')}</button>
         </div>
 
-        {actionError && (
+        {actionError && !createOpen && (
           <div className="payroll-action-error" role="alert">
             <span>{actionError}</span>
             <button
@@ -764,6 +764,7 @@ const AdminPayslipsPage = () => {
           wizardPreview={wizardPreview}
           setWizardPreview={setWizardPreview}
           onCreate={createPayslip}
+          error={actionError}
           onClose={() => {
             setCreateOpen(false);
             setWizardPreview(false);
@@ -881,6 +882,7 @@ const CreatePayslipModal = ({
   wizardPreview,
   setWizardPreview,
   onCreate,
+  error,
   onClose,
   previewGross,
   previewNet,
@@ -892,8 +894,8 @@ const CreatePayslipModal = ({
     <section className="payroll-modal" role="dialog" aria-modal="true" aria-labelledby="create-payslip-title">
       <div className="modal-head">
         <div>
-          <p className="payroll-eyebrow">{t('adminPayslips.newRunEyebrow', 'Neuer Lauf')}</p>
-          <h2 id="create-payslip-title">{t('adminPayslips.createRunTitle', 'Neuen Abrechnungslauf erstellen')}</h2>
+          <p className="payroll-eyebrow">{t('adminPayslips.newRunEyebrow', 'Neue Abrechnung')}</p>
+          <h2 id="create-payslip-title">{t('adminPayslips.createRunTitle', 'Neue Lohnabrechnung erstellen')}</h2>
         </div>
         <button type="button" className="icon-action" onClick={onClose} aria-label={t('close', 'Schliessen')}>x</button>
       </div>
@@ -991,10 +993,11 @@ const CreatePayslipModal = ({
         </div>
       )}
 
+      {error && <div className="payroll-action-error" role="alert">{error}</div>}
       <div className="modal-actions">
         <button type="button" onClick={() => setWizardPreview(true)}>{t('adminPayslips.calculatePreview', 'Vorschau berechnen')}</button>
         <button type="button" className="primary-btn" onClick={onCreate} disabled={!form.userId || !form.start || !form.end}>
-          {t('adminPayslips.createRunButton', 'Abrechnungslauf erstellen')}
+          {t('adminPayslips.createRunButton', 'Abrechnung erstellen')}
         </button>
       </div>
     </section>

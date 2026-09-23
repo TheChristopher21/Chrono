@@ -84,8 +84,8 @@ const translations = {
                     description: "Persönliche Daten, Kontaktangaben und Passwort.",
                 },
                 payslips: {
-                    label: "Abrechnungen",
-                    description: "Lohnabrechnungen und Dokumente ansehen.",
+                    label: "Meine Abrechnungen",
+                    description: "Eigene Lohnabrechnungen und Dokumente ansehen.",
                 },
                 demoTour: {
                     label: "Demo-Tour",
@@ -148,8 +148,8 @@ const translations = {
                     description: "Banking, Zahlungen und Freigaben.",
                 },
                 adminPayslips: {
-                    label: "Payroll",
-                    description: "Abrechnungen erstellen und verwalten.",
+                    label: "Lohnabrechnungen verwalten",
+                    description: "Ansehen oder Verwalten: Lohnabrechnungen erstellen, bearbeiten und freigeben.",
                 },
                 adminSchedule: {
                     label: "Dienstplan",
@@ -2812,7 +2812,7 @@ const translations = {
                     description: "Personal data, contact details and password.",
                 },
                 payslips: {
-                    label: "Payslips",
+                    label: "My payslips",
                     description: "View payslips and documents.",
                 },
                 demoTour: {
@@ -2876,8 +2876,8 @@ const translations = {
                     description: "Banking, payments and approvals.",
                 },
                 adminPayslips: {
-                    label: "Payroll",
-                    description: "Create and manage payroll documents.",
+                    label: "Manage payslips",
+                    description: "View or manage: create, edit and approve payslips.",
                 },
                 adminSchedule: {
                     label: "Schedule",
