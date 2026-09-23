@@ -803,7 +803,8 @@ public class TimeTrackingService {
             freshUser.setTrackingBalanceInMinutes(0);
         }
 
-        boolean hasNoTrackedData = allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty();
+        List<com.chrono.chrono.entities.SickLeave> sickLeaves = sickLeaveRepository.findByUser(freshUser);
+        boolean hasNoTrackedData = allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaves.isEmpty();
         if (hasNoTrackedData && !Boolean.TRUE.equals(effectiveUserToday.getIsPercentage())) {
             if (freshUser.getTrackingBalanceInMinutes() != 0) {
                 logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge oder relevante Abwesenheiten). Alter Saldo war: {}", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes());
@@ -819,7 +820,7 @@ public class TimeTrackingService {
 
         Optional<LocalDate> firstTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).min(LocalDate::compareTo);
         Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream().map(VacationRequest::getStartDate).min(LocalDate::compareTo);
-        Optional<LocalDate> firstSickLeaveDayOpt = sickLeaveRepository.findByUser(freshUser).stream().map(com.chrono.chrono.entities.SickLeave::getStartDate).min(LocalDate::compareTo);
+        Optional<LocalDate> firstSickLeaveDayOpt = sickLeaves.stream().map(com.chrono.chrono.entities.SickLeave::getStartDate).min(LocalDate::compareTo);
 
         firstDayToConsider = Stream.of(firstTrackingDayOpt, firstVacationDayOpt, firstSickLeaveDayOpt)
                 .filter(Optional::isPresent).map(Optional::get).min(LocalDate::compareTo).orElse(firstDayToConsider);
@@ -848,6 +849,12 @@ public class TimeTrackingService {
                     .collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
 
             Map<LocalDate, User> effectiveUserCache = new HashMap<>();
+            if (employmentModelHistoryService != null) {
+                effectiveUserCache.putAll(employmentModelHistoryService.resolveUserSnapshotsForRange(
+                        freshUser, firstDayToConsider, lastDay));
+            }
+            WorkScheduleService.ExpectedWorkContext expectedWorkContext =
+                    workScheduleService.loadExpectedWorkContext(freshUser, firstDayToConsider, lastDay);
             LocalDate currentBalanceDay = firstDayToConsider;
             while (!currentBalanceDay.isAfter(lastDay)) {
                 User effectiveUser = resolveEffectiveUserForBalanceDate(freshUser, currentBalanceDay, effectiveUserCache);
@@ -868,7 +875,9 @@ public class TimeTrackingService {
                     LocalDate d = currentBalanceDay;
                     List<TimeTrackingEntry> entriesForDay = entriesGroupedByDate.getOrDefault(d, Collections.emptyList())
                             .stream().sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp)).collect(Collectors.toList());
-                    int dailyDifference = computeDailyWorkDifference(effectiveUser, d, approvedVacations, entriesForDay);
+                    DailyTimeSummaryDTO dailySummary = calculateDailySummaryWithExpected(
+                            entriesForDay, effectiveUser, effectiveUser, d, approvedVacations, expectedWorkContext);
+                    int dailyDifference = dailySummary.getDifferenceMinutes() != null ? dailySummary.getDifferenceMinutes() : 0;
                     totalMinutesBalance += dailyDifference;
                     if (logger.isTraceEnabled()) {
                         DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, effectiveUser, d);

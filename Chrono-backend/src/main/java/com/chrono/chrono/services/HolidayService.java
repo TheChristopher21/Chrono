@@ -313,6 +313,9 @@ public class HolidayService {
                 ));
 
         companyHolidayPreferenceRepository.deleteByCompany_Id(company.getId());
+        // Execute queued deletes before inserting the same company/holiday keys again.
+        // IDENTITY inserts otherwise run before the deletes and violate the unique constraint.
+        companyHolidayPreferenceRepository.flush();
         List<CompanyHolidayPreference> entities = validPreferences.values().stream()
                 .map(pref -> new CompanyHolidayPreference(company, pref.getHolidayCode(), pref.isHalfDay()))
                 .toList();

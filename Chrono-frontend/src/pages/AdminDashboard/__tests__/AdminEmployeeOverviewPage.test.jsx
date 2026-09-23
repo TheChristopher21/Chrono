@@ -8,7 +8,7 @@ import {
 } from '../../../utils/dataRefresh';
 
 const mocks = vi.hoisted(() => ({
-    api: { get: vi.fn() },
+    api: { get: vi.fn(), post: vi.fn() },
     notify: vi.fn(),
     t: (_key, fallback) => fallback ?? _key,
 }));
@@ -32,7 +32,7 @@ vi.mock('../../../components/VacationCalendarAdmin', () => ({
                 <button onClick={() => setMonth('Oktober')}>Nächster Kalendermonat</button>
                 <span>{month}</span>
                 <input aria-label="Offener Urlaubsentwurf" value={draft} onChange={(event) => setDraft(event.target.value)} />
-                <button onClick={async () => { await onReloadVacations(); setRefreshed(true); }}>Nach Speicherung aktualisieren</button>
+                <button onClick={async () => { publishDataRefresh(['absence']); setRefreshed(true); }}>Nach Speicherung aktualisieren</button>
                 {refreshed && <span>Aktualisierung abgeschlossen</span>}
                 <output data-testid="calendar-entries">{vacationRequests.map((entry) => entry.id).join(',')}</output>
             </section>
@@ -141,25 +141,32 @@ describe('employee overview background reconciliation', () => {
         expect(screen.getByRole('textbox', { name: 'Offener Urlaubsentwurf' })).toHaveValue('Bleibt offen');
     });
 
-    it('awaits the replacement refresh when a mutation event overlaps the calendar callback', async () => {
+    it('uses one background refresh after the calendar saves', async () => {
         renderOverview();
         await screen.findByTestId('vacation-calendar');
-        const calendarRefresh = deferred();
-        const mutationRefresh = deferred();
-        const pending = [calendarRefresh, mutationRefresh];
+        const refresh = deferred();
         const initialImplementation = mocks.api.get.getMockImplementation();
         mocks.api.get.mockImplementation((url, config) => url === '/api/vacation/all'
-            ? pending.shift().promise
-            : initialImplementation(url, config));
-
+            ? refresh.promise : initialImplementation(url, config));
         fireEvent.click(screen.getByRole('button', { name: 'Nach Speicherung aktualisieren' }));
-        act(() => publishDataRefresh(['absence']));
-        await waitFor(() => expect(requestsFor('/api/vacation/all')).toHaveLength(3));
-        await act(async () => calendarRefresh.resolve({ data: [vacation(10)] }));
-        expect(screen.queryByText('Aktualisierung abgeschlossen')).not.toBeInTheDocument();
-
-        await act(async () => mutationRefresh.resolve({ data: [vacation(20)] }));
-        expect(screen.getByText('Aktualisierung abgeschlossen')).toBeInTheDocument();
+        await waitFor(() => expect(requestsFor('/api/vacation/all')).toHaveLength(2));
+        await act(async () => refresh.resolve({ data: [vacation(20)] }));
         expect(screen.getByTestId('calendar-entries')).toHaveTextContent('20');
+        expect(requestsFor('/api/vacation/all')).toHaveLength(2);
+    });
+
+    it('approves a grouped correction day with only one write', async () => {
+        const initialImplementation = mocks.api.get.getMockImplementation();
+        mocks.api.post.mockReset().mockResolvedValue({ data: { approved: true } });
+        mocks.api.get.mockImplementation((url, config) => url === '/api/correction/all'
+            ? Promise.resolve({ data: [
+                { id: 1, username: 'Mirjam', requestDate: '2026-09-21', desiredTimestamp: '2026-09-21T08:00:00', desiredPunchType: 'START', approved: false, denied: false },
+                { id: 2, username: 'Mirjam', requestDate: '2026-09-21', desiredTimestamp: '2026-09-21T17:00:00', desiredPunchType: 'ENDE', approved: false, denied: false },
+            ] }) : initialImplementation(url, config));
+        renderOverview();
+        const approve = await screen.findAllByRole('button', { name: 'Genehmigen' });
+        await act(async () => fireEvent.click(approve[0]));
+        expect(mocks.api.post).toHaveBeenCalledTimes(1);
+        expect(mocks.api.post).toHaveBeenCalledWith('/api/correction/approve/1', null, { params: { comment: '' } });
     });
 });

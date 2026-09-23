@@ -72,6 +72,32 @@ describe('VacationCalendarAdmin employee vacation planning', () => {
     const queuedPeriods = (dialog) => within(dialog).queryByRole('list', { name: 'Vorgemerkte Zeiträume' });
     const dayButton = (dialog, label) => within(dialog).getByLabelText(label).closest('button');
 
+    it('submits sickness only once while saving and reports a failed refresh separately', async () => {
+        let finishSave;
+        api.post.mockImplementation(() => new Promise(resolve => { finishSave = resolve; }));
+        const onReloadVacations = vi.fn().mockRejectedValue(new Error('Refresh offline'));
+        const ref = createRef();
+        render(<VacationCalendarAdmin ref={ref} vacationRequests={[]} companyUsers={companyUsers} focusUsername="employee1" onReloadVacations={onReloadVacations} />);
+        await act(async () => ref.current.createSickLeave({ username: 'employee1' }));
+        const dialog = screen.getByRole('button', { name: 'Krankmeldung speichern' }).closest('.modal-content');
+        setDates(dialog, '2027-01-14');
+        const save = within(dialog).getByRole('button', { name: 'Krankmeldung speichern' });
+        fireEvent.submit(save.closest('form'));
+        fireEvent.submit(save.closest('form'));
+        expect(api.post).toHaveBeenCalledTimes(1);
+        expect(within(dialog).getByRole('button', { name: 'Wird gespeichert …' })).toBeDisabled();
+        expect(within(dialog).getByRole('button', { name: 'Abbrechen' })).toBeDisabled();
+
+        await act(async () => finishSave({ data: { id: 123 } }));
+
+        expect(onReloadVacations).toHaveBeenCalledTimes(1);
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
+        expect(notifyMock).toHaveBeenCalledWith({
+            message: 'Krankmeldung gespeichert. Die Ansicht konnte noch nicht aktualisiert werden.', type: 'warning',
+        });
+        expect(notifyMock).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    });
+
     it('opens a planner through the dashboard ref without changing the existing calendar', async () => {
         const ref = createRef();
         const { container } = render(<VacationCalendarAdmin ref={ref} vacationRequests={[]} companyUsers={companyUsers} focusUsername="employee1" />);

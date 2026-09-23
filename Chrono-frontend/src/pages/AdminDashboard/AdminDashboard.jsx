@@ -2220,7 +2220,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                             t={t} currentUser={currentUser} users={workspaceUsers}
                             allVacations={workspaceVacations} allCorrections={workspaceCorrections} allSickLeaves={workspaceSickLeaves}
                             loading={workspaceLoading} loadError={workspaceLoadError}
-                            onRetry={handleDataReloadNeeded} onReload={handleDataReloadNeeded}
+                            onRetry={handleDataReloadNeeded}
                             onApproveVacation={(id, note) => handleApproveVacation(id, note, { reload: false, throwOnError: true })}
                             onDenyVacation={(id, note) => handleDenyVacation(id, note, { reload: false, throwOnError: true })}
                             onApproveCorrection={(id, note) => handleApproveCorrection(id, note, { reload: false, throwOnError: true })}
@@ -2319,7 +2319,6 @@ const AdminDashboard = ({ experience = 'classic' }) => {
                                                 vacationRequests={(isWorkspace ? workspaceVacations : allVacations).filter(v => v.approved)}
                                                 companyUsers={isWorkspace ? workspaceUsers : users}
                                                 visibleUsernames={isWorkspace && workspaceTeam ? [...workspaceUsernames] : null}
-                                                onReloadVacations={isWorkspace ? handleDataReloadNeeded : undefined}
                                             />
                                         </div>
                                     </section>

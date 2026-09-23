@@ -76,6 +76,8 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     const [vacationPickerRevision, setVacationPickerRevision] = useState(0);
 
     const [showSickLeaveModal, setShowSickLeaveModal] = useState(false);
+    const [isSavingSickLeave, setIsSavingSickLeave] = useState(false);
+    const savingSickLeaveRef = useRef(false);
     const [sickLeaveUser, setSickLeaveUser] = useState('');
     const [sickLeaveStartDate, setSickLeaveStartDate] = useState('');
     const [sickLeaveEndDate, setSickLeaveEndDate] = useState('');
@@ -272,6 +274,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     }, [resetVacationForm]);
 
     const handleCloseSickLeaveModal = useCallback(() => {
+        if (savingSickLeaveRef.current) return;
         setShowSickLeaveModal(false);
         resetSickLeaveForm();
     }, [resetSickLeaveForm]);
@@ -379,6 +382,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
     }
 
     async function handleUpdateVacation() {
+        if (savingVacationRef.current) return;
         if (!editingVacation) {
             return;
         }
@@ -425,6 +429,8 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             payload.overtimeDeductionMinutes = overtimeDeductionMinutes;
         }
 
+        savingVacationRef.current = true;
+        setIsSavingVacation(true);
         try {
             const response = await api.put(`/api/vacation/${editingVacation.id}`, payload);
             setSavedVacationPeriods((previous) => previous.map((period) => period.id === editingVacation.id
@@ -444,6 +450,9 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             console.error('Error updating vacation (admin)', err);
             const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
             pushNotification(`${translate('adminVacation.updateError', 'Fehler beim Aktualisieren des Urlaubs')}: ${errorMsg}`, 'error');
+        } finally {
+            savingVacationRef.current = false;
+            setIsSavingVacation(false);
         }
     }
 
@@ -453,6 +462,15 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             await handleUpdateVacation();
         } else {
             await handleCreateVacation();
+        }
+    };
+
+    const reloadAfterSickLeaveSave = async () => {
+        await fetchAllSickLeaves();
+        try {
+            await onReloadVacations?.();
+        } catch {
+            pushNotification('Krankmeldung gespeichert. Die Ansicht konnte noch nicht aktualisiert werden.', 'warning');
         }
     };
 
@@ -491,8 +509,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             pushNotification(translate("adminSickLeave.reportSuccess", "Krankmeldung erfolgreich für Benutzer eingetragen."), 'success');
             setShowSickLeaveModal(false);
             resetSickLeaveForm();
-            fetchAllSickLeaves();
-            if (onReloadVacations) onReloadVacations();
+            await reloadAfterSickLeaveSave();
         } catch (err) {
             console.error('Error reporting sick leave (Admin):', err);
             const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
@@ -529,8 +546,7 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
             pushNotification(translate('adminSickLeave.updateSuccess', 'Krankmeldung wurde aktualisiert.'), 'success');
             setShowSickLeaveModal(false);
             resetSickLeaveForm();
-            fetchAllSickLeaves();
-            if (onReloadVacations) onReloadVacations();
+            await reloadAfterSickLeaveSave();
         } catch (err) {
             console.error('Error updating sick leave (Admin):', err);
             const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
@@ -540,10 +556,18 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
 
     const handleSubmitSickLeave = async (event) => {
         event.preventDefault();
-        if (editingSickLeave) {
-            await handleUpdateSickLeave();
-        } else {
-            await handleCreateSickLeave();
+        if (savingSickLeaveRef.current) return;
+        savingSickLeaveRef.current = true;
+        setIsSavingSickLeave(true);
+        try {
+            if (editingSickLeave) {
+                await handleUpdateSickLeave();
+            } else {
+                await handleCreateSickLeave();
+            }
+        } finally {
+            savingSickLeaveRef.current = false;
+            setIsSavingSickLeave(false);
         }
     };
 
@@ -1278,14 +1302,15 @@ const VacationCalendarAdmin = forwardRef(({ vacationRequests, onReloadVacations,
                                         type="button"
                                         className="button-danger"
                                         onClick={() => openDeleteAbsenceConfirmation('sick', editingSickLeave)}
+                                        disabled={isSavingSickLeave}
                                     >
                                         {t('adminSickLeave.deleteButton', 'Krankmeldung loeschen')}
                                     </button>
                                 )}
-                                <button type="submit" className="button-confirm">
-                                    {editingSickLeave ? t('adminSickLeave.updateButtonModal', 'Krankmeldung aktualisieren') : t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}
+                                <button type="submit" className="button-confirm" disabled={isSavingSickLeave}>
+                                    {isSavingSickLeave ? t('saving', 'Wird gespeichert …') : editingSickLeave ? t('adminSickLeave.updateButtonModal', 'Krankmeldung aktualisieren') : t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}
                                 </button>
-                                <button type="button" onClick={handleCloseSickLeaveModal} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
+                                <button type="button" onClick={handleCloseSickLeaveModal} className="button-cancel" disabled={isSavingSickLeave}>{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
                     </div>

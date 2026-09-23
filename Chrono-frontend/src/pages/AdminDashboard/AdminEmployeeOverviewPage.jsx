@@ -883,7 +883,14 @@ const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) =
                 ? item.requestIds
                 : [item.id];
             if (decision === 'approve') {
-                await Promise.all(requestIds.map((id) => handleApproveCorrection(id, note)));
+                // The server approves every pending punch on the requested day in one transaction.
+                const entries = item.groupedEntries?.length ? item.groupedEntries : [item];
+                const requestsByDay = new Map();
+                entries.forEach(entry => {
+                    const day = entry.desiredTimestamp?.slice(0, 10) || `request-${entry.id}`;
+                    if (!requestsByDay.has(day)) requestsByDay.set(day, entry.id);
+                });
+                for (const id of requestsByDay.values()) await handleApproveCorrection(id, note);
             }
             if (decision === 'deny') {
                 await Promise.all(requestIds.map((id) => handleDenyCorrection(id, note)));
@@ -1297,7 +1304,6 @@ const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) =
                                         <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
                                         <VacationCalendarAdmin
                                             vacationRequests={employeeVacations}
-                                            onReloadVacations={fetchAllData}
                                             companyUsers={users}
                                             focusUsername={username}
                                         />

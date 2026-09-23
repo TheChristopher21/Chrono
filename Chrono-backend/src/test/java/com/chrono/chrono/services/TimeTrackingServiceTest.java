@@ -701,6 +701,34 @@ class TimeTrackingServiceTest {
     }
 
     @Test
+    void rebuildUserBalanceLoadsPlanningAndEmploymentHistoryOnceForTheWholeRange() {
+        LocalDate today = date.plusDays(2);
+        TimeTrackingService service = spy(timeTrackingService);
+        doReturn(today).when(service).getCurrentBerlinDate();
+        user.setTrackingBalanceInMinutes(0);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(List.of(
+                entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE),
+                entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START)));
+        when(employmentModelHistoryService.resolveUserSnapshotsForRange(user, date, today))
+                .thenReturn(java.util.Map.of(date, user, date.plusDays(1), user, today, user));
+        WorkScheduleService.ExpectedWorkContext context = org.mockito.Mockito.mock(WorkScheduleService.ExpectedWorkContext.class);
+        when(workScheduleService.loadExpectedWorkContext(user, date, today)).thenReturn(context);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any(), eq(context))).thenReturn(480);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date.plusDays(1)), any(), eq(context))).thenReturn(240);
+
+        service.rebuildUserBalance(user);
+
+        assertEquals(-240, user.getTrackingBalanceInMinutes());
+        verify(workScheduleService).loadExpectedWorkContext(user, date, today);
+        verify(workScheduleService, org.mockito.Mockito.never()).computeExpectedWorkMinutes(any(), any(), any());
+        verify(employmentModelHistoryService).resolveUserSnapshotsForRange(user, date, today);
+        // Only today's initial model lookup remains; the daily loop uses the range snapshot.
+        verify(employmentModelHistoryService, times(1)).resolveUserSnapshotForDate(any(), any());
+        verify(sickLeaveRepository).findByUser(user);
+    }
+
+    @Test
     void rebuildUserBalance_hourlyUserReservesApprovedFutureOvertimePayout() {
         user.setIsHourly(true);
         user.setEntryDate(date.minusDays(30));
