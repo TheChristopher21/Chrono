@@ -25,8 +25,7 @@ class PmsFlywayMySqlIntegrationTest {
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
             statement.execute("create table users (id bigint primary key)");
-            statement.execute("create table time_tracking_entries (id bigint primary key)");
-            statement.execute("create table correction_requests (id bigint primary key)");
+            LegacyCorrectionMigrationFixture.create(statement);
             statement.execute("""
                     create table legacy_marker (
                         id bigint primary key,
@@ -53,6 +52,7 @@ class PmsFlywayMySqlIntegrationTest {
 
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
+            LegacyCorrectionMigrationFixture.assertOriginalsPreserved(connection);
             try (var marker = statement.executeQuery(
                     "select marker_value from legacy_marker where id = 1"
             )) {

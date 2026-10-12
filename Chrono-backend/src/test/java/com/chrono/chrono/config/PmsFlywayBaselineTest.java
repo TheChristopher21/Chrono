@@ -72,8 +72,7 @@ class PmsFlywayBaselineTest {
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
             statement.execute("create table users (id bigint primary key)");
-            statement.execute("create table time_tracking_entries (id bigint primary key)");
-            statement.execute("create table correction_requests (id bigint primary key)");
+            LegacyCorrectionMigrationFixture.create(statement);
             statement.execute("create table legacy_marker (id bigint primary key, marker_value varchar(32))");
             statement.execute("insert into legacy_marker (id, marker_value) values (1, 'preserved')");
         }
@@ -93,6 +92,7 @@ class PmsFlywayBaselineTest {
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
+            LegacyCorrectionMigrationFixture.assertOriginalsPreserved(connection);
             assertThat(tableExists(connection, "pms_properties")).isTrue();
             assertEnterpriseSchema(connection);
             assertThat(tableExists(connection, "pms_reservations")).isTrue();
