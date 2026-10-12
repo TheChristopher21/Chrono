@@ -23,18 +23,13 @@ handler.
 Review and remove the exception as soon as a fixed stable React Router
 version is available.
 
-## DOMPurify IN_PLACE advisory through jsPDF
+## Removed DOMPurify exception
 
-- Advisory: `GHSA-55q2-fjhq-7xh7`
-- Accepted version: transitive `dompurify` `3.4.12`
-- Scope: temporary, until DOMPurify publishes a fixed release
+On 2026-10-12, the transitive DOMPurify override was updated from `3.4.12`
+to `3.4.16`, fixing both `GHSA-55q2-fjhq-7xh7` and
+`GHSA-6688-9rhm-gjv2`. The former DOMPurify/jsPDF exception and its exact
+version check have been removed. New DOMPurify findings fail the audit.
 
-The issue requires sanitizing attacker-controlled HTML through the affected
-DOMPurify hook path. Chrono uses jsPDF only for programmatically generated
-text, shapes and tables. It does not call `jsPDF.html()`, import DOMPurify or
-sanitize/render attacker-controlled HTML into PDFs.
-
-`npm run audit:prod` pins the exact advisory and installed version and scans
-all production source. It fails if `jsPDF.html()`, DOMPurify or another
-unexpected production advisory appears. Remove the exception as soon as a
-fixed DOMPurify release is available.
+The same update raises Axios from `1.18.1` to `1.20.0`, resolving its reported
+production advisories. No Axios exception is granted. Audit execution errors
+also fail the build; they are never treated as accepted advisories.

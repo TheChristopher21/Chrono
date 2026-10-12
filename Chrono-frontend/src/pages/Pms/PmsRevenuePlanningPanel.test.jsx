@@ -60,9 +60,16 @@ describe('revenue planning', () => {
         fireEvent.submit(screen.getByRole('button', { name: 'Monatsbudget speichern' }).closest('form'));
         await waitFor(() => expect(apiMock.put).toHaveBeenCalledWith('/api/pms/properties/9/reports/revenue-planning/budgets/2026-10', { netRoomRevenue: '42.123', roomNights: 20, expectedVersion: 3 }));
     });
-    it('preserves an unsaved monthly budget when an application tab is hidden and restored', async () => {
-        const view = render(<Activity mode="visible"><PmsRevenuePlanningPanel property={property} canManage /></Activity>);
+    it.each([null, budget])('preserves an unsaved monthly budget when an application tab is hidden and restored (initial: %j)', async (savedBudget) => {
+        data.months[0].budget = savedBudget;
+        let view;
+        // Finish the initial request and budget initialization before editing.
+        // Activity schedules effects asynchronously under concurrent test load.
+        await act(async () => {
+            view = render(<Activity mode="visible"><PmsRevenuePlanningPanel property={property} canManage /></Activity>);
+        });
         const input = await screen.findByLabelText('Netto-Zimmererlöse (KWD)');
+        expect(input.value).toBe(savedBudget?.netRoomRevenue ?? '');
         fireEvent.change(input, { target: { value: '77.123' } });
         view.rerender(<Activity mode="hidden"><PmsRevenuePlanningPanel property={property} canManage /></Activity>);
         view.rerender(<Activity mode="visible"><PmsRevenuePlanningPanel property={property} canManage /></Activity>);
