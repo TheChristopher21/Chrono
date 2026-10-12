@@ -18,7 +18,7 @@ const PrivateRoute = ({
     redirectTo = '/',
     roleRedirectTo = '/',
 }) => {
-    const { authToken, currentUser, isAuthLoading } = useAuth();
+    const { authToken, currentUser, isAuthLoading, authError, fetchCurrentUser, logout } = useAuth();
     const location = useLocation();
 
     if (authToken && isAuthLoading && !currentUser) {
@@ -39,6 +39,19 @@ const PrivateRoute = ({
     }
 
     if (!currentUser) {
+        if (authError) {
+            return (
+                <div className="route-auth-loading">
+                    <div className="route-auth-loading__card" role="alert">
+                        <p>{authError}</p>
+                        <div className="route-auth-loading__actions">
+                            <button type="button" onClick={() => fetchCurrentUser()}>Erneut versuchen</button>
+                            <button type="button" onClick={logout}>Abmelden</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <Navigate
                 to={`/login?next=${encodeURIComponent(location.pathname)}`}

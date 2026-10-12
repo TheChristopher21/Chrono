@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import PrivateRoute from '../PrivateRoute.jsx';
@@ -29,6 +29,23 @@ const renderProtectedRoute = (authValue) => {
 };
 
 describe('PrivateRoute', () => {
+    it('offers a retry after a profile connection failure without redirecting or showing protected data', () => {
+        const fetchCurrentUser = vi.fn();
+        const logout = vi.fn();
+        renderProtectedRoute({
+            authToken: 'token', currentUser: null, isAuthLoading: false,
+            authError: 'Benutzerprofil konnte nicht geladen werden.', fetchCurrentUser, logout,
+        });
+
+        expect(screen.getByRole('alert')).toHaveTextContent('Benutzerprofil konnte nicht geladen werden.');
+        expect(screen.queryByText('Login page')).not.toBeInTheDocument();
+        expect(screen.queryByText('Admin dashboard')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+        expect(fetchCurrentUser).toHaveBeenCalledWith();
+        fireEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+        expect(logout).toHaveBeenCalledOnce();
+    });
+
     it('waits for the user profile before checking admin permissions on refresh', () => {
         renderProtectedRoute({
             authToken: 'token',

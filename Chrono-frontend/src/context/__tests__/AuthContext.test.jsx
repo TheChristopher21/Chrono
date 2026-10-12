@@ -21,17 +21,18 @@ vi.mock('../LanguageContext.jsx', () => ({
 }));
 
 import { AuthProvider, useAuth } from '../AuthContext.jsx';
+import { COMPANY_SCOPE_KEY } from '../../utils/companyScope.js';
 
 const LAST_ACTIVITY_STORAGE_KEY = 'lastActivityAt';
 const TAB_IDLE_SIGN_OUT_KEY = 'chrono:tabIdleSignOut';
 const INACTIVITY_DURATION = 10 * 60 * 1000;
 
 const AuthProbe = () => {
-    const { authToken, currentUser, isAuthLoading, logout, login, fetchCurrentUser } = useAuth();
+    const { authToken, currentUser, isAuthLoading, authError, logout, login, fetchCurrentUser } = useAuth();
     const navigate = useNavigate();
 
     return (
-        <div><div data-testid="auth-state" data-company={currentUser?.companyId}>
+        <div><div data-testid="auth-state" data-company={currentUser?.companyId} data-error={authError ?? ''}>
             {authToken ?? 'none'}:{currentUser?.username ?? 'no-user'}:{isAuthLoading ? 'loading' : 'idle'}
         </div>
             <button onClick={() => navigate('/pms')}>PMS</button>
@@ -111,6 +112,67 @@ describe('AuthProvider inactivity restore', () => {
         });
         expect(apiMock.get).toHaveBeenCalledWith('/api/auth/me');
         expect(apiMock.defaults.headers.common.Authorization).toBe('Bearer fresh-token');
+    });
+
+    it.each([undefined, 502])('retains the login and selected company on a profile connection failure (%s), then retries', async (status) => {
+        const token = tokenWithExpiry(60_000);
+        const selection = JSON.stringify({ username: 'alice', companyId: 42 });
+        localStorage.setItem('token', token);
+        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+        sessionStorage.setItem(COMPANY_SCOPE_KEY, selection);
+        apiMock.get.mockRejectedValueOnce({ response: status ? { status } : undefined })
+            .mockResolvedValueOnce({ data: { username: 'alice', companyId: 42, selectedCompanyId: 42 } });
+
+        renderAuthProvider();
+        await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent(`${token}:no-user:idle`));
+        expect(screen.getByTestId('auth-state').dataset.error).toContain('erneut');
+        expect(localStorage.getItem('token')).toBe(token);
+        expect(sessionStorage.getItem(COMPANY_SCOPE_KEY)).toBe(selection);
+
+        fireEvent.click(screen.getByText('Reload user'));
+        await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent(`${token}:alice:idle`));
+        expect(screen.getByTestId('auth-state')).toHaveAttribute('data-company', '42');
+        expect(screen.getByTestId('auth-state')).toHaveAttribute('data-error', '');
+        expect(apiMock.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the loaded profile when a background refresh loses connectivity', async () => {
+        localStorage.setItem('token', 'fresh-token');
+        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+        apiMock.get.mockResolvedValueOnce({ data: { username: 'alice', companyId: 42 } })
+            .mockRejectedValueOnce(new Error('Network Error'));
+        renderAuthProvider();
+        await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('fresh-token:alice:idle'));
+
+        fireEvent.click(screen.getByText('Reload user'));
+        await waitFor(() => expect(screen.getByTestId('auth-state').dataset.error).toContain('erneut'));
+        expect(screen.getByTestId('auth-state')).toHaveTextContent('fresh-token:alice:idle');
+        expect(screen.getByTestId('auth-state')).toHaveAttribute('data-company', '42');
+        expect(localStorage.getItem('token')).toBe('fresh-token');
+    });
+
+    it.each([401, 403])('still clears a login rejected by the profile endpoint (%s)', async (status) => {
+        localStorage.setItem('token', 'rejected-token');
+        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+        apiMock.get.mockRejectedValueOnce({ response: { status } });
+        renderAuthProvider();
+
+        await waitFor(() => expect(screen.getByTestId('auth-state')).toHaveTextContent('none:no-user:idle'));
+        expect(localStorage.getItem('token')).toBeNull();
+        expect(screen.getByTestId('auth-state')).toHaveAttribute('data-error', '');
+    });
+
+    it('ignores a failed profile request for a token replaced while it was pending', async () => {
+        let rejectProfile;
+        localStorage.setItem('token', 'old-token');
+        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+        apiMock.get.mockReturnValueOnce(new Promise((resolve, reject) => { rejectProfile = reject; }));
+        renderAuthProvider();
+        localStorage.setItem('token', 'new-token');
+        await act(async () => { rejectProfile({ response: { status: 401 } }); });
+
+        expect(localStorage.getItem('token')).toBe('new-token');
+        expect(screen.getByTestId('auth-state')).toHaveAttribute('data-error', '');
     });
 
     it('does not poll the current user while an active session stays open', async () => {

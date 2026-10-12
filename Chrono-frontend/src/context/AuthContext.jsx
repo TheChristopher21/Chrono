@@ -107,6 +107,7 @@ export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(() => getUsableStoredToken(pmsRoute));
     const [currentUser, setCurrentUser] = useState(null);
     const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(authToken));
+    const [authError, setAuthError] = useState(null);
     const currentUserRef = useRef(null);
     const pmsRouteRef = useRef(pmsRoute);
     const sessionGenerationRef = useRef(0);
@@ -128,6 +129,7 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(null);
         setCurrentUser(null);
         setIsAuthLoading(false);
+        setAuthError(null);
         delete api.defaults.headers.common.Authorization;
     }, []);
 
@@ -168,6 +170,7 @@ export const AuthProvider = ({ children }) => {
         if (shouldShowLoader) {
             setIsAuthLoading(true);
         }
+        setAuthError(null);
         api.defaults.headers.common.Authorization = `Bearer ${tokenToUse}`;
         const generation = sessionGenerationRef.current;
 
@@ -182,14 +185,19 @@ export const AuthProvider = ({ children }) => {
 
             return newUser;
         } catch (err) {
-            if (generation !== sessionGenerationRef.current) return null;
+            if (generation !== sessionGenerationRef.current || localStorage.getItem('token') !== tokenToUse) return null;
             if (getCompanyScopeId() && [400, 403, 404].includes(err.response?.status)) {
                 clearCompanyScope();
                 window.location.replace('/admin/firmenauswahl');
                 return null;
             }
-            console.error('/api/auth/me failed. Token may be invalid.', err);
-            logout();
+            if ([401, 403].includes(err.response?.status)) {
+                logout();
+            } else {
+                // Network/CORS errors and server outages do not invalidate a login.
+                // Keep the selected company so a retry restores the same workspace.
+                setAuthError('Das Benutzerprofil konnte nicht geladen werden. Bitte versuche es erneut.');
+            }
             return null;
         } finally {
             if (shouldShowLoader) {
@@ -380,6 +388,7 @@ export const AuthProvider = ({ children }) => {
                 authToken,
                 currentUser,
                 isAuthLoading,
+                authError,
                 setCurrentUser,
                 login,
                 loginDemo,

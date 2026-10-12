@@ -105,6 +105,12 @@ body,
     letter-spacing: 0.01em;
 }
 
+.route-auth-loading__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
 [data-theme="dark"] .route-auth-loading {
     background:
         radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 32%),
