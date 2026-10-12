@@ -1,5 +1,6 @@
 package com.chrono.chrono.services.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.PmsAccessDtos;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.pms.HotelProperty;
@@ -41,7 +42,7 @@ public class PmsPropertyAccessService {
         Map<Long, Map<String, String>> allowed = new LinkedHashMap<>();
         boolean manage = permissions.hasPageAccess(actor, "pms", "MANAGE");
         boolean master = manage && permissions.hasPageAccess(actor, "pmsSettings", "MANAGE");
-        if (!master) for (PmsPropertyGrant grant : grants.findByUser_IdAndProperty_Company_Id(actor.getId(), actor.getCompany().getId())) {
+        if (!master) for (PmsPropertyGrant grant : grants.findByUser_IdAndProperty_Company_Id(actor.getId(), CompanyScope.companyFor(actor).getId())) {
             Map<String, String> values = new LinkedHashMap<>();
             grant.getPermissions().forEach((key, value) -> {
                 if (PERMISSIONS.contains(key) && Set.of("VIEW", "MANAGE").contains(value)) {
@@ -50,7 +51,7 @@ public class PmsPropertyAccessService {
             });
             if (!values.isEmpty()) allowed.put(grant.getProperty().getId(), Map.copyOf(values));
         }
-        return new Access(actor.getId(), actor.getCompany().getId(), master, Map.copyOf(allowed));
+        return new Access(actor.getId(), CompanyScope.companyFor(actor).getId(), master, Map.copyOf(allowed));
     }
 
     @Transactional(readOnly = true)
@@ -96,8 +97,8 @@ public class PmsPropertyAccessService {
     @Transactional
     public PmsAccessDtos.UserAccess update(String username, Long userId, PmsAccessDtos.Update request) {
         Access actor = requireMaster(username);
-        User target = users.findById(userId).filter(user -> !user.isDeleted() && user.getCompany() != null
-                && Objects.equals(user.getCompany().getId(), actor.companyId())).orElseThrow(() -> denied("Mitarbeiter nicht verfügbar."));
+        User target = users.findById(userId).filter(user -> !user.isDeleted() && CompanyScope.companyFor(user) != null
+                && Objects.equals(CompanyScope.companyFor(user).getId(), actor.companyId())).orElseThrow(() -> denied("Mitarbeiter nicht verfügbar."));
         if (isMaster(target)) throw denied("Masterkonten werden über die Masterberechtigung verwaltet.");
         if (request == null || request.grants() == null || request.grants().size() > 1000) throw invalid("Hotelzuweisungen fehlen oder sind zu umfangreich.");
         List<PmsPropertyGrant> replacements = new ArrayList<>();
@@ -146,7 +147,7 @@ public class PmsPropertyAccessService {
         User user = users.findByUsernameWithPermissionContext(username).filter(actor -> !actor.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht verfügbar."));
         permissions.assertPageAccess(user, "pms", "VIEW", "PMS-Zugriff erforderlich.");
-        if (user.getCompany() == null) throw denied("Firmenzuordnung erforderlich.");
+        if (CompanyScope.companyFor(user) == null) throw denied("Firmenzuordnung erforderlich.");
         return user;
     }
 
@@ -161,7 +162,7 @@ public class PmsPropertyAccessService {
     private PmsAccessDtos.UserAccess userView(User user) {
         return new PmsAccessDtos.UserAccess(user.getId(), user.getUsername(),
                 String.join(" ", Objects.toString(user.getFirstName(), ""), Objects.toString(user.getLastName(), "")).trim(),
-                isMaster(user), grants.findByUser_IdAndProperty_Company_Id(user.getId(), user.getCompany().getId()).stream()
+                isMaster(user), grants.findByUser_IdAndProperty_Company_Id(user.getId(), CompanyScope.companyFor(user).getId()).stream()
                         .map(grant -> new PmsAccessDtos.Grant(grant.getProperty().getId(), Map.copyOf(grant.getPermissions()))).toList());
     }
 

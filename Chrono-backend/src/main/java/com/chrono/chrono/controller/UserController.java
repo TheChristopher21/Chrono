@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.ChangePasswordRequest;
 import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.User;
@@ -142,6 +143,7 @@ public class UserController {
     }
 
     private void ensureCanViewProfile(User actor, User target) {
+        if (!actor.getUsername().equals(target.getUsername())) CompanyScope.requireTarget(target);
         if (actor.getUsername().equals(target.getUsername())) {
             return;
         }
@@ -156,6 +158,7 @@ public class UserController {
     }
 
     private void ensureCanManageUser(User actor, User target) {
+        CompanyScope.requireTarget(target);
         if (isSuperAdmin(actor)) {
             return;
         }
@@ -175,9 +178,9 @@ public class UserController {
     }
 
     private boolean belongsToSameCompany(User actor, User target) {
-        return actor.getCompany() != null
+        return CompanyScope.companyFor(actor) != null
                 && target.getCompany() != null
-                && actor.getCompany().getId() != null
-                && actor.getCompany().getId().equals(target.getCompany().getId());
+                && CompanyScope.companyFor(actor).getId() != null
+                && CompanyScope.companyFor(actor).getId().equals(target.getCompany().getId());
     }
 }

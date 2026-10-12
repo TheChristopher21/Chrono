@@ -1,5 +1,6 @@
 import axios from "axios";
 import { publishMutationRefresh } from "./dataRefresh.js";
+import { getCompanyScopeId } from './companyScope.js';
 
 /**
  * Basis‐URL aus den Vite-Env-Variablen.
@@ -15,6 +16,11 @@ const api = axios.create({
 
 /* JWT automatisch anhängen */
 api.interceptors.request.use((cfg) => {
+    const companyId = getCompanyScopeId();
+    const path = new URL(cfg.url, window.location.origin).pathname;
+    if (companyId && !path.startsWith('/api/superadmin/companies') && !['/api/auth/login', '/api/auth/demo', '/api/auth/refresh'].includes(path)) {
+        cfg.headers['X-Chrono-Company'] = String(companyId);
+    }
     // Chrono inactivity ends only this browser tab; another tab may still run
     // an unattended PMS using the shared finite token.
     if (sessionStorage.getItem('chrono:tabIdleSignOut')) {

@@ -130,6 +130,9 @@
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-item.is-active { background: var(--aw-primary-soft); color: var(--aw-primary); font-weight: 500; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 19px; min-height: 19px; padding: 1px 5px; border-radius: 5px; background: var(--aw-soft); font-size: 11px; font-variant-numeric: tabular-nums; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-secondary { display: flex; flex: 1; flex-direction: column; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-search { display: block; margin: 14px 6px 4px; grid-column: 1 / -1; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-search > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-search input { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--aw-border); border-radius: 7px; background: var(--aw-card); color: var(--aw-text); font: inherit; font-size: 12px; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-shortcuts { padding-top: 32px; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-bottom { display: flex; flex-direction: column; gap: 5px; margin-top: auto; padding-top: 48px; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-bottom .aw-nav-item { gap: 9px; font-size: 12px; }
@@ -138,6 +141,38 @@
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-legacy-link:hover { color: var(--aw-primary); text-decoration: underline; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-legacy-link .aw-icon { width: 14px; height: 14px; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-mobile-more { display: none; }
+
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-module-content {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    min-width: 0;
+    overflow-x: auto;
+}
+/* Module styles stay inside their own page roots. */
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-module-content > * { min-width: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-module-content .planner-main { min-width: 0; }
+@media (max-width: 760px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-module-content { width: 100%; }
+}
+@media print {
+    .admin-dashboard.scoped-dashboard.admin-workspace.aw-module-workspace .aw-sidebar { display: none; }
+    .admin-dashboard.scoped-dashboard.admin-workspace.aw-module-workspace .admin-dashboard-shell { display: block; }
+}
+
+/* Keep navigation geometry independent of the selected panel's height. */
+@media (min-width: 761px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar {
+        position: sticky;
+        top: var(--aw-chrome-height, 120px);
+        align-self: start;
+        height: calc(100dvh - var(--aw-chrome-height, 120px));
+        min-height: 0;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar > *,
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-secondary > * { flex-shrink: 0; }
+}
 
 /* Header: page identity and one clear creation action. */
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-header {
@@ -645,13 +680,13 @@
         min-height: 0;
         grid-template-rows: auto auto minmax(0, 1fr);
     }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-sidebar { min-height: 0; padding: 14px 10px 10px; overflow-y: auto; scrollbar-width: thin; }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-sidebar-label { margin-bottom: 8px; font-size: 11px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-primary-nav,
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-shortcuts nav { gap: 3px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-nav-item { min-height: 36px; padding-block: 8px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-shortcuts { padding-top: 22px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-sidebar-bottom { padding-top: 18px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar { padding: 14px 10px 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-label { margin-bottom: 8px; font-size: 11px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-primary-nav,
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-shortcuts nav { gap: 3px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-nav-item { min-height: 36px; padding-block: 8px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-shortcuts { padding-top: 22px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-sidebar-bottom { padding-top: 18px; }
     .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-header { min-height: 58px; padding-block: 10px; }
     .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-header h1 { font-size: 23px; }
     .admin-dashboard.scoped-dashboard.admin-workspace:is([data-workspace-tab="calendar"], [data-workspace-tab="time"]) .aw-header-context .aw-context-row > span { display: none; }

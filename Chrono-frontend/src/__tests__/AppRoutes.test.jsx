@@ -36,6 +36,10 @@ vi.mock('../pages/AdminSchedulePlanner/AdminScheduleRulesPage.jsx', () => ({ def
 vi.mock('../pages/AdminSchedulePlanner/PrintSchedule.jsx', () => ({ default: () => <div>Print schedule</div> }));
 vi.mock('../pages/AdminKnowledge/AdminKnowledgePage.jsx', () => ({ default: () => <div>Admin knowledge</div> }));
 vi.mock('../pages/CompanyManagementPage.jsx', () => ({ default: () => <div>Company management</div> }));
+vi.mock('../pages/CompanySelectionPage.jsx', async (importOriginal) => ({
+    ...await importOriginal(),
+    default: () => <div>Company selection</div>,
+}));
 vi.mock('../TimeTrackingImport.jsx', () => ({ default: () => <div>Time import</div> }));
 vi.mock('../pages/PrintReport.jsx', () => ({ default: () => <div>Print report page</div> }));
 vi.mock('../pages/WhatsNewPage.jsx', () => ({ default: () => <div>Whats new</div> }));
@@ -80,7 +84,7 @@ describe('App superadmin dashboard routing', () => {
     });
 
     it('opens the workspace experience only through the new superadmin route', () => {
-        renderApp(authenticated(['ROLE_SUPERADMIN'], { pagePermissions: {} }), '/admin/dashboard-neu?tab=time');
+        renderApp(authenticated(['ROLE_SUPERADMIN'], { pagePermissions: {}, selectedCompanyId: 20 }), '/admin/dashboard-neu?tab=time');
         expect(screen.getByText('New admin dashboard')).toBeInTheDocument();
         expect(screen.queryByText('Admin dashboard')).not.toBeInTheDocument();
     });
@@ -105,13 +109,20 @@ describe('App superadmin dashboard routing', () => {
     });
 
     it('keeps superadmin employee navigation inside the new dashboard', () => {
-        renderApp(authenticated(['ROLE_SUPERADMIN']), '/admin/dashboard-neu/mitarbeiter/mirjam');
+        renderApp(authenticated(['ROLE_SUPERADMIN'], { selectedCompanyId: 20 }), '/admin/dashboard-neu/mitarbeiter/mirjam');
         expect(screen.getByText('Admin employee overview')).toHaveAttribute('data-dashboard-base', '/admin/dashboard-neu');
     });
 
     it('keeps the existing employee route on the classic dashboard', () => {
         renderApp(authenticated(['ROLE_ADMIN']), '/admin/dashboard/mitarbeiter/mirjam');
         expect(screen.getByText('Admin employee overview')).toHaveAttribute('data-dashboard-base', '/admin/dashboard');
+    });
+
+    it.each(['/admin/dashboard-neu', '/admin/dashboard-neu/mitarbeiter/mirjam'])('requires a company before opening %s', (path) => {
+        renderApp(authenticated(['ROLE_SUPERADMIN']), path);
+        expect(screen.getByText('Company selection')).toBeInTheDocument();
+        expect(screen.queryByText('New admin dashboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Admin employee overview')).not.toBeInTheDocument();
     });
 
     it('requires authentication for a direct link to the new dashboard', () => {

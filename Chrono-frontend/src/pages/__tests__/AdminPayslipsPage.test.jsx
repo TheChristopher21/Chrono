@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,6 +92,9 @@ describe('AdminPayslipsPage', () => {
       }
       if (url === '/api/admin/users') {
         return Promise.resolve({ data: users });
+      }
+      if (url === '/api/payslips/admin/time-summary') {
+        return Promise.resolve({ data: { currentBalanceMinutes: 1001, workedMinutes: 10770, expectedMinutes: 9600, differenceMinutes: 1170 } });
       }
       return Promise.resolve({ data: [] });
     });
@@ -198,7 +201,8 @@ describe('AdminPayslipsPage', () => {
     await screen.findByText('Anna Offen');
     await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
+    const dialog = screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
@@ -226,7 +230,7 @@ describe('AdminPayslipsPage', () => {
     await screen.findByText('Anna Offen');
     await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
+    const dialog = screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
@@ -253,7 +257,7 @@ describe('AdminPayslipsPage', () => {
     await screen.findByText('Anna Offen');
     await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
+    const dialog = screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
@@ -279,12 +283,81 @@ describe('AdminPayslipsPage', () => {
     await screen.findByText('Anna Offen');
     await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Neue Lohnabrechnung erstellen' });
+    const dialog = screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' });
     await user.selectOptions(within(dialog).getByLabelText('Mitarbeiter'), '101');
     await user.type(within(dialog).getByLabelText('Startdatum'), '2026-08-01');
     await user.type(within(dialog).getByLabelText('Enddatum'), '2026-08-31');
     await user.click(within(dialog).getByRole('button', { name: 'Abrechnung erstellen' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(/positiver Stundenansatz/);
+  });
+
+  it('shows current and period hours inline and preserves manual edits when dates change', async () => {
+    const user = userEvent.setup();
+    render(<AdminPayslipsPage />);
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
+    const section = within(screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' }));
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'), '101');
+    await user.click(section.getByLabelText('Ueberstunden auszahlen'));
+    expect(await section.findByText('16:41 Std:Min.')).toBeInTheDocument();
+    expect(apiMock.get).toHaveBeenCalledWith('/api/payslips/admin/time-summary', { params: { userId: '101' } });
+    await user.click(section.getByRole('button', { name: 'Aktuellen Saldo übernehmen' }));
+    const input = section.getByLabelText('Ueberstunden (Std:Min.)');
+    expect(input).toHaveValue('16:41');
+    await user.clear(input);
+    await user.type(input, '5:30');
+    fireEvent.change(section.getByLabelText('Startdatum'), { target: { value: '2026-08-01' } });
+    fireEvent.change(section.getByLabelText('Enddatum'), { target: { value: '2026-08-31' } });
+    expect(await section.findByText('19:30 Std:Min.')).toBeInTheDocument();
+    expect(section.getByText('179:30 Std:Min.')).toBeInTheDocument();
+    expect(section.getByText('160:00 Std:Min.')).toBeInTheDocument();
+    expect(apiMock.get).toHaveBeenCalledWith('/api/payslips/admin/time-summary', {
+      params: { userId: '101', start: '2026-08-01', end: '2026-08-31' },
+    });
+    expect(input).toHaveValue('5:30');
+    await user.click(section.getByRole('button', { name: 'Zeitraumwert übernehmen' }));
+    expect(input).toHaveValue('19:30');
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'), '102');
+    expect(input).toHaveValue('');
+    await user.click(section.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByRole('region', { name: 'Neue Lohnabrechnung erstellen' })).not.toBeInTheDocument();
+  });
+
+  it('keeps manual entry available when loading hours fails', async () => {
+    const user = userEvent.setup();
+    render(<AdminPayslipsPage />);
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
+    const section = within(screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' }));
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'), '101');
+    apiMock.get.mockRejectedValueOnce(new Error('offline'));
+    await user.click(section.getByLabelText('Ueberstunden auszahlen'));
+    expect(await section.findByRole('alert')).toHaveTextContent(/manuelle Eingabe/);
+    await user.type(section.getByLabelText('Ueberstunden (Std:Min.)'), '3:15');
+    expect(section.getByLabelText('Ueberstunden (Std:Min.)')).toHaveValue('3:15');
+  });
+
+  it('ignores stale requests after changing employees and shows zero and negative balances', async () => {
+    const user = userEvent.setup();
+    render(<AdminPayslipsPage />);
+    await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button', { name: '+ Neue Abrechnung' }));
+    const section = within(screen.getByRole('region', { name: 'Neue Lohnabrechnung erstellen' }));
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'), '101');
+    fireEvent.change(section.getByLabelText('Startdatum'), { target: { value: '2026-08-01' } });
+    fireEvent.change(section.getByLabelText('Enddatum'), { target: { value: '2026-08-31' } });
+    let resolveOld;
+    apiMock.get.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }));
+    await user.click(section.getByLabelText('Ueberstunden auszahlen'));
+    apiMock.get.mockResolvedValueOnce({ data: { currentBalanceMinutes: -90, differenceMinutes: 0, workedMinutes: 9600, expectedMinutes: 9600 } });
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'), '102');
+    expect(await section.findByText('-1:30 Std:Min.')).toBeInTheDocument();
+    expect(section.getByText('0:00 Std:Min.')).toBeInTheDocument();
+    await act(async () => resolveOld({ data: { currentBalanceMinutes: 9999 } }));
+    expect(section.getByText('-1:30 Std:Min.')).toBeInTheDocument();
+    expect(section.queryByText('166:39 Std:Min.')).not.toBeInTheDocument();
+    expect(section.getByRole('button', { name: 'Aktuellen Saldo übernehmen' })).toBeDisabled();
+    expect(section.getByRole('button', { name: 'Zeitraumwert übernehmen' })).toBeDisabled();
   });
 });

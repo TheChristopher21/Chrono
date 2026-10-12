@@ -50,7 +50,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(parseOrigins(configuredOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "Origin", "Idempotency-Key",
+                "Authorization", "Content-Type", "Origin", "Idempotency-Key", "X-Chrono-Company",
                 "X-Agent-Token", "X-NFC-Agent-Request",
                 "X-Chrono-Timestamp", "X-Chrono-Delivery-Id", "X-Chrono-Signature"));
         configuration.setExposedHeaders(List.of("Authorization", "Retry-After"));

@@ -4,6 +4,28 @@ Die neue Oberfläche liegt unter `/admin/dashboard-neu`. Der Einstieg „Neues D
 
 `/admin/dashboard` bleibt die bisherige Oberfläche und das Standardziel. Die neue Variante verwendet die vorhandenen API-Endpunkte und Fachkomponenten; der Entwurf enthält keine Beispieldaten in der Produktimplementierung.
 
+Solange ein Arbeitsbereich des neuen Dashboards geöffnet ist, behalten auch freigegebene Modulseiten die linke Arbeitsplatz-Navigation. Schnellzugriffe verwenden weiterhin die bestehenden Seitenrouten und Berechtigungsprüfungen. Die Navigation enthält unter „Weitere Bereiche“ alle zusätzlich verfügbaren Seiten aus dem Seitenkatalog; Seiten mit derselben Zielroute erscheinen einmal. Seiten- und Featureberechtigungen bestimmen die Sichtbarkeit. Ohne geöffnetes neues Dashboard bleibt die bisherige Darstellung der Module erhalten. Die gemeinsame Navigation unterdrückt die zusätzliche Navbar innerhalb der Modulseite, bleibt nach dem Neuladen erhalten und bewahrt ungespeicherte Formulare beim Öffnen oder Schliessen des neuen Dashboards.
+
+Die Arbeitsübersicht beginnt mit „Jetzt im Fokus“: offene Urlaubsanträge mit Beginn innerhalb von sieben Tagen oder bereits laufendem Zeitraum, danach übrige Entscheidungen, danach Zeitprobleme im ausgewiesenen Prüfzeitraum. Die Fokusaktion öffnet den passenden Vorgang. Der Filter „Zeitnaher Urlaub“ grenzt genau diese Anträge ein. Die Zeitprüfung zeigt zusätzlich betroffene Personen je Problemart; eine Person kann in mehreren Arten vorkommen. Bei heutigen Abwesenheiten stehen Krankmeldungen zuerst. Die Zeitkonten zeigen die drei größten geladenen Minussalden mit direkter Personenaktion und den höchsten Saldo. Ladefehler und noch nicht berechnete Zeitprobleme ergeben keine Entwarnung. Alle Angaben folgen dem gewählten Team.
+
+Normale Navigation aus dem neuen Dashboard bleibt in einem Arbeitsbereich: Hauptbereiche, Mitarbeiterprofile und Module ersetzen dessen aktuelle Ansicht. „+ / Neuen Tab öffnen“ und Mittelklick auf Modullinks öffnen bewusst einen zusätzlichen Tab. Bestehende Tabs werden nicht automatisch geschlossen. Besuchte Seiten bleiben pro Tab zwischengespeichert, einschließlich ungespeicherter Eingaben, Filter und Scrollpositionen; Browser-Zurück/Vorwärts bleibt nutzbar. Der Profil-Rückweg führt zur aufrufenden Dashboard-Ansicht. Teamwechsel entfernen personenbezogene Filter aus zuvor besuchten Ansichten. Die lokale Sitzung speichert den aktuellen Modulpfad; andere Geräte stellen einen solchen Arbeitsbereich am Dashboard-Einstieg wieder her. PMS behält seinen getrennten Arbeitsbereich.
+
+Die Seitenleiste bietet eine Suche über alle freigegebenen Module. Im Antragscenter lassen sich Vorgänge direkt mit Vor/Zurück durchgehen. Auf schmalen Bildschirmen öffnet die Auswahl die Detailansicht mit Rückweg zur gefilterten Liste; lange Details scrollen oberhalb der Entscheidung. Die Aktionsleiste bleibt bei üblichen Handyhöhen sichtbar.
+
+Geprüft am 08.10.2026: 157 Frontendtests aus Arbeitsbereich- und Dashboard-Suiten sowie Produktionsbuild erfolgreich. Browserprüfung mit isolierten API-Testdaten: Bereichs- und Modulwechsel im selben Tab, Profil-Rückweg, erhaltene Notizen/Filter/Kalendermonate, Teamwechsel, Neuladen eines Moduls, absichtliche neue Tabs über Plus und Mittelklick, Modulsuche sowie mobile Antrag-Navigation und Freigabe. Die Entscheidungsbuttons bleiben bei 1366×768, 1280×720 und 390×844 sichtbar. Entwürfe bleiben während des Navigierens erhalten; ein vollständiges Browser-Neuladen speichert keine ungesendeten Formulare.
+
+## Firmenansicht für Superadmins
+
+Ohne Firmenauswahl führt das neue Dashboard zunächst nach `/admin/firmenauswahl`. Dort lassen sich Firmen nach Name oder Ort suchen und mit „Firma ansehen“ öffnen. Die bestehende Firmenverwaltung bietet dieselbe Aktion. Die aktive Firma steht dauerhaft unter der Tab-Leiste; „Firma wechseln“ öffnet die Auswahl und „Zur Firmenverwaltung“ beendet den Firmenkontext.
+
+Die Auswahl gilt pro Browser-Tab und angemeldetem Konto. Mitarbeitende, Anträge, Zeiten, Abrechnungen und die freigeschalteten Fachmodule verwenden die gewählte Firma. Ihre Module richten sich nach den Firmenfeatures. Der Superadmin bleibt mit seinem eigenen Konto angemeldet; dessen gespeicherte Firmenzuordnung wird nicht verändert. Plattformverwaltung bleibt über den ausdrücklichen Rückweg erreichbar.
+
+API-Aufrufe übertragen `X-Chrono-Company`. Ein MVC-Interceptor prüft das angemeldete Superadmin-Konto und die Firma, bevor der anfragelokale `CompanyScope` die Firmenauflösung übernimmt. Personenbezogene Zugriffe und Änderungen prüfen zusätzlich die Zugehörigkeit des Ziel-Datensatzes. Der Firmenkatalog wird unabhängig von der Auswahl geladen. Layout- und Arbeitsbereicheinstellungen bleiben pro Firma getrennt.
+
+Ein Firmenwechsel lädt das Dokument neu und verwirft ungesendete Formulare, damit keine Daten oder Entwürfe aus der vorherigen Firma übernommen werden. Normale Navigation innerhalb einer Firma behält das bestehende Tab- und Entwurfsverhalten. Auch aus dem Browsercache wiederhergestellte Dokumente gleichen ihren Firmenkontext ab.
+
+Geprüft am 08.10.2026: 106 Backendtests und 235 Frontendtests zu Routen, Navigation, Dashboard und Firmenauswahl sowie Produktionsbuild. Browserprüfung mit zwei isolierten Testfirmen: getrennte Mitarbeitende und Anträge, Entwurfswechsel, Zurück/Vorwärts, Schnellzugriffe, Neuladen und sichtbare Firmenauswahl bei 1366×900 und 390×844. Die Browserprüfung verwendet API-Testdaten und ersetzt keinen Durchlauf mit einer laufenden Datenbank.
+
 ## Funktionszuordnung
 
 | Bereich | Neue Arbeitsübersicht |
@@ -22,7 +44,7 @@ Die neue Oberfläche liegt unter `/admin/dashboard-neu`. Der Einstieg „Neues D
 
 ## Technische Grenzen und Prüfung
 
-Das neue Layout ist auf `.admin-workspace` begrenzt. Die klassische Variante bleibt der Standardwert von `AdminDashboard`; die Mitarbeiterkomponente erhält nur einen optionalen Rückweg. Backendänderung: additive Freigabe der vier neuen Layoutbereiche in der bestehenden UI-Einstellungsvalidierung.
+Das neue Layout ist auf `.admin-workspace` begrenzt. Die klassische Variante bleibt der Standardwert von `AdminDashboard`; die Mitarbeiterkomponente erhält nur einen optionalen Rückweg. Das Backend erlaubt die vier neuen Layoutbereiche in der UI-Einstellungsvalidierung und berücksichtigt den validierten Firmenkontext in den Datenzugriffen.
 
 Automatisierte Prüfungen decken Rollen-/Routensperren, wiederhergestellte Arbeitsbereiche, Datenfilter, Entscheidungsgruppen, Teilfehler, Hintergrundaktualisierung, Kalenderanbindung und die bestehende Mitarbeiterübersicht ab. Browserprüfungen verwenden abgefangene API-Anfragen mit isolierten Testdaten. Build und Tests sind lokale Prüfungen; sie führen kein Deployment aus.
 
@@ -31,6 +53,8 @@ Kalender und Zeitprüfung nutzen auf Desktopbildschirmen die verbleibende Höhe 
 Datumssemantik: `CorrectionRequest.requestDate` ist der gewählte Korrektur-/Arbeitstag, kein Eingangszeitstempel. Urlaubsanträge liefern keinen verlässlichen Erstellungszeitpunkt. Die Standardsortierung verwendet deshalb Urlaubsbeginn bzw. betroffenen Korrekturtag; fehlende Datumswerte stehen unabhängig von der Sortierrichtung am Ende. Ladefehler werden sichtbar angezeigt; unvollständige Daten sperren schreibende Aktionen.
 
 Bereits anderweitig entschiedene Korrekturen werden anhand der Antwortdaten erkannt, auch wenn das Backend HTTP 200 zurückgibt. Sie werden neu geladen und nicht als erfolgreiche eigene Genehmigung quittiert. Bei einem fehlenden gültigen gewünschten Stempeltag ist eine Genehmigung gesperrt, weil der betroffene Freigabeumfang nicht bestimmbar ist.
+
+Zeitkorrekturen sichern die ursprüngliche Stempelzeit und den bisherigen Tagesverlauf beim Einreichen. Ohne konkrete Stempel-ID zeigt die Prüfung den bisherigen Tagesverlauf; es wird keine Zuordnung zu einzelnen neuen Stempeln geraten. Die Freigabe ersetzt weiterhin alle Tagesstempel durch die beantragten Zeiten, während die ursprünglichen Werte als Antragsgeschichte erhalten bleiben. Migration V50 übernimmt vorhandene Verknüpfungen und löst sie vom später gelöschten Zeiteintrag. Für ältere offene Anträge ohne Verknüpfung wird der noch vorhandene Tag herangezogen; bereits verlorene historische Werte lassen sich nicht rekonstruieren.
 
 Geprüft am 14.09.2026: 142 Frontendtests im gemeinsamen Lauf, danach 29 Tests für die zuletzt geänderte Übersicht und Arbeitsbereich-Metadaten (einschliesslich eines zusätzlichen Mitarbeiter-Tab-Tests). Die Backend-Validierung besteht 41 Tests. Der Browserdurchlauf umfasst Freigaben, Teamwechsel, zwei Urlaubszeiträume mit erhaltenem Dialog/Monat, Mitarbeiterprofil und Rückweg, Abwesenheitsdetails sowie Zeitprüfung und Antragscenter. Responsive Ansichten wurden zwischen 320 und 1440 Pixeln geprüft.
 

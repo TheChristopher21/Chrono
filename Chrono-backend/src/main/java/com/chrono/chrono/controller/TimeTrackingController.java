@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
@@ -127,8 +128,8 @@ public class TimeTrackingController {
         boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
                             requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                             (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                             requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                             requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+                             CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                             CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId()));
         if (canAccess) {
             return ResponseEntity.ok(timeTrackingService.getUserHistory(username));
         } else {
@@ -147,8 +148,8 @@ public class TimeTrackingController {
          boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
                             requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                             (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                             requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                             requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+                             CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                             CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId()));
         if(canAccess) {
             return ResponseEntity.ok(timeTrackingService.getDailySummary(username, date));
         } else {
@@ -168,8 +169,8 @@ public class TimeTrackingController {
         boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
                 requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                 (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                        requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                        requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+                        CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                        CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId()));
         if (!canAccess) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -184,8 +185,8 @@ public class TimeTrackingController {
         boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
                             requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                             (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                             requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                             requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+                             CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                             CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId()));
         if (canAccess) {
             return ResponseEntity.ok(timeTrackingService.getReport(username, startDate, endDate));
         } else {
@@ -199,12 +200,13 @@ public class TimeTrackingController {
         User requestingUser = userService.getUserByUsername(principal.getName());
         User targetUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        CompanyScope.requireTarget(targetUser);
         LocalDate parsedDate = LocalDate.parse(date);
         boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
                             requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                             (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                             requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                             requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+                             CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                             CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId()));
         if (!canAccess) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }

@@ -1,9 +1,13 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.dto.PayslipDTO;
+import com.chrono.chrono.dto.PayslipTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.PayrollService;
+import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.PayslipRepository;
@@ -15,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +39,31 @@ public class PayslipController {
 
     @Autowired
     private AccessControlService accessControlService;
+
+    @Autowired
+    private TimeTrackingService timeTrackingService;
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @GetMapping("/admin/time-summary")
+    public ResponseEntity<PayslipTimeSummaryDTO> timeSummary(
+            @RequestParam Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        User target = requireTargetUser(userId);
+        requirePayrollAccess(requester, target);
+        if ((start == null) != (end == null) || (start != null && start.isAfter(end))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bitte einen gültigen Zeitraum angeben.");
+        }
+        if (start == null) {
+            return ResponseEntity.ok(new PayslipTimeSummaryDTO(target.getTrackingBalanceInMinutes(), null, null, null));
+        }
+        TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(target, start, end);
+        return ResponseEntity.ok(new PayslipTimeSummaryDTO(
+                summary.getTrackingBalance(), summary.getWorkedMinutes(),
+                summary.getExpectedMinutes(), summary.getDifferenceMinutes()));
+    }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/generate")
@@ -170,7 +200,7 @@ public class PayslipController {
             requirePayrollAccess(requester, requireTargetUser(userId));
             payrollService.approveAllForUser(userId, comment);
         } else {
-            if (accessControlService.isSuperAdmin(requester) && requester.getCompany() == null) {
+            if (accessControlService.isSuperAdmin(requester) && CompanyScope.companyFor(requester) == null) {
                 payrollService.approveAll(comment);
             } else {
                 for (User visibleUser : accessControlService.visibleUsersForAdmin(requester)) {

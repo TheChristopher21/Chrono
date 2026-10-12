@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.PayslipDTO;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.PayslipAudit;
@@ -273,29 +274,29 @@ public class PayrollService {
     public List<Payslip> getAllPayslips(User requestingAdmin) {
         boolean isSuperAdmin = requestingAdmin.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+        if (isSuperAdmin && CompanyScope.companyFor(requestingAdmin) == null) {
             return payslipRepository.findAll();
         }
-        if (requestingAdmin.getCompany() == null) {
+        if (CompanyScope.companyFor(requestingAdmin) == null) {
             return List.of();
         }
-        return payslipRepository.findByUser_Company_Id(requestingAdmin.getCompany().getId());
+        return payslipRepository.findByUser_Company_Id(CompanyScope.companyFor(requestingAdmin).getId());
     }
 
     public List<Payslip> getPendingPayslips(User requestingAdmin) {
         boolean isSuperAdmin = requestingAdmin.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
-        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+        if (isSuperAdmin && CompanyScope.companyFor(requestingAdmin) == null) {
             return payslipRepository.findByApproved(false);
         }
 
-        if (requestingAdmin.getCompany() == null) {
+        if (CompanyScope.companyFor(requestingAdmin) == null) {
             return List.of();
         }
 
         return payslipRepository.findByUser_Company_IdAndApproved(
-                requestingAdmin.getCompany().getId(), false);
+                CompanyScope.companyFor(requestingAdmin).getId(), false);
     }
 
     @Transactional(readOnly = true)
@@ -304,11 +305,11 @@ public class PayrollService {
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
         List<Payslip> list;
-        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+        if (isSuperAdmin && CompanyScope.companyFor(requestingAdmin) == null) {
             list = payslipRepository.findByApproved(true);
-        } else if (requestingAdmin.getCompany() != null) {
+        } else if (CompanyScope.companyFor(requestingAdmin) != null) {
             list = payslipRepository.findByUser_Company_IdAndApproved(
-                    requestingAdmin.getCompany().getId(), true);
+                    CompanyScope.companyFor(requestingAdmin).getId(), true);
         } else {
             list = List.of();
         }
@@ -411,10 +412,10 @@ public class PayrollService {
         boolean isSuperAdmin = requestingAdmin.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         List<User> users;
-        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+        if (isSuperAdmin && CompanyScope.companyFor(requestingAdmin) == null) {
             users = userRepository.findOperationalUsersDeletedFalse();
-        } else if (requestingAdmin.getCompany() != null) {
-            users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(requestingAdmin.getCompany().getId());
+        } else if (CompanyScope.companyFor(requestingAdmin) != null) {
+            users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(CompanyScope.companyFor(requestingAdmin).getId());
         } else {
             users = List.of();
         }

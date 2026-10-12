@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
@@ -347,7 +348,7 @@ public class UserPermissionService {
             return true;
         }
 
-        Company company = user.getCompany();
+        Company company = CompanyScope.companyFor(user);
         if (company == null) {
             return false;
         }

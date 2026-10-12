@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.AdminCorrectionRequestDTO;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.User;
@@ -63,8 +64,8 @@ public class CorrectionRequestController {
             boolean isSuperAdmin = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
             boolean isAdminOfSameCompany = false;
             if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
-                if (requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                    requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                if (CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                    CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId())) {
                     isAdminOfSameCompany = true;
                 }
             }
@@ -129,13 +130,13 @@ public class CorrectionRequestController {
             boolean isSuperAdmin = currentUser.getRoles().stream()
                     .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
 
-            if (isSuperAdmin) {
+            if (isSuperAdmin && CompanyScope.selection() == null) {
                 requests = correctionRequestService.getAllRequestsForAdminDashboard();
             } else {
-                if (currentUser.getCompany() == null) {
+                if (CompanyScope.companyFor(currentUser) == null) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
                 }
-                requests = correctionRequestService.getRequestsByCompanyForAdminDashboard(currentUser.getCompany().getId());
+                requests = correctionRequestService.getRequestsByCompanyForAdminDashboard(CompanyScope.companyFor(currentUser).getId());
             }
 
             return ResponseEntity.ok(requests);
@@ -201,6 +202,7 @@ public class CorrectionRequestController {
                 .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
         User target = userRepo.findByUsername(targetUsername)
                 .orElseThrow(() -> new SecurityException("Zielbenutzer nicht in der Datenbank gefunden."));
+        CompanyScope.requireTarget(target);
         if (requester.getUsername().equals(target.getUsername())) {
             return true;
         }
@@ -208,9 +210,9 @@ public class CorrectionRequestController {
             return true;
         }
         return hasRole(requester, "ROLE_ADMIN")
-                && requester.getCompany() != null
+                && CompanyScope.companyFor(requester) != null
                 && target.getCompany() != null
-                && requester.getCompany().getId().equals(target.getCompany().getId());
+                && CompanyScope.companyFor(requester).getId().equals(target.getCompany().getId());
     }
 
     private boolean hasRole(User user, String roleName) {

@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.AnonymizeGuestRequest;
 import com.chrono.chrono.dto.pms.AnonymizeGuestResponse;
 import com.chrono.chrono.dto.pms.PmsGuestDataExport;
@@ -74,11 +75,11 @@ public class PmsPrivacyController {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Datenschutzaktionen sind Administratoren vorbehalten.");
         }
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
-        return new AccessContext(user.getCompany(), user.getUsername());
+        return new AccessContext(CompanyScope.companyFor(user), user.getUsername());
     }
 
     private record AccessContext(Company company, String username) {

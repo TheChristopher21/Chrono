@@ -76,6 +76,29 @@ afterEach(() => {
 });
 
 describe('employee overview background reconciliation', () => {
+    it('previews the saved original day and only the requested times without duplicating old stamps', async () => {
+        const initialImplementation = mocks.api.get.getMockImplementation();
+        const originalDayEntries = [
+            { id: 51, entryTimestamp: '2026-09-21T08:00:00', punchType: 'START' },
+            { id: 52, entryTimestamp: '2026-09-21T16:00:00', punchType: 'ENDE' },
+        ];
+        mocks.api.get.mockImplementation((url, config) => url === '/api/correction/all'
+            ? Promise.resolve({ data: [
+                { id: 1, username: 'Mirjam', requestDate: '2026-09-21', desiredTimestamp: '2026-09-21T08:15:00', desiredPunchType: 'START', originalDayEntries },
+                { id: 2, username: 'Mirjam', requestDate: '2026-09-21', desiredTimestamp: '2026-09-21T17:00:00', desiredPunchType: 'ENDE', originalDayEntries },
+            ] }) : initialImplementation(url, config));
+        const { container } = renderOverview();
+        await screen.findAllByRole('button', { name: 'Genehmigen' });
+        const original = container.querySelector('.entry-original');
+        const requested = container.querySelector('.entry-requested');
+        expect(original).toHaveTextContent('08:00');
+        expect(original).toHaveTextContent('16:00');
+        expect(requested).toHaveTextContent('08:15');
+        expect(requested).toHaveTextContent('17:00');
+        expect(requested).not.toHaveTextContent('08:00');
+        expect(requested).not.toHaveTextContent('16:00');
+    });
+
     it('keeps the calendar, selected month and draft mounted while loading saved vacations', async () => {
         const { container } = renderOverview();
         const calendar = await screen.findByTestId('vacation-calendar');

@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.IntegrationConfigDTO;
 import com.chrono.chrono.dto.IntegrationTriggerResultDTO;
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
@@ -40,7 +41,7 @@ public class IntegrationController {
     private ComplianceAuditService complianceAuditService;
 
     private boolean featureEnabled(User user) {
-        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
+        return user != null && RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user));
     }
 
     private boolean isAdmin(User user) {
@@ -57,7 +58,7 @@ public class IntegrationController {
         if (!featureEnabled(user) || !isAdmin(user)) {
             return ResponseEntity.status(403).build();
         }
-        List<IntegrationConfig> configs = integrationConfigService.findByCompanyId(user.getCompany().getId());
+        List<IntegrationConfig> configs = integrationConfigService.findByCompanyId(CompanyScope.companyFor(user).getId());
         List<IntegrationConfigDTO> dtos = new ArrayList<>();
         for (IntegrationConfig config : configs) {
             dtos.add(new IntegrationConfigDTO(config));
@@ -78,7 +79,7 @@ public class IntegrationController {
             return ResponseEntity.badRequest().build();
         }
         IntegrationConfig config = new IntegrationConfig();
-        config.setCompany(user.getCompany());
+        config.setCompany(CompanyScope.companyFor(user));
         config.setName(request.getName());
         config.setType(request.getType());
         config.setEndpointUrl(request.getEndpointUrl());
@@ -109,7 +110,7 @@ public class IntegrationController {
             return ResponseEntity.notFound().build();
         }
         IntegrationConfig config = maybeConfig.get();
-        if (!config.getCompany().getId().equals(user.getCompany().getId())) {
+        if (!config.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         if (request.getName() != null) {
@@ -148,7 +149,7 @@ public class IntegrationController {
             return ResponseEntity.notFound().build();
         }
         IntegrationConfig config = maybeConfig.get();
-        if (!config.getCompany().getId().equals(user.getCompany().getId())) {
+        if (!config.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         integrationConfigService.delete(id);
@@ -172,12 +173,12 @@ public class IntegrationController {
             return ResponseEntity.notFound().build();
         }
         IntegrationConfig config = maybeConfig.get();
-        if (!config.getCompany().getId().equals(user.getCompany().getId())) {
+        if (!config.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
 
         List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(
-                user.getCompany().getId(),
+                CompanyScope.companyFor(user).getId(),
                 LocalDate.now().minusMonths(1),
                 LocalDate.now()
         );

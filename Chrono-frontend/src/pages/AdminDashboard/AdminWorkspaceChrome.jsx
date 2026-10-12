@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import WorkspaceLink from '../../components/workspace/WorkspaceLink.jsx';
-import { getDashboardPagesForContext } from '../../utils/pageAccess.js';
+import { PAGE_CATALOG, hasFeatureAccess, hasPageAccess, translatePageDefinition } from '../../utils/pageAccess.js';
 
 const ICON_PATHS = {
     grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
@@ -43,17 +43,23 @@ const SHORTCUTS = [
 
 export function AdminWorkspaceSidebar({
     t, currentUser, activeTab, tabs, onOpenTab, onOpenEmployees, onCommand,
-    onPunch, canPunch = false, isPunching = false,
+    onPunch, canPunch = false, isPunching = false, activePageKey,
 }) {
     const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+    const [pageSearch, setPageSearch] = useState('');
     const secondaryNavId = useId();
-    const shortcuts = useMemo(() => {
-        const accessiblePages = getDashboardPagesForContext(currentUser, 'admin', t);
-        return SHORTCUTS.flatMap(shortcut => {
-            const page = accessiblePages.find(candidate => candidate.key === shortcut.key);
-            return page ? [{ ...page, icon: shortcut.icon }] : [];
-        });
+    const accessiblePages = useMemo(() => {
+        const paths = new Set();
+        return PAGE_CATALOG
+            .filter(page => !['adminDashboard', 'adminDashboardWorkspace'].includes(page.key))
+            .filter(page => currentUser && hasFeatureAccess(currentUser, page.featureKey) && hasPageAccess(currentUser, page.key))
+            .sort((left, right) => left.order - right.order)
+            .filter(page => { if (paths.has(page.path)) return false; paths.add(page.path); return true; })
+            .map(page => ({ ...translatePageDefinition(page, t), icon: SHORTCUTS.find(shortcut => shortcut.key === page.key)?.icon || 'modules' }));
     }, [currentUser, t]);
+    const matchingPages = accessiblePages.filter(page => `${page.label} ${page.description || ''}`.toLocaleLowerCase().includes(pageSearch.trim().toLocaleLowerCase()));
+    const shortcuts = SHORTCUTS.flatMap(shortcut => matchingPages.filter(page => page.key === shortcut.key));
+    const otherPages = matchingPages.filter(page => !SHORTCUTS.some(shortcut => shortcut.key === page.key));
     const orderedTabs = ['overview', 'requests', 'time', 'calendar']
         .map(id => tabs.find(tab => tab.id === id)).filter(Boolean);
     const employeeTab = tabs.find(tab => tab.id === 'employees');
@@ -71,6 +77,15 @@ export function AdminWorkspaceSidebar({
             <span>{tab.id === 'modules' ? t('adminWorkspace.allModules', 'Alle Module') : tab.label}</span>
             {Number(tab.count) > 0 && <span className="aw-nav-count">{tab.count}</span>}
         </button>
+    );
+    const renderPage = page => (
+        <WorkspaceLink key={page.key} to={page.path}
+            className={`aw-nav-item${activePageKey === page.key ? ' is-active' : ''}`}
+            aria-current={activePageKey === page.key ? 'page' : undefined}
+            onClick={() => setMobileMoreOpen(false)}>
+            <AdminWorkspaceIcon name={page.icon} />
+            <span>{page.label}</span>
+        </WorkspaceLink>
     );
 
     return (
@@ -96,19 +111,24 @@ export function AdminWorkspaceSidebar({
                 <span>{t('adminWorkspace.quickAccessMore', 'Schnellzugriff & mehr')}</span>
             </button>
             <div id={secondaryNavId} className={`aw-sidebar-secondary${mobileMoreOpen ? ' is-open' : ''}`}>
+                <label className="aw-nav-search"><span>{t('adminWorkspace.searchPages', 'Bereich suchen')}</span>
+                    <input type="search" value={pageSearch} onChange={event => setPageSearch(event.target.value)} placeholder={t('adminWorkspace.searchPages', 'Bereich suchen')} />
+                </label>
+                {pageSearch && !matchingPages.length && <p className="aw-sidebar-label">{t('adminWorkspace.noPages', 'Kein passender Bereich')}</p>}
                 {shortcuts.length > 0 && (
                     <div className="aw-shortcuts">
                         <div className="aw-sidebar-label">{t('adminDashboard.quickAccess', 'Schnellzugriff')}</div>
                         <nav aria-label={t('adminDashboard.quickAccess', 'Schnellzugriff')}>
-                            {shortcuts.map(page => (
-                                <WorkspaceLink key={page.key} to={page.path} className="aw-nav-item" onClick={() => setMobileMoreOpen(false)}>
-                                    <AdminWorkspaceIcon name={page.icon} />
-                                    <span>{page.label}</span>
-                                </WorkspaceLink>
-                            ))}
+                            {shortcuts.map(renderPage)}
                         </nav>
                     </div>
                 )}
+                {otherPages.length > 0 && <div className="aw-shortcuts">
+                    <div className="aw-sidebar-label">{t('adminWorkspace.availablePages', 'Weitere Bereiche')}</div>
+                    <nav aria-label={t('adminWorkspace.availablePages', 'Weitere Bereiche')}>
+                        {otherPages.map(renderPage)}
+                    </nav>
+                </div>}
                 <div className="aw-sidebar-bottom">
                     {canPunch && onPunch && (
                         <button type="button" className="aw-nav-item aw-punch-action" onClick={onPunch} disabled={isPunching} aria-busy={isPunching}>
@@ -142,6 +162,7 @@ AdminWorkspaceSidebar.propTypes = {
     onPunch: PropTypes.func,
     canPunch: PropTypes.bool,
     isPunching: PropTypes.bool,
+    activePageKey: PropTypes.string,
 };
 
 export function AdminWorkspaceHeader({ t, activeTab, onCreateVacation, onPrint, onCommand, canManage = false, context }) {

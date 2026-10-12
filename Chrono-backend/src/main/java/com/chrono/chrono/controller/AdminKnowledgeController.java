@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.CompanyKnowledge;
 import com.chrono.chrono.entities.User;
@@ -29,10 +30,10 @@ public class AdminKnowledgeController {
     private Company getCompany(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName()).orElse(null);
         if (admin == null) return null;
-        if (admin.getCompany() == null) {
+        if (CompanyScope.companyFor(admin) == null) {
             return null;
         }
-        return companyRepository.findById(admin.getCompany().getId()).orElse(null);
+        return companyRepository.findById(CompanyScope.companyFor(admin).getId()).orElse(null);
     }
 
     @GetMapping

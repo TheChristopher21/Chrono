@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.GenerateInvoiceRequestDTO;
 import com.chrono.chrono.dto.InvoiceSummaryDTO;
 import com.chrono.chrono.entities.Project;
@@ -33,7 +34,7 @@ public class BillingController {
     private UserService userService;
 
     private boolean featureEnabled(User user) {
-        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
+        return user != null && RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user));
     }
 
     private boolean isAdmin(User user) {
@@ -60,7 +61,7 @@ public class BillingController {
         }
         Project project = maybeProject.get();
         if (project.getCustomer() == null || project.getCustomer().getCompany() == null ||
-                !project.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+                !project.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         LocalDate start = LocalDate.parse(request.getStartDate());

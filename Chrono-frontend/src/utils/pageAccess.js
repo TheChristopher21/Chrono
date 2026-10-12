@@ -490,13 +490,14 @@ export const hasProjectsFeature = (user) => Boolean(
 
 export const hasFeatureAccess = (user, featureKey) => {
     if (!featureKey) return true;
-    if (isSuperAdminUser(user)) return true;
+    if (isSuperAdminUser(user) && !user.selectedCompanyId) return true;
     if (featureKey === "projects") return hasProjectsFeature(user);
     return getCompanyFeatureList(user).includes(featureKey);
 };
 
 export const hasPageAccess = (user, pageKey, requiredLevel = ACCESS_VIEW) => {
     if (!pageKey) return true;
+    if (user?.selectedCompanyId && ['companyManagement', 'dashboard', 'payslips', 'printReport', 'demoTour'].includes(pageKey)) return false;
     const requiredRole = PAGE_CATALOG.find((page) => page.key === pageKey)?.requiredRole;
     if (requiredRole && !user?.roles?.includes(requiredRole)) return false;
     if (isSuperAdminUser(user)) return true;

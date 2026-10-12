@@ -20,6 +20,7 @@ import CorrectionDecisionModal from "./CorrectionDecisionModal";
 import "../../styles/AdminDashboardScoped.css";
 import { getUserDisplayName, getUserSearchText } from "../../utils/userDisplay";
 import { formatRequestAdmin } from "../../utils/correctionActor";
+import { hasOriginalDay, originalDayText, originalTimeHeading } from './correctionOriginalTime';
 
 /* ⇢ Helper to derive a readable status ------------------------------------ */
 const getStatus = (req) => {
@@ -378,15 +379,15 @@ const formatPunchTypeLabel = (type, t) => {
 };
 
 const SingleEntry = ({ entry, t }) => {
-    const hasOriginal = Boolean(entry.originalTimestamp);
-    const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
+    const hasOriginal = Boolean(entry.originalTimestamp) || hasOriginalDay(entry);
+    const originalLabel = originalTimeHeading(entry, t);
     const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
     const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
 
     const desiredTime = formatTime(entry.desiredTimestamp);
     const desiredPunchLabel = formatPunchTypeLabel(entry.desiredPunchType, t);
 
-    const originalTime = hasOriginal ? formatTime(entry.originalTimestamp) : null;
+    const originalTime = entry.originalTimestamp ? formatTime(entry.originalTimestamp) : originalDayText(entry, t);
     const originalPunchLabel = hasOriginal ? formatPunchTypeLabel(entry.originalPunchType, t) : null;
 
     return (

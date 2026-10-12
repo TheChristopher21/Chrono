@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.SickLeave;
 import com.chrono.chrono.entities.User;
@@ -40,14 +41,14 @@ public class SickLeaveService {
         // Berechtigungsprüfung: Admin/SuperAdmin oder Selbstmeldung
         boolean isSelfReport = reporterUsername.equals(targetUsername);
         boolean isAdminActing = reporter.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
-        boolean isSuperAdmin = reporter.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(reporter);
 
         if (!isSelfReport && !isAdminActing) {
             throw new SecurityException(reporterUsername + " ist nicht berechtigt, Krankheit für " + targetUsername + " zu melden.");
         }
 
         if (isAdminActing && !isSuperAdmin) { // Admin, aber nicht SuperAdmin
-            Company reporterCompany = reporter.getCompany();
+            Company reporterCompany = CompanyScope.companyFor(reporter);
             Company targetCompany = targetUser.getCompany();
             if (reporterCompany == null || targetCompany == null || !reporterCompany.getId().equals(targetCompany.getId())) {
                 throw new SecurityException("Admin " + reporterUsername + " kann Krankheit nur für Benutzer der eigenen Firma melden.");
@@ -87,7 +88,7 @@ public class SickLeaveService {
     }
 
     public List<SickLeave> getAllSickLeavesInCompany(Long companyId, User requestingAdmin) {
-        if (requestingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+        if (CompanyScope.isUnrestrictedSuperAdmin(requestingAdmin)) {
             if (companyId != null) { // SuperAdmin filtert nach Firma, wenn ID gegeben
                 return filterOperationalSickLeaves(sickLeaveRepo.findByUser_Company_Id(companyId));
             }
@@ -98,16 +99,16 @@ public class SickLeaveService {
         }
 
         // Regulärer Admin
-        if (requestingAdmin.getCompany() == null) {
+        if (CompanyScope.companyFor(requestingAdmin) == null) {
             logger.warn("Admin {} ohne Firma versucht, Krankmeldungen abzurufen.", requestingAdmin.getUsername());
             return Collections.emptyList();
         }
         // Für regulären Admin: companyId-Parameter wird hier ignoriert, es zählt die Firma des Admins
-        if (companyId != null && !requestingAdmin.getCompany().getId().equals(companyId)) {
+        if (companyId != null && !CompanyScope.companyFor(requestingAdmin).getId().equals(companyId)) {
             logger.warn("Admin {} versucht, Krankmeldungen einer fremden Firma (ID: {}) abzurufen. Zugriff verweigert.", requestingAdmin.getUsername(), companyId);
             throw new SecurityException("Keine Berechtigung zum Zugriff auf Krankmeldungen dieser Firma.");
         }
-        return filterOperationalSickLeaves(sickLeaveRepo.findByUser_Company_Id(requestingAdmin.getCompany().getId()));
+        return filterOperationalSickLeaves(sickLeaveRepo.findByUser_Company_Id(CompanyScope.companyFor(requestingAdmin).getId()));
     }
 
     public List<SickLeave> getAllSickLeavesForSuperAdmin() {
@@ -140,9 +141,9 @@ public class SickLeaveService {
         }
 
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin);
         if (!isSuperAdmin) { // Wenn kein SuperAdmin, dann muss es ein Admin der gleichen Firma sein
-            Company adminCompany = admin.getCompany();
+            Company adminCompany = CompanyScope.companyFor(admin);
             Company targetUserCompany = targetUser.getCompany();
             if (adminCompany == null || targetUserCompany == null || !adminCompany.getId().equals(targetUserCompany.getId())) {
                 logger.warn("Admin {} (Firma: {}) versuchte Krankmeldung ID {} von User {} (Firma: {}) zu löschen. Zugriff verweigert.",
@@ -180,9 +181,9 @@ public class SickLeaveService {
             throw new IllegalStateException("Krankmeldung ohne zugeordneten Benutzer kann nicht aktualisiert werden.");
         }
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin);
         if (!isSuperAdmin) {
-            Company adminCompany = admin.getCompany();
+            Company adminCompany = CompanyScope.companyFor(admin);
             Company targetUserCompany = targetUser.getCompany();
             if (adminCompany == null || targetUserCompany == null || !adminCompany.getId().equals(targetUserCompany.getId())) {
                 throw new SecurityException("Admin " + adminUsername + " ist nicht berechtigt, diese Krankmeldung zu bearbeiten.");

@@ -1,6 +1,7 @@
 // Datei: src/main/java/com/chrono/chrono/controller/VacationController.java
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.services.UserPermissionService;
@@ -56,9 +57,9 @@ public class VacationController {
             return true;
         }
         return hasRole(requester, "ROLE_ADMIN")
-                && requester.getCompany() != null
+                && CompanyScope.companyFor(requester) != null
                 && target.getCompany() != null
-                && requester.getCompany().getId().equals(target.getCompany().getId());
+                && CompanyScope.companyFor(requester).getId().equals(target.getCompany().getId());
     }
 
     private boolean hasRole(User user, String roleName) {
@@ -184,7 +185,7 @@ public class VacationController {
                 UserPermissionService.PAGE_ADMIN_DASHBOARD,
                 UserPermissionService.PAGE_ADMIN_SCHEDULE
         );
-        if (adminUser.getCompany() == null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+        if (CompanyScope.companyFor(adminUser) == null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             // Admin (nicht SUPERADMIN) ohne Firma darf keine Firmen-Urlaube sehen.
             logger.warn("Admin user {} has no company assigned and is not SUPERADMIN. Cannot fetch all vacations.", adminUser.getUsername());
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -192,7 +193,7 @@ public class VacationController {
         }
         // SUPERADMIN kann alle sehen (companyId wird dann ggf. ignoriert oder speziell behandelt im Service)
         // Regulärer Admin sieht nur die seiner Firma
-        Long companyIdToFetch = adminUser.getCompany() != null ? adminUser.getCompany().getId() : null;
+        Long companyIdToFetch = CompanyScope.companyFor(adminUser) != null ? CompanyScope.companyFor(adminUser).getId() : null;
         if (adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && companyIdToFetch == null) {
             // Wenn SUPERADMIN und keine spezifische Firma ausgewählt wurde (z.B. weil Admin keiner Firma zugeordnet ist),
             // dann alle Urlaube von allen Firmen laden (oder eine leere Liste, je nach Anforderung).
@@ -401,8 +402,8 @@ public class VacationController {
         boolean isSuperAdmin = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         boolean isAdminOfSameCompany = false;
         if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
-            if (requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                    requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+            if (CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                    CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId())) {
                 isAdminOfSameCompany = true;
             }
         }

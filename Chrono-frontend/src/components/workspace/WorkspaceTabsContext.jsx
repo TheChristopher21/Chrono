@@ -6,6 +6,8 @@ import { useTranslation } from '../../context/LanguageContext.jsx';
 import api from '../../utils/api.js';
 import {
     canOpenWorkspaceTab,
+    isAdminWorkspaceTab,
+    ADMIN_WORKSPACE_ROOT,
     deserializeWorkspacePreference,
     getWorkspaceIdentity,
     getWorkspaceLaunchItems,
@@ -61,6 +63,7 @@ export const WorkspaceTabsProvider = ({ children }) => {
     const serverIdentityRef = useRef(null);
     const serverWriteQueueRef = useRef(Promise.resolve());
     const serverWriteTimerRef = useRef(null);
+    const dashboardRoutesRef = useRef(new Map());
 
     const commitState = useCallback((update) => {
         const next = typeof update === 'function' ? update(stateRef.current) : update;
@@ -71,10 +74,15 @@ export const WorkspaceTabsProvider = ({ children }) => {
 
     useEffect(() => {
         stateRef.current = state;
+        const openIds = new Set(state.tabs.map(tab => tab.id));
+        dashboardRoutesRef.current.forEach((_value, id) => {
+            if (!openIds.has(id)) dashboardRoutesRef.current.delete(id);
+        });
     }, [state]);
 
     useEffect(() => {
         if (!authToken || !currentUser || !identity) {
+            dashboardRoutesRef.current.clear();
             stateRef.current = emptyState;
             setState(emptyState);
             setLoadedIdentity(null);
@@ -88,6 +96,7 @@ export const WorkspaceTabsProvider = ({ children }) => {
         }
 
         if (previousIdentityRef.current !== identity) {
+            dashboardRoutesRef.current.clear();
             const restored = readStoredState(currentUser, t);
             stateRef.current = restored;
             setState(restored);
@@ -235,11 +244,13 @@ export const WorkspaceTabsProvider = ({ children }) => {
             ? current.tabs.find((tab) => tab.id === historyId && getWorkspaceScope(tab) === route.scope)
             : null;
         const activeMatch = current.tabs.find((tab) => tab.id === current.activeTabId && tab.instanceKey === route.instanceKey);
+        const activeWorkspace = current.tabs.find(tab => tab.id === current.activeTabId && isAdminWorkspaceTab(tab)
+            && getWorkspaceScope(tab) === route.scope);
         // A history entry identifies its exact tab, even when several tabs have the
         // same URL. Untagged content links reuse the active matching instance.
         let target = historyTab;
         if (!target && !historyId) {
-            target = activeMatch
+            target = activeWorkspace || activeMatch
                 || current.tabs.find((tab) => tab.url === route.url)
                 || current.tabs.find((tab) => tab.instanceKey === route.instanceKey);
         }
@@ -260,6 +271,13 @@ export const WorkspaceTabsProvider = ({ children }) => {
                 ...current,
                 activeTabId: target.id,
                 tabs: current.tabs.map((tab) => tab.id === target.id ? target : tab),
+            });
+        }
+        if (location.pathname === ADMIN_WORKSPACE_ROOT) {
+            const remembered = dashboardRoutesRef.current.get(target.id);
+            dashboardRoutesRef.current.set(target.id, {
+                views: { ...remembered?.views, [route.instanceKey]: route.url },
+                lastUrl: route.url,
             });
         }
         if (historyId !== target.id) {
@@ -313,9 +331,33 @@ export const WorkspaceTabsProvider = ({ children }) => {
 
     const openRoute = useCallback((url, options = {}) => {
         if (!currentUser) return false;
-        const route = resolveWorkspaceRoute(url, currentUser, t);
+        let route = resolveWorkspaceRoute(url, currentUser, t);
         if (!route) return false;
         const current = stateRef.current;
+        const activeWorkspace = current.tabs.find(tab => tab.id === current.activeTabId && isAdminWorkspaceTab(tab)
+            && getWorkspaceScope(tab) === route.scope);
+        if (activeWorkspace && options.restoreDashboardView && route.pageKey === 'adminDashboardWorkspace') {
+            const remembered = dashboardRoutesRef.current.get(activeWorkspace.id);
+            if (remembered) {
+                const saved = new URL(remembered.views[route.instanceKey] || route.url, window.location.origin);
+                const team = new URL(remembered.lastUrl, window.location.origin).searchParams.get('team');
+                if (saved.searchParams.get('team') !== team) {
+                    ['focusUser', 'focusDate', 'requestUser', 'requestType', 'requestId'].forEach(key => saved.searchParams.delete(key));
+                }
+                if (team) saved.searchParams.set('team', team);
+                else saved.searchParams.delete('team');
+                route = resolveWorkspaceRoute(`${saved.pathname}${saved.search}${saved.hash}`, currentUser, t) || route;
+            }
+        }
+        if (activeWorkspace && options.forceNew !== true && options.duplicate !== true) {
+            // Ordinary navigation stays in this workspace, including module links.
+            // The route cache retains each visited page and its unfinished inputs.
+            const target = { ...activeWorkspace, ...route, lastVisitedAt: Date.now() };
+            if (target.url === activeWorkspace.url && !Object.hasOwn(options, 'state')) return true;
+            commitState(previous => ({ ...previous, tabs: previous.tabs.map(tab => tab.id === target.id ? target : tab) }));
+            visitTab(target, { state: options.state });
+            return true;
+        }
         const matching = current.tabs.filter((tab) => tab.instanceKey === route.instanceKey);
         const existing = matching.find((tab) => tab.id === current.activeTabId) || matching[0];
         if (existing && options.forceNew !== true && options.duplicate !== true) {
@@ -326,6 +368,7 @@ export const WorkspaceTabsProvider = ({ children }) => {
         rememberScroll(current.activeTabId);
         const nextTab = {
             ...route,
+            ...(activeWorkspace ? { navigationRoot: ADMIN_WORKSPACE_ROOT } : {}),
             id: createTabId(route),
             pinned: Boolean(options.pinned),
             scrollY: 0,

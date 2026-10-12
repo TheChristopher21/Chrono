@@ -56,6 +56,11 @@ const Harness = () => {
             <button type="button" onClick={() => workspace.openRoute('/pms', { state: { pmsAction: 'walk-in', pmsActionRequestId: 'first-request' } })}>PMS walk-in</button>
             <button type="button" onClick={() => workspace.openRoute('/pms', { state: { pmsAction: 'walk-in', pmsActionRequestId: 'second-request' } })}>Another PMS walk-in</button>
             <button type="button" onClick={() => workspace.openRoute('/dashboard')}>Open Chrono</button>
+            <button type="button" onClick={() => navigate('/admin/dashboard-neu?tab=calendar')}>Calendar view</button>
+            <button type="button" onClick={() => navigate('/admin/dashboard-neu/mitarbeiter/bob')}>Employee view</button>
+            <button type="button" onClick={() => workspace.openRoute('/admin/dashboard-neu?tab=requests', { restoreDashboardView: true })}>Request view</button>
+            <button type="button" onClick={() => workspace.openRoute('/admin/schedule')}>Schedule view</button>
+            <button type="button" onClick={() => workspace.openRoute('/admin/schedule', { forceNew: true })}>Extra schedule</button>
             <button type="button" onClick={() => workspace.openRoute('/pms', { forceNew: true })}>Duplicate PMS</button>
             <button type="button" onClick={() => workspace.openRoute('/admin/dashboard?tab=time', { forceNew: true })}>Duplicate time</button>
             <button type="button" onClick={() => navigate(-1)}>Back</button>
@@ -81,7 +86,21 @@ const renderProvider = (entry) => render(
 );
 
 describe('WorkspaceTabsProvider', () => {
+    it('restores the request person and team after a module visit without another tab', async () => {
+        currentUser.roles = ['ROLE_SUPERADMIN'];
+        const user = userEvent.setup();
+        const url = '/admin/dashboard-neu?tab=requests&requestUser=bob&team=Atelier';
+        renderProvider(url);
+        await waitFor(() => expect(readState().tabs).toHaveLength(1));
+        const id = readState().activeTabId;
+        await user.click(screen.getByRole('button', { name: 'Schedule view' }));
+        await user.click(screen.getByRole('button', { name: 'Request view' }));
+        expect(readState().location.url).toBe(url);
+        expect(readState().activeTabId).toBe(id);
+        expect(readState().tabs).toHaveLength(1);
+    });
     beforeEach(() => {
+        currentUser.roles = ['ROLE_ADMIN'];
         window.sessionStorage.clear();
         window.scrollTo = vi.fn();
         apiMock.get.mockReset().mockResolvedValue({
@@ -90,6 +109,45 @@ describe('WorkspaceTabsProvider', () => {
         apiMock.put.mockReset().mockImplementation((_url, body) => Promise.resolve({
             data: { ...body, revision: Number(body.revision) + 1 },
         }));
+    });
+
+    it('keeps ordinary dashboard, employee and module navigation in one tab and tracks exact history', async () => {
+        currentUser.roles = ['ROLE_SUPERADMIN'];
+        const user = userEvent.setup();
+        renderProvider('/admin/dashboard-neu');
+        await waitFor(() => expect(readState().location.id).toBeTruthy());
+        const id = readState().activeTabId;
+        for (const name of ['Calendar view', 'Employee view', 'Schedule view', 'Request view']) {
+            await user.click(screen.getByRole('button', { name }));
+            await waitFor(() => expect(readState().location.id).toBe(id));
+            expect(readState().tabs).toHaveLength(1);
+        }
+        expect(readState().location.url).toBe('/admin/dashboard-neu?tab=requests');
+        await user.click(screen.getByRole('button', { name: 'Back' }));
+        expect(readState().location.url).toBe('/admin/schedule');
+        expect(readState().activeTabId).toBe(id);
+        await user.click(screen.getByRole('button', { name: 'Forward' }));
+        expect(readState().location.url).toBe('/admin/dashboard-neu?tab=requests');
+        await user.click(screen.getByRole('button', { name: 'Extra schedule' }));
+        expect(readState().tabs).toHaveLength(2);
+        expect(readState().activeTabId).not.toBe(id);
+        await user.click(screen.getByRole('button', { name: 'Calendar view' }));
+        expect(readState().tabs).toHaveLength(2);
+        expect(readState().tabs.find(tab => tab.id === id).url).toBe('/admin/dashboard-neu?tab=requests');
+    });
+
+    it('restores the navigation context of a dashboard tab currently showing a module', async () => {
+        currentUser.roles = ['ROLE_SUPERADMIN'];
+        sessionStorage.setItem('chrono.workspaceTabs.v2.23:7', JSON.stringify({ tabs: [{
+            id: 'desk', url: '/admin/schedule', navigationRoot: '/admin/dashboard-neu', pinned: true,
+        }], activeTabId: 'desk' }));
+        const user = userEvent.setup();
+        renderProvider('/admin/schedule');
+        await waitFor(() => expect(readState().activeTabId).toBe('desk'));
+        await user.click(screen.getByRole('button', { name: 'Request view' }));
+        expect(readState().tabs).toHaveLength(1);
+        expect(readState().activeTabId).toBe('desk');
+        expect(readState().tabs[0].pinned).toBe(true);
     });
 
     it('updates an existing admin instance instead of mutating the active sibling tab', async () => {

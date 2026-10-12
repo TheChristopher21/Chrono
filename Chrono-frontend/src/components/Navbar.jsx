@@ -20,6 +20,7 @@ import {
 } from '../utils/pageAccess.js';
 import ChangelogModal from './ChangelogModal';
 import WorkspaceTabStrip from './workspace/WorkspaceTabStrip.jsx';
+import { useAdminWorkspaceShell } from '../pages/AdminDashboard/AdminWorkspaceShellContext.jsx';
 
 const IconChevronDown = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -587,6 +588,12 @@ const NavbarContents = () => {
             </nav>
 
             {showWorkspaceTabs && <WorkspaceTabStrip />}
+            {authToken && currentUser?.selectedCompanyId && <div className="company-context-slot">
+                <div className="company-context-bar" aria-label={t('companyScope.active', 'Aktuelle Firma')}>
+                    <span title={currentUser.selectedCompanyName}>{t('companyScope.company', 'Firma')}: <strong>{currentUser.selectedCompanyName}</strong></span>
+                    <Link to="/admin/firmenauswahl">{t('companyScope.change', 'Firma wechseln')}</Link>
+                </div>
+            </div>}
 
             {showChangelogModal && (
                 <ChangelogModal
@@ -600,5 +607,6 @@ const NavbarContents = () => {
 
 export default function Navbar() {
     const active = useWorkspacePaneActive();
-    return active ? <NavbarContents /> : null;
+    const sharedShell = useAdminWorkspaceShell();
+    return active && !sharedShell ? <NavbarContents /> : null;
 }

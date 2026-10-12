@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.PmsRoomPlanFilter;
 import com.chrono.chrono.dto.pms.PmsRoomPlanResponse;
 import com.chrono.chrono.entities.User;
@@ -51,8 +52,8 @@ public class PmsRoomPlanController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht gefunden."));
         permissions.assertPageAccess(user, UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW,
                 "Die erforderliche PMS-Berechtigung fehlt.");
-        if (user.getCompany() == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
-        return service.getRoomPlan(user.getCompany(), propertyId, new PmsRoomPlanFilter(from, days, page, size,
+        if (CompanyScope.companyFor(user) == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
+        return service.getRoomPlan(CompanyScope.companyFor(user), propertyId, new PmsRoomPlanFilter(from, days, page, size,
                 search, roomTypeId, floor, bedType, housekeepingSection, housekeepingStatus, operationalStatus,
                 guests, features, onlyAvailable, includeInactive));
     }

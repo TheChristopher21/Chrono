@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.CreateFrontDeskBookingRequest;
 import com.chrono.chrono.dto.pms.FrontDeskBookingResponse;
 import com.chrono.chrono.entities.Company;
@@ -72,10 +73,10 @@ public class PmsFrontDeskBookingController {
                 UserPermissionService.ACCESS_MANAGE,
                 "Die erforderliche PMS-Berechtigung fehlt."
         );
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
-        return new AccessContext(user.getCompany(), user.getUsername());
+        return new AccessContext(CompanyScope.companyFor(user), user.getUsername());
     }
 
     private record AccessContext(Company company, String username) {

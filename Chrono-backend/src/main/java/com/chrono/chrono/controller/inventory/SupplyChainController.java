@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.inventory;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
@@ -79,7 +80,7 @@ public class SupplyChainController {
 
     private Company requireAccessibleCompany(Principal principal, String requiredAccessLevel) {
         User user = requireUser(principal);
-        Company company = user.getCompany();
+        Company company = CompanyScope.companyFor(user);
         if (company == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No company assigned");
         }

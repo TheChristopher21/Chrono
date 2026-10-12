@@ -10,6 +10,9 @@ import { PMS_SECTIONS } from '../../pages/Pms/pmsNavigation.js';
 export const MAX_WORKSPACE_TABS = 12;
 export const WORKSPACE_SCOPES = ['chrono', 'pms'];
 export const WORKSPACE_TAB_STATE_KEY = 'workspaceTabId';
+export const ADMIN_WORKSPACE_ROOT = '/admin/dashboard-neu';
+export const isAdminWorkspaceTab = tab => tab?.navigationRoot === ADMIN_WORKSPACE_ROOT
+    || /^\/admin\/dashboard-neu(?:[/?#]|$)/.test(tab?.url || '');
 
 export const getWorkspaceScope = (tabOrUrl) => {
     if (typeof tabOrUrl === 'object' && tabOrUrl !== null) {
@@ -153,6 +156,7 @@ export const resolveWorkspaceRoute = (urlLike, user, t) => {
         icon: translatedPage.icon || page.icon || title.slice(0, 2).toUpperCase(),
         persist,
         featureKey: page.featureKey ?? null,
+        ...(page.key === 'adminDashboardWorkspace' ? { navigationRoot: ADMIN_WORKSPACE_ROOT } : {}),
     };
 };
 
@@ -219,6 +223,8 @@ export const sanitizeStoredWorkspace = (candidate, user, t) => {
         tabs.push({
             ...route,
             id,
+            ...(stored.navigationRoot === ADMIN_WORKSPACE_ROOT && resolveWorkspaceRoute(ADMIN_WORKSPACE_ROOT, user, t)
+                ? { navigationRoot: ADMIN_WORKSPACE_ROOT } : {}),
             pinned: Boolean(stored.pinned),
             scrollY: Number.isFinite(stored.scrollY) ? Math.max(0, stored.scrollY) : 0,
             lastVisitedAt: Number.isFinite(stored.lastVisitedAt) ? stored.lastVisitedAt : Date.now(),
@@ -238,7 +244,9 @@ export const serializeWorkspace = (state) => ({
     activeTabId: state.activeTabId,
     tabs: withWorkspaceTabLimit(state.tabs, state.activeTabId)
         .filter((tab) => tab.persist !== false)
-        .map(({ id, url, pinned, scrollY, lastVisitedAt }) => ({ id, url, pinned, scrollY, lastVisitedAt })),
+        .map(({ id, url, pinned, scrollY, lastVisitedAt, navigationRoot }) => ({ id, url, pinned, scrollY, lastVisitedAt,
+            ...(navigationRoot ? { navigationRoot } : {}),
+        })),
 });
 
 const getServerTabParams = (tab) => {
@@ -286,10 +294,14 @@ export const serializeWorkspacePreference = (state) => {
         .map((tab, index) => {
             const id = createUniqueServerTabId(tab.id, index, usedIds);
             idMap.set(tab.id, id);
-            const params = getServerTabParams(tab);
+            // A dashboard workspace can currently display a module. Other devices
+            // restore its dashboard entry point; the session retains the exact route.
+            const serverTab = isAdminWorkspaceTab(tab) && tab.pageKey !== 'adminDashboardWorkspace'
+                ? { ...tab, pageKey: 'adminDashboardWorkspace', url: ADMIN_WORKSPACE_ROOT } : tab;
+            const params = getServerTabParams(serverTab);
             return {
                 id,
-                viewKey: tab.pageKey === 'adminDashboardWorkspace' ? 'adminDashboard' : tab.pageKey,
+                viewKey: serverTab.pageKey === 'adminDashboardWorkspace' ? 'adminDashboard' : serverTab.pageKey,
                 ...(Object.keys(params).length ? { params } : {}),
                 pinned: Boolean(tab.pinned),
             };

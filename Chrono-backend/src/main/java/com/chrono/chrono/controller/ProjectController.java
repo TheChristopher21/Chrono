@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
@@ -32,21 +33,21 @@ public class ProjectController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return RegistrationFeatures.isProjectsEnabled(u.getCompany());
+        return RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(u));
     }
 
     @GetMapping
     public ResponseEntity<List<Project>> getAll(Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User u = userService.getUserByUsername(principal.getName());
-        return ResponseEntity.ok(projectService.findAllByCompanyId(u.getCompany().getId()));
+        return ResponseEntity.ok(projectService.findAllByCompanyId(CompanyScope.companyFor(u).getId()));
     }
 
     @GetMapping("/hierarchy")
     public ResponseEntity<List<ProjectHierarchyNodeDTO>> getHierarchy(Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        Long companyId = user.getCompany().getId();
+        Long companyId = CompanyScope.companyFor(user).getId();
         List<Project> projects = projectService.findAllByCompanyIdOrdered(companyId);
         Map<Long, ProjectHierarchyNodeDTO> dtoMap = new LinkedHashMap<>();
         List<ProjectHierarchyNodeDTO> roots = new ArrayList<>();
@@ -86,14 +87,14 @@ public class ProjectController {
             return ResponseEntity.badRequest().build();
         }
         Customer customer = customerService.findById(project.getCustomer().getId()).orElse(null);
-        if (customer == null || !customer.getCompany().getId().equals(user.getCompany().getId())) {
+        if (customer == null || !customer.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         Project parent = null;
         if (project.getParent() != null && project.getParent().getId() != null) {
             parent = projectService.findById(project.getParent().getId()).orElse(null);
             if (parent == null || parent.getCustomer() == null ||
-                    !parent.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+                    !parent.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
                 return ResponseEntity.status(403).build();
             }
         }
@@ -117,14 +118,14 @@ public class ProjectController {
 
         Project existing = maybeProject.get();
 
-        if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+        if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
 
         Customer customer = null;
         if (projectDetails.getCustomer() != null && projectDetails.getCustomer().getId() != null) {
             customer = customerService.findById(projectDetails.getCustomer().getId()).orElse(null);
-            if (customer == null || !customer.getCompany().getId().equals(user.getCompany().getId())) {
+            if (customer == null || !customer.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
                 return ResponseEntity.status(403).build();
             }
         }
@@ -133,7 +134,7 @@ public class ProjectController {
         if (projectDetails.getParent() != null && projectDetails.getParent().getId() != null) {
             parent = projectService.findById(projectDetails.getParent().getId()).orElse(null);
             if (parent == null || parent.getCustomer() == null ||
-                    !parent.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+                    !parent.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
                 return ResponseEntity.status(403).build();
             }
             if (parent.getId().equals(existing.getId())) {
@@ -164,7 +165,7 @@ public class ProjectController {
         User user = userService.getUserByUsername(principal.getName());
         return projectService.findById(id)
                 .map(existing -> {
-                    if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+                    if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
                         return ResponseEntity.status(403).<Void>build();
                     }
                     projectService.deleteById(id);

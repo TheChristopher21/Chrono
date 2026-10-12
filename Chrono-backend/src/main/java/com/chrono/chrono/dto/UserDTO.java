@@ -64,6 +64,8 @@ public class UserDTO {
     private Boolean demo;
     private LocalDateTime demoExpiresAt;
     private Long companyId;
+    private Long selectedCompanyId;
+    private String selectedCompanyName;
     private String companyCantonAbbreviation;
     private Boolean customerTrackingEnabled; // Kept
     private Long lastCustomerId;
@@ -260,6 +262,10 @@ public class UserDTO {
     public Boolean getDemo() { return demo; }
     public LocalDateTime getDemoExpiresAt() { return demoExpiresAt; }
     public Long getCompanyId() { return companyId; }
+    public Long getSelectedCompanyId() { return selectedCompanyId; }
+    public void setSelectedCompanyId(Long id) { this.selectedCompanyId = id; }
+    public String getSelectedCompanyName() { return selectedCompanyName; }
+    public void setSelectedCompanyName(String name) { this.selectedCompanyName = name; }
     public String getCompanyCantonAbbreviation() { return companyCantonAbbreviation; }
     public Long getLastCustomerId() { return lastCustomerId; }
     public String getLastCustomerName() { return lastCustomerName; }

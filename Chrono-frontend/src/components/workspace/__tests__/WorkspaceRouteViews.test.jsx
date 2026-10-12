@@ -9,6 +9,7 @@ import WorkspacePortal from '../WorkspacePortal.jsx';
 const mocks = vi.hoisted(() => ({ auth: {}, workspace: {} }));
 vi.mock('../../../context/AuthContext.jsx', () => ({ useAuth: () => mocks.auth }));
 vi.mock('../WorkspaceTabsContext.jsx', () => ({ useWorkspaceTabs: () => mocks.workspace }));
+vi.mock('../../../components/Navbar.jsx', () => ({ default: () => null }));
 
 let navigate;
 const activeSubscriptions = new Set();
@@ -35,6 +36,9 @@ function Harness() {
     return <WorkspaceRouteViews>
         <Route path="/pms" element={<DraftPage />} />
         <Route path="/dashboard" element={<DraftPage />} />
+        <Route path="/admin/dashboard-neu" element={<DraftPage />} />
+        <Route path="/admin/dashboard-neu/mitarbeiter/:username" element={<DraftPage />} />
+        <Route path="/admin/schedule" element={<DraftPage />} />
         <Route path="/login" element={<div>Login</div>} />
     </WorkspaceRouteViews>;
 }
@@ -62,6 +66,25 @@ beforeEach(() => {
 });
 
 describe('WorkspaceRouteViews', () => {
+    it('keeps drafts on each page within one dashboard tab and restores them on return', async () => {
+        mocks.auth.currentUser.roles = ['ROLE_SUPERADMIN'];
+        const desk = { id: 'desk', url: '/admin/dashboard-neu', navigationRoot: '/admin/dashboard-neu' };
+        mocks.workspace.allTabs.push(desk);
+        renderWorkspace();
+        await selectTab(desk);
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Dashboard note' } });
+        await act(async () => navigate('/admin/schedule'));
+        expect(screen.getByRole('textbox')).toHaveValue('');
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Schedule draft' } });
+        await act(async () => navigate('/admin/dashboard-neu/mitarbeiter/mirjam'));
+        expect(screen.getByRole('textbox')).toHaveValue('');
+        await act(async () => navigate('/admin/dashboard-neu?tab=requests'));
+        expect(screen.getByRole('textbox')).toHaveValue('Dashboard note');
+        await act(async () => navigate('/admin/schedule'));
+        expect(screen.getByRole('textbox')).toHaveValue('Schedule draft');
+        expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    });
+
     it('keeps independent unsaved drafts for copies of the same URL', async () => {
         renderWorkspace();
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'First guest draft' } });

@@ -1,6 +1,7 @@
 // Datei: com/chrono/chrono/services/VacationService.java
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
@@ -48,9 +49,9 @@ public class VacationService {
     private ExternalNotificationService externalNotificationService;
 
     private boolean isConflicting(User user, LocalDate start, LocalDate end) {
-        if (user == null || user.getCompany() == null) return false;
+        if (user == null || CompanyScope.companyFor(user) == null) return false;
         List<VacationRequest> approved = vacationRepo
-                .findByUser_Company_IdAndApprovedTrue(user.getCompany().getId());
+                .findByUser_Company_IdAndApprovedTrue(CompanyScope.companyFor(user).getId());
         for (VacationRequest existing : approved) {
             if (existing.getUser().getId().equals(user.getId())) continue;
             LocalDate s = existing.getStartDate();
@@ -125,9 +126,9 @@ public class VacationService {
         User targetUser = userRepo.findByUsername(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("Target user " + targetUsername + " not found")); //
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN")); //
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin); //
         if (!isSuperAdmin) { //
-            Company adminCompany = admin.getCompany(); //
+            Company adminCompany = CompanyScope.companyFor(admin); //
             Company targetCompany = targetUser.getCompany(); //
 
             if (adminCompany == null) { //
@@ -180,7 +181,7 @@ public class VacationService {
                                                             boolean halfDay) {
         User admin = userRepo.findByUsername(adminUsername)
                 .orElseThrow(() -> new UserNotFoundException("Admin user " + adminUsername + " not found"));
-        Company company = admin.getCompany();
+        Company company = CompanyScope.companyFor(admin);
         if (company == null) {
             throw new SecurityException("Admin user " + adminUsername + " is not assigned to a company.");
         }
@@ -215,10 +216,10 @@ public class VacationService {
                 .orElseThrow(() -> new UserNotFoundException("Admin user " + adminName + " not found")); //
 
         User user = vr.getUser(); //
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN")); //
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin); //
         if (!isSuperAdmin) { //
-            Company adminCompany = admin.getCompany(); //
-            Company userCompany = user.getCompany(); //
+            Company adminCompany = CompanyScope.companyFor(admin); //
+            Company userCompany = CompanyScope.companyFor(user); //
             if (adminCompany == null || userCompany == null || !adminCompany.getId().equals(userCompany.getId())) { //
                 throw new SecurityException("Keine Berechtigung: Admin und Benutzer des Urlaubsantrags gehören nicht zur selben Firma oder eine der Firmen ist null."); //
             }
@@ -411,10 +412,10 @@ public class VacationService {
                 .orElseThrow(() -> new UserNotFoundException("Admin user " + adminName + " not found")); //
         User user = vr.getUser(); //
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN")); //
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin); //
         if (!isSuperAdmin) { //
-            Company adminCompany = admin.getCompany(); //
-            Company userCompany = user.getCompany(); //
+            Company adminCompany = CompanyScope.companyFor(admin); //
+            Company userCompany = CompanyScope.companyFor(user); //
             if (adminCompany == null || userCompany == null || !adminCompany.getId().equals(userCompany.getId())) { //
                 throw new SecurityException("Keine Berechtigung: Admin und Benutzer des Urlaubsantrags gehören nicht zur selben Firma oder eine der Firmen ist null."); //
             }
@@ -450,10 +451,10 @@ public class VacationService {
         }
 
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN")); //
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin); //
         if (!isSuperAdmin) { //
-            Company adminCompany = admin.getCompany(); //
-            Company userCompany = user.getCompany(); //
+            Company adminCompany = CompanyScope.companyFor(admin); //
+            Company userCompany = CompanyScope.companyFor(user); //
             if (adminCompany == null || userCompany == null || !adminCompany.getId().equals(userCompany.getId())) { //
                 throw new SecurityException("Keine Berechtigung (versch. Firmen oder Firmen-ID ist null)."); //
             }
@@ -492,9 +493,9 @@ public class VacationService {
             throw new IllegalStateException("Vacation request has no associated user.");
         }
 
-        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(admin);
         if (!isSuperAdmin) {
-            Company adminCompany = admin.getCompany();
+            Company adminCompany = CompanyScope.companyFor(admin);
             Company targetCompany = targetUser.getCompany();
             if (adminCompany == null || targetCompany == null || !adminCompany.getId().equals(targetCompany.getId())) {
                 throw new SecurityException("Admin und Benutzer des Urlaubsantrags gehören nicht zur selben Firma oder Firma nicht gesetzt.");
@@ -704,12 +705,12 @@ public class VacationService {
     }
 
     private boolean isChargeableVacationDay(User user, LocalDate date) {
-        boolean customHolidaySelection = user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled();
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
+        boolean customHolidaySelection = CompanyScope.companyFor(user) != null && CompanyScope.companyFor(user).isCustomHolidaySelectionEnabled();
+        String cantonAbbreviation = CompanyScope.companyFor(user) != null ? CompanyScope.companyFor(user).getCantonAbbreviation() : null;
         boolean holiday = customHolidaySelection
-                ? holidayService.isCompanyHoliday(date, user.getCompany())
+                ? holidayService.isCompanyHoliday(date, CompanyScope.companyFor(user))
                 : holidayService.isHoliday(date, cantonAbbreviation);
-        boolean halfDayHoliday = customHolidaySelection && holidayService.isHalfDayHoliday(date, user.getCompany());
+        boolean halfDayHoliday = customHolidaySelection && holidayService.isHalfDayHoliday(date, CompanyScope.companyFor(user));
         if (holiday && !halfDayHoliday) {
             return false;
         }

@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../utils/api';
+import { clearCompanyScope, getCompanyScopeId, reloadStaleCompanyScope } from '../utils/companyScope.js';
 import { hasFeatureAccess, hasPageAccess } from '../utils/pageAccess';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
@@ -70,6 +71,7 @@ const markSessionActivity = (timestamp = Date.now()) => {
 };
 
 const clearStoredSession = () => {
+    clearCompanyScope();
     clearPmsOffline();
     localStorage.removeItem('token');
     localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY);
@@ -113,6 +115,12 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         currentUserRef.current = currentUser;
     }, [currentUser]);
+
+    useEffect(() => {
+        const restoreCompany = () => reloadStaleCompanyScope(currentUserRef.current);
+        window.addEventListener('pageshow', restoreCompany);
+        return () => window.removeEventListener('pageshow', restoreCompany);
+    }, []);
 
     const clearClientAuth = useCallback(() => {
         sessionGenerationRef.current += 1;
@@ -175,6 +183,11 @@ export const AuthProvider = ({ children }) => {
             return newUser;
         } catch (err) {
             if (generation !== sessionGenerationRef.current) return null;
+            if (getCompanyScopeId() && [400, 403, 404].includes(err.response?.status)) {
+                clearCompanyScope();
+                window.location.replace('/admin/firmenauswahl');
+                return null;
+            }
             console.error('/api/auth/me failed. Token may be invalid.', err);
             logout();
             return null;

@@ -7,6 +7,10 @@ import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.security.CompanyScope;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,6 +124,28 @@ class UserServiceTest {
                 () -> userService.getUserProfileByUsername("john")
         );
         verifyNoInteractions(userPermissionService);
+    }
+
+    @Test
+    void selectedCompanyProfileUsesItsFeaturesWithoutMovingTheSuperadminAccount() {
+        Company own = new Company("Eigene Firma"); own.setId(1L);
+        Company selected = new Company("Ausgewählte Firma"); selected.setId(20L);
+        selected.setCantonAbbreviation("BE"); selected.setEnabledFeatures(Set.of("pms"));
+        existingUser.setCompany(own); existingUser.setRoles(Set.of(new Role("ROLE_SUPERADMIN")));
+        when(userRepository.findByUsernameWithProfileContext("john")).thenReturn(Optional.of(existingUser));
+        var request = new MockHttpServletRequest();
+        request.setAttribute(CompanyScope.ATTRIBUTE, new CompanyScope.Selection("john", selected));
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        try {
+            UserDTO profile = userService.getUserProfileByUsername("john");
+            assertEquals(20L, profile.getCompanyId());
+            assertEquals(20L, profile.getSelectedCompanyId());
+            assertEquals("Ausgewählte Firma", profile.getSelectedCompanyName());
+            assertEquals("BE", profile.getCompanyCantonAbbreviation());
+            assertTrue(profile.getCompanyFeatureKeys().contains("pms"));
+            assertFalse(profile.getCompanyFeatureKeys().contains("projects"));
+            assertSame(own, existingUser.getCompany());
+        } finally { RequestContextHolder.resetRequestAttributes(); }
     }
 
     @Test

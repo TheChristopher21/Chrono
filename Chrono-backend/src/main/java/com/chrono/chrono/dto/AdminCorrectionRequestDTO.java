@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Lightweight projection for correction requests used by the admin dashboard.
@@ -14,6 +15,10 @@ import java.time.LocalDateTime;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AdminCorrectionRequestDTO {
+    private List<CorrectionOriginalEntry> originalDayEntries = List.of();
+
+    public List<CorrectionOriginalEntry> getOriginalDayEntries() { return originalDayEntries; }
+    public void setOriginalDayEntries(List<CorrectionOriginalEntry> entries) { originalDayEntries = entries; }
 
     private Long id;
     private String username;

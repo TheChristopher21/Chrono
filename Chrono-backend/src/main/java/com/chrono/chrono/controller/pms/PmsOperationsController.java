@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.*;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
@@ -502,10 +503,10 @@ public class PmsOperationsController {
             userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
                     UserPermissionService.ACCESS_MANAGE, "Für diese Einstellung ist ein PMS-Master erforderlich.");
         }
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
-        return new AccessContext(user.getCompany(), user.getUsername());
+        return new AccessContext(CompanyScope.companyFor(user), user.getUsername());
     }
 
     private record AccessContext(Company company, String username) {

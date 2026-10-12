@@ -245,8 +245,10 @@ describe('dashboard actions across real cached workspace panes', () => {
         await paneLoaded();
         expect(active().getByTestId('request-user')).toHaveTextContent('Mirjam');
         expect(screen.getByTestId('location')).toHaveTextContent('requestUser=Mirjam');
+        fireEvent.click(active().getByRole('button', { name: 'Kalender', exact: true })); await paneLoaded();
         fireEvent.change(active().getByRole('combobox', { name: 'Team' }), { target: { value: 'Beratung' } });
         await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: /^Anträge/ })); await paneLoaded();
         expect(active().getByTestId('request-user')).toBeEmptyDOMElement();
         expect(screen.getByTestId('location').textContent).not.toContain('requestUser');
     });
@@ -260,9 +262,9 @@ describe('dashboard actions across real cached workspace panes', () => {
         fireEvent.click(within(person).getByRole('button', { name: '+ Urlaub', exact: true }));
         await paneLoaded();
         await waitFor(() => expect(mocks.createVacation).toHaveBeenCalledExactlyOnceWith({ username: 'Mirjam' }));
-        expect(activePane()).not.toBe(source);
+        expect(activePane()).toBe(source);
         expect(mocks.action).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'createVacation', value: { username: 'Mirjam' }, pane: activePane().dataset.workspacePane }));
-        expect(within(source).getByTestId('calendar-dialog')).toBeEmptyDOMElement();
+        expect(active().getByTestId('calendar-dialog')).toHaveTextContent('create');
         await act(async () => { await mocks.refresh(); });
         expect(mocks.createVacation).toHaveBeenCalledTimes(1);
     });
@@ -270,26 +272,23 @@ describe('dashboard actions across real cached workspace panes', () => {
     it.each([
         ['Urlaub eintragen', 'createVacation', 'create'],
         ['Abwesenheit öffnen', 'openAbsence', '2026-09-21'],
-    ])('runs %s only in the destination calendar after its data has loaded', async (button, type, dialog) => {
+    ])('runs %s once in the same loaded workspace without fetching the day again', async (button, type, dialog) => {
         mountPanes(); await paneLoaded();
         const source = activePane();
         const sourceId = source.dataset.workspacePane;
-        const pending = deferred();
-        mocks.api.get.mockImplementation(url => url === '/api/vacation/all' ? pending.promise : defaultGet(url));
+        const fetches = mocks.api.get.mock.calls.filter(([url]) => url === '/api/vacation/all').length;
         fireEvent.click(active().getByRole('button', { name: button }));
-        await waitFor(() => expect(activePane()?.dataset.workspacePane).not.toBe(sourceId));
-        expect(mocks.action).not.toHaveBeenCalled();
-        await act(async () => { pending.resolve({ data: vacations }); });
         await paneLoaded();
+        expect(activePane()?.dataset.workspacePane).toBe(sourceId);
+        expect(mocks.api.get.mock.calls.filter(([url]) => url === '/api/vacation/all')).toHaveLength(fetches);
         await waitFor(() => expect(active().getByTestId('calendar-dialog')).toHaveTextContent(dialog));
         expect(mocks.action).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type, pane: activePane().dataset.workspacePane }));
-        expect(within(source).getByTestId('calendar-dialog')).toBeEmptyDOMElement();
         expect(screen.getByTestId('navigation-state').textContent).not.toContain('adminDashboardAction');
         expect(screen.getByTestId('location').textContent).toBe('/admin/dashboard-neu?tab=calendar');
         await act(async () => { await mocks.refresh(); });
         expect(mocks.action).toHaveBeenCalledTimes(1);
-        fireEvent.click(screen.getByRole('button', { name: 'Tab overview' })); await paneLoaded();
-        fireEvent.click(screen.getByRole('button', { name: 'Tab calendar' })); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Übersicht', exact: true })); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Kalender', exact: true })); await paneLoaded();
         expect(mocks.action).toHaveBeenCalledTimes(1);
         expect(active().getByTestId('calendar-dialog')).toHaveTextContent(dialog);
     });
@@ -298,18 +297,17 @@ describe('dashboard actions across real cached workspace panes', () => {
         ['Zeiten drucken', 'printOverview'],
         ['Minussalden', 'focusNegativeBalances'],
         ['Überstundensalden', 'focusPositiveBalances'],
-    ])('applies %s once in a separate time pane and preserves later local changes', async (button, type) => {
+    ])('applies %s once in the same workspace and preserves later local changes', async (button, type) => {
         mountPanes(); await paneLoaded();
         const source = activePane();
         fireEvent.click(active().getByRole('button', { name: button }));
         await paneLoaded();
         await waitFor(() => expect(mocks.action).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type, pane: activePane().dataset.workspacePane })));
-        expect(activePane()).not.toBe(source);
-        expect(within(source).getByRole('textbox', { name: 'Zeitsuche', hidden: true })).toHaveValue('');
+        expect(activePane()).toBe(source);
         fireEvent.change(active().getByRole('textbox', { name: 'Zeitsuche' }), { target: { value: 'Jonas' } });
         await act(async () => { await mocks.refresh(); });
-        fireEvent.click(screen.getByRole('button', { name: 'Tab overview' })); await paneLoaded();
-        fireEvent.click(screen.getByRole('button', { name: 'Tab time' })); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Übersicht', exact: true })); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Zeitprüfung', exact: true })); await paneLoaded();
         expect(active().getByRole('textbox', { name: 'Zeitsuche' })).toHaveValue('Jonas');
         expect(mocks.action).toHaveBeenCalledTimes(1);
     });
@@ -324,6 +322,10 @@ describe('dashboard actions across real cached workspace panes', () => {
         expect(mocks.action).toHaveBeenCalledWith(expect.objectContaining({ pane: activePane().dataset.workspacePane, search: expect.stringContaining('week=2026-09-07') }));
         fireEvent.change(active().getByRole('textbox', { name: 'Zeitsuche' }), { target: { value: 'Eigene Suche' } });
         await act(async () => { await mocks.refresh(); });
+        expect(active().getByRole('textbox', { name: 'Zeitsuche' })).toHaveValue('Eigene Suche');
+        expect(mocks.focus).toHaveBeenCalledTimes(1);
+        fireEvent.click(active().getByRole('button', { name: 'Kalender', exact: true })); await paneLoaded();
+        fireEvent.click(active().getByRole('button', { name: 'Zeitprüfung', exact: true })); await paneLoaded();
         expect(active().getByRole('textbox', { name: 'Zeitsuche' })).toHaveValue('Eigene Suche');
         expect(mocks.focus).toHaveBeenCalledTimes(1);
         fireEvent.change(active().getByRole('combobox', { name: 'Team' }), { target: { value: 'Beratung' } });
@@ -343,7 +345,7 @@ describe('dashboard actions across real cached workspace panes', () => {
         command(label);
         await paneLoaded();
         await waitFor(() => expect(active().getByTestId(signal)).toHaveTextContent('1'));
-        expect(within(source).getByTestId(signal)).toHaveTextContent('0');
+        expect(activePane()).toBe(source);
         fireEvent.click(active().getByRole('button', { name: 'Antrag in Zeitprüfung' }));
         await paneLoaded();
         await waitFor(() => expect(mocks.focus).toHaveBeenCalledExactlyOnceWith('Mirjam', '2026-09-21', 'request_focus'));

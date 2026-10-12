@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.UserPermissionService;
@@ -22,33 +23,33 @@ public class PmsProfileDocumentController {
     }
     @GetMapping("/organizations/{id}/documents")
     public List<PmsProfileDocumentService.DocumentView> list(@PathVariable Long id, @RequestParam(required=false) Long propertyId, Principal principal) {
-        return service.listForProperty(user(principal,false).getCompany(),id,propertyId);
+        return service.listForProperty(CompanyScope.companyFor(user(principal,false)),id,propertyId);
     }
     @PostMapping(value="/organizations/{id}/documents",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public PmsProfileDocumentService.DocumentView upload(@PathVariable Long id, @RequestParam(required=false) Long ratePlanId, @RequestParam(required=false) Long previousDocumentId,
                                                          @RequestPart("file") MultipartFile file, Principal principal) {
-        User user=user(principal,true); return service.upload(user.getCompany(),id,ratePlanId,previousDocumentId,file,user.getUsername());
+        User user=user(principal,true); return service.upload(CompanyScope.companyFor(user),id,ratePlanId,previousDocumentId,file,user.getUsername());
     }
     @GetMapping("/documents/{id}/download")
     public ResponseEntity<org.springframework.core.io.Resource> download(@PathVariable Long id, Principal principal) {
-        var doc=service.download(user(principal,false).getCompany(),id);
+        var doc=service.download(CompanyScope.companyFor(user(principal,false)),id);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(doc.getContentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,ContentDisposition.attachment().filename(doc.getFileName(), StandardCharsets.UTF_8).build().toString())
                 .header(HttpHeaders.CACHE_CONTROL,"private, no-store").header("X-Content-Type-Options","nosniff")
                 .contentLength(doc.getSizeBytes()).body(service.payload(doc));
     }
     @GetMapping("/document-limits")
-    public PmsProfileDocumentService.Limits limits(Principal principal) { return service.limits(user(principal,false).getCompany()); }
+    public PmsProfileDocumentService.Limits limits(Principal principal) { return service.limits(CompanyScope.companyFor(user(principal,false))); }
     @DeleteMapping("/documents/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id,Principal principal) {
-        service.delete(user(principal,true).getCompany(),id); return ResponseEntity.noContent().build();
+        service.delete(CompanyScope.companyFor(user(principal,true)),id); return ResponseEntity.noContent().build();
     }
     private User user(Principal principal,boolean write) {
         if(principal==null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Authentifizierung erforderlich.");
         User user=users.findByUsernameWithPermissionContext(principal.getName()).filter(value -> !value.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         permissions.assertPageAccess(user,UserPermissionService.PAGE_PMS,write ? UserPermissionService.ACCESS_MANAGE : UserPermissionService.ACCESS_VIEW,"PMS-Berechtigung fehlt.");
-        if(user.getCompany()==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        if(CompanyScope.companyFor(user)==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return user;
     }
 }

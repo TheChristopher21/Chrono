@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.AuthResponse;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
@@ -42,7 +43,7 @@ public class PmsSessionController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sitzung nicht mehr gültig."));
         permissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS,
                 UserPermissionService.ACCESS_VIEW, "Berechtigung für die Hotelverwaltung (PMS) erforderlich.");
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())

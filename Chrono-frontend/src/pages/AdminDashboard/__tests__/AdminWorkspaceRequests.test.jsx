@@ -37,6 +37,38 @@ beforeEach(() => {
 afterEach(() => { cleanup(); delete HTMLElement.prototype.scrollIntoView; vi.restoreAllMocks(); });
 
 describe('AdminWorkspaceRequests', () => {
+    it('browses requests directly, keeps each note and returns to the list without clearing filters', async () => {
+        const { container } = mount(props({ allCorrections: [correction(1), correction(2, { desiredTimestamp: '2026-09-11T17:00:00' })] }));
+        note('Erster Entwurf');
+        fireEvent.click(screen.getByRole('button', { name: 'Nächster Antrag' }));
+        expect(container.querySelector('.aw-requests')).toHaveClass('is-detail-open');
+        expect(screen.getByRole('textbox', { name: 'Kommentar zur Entscheidung' })).toHaveValue('');
+        note('Zweiter Entwurf');
+        fireEvent.click(screen.getByRole('button', { name: 'Vorheriger Antrag' }));
+        expect(screen.getByRole('textbox', { name: 'Kommentar zur Entscheidung' })).toHaveValue('Erster Entwurf');
+        fireEvent.click(container.querySelector('.awr-back-list'));
+        expect(container.querySelector('.aw-requests')).not.toHaveClass('is-detail-open');
+        expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue('pending');
+        await act(async () => {});
+    });
+
+    it('shows saved originals and a previous day when no exact stamp was linked', () => {
+        mount(props({ allCorrections: [correction(1), correction(2, {
+            originalTimestamp: null, originalPunchType: null,
+            originalDayEntries: [
+                { id: 51, entryTimestamp: '2026-09-10T08:00:00', punchType: 'START' },
+                { id: 52, entryTimestamp: '2026-09-10T16:30:00', punchType: 'ENDE' },
+            ],
+        })] }));
+        const details = screen.getByRole('region', { name: 'Antragsdetails' });
+        expect(within(details).getByText('Gestempelt')).toBeInTheDocument();
+        expect(within(details).getByText('10.09.2026 · 16:30')).toBeInTheDocument();
+        expect(within(details).getByText('Bisherige Tagesstempel')).toBeInTheDocument();
+        expect(within(details).getByText('08:00 START · 16:30 ENDE')).toBeInTheDocument();
+        expect(within(details).queryByText('Kein ursprünglicher Stempel')).not.toBeInTheDocument();
+        expect(within(details).getAllByText('10.09.2026 · 16:45')).toHaveLength(2);
+    });
+
     it('sorts one mixed list by real dates, keeps equal-date order stable, and distinguishes the request day from arrival', async () => {
         const input = props({ allVacations: [vacation(2), vacation(99, '2026-09-05')],
             allCorrections: [correction(30), correction(31, { desiredTimestamp: '2026-09-10T17:00:00' })] });

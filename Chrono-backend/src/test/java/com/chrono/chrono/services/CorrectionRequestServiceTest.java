@@ -21,6 +21,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +38,72 @@ class CorrectionRequestServiceTest {
     @Mock private EntityManager entityManager;
 
     @InjectMocks private CorrectionRequestService service;
+
+    @Test
+    void creationKeepsTheOriginalStampEvenWhenTheLiveEntryChanges() {
+        User employee = employee(10L, "employee");
+        LocalDate day = LocalDate.of(2026, 10, 6);
+        TimeTrackingEntry old = new TimeTrackingEntry(employee, day.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        old.setId(51L);
+        when(userRepo.findByUsername("employee")).thenReturn(Optional.of(employee));
+        when(timeTrackingEntryRepo.findById(51L)).thenReturn(Optional.of(old));
+        when(timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(employee, day.atStartOfDay(), day.plusDays(1).atStartOfDay())).thenReturn(List.of(old));
+        when(correctionRepo.save(any(CorrectionRequest.class))).thenAnswer(call -> call.getArgument(0));
+
+        CorrectionRequest request = service.createCorrectionRequest("employee", 51L, day.atTime(18, 0), "ENDE", "Falsches Ende", day);
+        old.setEntryTimestamp(day.atTime(17, 30));
+        assertEquals(day.atTime(17, 0), request.getOriginalTimestamp());
+        assertEquals(day.atTime(17, 0), request.getOriginalDayEntries().get(0).getEntryTimestamp());
+        assertEquals(51L, request.getTargetEntryId());
+        assertNull(request.getTargetEntry());
+    }
+
+    @Test
+    void requestsWithoutAnIdKeepTheRealPreviousDayWithoutGuessingAPairing() {
+        User employee = employee(10L, "employee");
+        LocalDate day = LocalDate.of(2026, 10, 6);
+        TimeTrackingEntry old = new TimeTrackingEntry(employee, day.atTime(8, 0), TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        when(userRepo.findByUsername("employee")).thenReturn(Optional.of(employee));
+        when(timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(employee, day.atStartOfDay(), day.plusDays(1).atStartOfDay())).thenReturn(List.of(old));
+        when(correctionRepo.save(any(CorrectionRequest.class))).thenAnswer(call -> call.getArgument(0));
+        CorrectionRequest request = service.createCorrectionRequest("employee", null, day.atTime(17, 0), "ENDE", "Ende vergessen", day);
+        assertNull(request.getOriginalTimestamp());
+        assertEquals(day.atTime(8, 0), request.getOriginalDayEntries().get(0).getEntryTimestamp());
+    }
+
+    @Test
+    void legacyPendingRequestsShowTheCurrentDayButProcessedRequestsNeverUseNewTimesAsOldTimes() {
+        User employee = employee(10L, "employee");
+        LocalDate day = LocalDate.of(2026, 10, 6);
+        CorrectionRequest request = new CorrectionRequest(employee, day, day.atTime(18, 0), TimeTrackingEntry.PunchType.ENDE, "Korrektur");
+        TimeTrackingEntry old = new TimeTrackingEntry(employee, day.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        when(correctionRepo.findAllWithDetails()).thenReturn(List.of(request));
+        when(timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(employee, day.atStartOfDay(), day.plusDays(1).atStartOfDay())).thenReturn(List.of(old));
+        assertEquals(day.atTime(17, 0), service.getAllRequestsForAdminDashboard().get(0).getOriginalDayEntries().get(0).getEntryTimestamp());
+        request.setApproved(true);
+        assertTrue(service.getAllRequestsForAdminDashboard().get(0).getOriginalDayEntries().isEmpty());
+    }
+
+    @Test
+    void anExplicitStampMustExistAndBelongToTheEmployeeAndDay() {
+        User employee = employee(10L, "employee");
+        LocalDate day = LocalDate.of(2026, 10, 6);
+        when(userRepo.findByUsername("employee")).thenReturn(Optional.of(employee));
+        assertThrows(IllegalArgumentException.class, () -> service.createCorrectionRequest("employee", 9L, day.atTime(18, 0), "ENDE", "Korrektur", day));
+        TimeTrackingEntry foreign = new TimeTrackingEntry(employee(20L, "other"), day.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        when(timeTrackingEntryRepo.findById(9L)).thenReturn(Optional.of(foreign));
+        assertThrows(IllegalArgumentException.class, () -> service.createCorrectionRequest("employee", 9L, day.atTime(18, 0), "ENDE", "Korrektur", day));
+        foreign.setUser(employee);
+        foreign.setEntryTimestamp(day.minusDays(1).atTime(17, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.createCorrectionRequest("employee", 9L, day.atTime(18, 0), "ENDE", "Korrektur", day));
+    }
+
+    private User employee(Long id, String username) {
+        User user = new User();
+        user.setId(id);
+        user.setUsername(username);
+        return user;
+    }
 
     @Test
     void approvalStoresActingAdminOnRequestAndCreatedEntries() {

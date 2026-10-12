@@ -3,6 +3,7 @@ import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess';
 import { getUserDisplayName } from '../../utils/userDisplay';
 import { addDays, formatDate, formatLocalDateYMD, formatTime, minutesToHHMM } from './adminDashboardUtils';
 import AdminWorkspaceVacationBalance from './AdminWorkspaceVacationBalance';
+import { originalDayText, originalTimeHeading } from './correctionOriginalTime';
 import './AdminWorkspaceOverview.css';
 import {
     groupWorkspaceCorrections, isWorkspacePending, workspaceAbsences, workspaceBalances, workspaceDate,
@@ -26,6 +27,8 @@ const teamOf = user => String(user?.departmentName || '').trim();
 // Compare civil dates in UTC so age/order do not change at a daylight-saving boundary.
 const daysBetween = (start, end) => Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000);
 const affectedDate = row => workspaceDate(row.dateIso);
+const issueCategory = type => type?.startsWith('auto_completed') ? 'automatic'
+    : type?.startsWith('incomplete') ? 'incomplete' : type === 'missing' ? 'missing' : 'other';
 const taskOrder = (row, todayIso) => {
     const start = workspaceDate(row.vacation?.startDate);
     const end = workspaceDate(row.vacation?.endDate || start);
@@ -62,8 +65,8 @@ export function workspaceIssueLabel(type, t = defaultTranslation) {
 
 function CorrectionComparison({ entry, t, completed }) {
     return <div className="aw-compare">
-        <div className="aw-punch"><span className="aw-punch-label">{t('adminDashboard.originalTimeLabel', 'Gestempelt')}</span>
-            <strong className="aw-punch-value">{entry.originalTimestamp ? formatTime(entry.originalTimestamp) : t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel')}</strong>
+        <div className="aw-punch"><span className="aw-punch-label">{originalTimeHeading(entry, t)}</span>
+            <strong className="aw-punch-value">{entry.originalTimestamp ? formatTime(entry.originalTimestamp) : originalDayText(entry, t)}</strong>
             {entry.originalTimestamp && <small>{displayDate(entry.originalTimestamp)}{entry.originalPunchType ? ` · ${t(`punchTypes.${entry.originalPunchType}`, entry.originalPunchType)}` : ''}</small>}
         </div><span className="aw-arrow" aria-hidden="true">→</span>
         <div className="aw-punch"><span className="aw-punch-label">{t('adminDashboard.requestedTimeLabel', 'Beantragt')}</span>
@@ -88,6 +91,7 @@ export default function AdminWorkspaceOverview({
 }) {
     const idPrefix = useId();
     const [filter, setFilter] = useState('all');
+    const [issueFilter, setIssueFilter] = useState(null);
     const [showAll, setShowAll] = useState(false);
     const [desktopSize, setDesktopSize] = useState(readDesktopSize);
     const compactDesktop = desktopSize !== null;
@@ -120,7 +124,7 @@ export default function AdminWorkspaceOverview({
     }, []);
     useEffect(() => { setPreferences(readPreferences(preferencesKey)); }, [preferencesKey]);
     useEffect(() => { setCompletedIds(new Set()); setNotes({}); setFeedback(''); setDecisionError(null); }, [preferencesKey]);
-    useEffect(() => { setShowAll(false); setExpandedKey(null); setDecisionError(null); }, [selectedTeam]);
+    useEffect(() => { setShowAll(false); setExpandedKey(null); setDecisionError(null); setIssueFilter(null); }, [selectedTeam]);
     const updatePreference = (key, checked) => {
         const next = { ...preferences, [key]: checked };
         setPreferences(next);
@@ -140,23 +144,28 @@ export default function AdminWorkspaceOverview({
     const timeRows = useMemo(() => (Array.isArray(issueRows) ? issueRows : EMPTY).filter(row => row?.username).map(row => ({
         ...row, key: `time:${row.id || row.username}`, kind: 'time', sortDate: row.dateIso || '',
     })), [issueRows]);
-    const chosenRows = useMemo(() => [
-        ...(filter !== 'time' ? requestRows : EMPTY), ...(filter !== 'request' ? timeRows : EMPTY),
-    ].sort((a, b) => {
+    const prioritizedRows = useMemo(() => [...requestRows, ...timeRows].sort((a, b) => {
         const first = taskOrder(a, todayIso), second = taskOrder(b, todayIso);
         return first.priority - second.priority || first.date.localeCompare(second.date) || a.key.localeCompare(b.key);
-    }), [filter, requestRows, timeRows, todayIso]);
+    }), [requestRows, timeRows, todayIso]);
+    const nearRows = requestRows.filter(row => taskOrder(row, todayIso).priority === 0);
+    const chosenRows = prioritizedRows.filter(row => (
+        filter === 'near' ? taskOrder(row, todayIso).priority === 0
+            : filter === 'request' ? row.kind !== 'time'
+                : filter === 'time' ? row.kind === 'time' && (!issueFilter || row.issues?.some(issue => issueCategory(issue.type) === issueFilter)) : true
+    ));
     const previewLimit = desktopSize === 'short' ? 3 : desktopSize === 'medium' ? 4 : 5;
     // A viewport change must never hide the form a person is currently editing.
     const expandedIndex = chosenRows.findIndex(row => row.key === expandedKey);
     const shownRows = showAll ? chosenRows : chosenRows.slice(0, Math.max(previewLimit, expandedIndex + 1));
     const absencePreviewLimit = desktopSize === 'short' ? 1 : 2;
     const absences = useMemo(() => workspaceAbsences(allVacations, allSickLeaves), [allVacations, allSickLeaves]);
-    const activeAbsences = absences.filter(item => item.startIso <= todayIso && item.endIso >= todayIso);
+    const activeAbsences = absences.filter(item => item.startIso <= todayIso && item.endIso >= todayIso)
+        .sort((a, b) => Number(b.kind === 'sick') - Number(a.kind === 'sick') || a.username.localeCompare(b.username));
     const upcomingAbsences = absences.filter(item => item.startIso > todayIso && item.startIso <= rangeEndIso);
     const activeCount = new Set(activeAbsences.map(item => item.username)).size;
     const balances = useMemo(() => workspaceBalances(weeklyBalances, users), [weeklyBalances, users]);
-    const average = balances.length ? Math.round(balances.reduce((sum, item) => sum + item.trackingBalance, 0) / balances.length) : null;
+    const negativeBalances = [...balances].filter(item => item.trackingBalance < 0).sort((a, b) => a.trackingBalance - b.trackingBalance);
     const negativeCount = balances.filter(item => item.trackingBalance < 0).length;
     const leader = balances.reduce((best, item) => !best || item.trackingBalance > best.trackingBalance ? item : best, null);
     const selectedTeamLabel = teams.find(team => team.value === selectedTeam)?.label || t('adminWorkspace.allTeams', 'Alle Teams');
@@ -181,7 +190,7 @@ export default function AdminWorkspaceOverview({
         ? t('adminWorkspace.absenceUnavailable', 'Abwesenheiten sind derzeit nicht vollständig verfügbar.')
         : initialLoading ? t('loading', 'Wird geladen…') : fallback;
     const chooseFilter = key => {
-        setFilter(key); setShowAll(false);
+        setFilter(key); setShowAll(false); setIssueFilter(null);
         inboxRef.current?.focus({ preventScroll: true });
     };
     const timingLabel = row => {
@@ -284,10 +293,51 @@ export default function AdminWorkspaceOverview({
 
     const renderAbsence = item => <div className="aw-absence" key={item.key}><div className="aw-absence-copy"><button type="button" className="aw-task-name" onClick={() => onOpenEmployee?.(item.username)}>{nameOf(item.username)}</button><p>{periodLabel(item.startDate, item.endDate)}</p><span className={`aw-absence-kind${item.kind === 'sick' ? ' is-sick' : ''}`}>{item.kind === 'sick' ? t('sick', 'Krank') : item.usesOvertime ? t('adminWorkspace.overtimeLeave', 'Überstundenfrei') : t('adminWorkspace.vacation', 'Urlaub')}{item.halfDay ? ` · ${t('adminDashboard.halfDayShort', '½ Tag')}` : ''}</span></div><button type="button" className="aw-text-button" aria-label={`${t('details', 'Details')}: ${nameOf(item.username)} · ${periodLabel(item.startDate, item.endDate)}`} onClick={() => onOpenAbsence?.({ ...item.source, kind: item.kind, type: item.kind, dateIso: item.startIso, raw: item.source })}>↗</button></div>;
     const noData = !requestRows.length && !timeRows.length;
+    const nextTask = prioritizedRows[0];
+    const nextNearTask = prioritizedRows.find(row => taskOrder(row, todayIso).priority === 0);
+    const focusTitle = loadError ? t('adminWorkspace.focusStale', 'Der Überblick ist derzeit nicht aktuell')
+        : dataUnknown ? t('adminWorkspace.focusUnknown', 'Der aktuelle Überblick wird geladen')
+        : nearRows.length === 1 ? t('adminWorkspace.nearVacationSingle', 'Urlaub von {name}: {timing}').replace('{name}', nameOf(nextNearTask.username)).replace('{timing}', timingLabel(nextNearTask))
+            : nearRows.length > 1 ? `${t('adminWorkspace.nearVacationFocus', 'Zeitnahe Urlaubsanträge')}: ${nearRows.length}`
+            : requestRows.length ? `${t('adminWorkspace.decisionsFocus', 'Offene Entscheidungen')}: ${requestRows.length}`
+                : issueRows === null ? t('adminWorkspace.focusCalculating', 'Die Zeitprüfung wird noch berechnet')
+                    : affectedCount ? `${t('adminWorkspace.timeFocus', 'Mitarbeitende mit Zeitproblemen')}: ${affectedCount}`
+                        : t('adminWorkspace.focusClear', 'Keine offenen Anträge oder Zeitprobleme im Prüfzeitraum');
+    const openFocus = () => {
+        const task = nearRows.length ? prioritizedRows.find(row => taskOrder(row, todayIso).priority === 0)
+            : requestRows.length ? prioritizedRows.find(row => row.kind !== 'time') : nextTask;
+        if (!task || dataUnknown) return;
+        if (task.kind === 'time') { focus(task.username, task.dateIso); return; }
+        chooseFilter(nearRows.length ? 'near' : 'request');
+        setExpandedKey(task.key);
+        inboxRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    };
+    const issueGroups = [
+        ['missing', t('adminWorkspace.issues.missing', 'Fehlende Stempelungen')],
+        ['incomplete', t('adminWorkspace.issues.incomplete', 'Unvollständige Stempelungen')],
+        ['automatic', t('adminWorkspace.issues.automaticShort', 'Automatisch beendet')],
+        ['other', t('adminWorkspace.issues.other', 'Weitere Prüfungen')],
+    ].map(([key, label]) => ({ key, label, count: new Set(timeRows.filter(row => row.issues?.some(issue => issueCategory(issue.type) === key)).map(row => row.username)).size })).filter(group => group.count > 0);
     return <div className={`aw-overview${compactDesktop ? ' aw-overview-compact' : ''}`} aria-busy={loading || initialLoading}>
         <div className="aw-toolbar"><div className="aw-data-context"><span className="aw-date">{formatDate(today)}</span><span>{dataContextLabel}{loadError ? ` · ${t('adminWorkspace.notCurrent', 'Nicht aktuell')}` : ''}</span></div>{teams.length > 0 && <label className="aw-team-select">{t('team', 'Team')}<select value={selectedTeam} onChange={event => onTeamChange?.(event.target.value)}><option value="">{t('adminWorkspace.allTeams', 'Alle Teams')}</option>{teams.filter(team => team.value !== '').map(team => <option value={team.value} key={team.value}>{team.label}</option>)}</select></label>}</div>
         {loadError && <div className="aw-error" role="alert"><span>{t('adminWorkspace.loadFailed', 'Die Daten konnten nicht vollständig aktualisiert werden. Freigaben sind bis zur Aktualisierung gesperrt.')}</span>{typeof loadError === 'string' && <p>{loadError}</p>}<button type="button" className="aw-button" onClick={onRetry} disabled={loading}>{t('retry', 'Erneut versuchen')}</button></div>}
         {feedback && <div className="aw-feedback" role="status"><span>{feedback}</span><button type="button" className="aw-text-button" aria-label={t('close', 'Schließen')} onClick={() => setFeedback('')}>×</button></div>}
+        <section className={`aw-focus${!dataUnknown && nearRows.length ? ' is-urgent' : ''}`} aria-label={t('adminWorkspace.currentFocus', 'Jetzt im Fokus')}>
+            <div className="aw-focus-copy">
+                <span className="aw-focus-eyebrow">{t('adminWorkspace.currentFocus', 'Jetzt im Fokus')} · {selectedTeamLabel}</span>
+                <h2>{focusTitle}</h2>
+                <p>{dataUnknown ? t('adminWorkspace.focusWait', 'Sobald die Daten vollständig vorliegen, erscheinen hier die nächsten Schritte.')
+                    : nearRows.length === 1 ? `${periodLabel(nextNearTask.vacation.startDate, nextNearTask.vacation.endDate)} · ${t('adminWorkspace.vacationAwaitingDecision', 'Die Entscheidung ist noch offen.')}`
+                        : nearRows.length > 1 ? t('adminWorkspace.focusVacationHint', 'Beginn innerhalb von 7 Tagen oder bereits laufend. Für die Teamplanung zuerst prüfen.')
+                        : requestRows.length ? `${vacationCount} ${t('adminWorkspace.vacation', 'Urlaub')} · ${correctionCount} ${t('adminWorkspace.correctionsShort', 'Korrekturen')} · ${t('adminWorkspace.focusRequestHint', 'Details und Entscheidungen direkt in der Liste.')}`
+                            : issueRows === null ? t('adminWorkspace.focusTimeWait', 'Offene Zeitprobleme werden ergänzt, sobald die Prüfung abgeschlossen ist.')
+                                : affectedCount ? `${t('adminWorkspace.timeReview', 'Zeitprüfung')}: ${issuePeriod || t('adminWorkspace.periodNotAvailable', 'Zeitraum noch nicht verfügbar')}`
+                                    : t('adminWorkspace.focusClearHint', 'Eingetragene Abwesenheiten und Zeitkonten bleiben unten im Blick.')}</p>
+            </div>
+            {!dataUnknown && (requestRows.length > 0 || affectedCount > 0) && <button type="button" className="aw-button aw-button-primary" onClick={openFocus}>
+                {requestRows.length ? t('adminWorkspace.startDecision', 'Ersten Vorgang prüfen') : t('adminWorkspace.startTimeReview', 'Zeitproblem prüfen')} <span aria-hidden="true">→</span>
+            </button>}
+        </section>
         <div className="aw-metrics" role="group" aria-label={t('adminWorkspace.keyFigures', 'Kennzahlen und Schnellzugriff')}>
             <button type="button" className="aw-metric" data-metric="requests" onClick={() => chooseFilter('request')} aria-label={t('adminWorkspace.showOpenRequests', 'Offene Anträge anzeigen')}><span className="aw-metric-label">{t('adminWorkspace.openRequestsLabel', 'Offene Anträge')}<span aria-hidden="true">↘</span></span><strong>{dataUnknown ? '–' : requestRows.length}</strong><small>{dataUnknown ? unknownLabel : `${vacationCount} ${t('adminWorkspace.vacation', 'Urlaub')} · ${correctionCount} ${t('adminWorkspace.correctionsShort', 'Korrekturen')}`}</small></button>
             <button type="button" className="aw-metric" data-metric="issues" onClick={() => chooseFilter('time')} aria-label={t('adminWorkspace.showPeopleWithIssues', 'Mitarbeitende mit Zeitproblemen anzeigen')}><span className="aw-metric-label">{t('adminWorkspace.peopleWithIssues', 'Mit Zeitproblemen')}<span aria-hidden="true">↘</span></span><strong>{dataUnknown || issueRows === null ? '–' : affectedCount}</strong><small>{dataUnknown ? unknownLabel : issueRows === null ? t('adminWorkspace.calculatingShort', 'Wird berechnet…') : t('adminWorkspace.affectedPeople', 'betroffene Mitarbeitende')}</small></button>
@@ -295,13 +345,36 @@ export default function AdminWorkspaceOverview({
             <button type="button" className="aw-metric" data-metric="negative" onClick={onFocusNegativeBalances} aria-label={t('adminWorkspace.showNegativeBalances', 'Negative Zeitkonten anzeigen')} disabled={!onFocusNegativeBalances}><span className="aw-metric-label">{t('adminWorkspace.negativeBalances', 'Negative Zeitkonten')}<span aria-hidden="true">↗</span></span><strong className={!dataUnknown && negativeCount ? 'aw-negative' : ''}>{dataUnknown || !balances.length ? '–' : negativeCount}</strong><small>{dataUnknown ? unknownLabel : balances.length ? `${t('adminWorkspace.balanceAvailableFor', 'Saldo für')} ${balances.length} ${t('adminWorkspace.people', 'Personen')}` : t('adminWorkspace.noBalances', 'Keine Salden vorhanden')}</small></button>
         </div>
         <div className={`aw-grid${!preferences.team ? ' aw-grid-single' : ''}`}><section className="aw-inbox" ref={inboxRef} tabIndex={-1} aria-label={t('adminWorkspace.tasks', 'Zu erledigen')}><div className="aw-section-heading"><div><h2>{t('adminWorkspace.tasks', 'Zu erledigen')}</h2><p>{t('adminWorkspace.affectedDateOrder', 'Zeitnaher Urlaub zuerst, sonst nach betroffenem Datum.')}</p></div><span className="aw-preview-label">{t('adminWorkspace.preview', 'Vorschau')}</span></div>
-            <div className="aw-filters" role="group" aria-label={t('adminWorkspace.filterTasks', 'Vorgänge filtern')}>{[['all', t('all', 'Alle'), null], ['request', t('adminWorkspace.requests', 'Anträge'), dataUnknown ? '–' : requestRows.length], ['time', t('adminWorkspace.timeReview', 'Zeitprüfung'), dataUnknown || issueRows === null ? '–' : timeRows.length]].map(([key, label, count]) => <button type="button" key={key} className={filter === key ? 'is-active' : ''} aria-pressed={filter === key} onClick={() => { setFilter(key); setShowAll(false); }}>{label}{count !== null && <span className="aw-count">{count}</span>}</button>)}</div>
+            <div className="aw-filters" role="group" aria-label={t('adminWorkspace.filterTasks', 'Vorgänge filtern')}>{[['all', t('all', 'Alle'), null], ['request', t('adminWorkspace.requests', 'Anträge'), dataUnknown ? '–' : requestRows.length], ['time', t('adminWorkspace.timeReview', 'Zeitprüfung'), dataUnknown || issueRows === null ? '–' : timeRows.length], ['near', t('adminWorkspace.nearRequests', 'Zeitnaher Urlaub'), dataUnknown ? '–' : nearRows.length]].map(([key, label, count]) => <button type="button" key={key} className={filter === key ? 'is-active' : ''} aria-pressed={filter === key} onClick={() => chooseFilter(key)}>{label}{count !== null && <span className="aw-count">{count}</span>}</button>)}</div>
             <div className="aw-review-context"><span>{t('adminWorkspace.timeReview', 'Zeitprüfung')}: {issuePeriod || t('adminWorkspace.periodNotAvailable', 'Zeitraum noch nicht verfügbar')}{issueRows === null && !initialLoading ? ` · ${t('adminWorkspace.calculatingShort', 'Wird berechnet…')}` : ''}</span><button type="button" className="aw-text-button" onClick={onOpenTime}>{t('adminWorkspace.changePeriod', 'Zeitraum ändern')} ↗</button></div>
-            <div className="aw-task-list">{!loadError && (loading || initialLoading) && noData ? <p className="aw-loading" role="status">{t('adminWorkspace.loadingTasks', 'Vorgänge werden geladen…')}</p> : shownRows.length ? shownRows.map(renderTask) : <div className="aw-empty">{loadError ? t('adminWorkspace.noReliableTasks', 'Für diese Ansicht liegen keine vollständig geladenen Vorgänge vor.') : issueRows === null && filter !== 'request' ? t('adminWorkspace.calculatingIssues', 'Zeitprüfung wird berechnet…') : t('adminWorkspace.noOpenTasks', 'Keine offenen Vorgänge in dieser Ansicht.')}</div>}</div>
+            {!dataUnknown && issueGroups.length > 0 && filter !== 'request' && filter !== 'near' && <div className="aw-issue-summary" role="group" aria-label={t('adminWorkspace.issueBreakdown', 'Zeitprobleme nach Art')}>
+                {issueGroups.map(group => <button type="button" key={group.key} aria-pressed={filter === 'time' && issueFilter === group.key}
+                    onClick={() => { setFilter('time'); setIssueFilter(previous => previous === group.key ? null : group.key); setShowAll(false); }}>
+                    <span>{group.label}</span><strong>{group.count}</strong>
+                </button>)}
+                <small>{t('adminWorkspace.issueCountHint', 'Betroffene Personen je Art; Mehrfachzählung möglich.')}</small>
+            </div>}
+            <div className="aw-task-list">{!loadError && (loading || initialLoading) && noData ? <p className="aw-loading" role="status">{t('adminWorkspace.loadingTasks', 'Vorgänge werden geladen…')}</p> : shownRows.length ? shownRows.map(renderTask) : <div className="aw-empty">{loadError ? t('adminWorkspace.noReliableTasks', 'Für diese Ansicht liegen keine vollständig geladenen Vorgänge vor.') : issueRows === null && filter !== 'request' && filter !== 'near' ? t('adminWorkspace.calculatingIssues', 'Zeitprüfung wird berechnet…') : t('adminWorkspace.noOpenTasks', 'Keine offenen Vorgänge in dieser Ansicht.')}</div>}</div>
             {!canManage && <p className="aw-empty">{t('adminDashboard.readOnlyPermissions', 'Nur Ansicht: Freigaben und Änderungen sind nicht erlaubt.')}</p>}
-            <div className="aw-inbox-foot"><span>{dataUnknown || (issueRows === null && filter !== 'request') ? t('adminWorkspace.reliableCountUnavailable', 'Anzahl derzeit nicht verfügbar') : `${shownRows.length} ${t('of', 'von')} ${chosenRows.length} ${t('adminWorkspace.items', 'Vorgängen')}`}</span><div>{chosenRows.length > previewLimit && <button type="button" className="aw-text-button" onClick={() => setShowAll(value => !value)}>{showAll ? t('showLess', 'Weniger anzeigen') : `${t('adminWorkspace.showAllTasks', 'Alle anzeigen')} (${chosenRows.length})`}</button>}<button type="button" className="aw-text-button" onClick={filter === 'time' ? onOpenTime : onOpenRequests}>{filter === 'time' ? t('adminWorkspace.openTime', 'Zeitprüfung öffnen') : t('adminWorkspace.openRequests', 'Anträge öffnen')} ↗</button></div></div>
+            <div className="aw-inbox-foot"><span>{dataUnknown || (issueRows === null && filter !== 'request' && filter !== 'near') ? t('adminWorkspace.reliableCountUnavailable', 'Anzahl derzeit nicht verfügbar') : `${shownRows.length} ${t('of', 'von')} ${chosenRows.length} ${t('adminWorkspace.items', 'Vorgängen')}`}</span><div>{chosenRows.length > previewLimit && <button type="button" className="aw-text-button" onClick={() => setShowAll(value => !value)}>{showAll ? t('showLess', 'Weniger anzeigen') : `${t('adminWorkspace.showAllTasks', 'Alle anzeigen')} (${chosenRows.length})`}</button>}<button type="button" className="aw-text-button" onClick={filter === 'time' ? onOpenTime : onOpenRequests}>{filter === 'time' ? t('adminWorkspace.openTime', 'Zeitprüfung öffnen') : t('adminWorkspace.openRequests', 'Anträge öffnen')} ↗</button></div></div>
         </section>{preferences.team && <aside className="aw-team-panel"><div className="aw-section-heading"><div><h2>{t('adminWorkspace.teamAtGlance', 'Team im Blick')}</h2><p>{selectedTeamLabel}</p></div><button type="button" className="aw-text-button" onClick={onOpenCalendar}>{t('adminWorkspace.calendarShort', 'Kalender')} ↗</button></div><div className="aw-today"><div className="aw-coming-head"><h3>{t('adminWorkspace.absentToday', 'Heute abwesend')}</h3><strong className="aw-team-count">{dataUnknown ? '–' : activeCount}</strong></div><div className="aw-absence-list">{activeAbsences.length ? activeAbsences.slice(0, absencePreviewLimit).map(renderAbsence) : <p className="aw-empty">{absenceEmptyLabel(t('adminWorkspace.noAbsenceToday', 'Keine Abwesenheiten eingetragen.'))}</p>}</div>{activeAbsences.length > absencePreviewLimit && <button type="button" className="aw-text-button aw-more-absences" onClick={onOpenCalendar}>+{activeAbsences.length - absencePreviewLimit} {t('adminWorkspace.moreInCalendar', 'weitere im Kalender')} ↗</button>}</div><div className="aw-coming"><div className="aw-coming-head"><h3>{t('adminWorkspace.nextThirtyDays', 'Nächste 30 Tage')}</h3><span>{t('until', 'Bis')} {displayDate(rangeEndIso)}</span></div><div className="aw-absence-list">{upcomingAbsences.length ? upcomingAbsences.slice(0, absencePreviewLimit).map(renderAbsence) : <p className="aw-empty">{absenceEmptyLabel(t('adminWorkspace.noComingAbsence', 'Keine Abwesenheiten in den nächsten 30 Tagen geplant.'))}</p>}</div>{upcomingAbsences.length > absencePreviewLimit && <button type="button" className="aw-text-button aw-more-absences" onClick={onOpenCalendar}>+{upcomingAbsences.length - absencePreviewLimit} {t('adminWorkspace.moreInCalendar', 'weitere im Kalender')} ↗</button>}</div></aside>}</div>
-        {preferences.balances && <section className="aw-balances" aria-label={t('adminWorkspace.balances', 'Zeitkonten')}><div className="aw-balance-title"><h3>{t('adminWorkspace.balances', 'Zeitkonten')}</h3><small>{dataUnknown ? unknownLabel : balances.length ? `${balances.length} ${t('adminWorkspace.accountsWithData', 'Konten mit Saldo')}` : t('adminWorkspace.noBalances', 'Keine Salden vorhanden')}</small></div><button type="button" className="aw-balance-stat" onClick={onFocusNegativeBalances} disabled={dataUnknown || !balances.length}><small>{t('adminWorkspace.averageBalance', 'Ø Team-Saldo')}</small><strong className={!dataUnknown && average < 0 ? 'aw-negative' : !dataUnknown && average > 0 ? 'aw-positive' : ''}>{dataUnknown || average === null ? '–' : minutesToHHMM(average)}</strong><span>{t('adminWorkspace.perEmployee', 'pro Person')}</span></button><button type="button" className="aw-balance-stat" onClick={onFocusOvertimeLeaders} disabled={dataUnknown || !leader}><small>{t('adminWorkspace.highestBalance', 'Höchster Saldo')}</small><strong className={!dataUnknown && leader?.trackingBalance < 0 ? 'aw-negative' : !dataUnknown && leader?.trackingBalance > 0 ? 'aw-positive' : ''}>{!dataUnknown && leader ? minutesToHHMM(leader.trackingBalance) : '–'}</strong><span>{!dataUnknown && leader ? nameOf(leader.username) : '–'}</span></button></section>}
+        {preferences.balances && <section className="aw-balances aw-account-watch" aria-label={t('adminWorkspace.balances', 'Zeitkonten')}>
+            <div className="aw-account-heading"><div><h2>{t('adminWorkspace.balances', 'Zeitkonten')}</h2><p>{dataUnknown ? unknownLabel : balances.length ? `${balances.length} ${t('adminWorkspace.accountsWithData', 'Konten mit Saldo')}` : t('adminWorkspace.noBalances', 'Keine Salden vorhanden')}</p></div>
+                <button type="button" className="aw-text-button" onClick={onFocusNegativeBalances} disabled={dataUnknown || !balances.length}>{t('adminWorkspace.allNegativeAccounts', 'Alle Minussalden')} ↗</button>
+            </div>
+            <div className="aw-account-grid">
+                <div className="aw-account-negative"><h3>{t('adminWorkspace.largestNegativeAccounts', 'Größte Minussalden')}</h3>
+                    {dataUnknown ? <p>{unknownLabel}</p> : negativeBalances.length ? <ul>{negativeBalances.slice(0, 3).map(item => <li key={item.username}>
+                        <button type="button" onClick={() => focus(item.username)}><span>{nameOf(item.username)}</span><strong>{minutesToHHMM(item.trackingBalance)}</strong><span aria-hidden="true">↗</span></button>
+                    </li>)}</ul> : <p>{balances.length ? t('adminWorkspace.noNegativeAccounts', 'Keine negativen Zeitkonten in den geladenen Salden.') : t('adminWorkspace.noBalances', 'Keine Salden vorhanden')}</p>}
+                </div>
+                <button type="button" className="aw-account-leader" onClick={onFocusOvertimeLeaders} disabled={dataUnknown || !leader || !onFocusOvertimeLeaders}>
+                    <span>{t('adminWorkspace.highestBalance', 'Höchster Saldo')} <span aria-hidden="true">↗</span></span>
+                    <strong className={!dataUnknown && leader?.trackingBalance < 0 ? 'aw-negative' : 'aw-positive'}>{!dataUnknown && leader ? minutesToHHMM(leader.trackingBalance) : '–'}</strong>
+                    <small>{!dataUnknown && leader ? nameOf(leader.username) : dataUnknown ? unknownLabel : t('adminWorkspace.noBalances', 'Keine Salden vorhanden')}</small>
+                </button>
+            </div>
+        </section>}
         <footer className="aw-footer"><button type="button" className="aw-text-button" onClick={onPrint}>{t('adminWorkspace.print', 'Zeiten drucken')}</button><button type="button" className="aw-text-button" onClick={onOpenModules}>{t('adminWorkspace.modules', 'Alle Module')}</button><details className="aw-settings"><summary>{t('adminWorkspace.customize', 'Ansicht anpassen')}</summary><label><input type="checkbox" checked={preferences.team} onChange={event => updatePreference('team', event.target.checked)} />{t('adminWorkspace.teamAtGlance', 'Team im Blick')}</label><label><input type="checkbox" checked={preferences.balances} onChange={event => updatePreference('balances', event.target.checked)} />{t('adminWorkspace.balances', 'Zeitkonten')}</label></details></footer>
     </div>;
 }

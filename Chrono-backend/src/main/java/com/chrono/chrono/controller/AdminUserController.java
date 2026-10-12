@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.Company; // Import wieder hinzugefügt
 import com.chrono.chrono.entities.EmploymentModelType;
@@ -87,10 +88,10 @@ public class AdminUserController {
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
         List<User> users;
-        if (isSuperAdmin) {
+        if (isSuperAdmin && CompanyScope.selection() == null) {
             users = userRepository.findOperationalUsersDeletedFalse();
-        } else if (admin.getCompany() != null) {
-            Long companyId = admin.getCompany().getId();
+        } else if (CompanyScope.companyFor(admin) != null) {
+            Long companyId = CompanyScope.companyFor(admin).getId();
             users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(companyId);
         } else {
             logger.warn("Admin {} has no company assigned. Access to user listing is denied.", principal.getName());
@@ -124,12 +125,13 @@ public class AdminUserController {
             } else {
                 return ResponseEntity.badRequest().body("Specified companyId not found.");
             }
-        } else if (admin.getCompany() != null) { // Regular admin assigns their own company
-            targetCompany = admin.getCompany();
+        } else if (CompanyScope.companyFor(admin) != null) { // Regular admin assigns their own company
+            targetCompany = CompanyScope.companyFor(admin);
         } else if (!admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             // Regular admin MUST have a company to add a user to that company.
             return ResponseEntity.badRequest().body("Admin has no company assigned. Cannot add user.");
         }
+        CompanyScope.requireCompany(targetCompany);
         // If SUPERADMIN and no companyId in DTO, and SUPERADMIN has no company, user is created without company.
 
 
@@ -301,13 +303,14 @@ public class AdminUserController {
 
         User existingUser = userRepository.findById(userDTO.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userDTO.getId()));
+        CompanyScope.requireTarget(existingUser);
 
         // SUPERADMIN can edit any user. Regular admin can only edit users in their own company.
         if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN")) {
-            if (adminUser.getCompany() == null) {
+            if (CompanyScope.companyFor(adminUser) == null) {
                 return ResponseEntity.status(403).body("Admin has no company and cannot update users.");
             }
-            if (existingUser.getCompany() == null || !adminUser.getCompany().getId().equals(existingUser.getCompany().getId())) {
+            if (existingUser.getCompany() == null || !CompanyScope.companyFor(adminUser).getId().equals(existingUser.getCompany().getId())) {
                 logger.warn("Admin {} attempted to update user {} from a different company or user with no company.", adminUser.getUsername(), existingUser.getUsername());
                 return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
             }
@@ -321,8 +324,10 @@ public class AdminUserController {
                 Company newCompany = companyRepository.findById(userDTO.getCompanyId())
                         .orElse(null);
                 if (newCompany != null) {
+                    CompanyScope.requireCompany(newCompany);
                     existingUser.setCompany(newCompany);
                 } else if (userDTO.getCompanyId() == 0L) { // Convention for unassigning company
+                    CompanyScope.requireCompany(null);
                     existingUser.setCompany(null);
                 }
                 else {
@@ -331,7 +336,7 @@ public class AdminUserController {
             }
         } else if (userDTO.getCompanyId() != null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             // Regular admin trying to change companyId - forbidden unless it's to their own company (which should match existingUser's company already)
-            if (existingUser.getCompany() == null || !userDTO.getCompanyId().equals(existingUser.getCompany().getId()) || !userDTO.getCompanyId().equals(adminUser.getCompany().getId())) {
+            if (existingUser.getCompany() == null || !userDTO.getCompanyId().equals(existingUser.getCompany().getId()) || !userDTO.getCompanyId().equals(CompanyScope.companyFor(adminUser).getId())) {
                 return ResponseEntity.status(403).body("Regular admin cannot change the company of a user.");
             }
         }
@@ -579,12 +584,13 @@ public class AdminUserController {
 
         User targetUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        CompanyScope.requireTarget(targetUser);
 
         if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN")) {
-            if (adminUser.getCompany() == null) {
+            if (CompanyScope.companyFor(adminUser) == null) {
                 return ResponseEntity.status(403).body("Admin has no company and cannot update users.");
             }
-            if (targetUser.getCompany() == null || !adminUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+            if (targetUser.getCompany() == null || !CompanyScope.companyFor(adminUser).getId().equals(targetUser.getCompany().getId())) {
                 logger.warn("Admin {} attempted to update time tracking visibility for user {} from a different company or user with no company.",
                         adminUser.getUsername(), targetUser.getUsername());
                 return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
@@ -612,14 +618,15 @@ public class AdminUserController {
 
         User userToDelete = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        CompanyScope.requireTarget(userToDelete);
 
         // Check if admin is SUPERADMIN or if they belong to the same company
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         if (!isSuperAdmin) {
-            if (adminUser.getCompany() == null ) {
+            if (CompanyScope.companyFor(adminUser) == null ) {
                 return ResponseEntity.status(403).body(Map.of("message", "Admin has no company assigned and cannot delete users."));
             }
-            if (userToDelete.getCompany() == null || !adminUser.getCompany().getId().equals(userToDelete.getCompany().getId())) {
+            if (userToDelete.getCompany() == null || !CompanyScope.companyFor(adminUser).getId().equals(userToDelete.getCompany().getId())) {
                 logger.warn("Admin {} attempted to delete user {} from a different company.", adminUser.getUsername(), userToDelete.getUsername());
                 return ResponseEntity.status(403).body(Map.of("message", "Admin cannot delete user from a different company."));
             }

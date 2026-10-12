@@ -4,6 +4,7 @@ import { useTranslation } from '../context/LanguageContext';
 import Navbar from '../components/Navbar';
 import '../styles/CompanyManagementScoped.css';
 import { useAuth } from '../context/AuthContext';
+import { openCompanyScope } from '../utils/companyScope.js';
 import { FEATURE_CATALOG } from '../constants/registrationFeatures';
 import { isAnalyticsExcluded, setAnalyticsExcluded } from '../utils/analytics';
 
@@ -1727,6 +1728,9 @@ const CompanyManagementPage = () => {
                                                                 </div>
                                                             </div>
                                                             <div className="cmp-company-card__actions">
+                                                                <button type="button" className="cmp-button" onClick={() => openCompanyScope(co, currentUser)}>
+                                                                    {t('companyScope.open', 'Firma ansehen')}
+                                                                </button>
                                                                 <button type="button" className="cmp-button" onClick={() => startEdit(co)}>
                                                                     {t('edit', 'Bearbeiten')}
                                                                 </button>

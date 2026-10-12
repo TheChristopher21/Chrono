@@ -31,6 +31,13 @@ vi.mock('../../../context/LanguageContext.jsx', () => ({
 import WorkspaceTabStrip from '../WorkspaceTabStrip.jsx';
 
 describe('WorkspaceTabStrip interactions', () => {
+    it('opens an additional tab deliberately through the plus launcher', async () => {
+        render(<WorkspaceTabStrip />);
+        await userEvent.click(screen.getAllByRole('button', { name: 'Neuen Tab öffnen' })[0]);
+        await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /PMS/ }));
+        expect(workspaceMock.openRoute).toHaveBeenCalledExactlyOnceWith('/pms', { forceNew: true });
+    });
+
     beforeEach(() => {
         Object.values(workspaceMock).forEach((value) => {
             if (typeof value === 'function' && 'mockClear' in value) value.mockClear();
@@ -44,7 +51,7 @@ describe('WorkspaceTabStrip interactions', () => {
 
     it('opens an extra instance from the launcher with the middle mouse button', async () => {
         render(<WorkspaceTabStrip />);
-        await userEvent.click(screen.getAllByRole('button', { name: 'Arbeitsbereich öffnen' })[0]);
+        await userEvent.click(screen.getAllByRole('button', { name: 'Neuen Tab öffnen' })[0]);
         const item = within(screen.getByRole('dialog')).getByRole('button', { name: /PMS/ });
         fireEvent(item, new MouseEvent('auxclick', { button: 1, bubbles: true, cancelable: true }));
         expect(workspaceMock.openRoute).toHaveBeenCalledExactlyOnceWith('/pms', { forceNew: true });
@@ -149,11 +156,11 @@ describe('WorkspaceTabStrip interactions', () => {
         workspaceMock.openRoute.mockReturnValue(false);
         render(<WorkspaceTabStrip />);
 
-        await user.click(screen.getByTitle(/Arbeitsbereich öffnen/));
-        const dialogs = screen.getAllByRole('dialog', { name: 'Arbeitsbereich öffnen' });
+        await user.click(screen.getByTitle(/Neuen Tab öffnen/));
+        const dialogs = screen.getAllByRole('dialog', { name: 'Neuen Tab öffnen' });
         await user.click(within(dialogs[0]).getByRole('button', { name: /PMS/ }));
 
         expect(screen.getAllByRole('alert')[0]).toHaveTextContent('Maximal 12 Tabs');
-        expect(screen.getAllByRole('dialog', { name: 'Arbeitsbereich öffnen' }).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('dialog', { name: 'Neuen Tab öffnen' }).length).toBeGreaterThan(0);
     });
 });

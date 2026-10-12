@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.PmsSetupResponse;
 import com.chrono.chrono.dto.pms.BulkCreateRoomsRequest;
 import com.chrono.chrono.dto.pms.UpsertHotelPropertyRequest;
@@ -158,9 +159,9 @@ public class PmsSetupController {
             userPermissionService.assertPageAccess(user, UserPermissionService.PAGE_PMS_SETTINGS,
                     UserPermissionService.ACCESS_MANAGE, "Nur ein PMS-Master darf Hotelstammdaten und Einstellungen ändern.");
         }
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
-        return user.getCompany();
+        return CompanyScope.companyFor(user);
     }
 }

@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "correction_requests")
@@ -22,6 +24,18 @@ public class CorrectionRequest {
     @JoinColumn(name = "target_entry_id", nullable = true)
     @JsonIgnore
     private TimeTrackingEntry targetEntry;
+
+    private LocalDateTime originalTimestamp;
+    @Enumerated(EnumType.STRING)
+    private TimeTrackingEntry.PunchType originalPunchType;
+    private Long originalEntryId;
+    @Column(nullable = false)
+    private boolean originalDayCaptured;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "correction_original_entries", joinColumns = @JoinColumn(name = "correction_request_id"))
+    @OrderBy("entryTimestamp ASC")
+    private List<CorrectionOriginalEntry> originalDayEntries = new ArrayList<>();
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(nullable = true)
@@ -61,7 +75,7 @@ public class CorrectionRequest {
     public CorrectionRequest(User user, LocalDate requestDate, TimeTrackingEntry targetEntry, LocalDateTime desiredTimestamp, String reason) {
         this.user = user;
         this.requestDate = requestDate;
-        this.targetEntry = targetEntry;
+        setTargetEntry(targetEntry);
         this.desiredTimestamp = desiredTimestamp;
         this.reason = reason;
         this.approved = false;
@@ -84,7 +98,22 @@ public class CorrectionRequest {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public TimeTrackingEntry getTargetEntry() { return targetEntry; }
-    public void setTargetEntry(TimeTrackingEntry targetEntry) { this.targetEntry = targetEntry; }
+    public void setTargetEntry(TimeTrackingEntry targetEntry) {
+        if (targetEntry != null && originalTimestamp == null) {
+            originalTimestamp = targetEntry.getEntryTimestamp();
+            originalPunchType = targetEntry.getPunchType();
+            originalEntryId = targetEntry.getId();
+        }
+        this.targetEntry = targetEntry;
+    }
+    @JsonIgnore
+    public boolean isOriginalDayCaptured() { return originalDayCaptured; }
+    public List<CorrectionOriginalEntry> getOriginalDayEntries() { return originalDayEntries; }
+    public void captureOriginalDay(List<TimeTrackingEntry> entries) {
+        if (originalDayCaptured) return;
+        originalDayEntries = new ArrayList<>(entries.stream().map(CorrectionOriginalEntry::new).toList());
+        originalDayCaptured = true;
+    }
     public LocalDateTime getDesiredTimestamp() { return desiredTimestamp; }
     public void setDesiredTimestamp(LocalDateTime desiredTimestamp) { this.desiredTimestamp = desiredTimestamp; }
     public TimeTrackingEntry.PunchType getDesiredPunchType() { return desiredPunchType; }
@@ -112,11 +141,12 @@ public class CorrectionRequest {
     public String getUsername() { return (user != null) ? user.getUsername() : "Unknown"; }
 
     @JsonProperty("originalTimestamp")
-    public LocalDateTime getOriginalTimestamp() { return (targetEntry != null) ? targetEntry.getEntryTimestamp() : null; }
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public LocalDateTime getOriginalTimestamp() { return originalTimestamp != null ? originalTimestamp : (targetEntry != null) ? targetEntry.getEntryTimestamp() : null; }
 
     @JsonProperty("originalPunchType")
-    public TimeTrackingEntry.PunchType getOriginalPunchType() { return (targetEntry != null) ? targetEntry.getPunchType() : null; }
+    public TimeTrackingEntry.PunchType getOriginalPunchType() { return originalPunchType != null ? originalPunchType : (targetEntry != null) ? targetEntry.getPunchType() : null; }
     
     @JsonProperty("targetEntryId")
-    public Long getTargetEntryId() { return (targetEntry != null) ? targetEntry.getId() : null; }
+    public Long getTargetEntryId() { return originalEntryId != null ? originalEntryId : (targetEntry != null) ? targetEntry.getId() : null; }
 }

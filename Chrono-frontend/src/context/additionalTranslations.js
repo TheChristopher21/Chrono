@@ -2,6 +2,9 @@
 // Generated from existing t() fallback copy so every page has German and English text.
 export const additionalTranslations = {
     "de": {
+        "companyScope": { "superadmin": "Superadmin · Firmenansicht", "choose": "Firma auswählen", "description": "Öffne eine Firma, um ihre Mitarbeitenden, Anträge, Zeiten und Module zu sehen.", "management": "Zur Firmenverwaltung", "search": "Firma suchen", "searchHint": "Name oder Ort", "loadError": "Die Firmen konnten nicht geladen werden.", "companies": "Firmen", "employees": "Mitarbeitende", "inactive": "Inaktiv", "open": "Firma ansehen", "noResults": "Keine Firmen gefunden.", "active": "Aktuelle Firma", "company": "Firma", "change": "Firma wechseln" },
+        "adminWorkspace": { "searchPages": "Bereich suchen", "noPages": "Kein passender Bereich" },
+        "adminWorkspaceRequests": { "backToList": "Zur Antragsliste", "browse": "Anträge durchgehen", "previous": "Vorheriger Antrag", "next": "Nächster Antrag" },
         "accounting": {
             "accountActive": "Aktiv",
             "accountClass": "Klasse",
@@ -157,6 +160,18 @@ export const additionalTranslations = {
             "weeklyAbsenceDays": "{{count}} Tage abwesend"
         },
         "adminPayslips": {
+            "chooseUserForBalance": "Benutzer auswählen, um den Überstundensaldo anzuzeigen.",
+            "loadingTimeSummary": "Stunden werden geladen …",
+            "timeSummaryError": "Die Stunden konnten nicht geladen werden. Die manuelle Eingabe ist weiterhin möglich.",
+            "currentBalance": "Aktueller Überstundensaldo",
+            "applyCurrentBalance": "Aktuellen Saldo übernehmen",
+            "periodBalance": "Überstunden im Zeitraum",
+            "applyPeriodBalance": "Zeitraumwert übernehmen",
+            "periodWorked": "Iststunden im Zeitraum",
+            "periodExpected": "Sollstunden im Zeitraum",
+            "periodBalanceHint": "Die Zeitraumsdifferenz berücksichtigt die Zeitübersicht bis heute. Bereits ausgezahlte Überstunden sind im aktuellen Saldo berücksichtigt, nicht in der Zeitraumsdifferenz.",
+            "choosePeriodForBalance": "Start- und Enddatum auswählen, um zusätzlich die Stunden im Zeitraum anzuzeigen.",
+            "invalidPeriod": "Das Enddatum muss am oder nach dem Startdatum liegen.",
             "allActiveEmployees": "Alle aktiven",
             "allowances": "Zulagen",
             "approveAllButton": "Alle freigeben",
@@ -210,7 +225,7 @@ export const additionalTranslations = {
             "noEmployerContributions": "Keine einzelnen Arbeitgeberbeitraege vorhanden.",
             "numberRange": "Nummernkreis",
             "openPdf": "PDF oeffnen",
-            "overtimeHours": "Ueberstunden (Std.)",
+            "overtimeHours": "Ueberstunden (Std:Min.)",
             "pageIndicator": "Seite {{current}} / {{total}}",
             "payout": "Auszahlung",
             "payOutOvertime": "Ueberstunden auszahlen",
@@ -901,6 +916,9 @@ export const additionalTranslations = {
         "week": "Woche"
     },
     "en": {
+        "companyScope": { "superadmin": "Superadmin · Company view", "choose": "Select a company", "description": "Open a company to see its employees, requests, working hours and modules.", "management": "Company management", "search": "Find a company", "searchHint": "Name or city", "loadError": "Companies could not be loaded.", "companies": "companies", "employees": "employees", "inactive": "Inactive", "open": "View company", "noResults": "No companies found.", "active": "Current company", "company": "Company", "change": "Switch company" },
+        "adminWorkspace": { "searchPages": "Find a section", "noPages": "No matching section" },
+        "adminWorkspaceRequests": { "backToList": "Back to requests", "browse": "Browse requests", "previous": "Previous request", "next": "Next request" },
         "accounting": {
             "accountActive": "Active",
             "accountClass": "class",
@@ -1056,6 +1074,18 @@ export const additionalTranslations = {
             "weeklyAbsenceDays": "{{count}} days away"
         },
         "adminPayslips": {
+            "chooseUserForBalance": "Select an employee to see their overtime balance.",
+            "loadingTimeSummary": "Loading hours …",
+            "timeSummaryError": "Hours could not be loaded. You can still enter the hours manually.",
+            "currentBalance": "Current overtime balance",
+            "applyCurrentBalance": "Use current balance",
+            "periodBalance": "Overtime in period",
+            "applyPeriodBalance": "Use period balance",
+            "periodWorked": "Actual hours in period",
+            "periodExpected": "Expected hours in period",
+            "periodBalanceHint": "The period balance uses the time overview through today. Previously paid overtime is included in the current balance, not in the period balance.",
+            "choosePeriodForBalance": "Select a start and end date to also see the hours in that period.",
+            "invalidPeriod": "The end date must be on or after the start date.",
             "allActiveEmployees": "All active",
             "allowances": "Allowances",
             "approveAllButton": "Release all",
@@ -1109,7 +1139,7 @@ export const additionalTranslations = {
             "noEmployerContributions": "No individual employer contributions available.",
             "numberRange": "Number range",
             "openPdf": "Open PDF",
-            "overtimeHours": "Overtime (hours)",
+            "overtimeHours": "Overtime (hours:minutes)",
             "pageIndicator": "Page {{current}} / {{total}}",
             "payout": "Payout",
             "payOutOvertime": "Pay overtime",

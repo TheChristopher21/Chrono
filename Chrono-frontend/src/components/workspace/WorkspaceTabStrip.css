@@ -54,7 +54,8 @@
 }
 
 .chrono-navbar-shell.has-workspace-tabs {
-    padding-bottom: 46px;
+    --workspace-strip-height: 46px;
+    padding-bottom: var(--workspace-strip-height);
 }
 
 .workspace-tabs-desktop {
@@ -602,7 +603,7 @@
     }
 
     .chrono-navbar-shell.has-workspace-tabs {
-        padding-bottom: 52px;
+        --workspace-strip-height: 52px;
     }
 
     .workspace-tabs {

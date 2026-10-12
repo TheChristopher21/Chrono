@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import ModalOverlay from '../../components/ModalOverlay';
 import EditTimeModal from './EditTimeModal';
@@ -185,6 +185,10 @@ const calculateAnnualVacationEntitlement = (employee, year) => {
 };
 
 const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) => {
+    const location = useLocation();
+    const returnTo = typeof location.state?.dashboardReturnTo === 'string'
+        && (location.state.dashboardReturnTo === dashboardBasePath || location.state.dashboardReturnTo.startsWith(`${dashboardBasePath}?`))
+        ? location.state.dashboardReturnTo : dashboardBasePath;
     const { username: encodedUsername } = useParams();
     const username = decodeURIComponent(encodedUsername || '');
     const todayYmd = formatLocalDateYMD(new Date());
@@ -664,7 +668,7 @@ const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) =
             ? formatLocalDateYMD(new Date(`${firstCorrection.requestDate}T00:00:00`))
             : null;
 
-        const dayEntries = correctionDate
+        const dayEntries = Array.isArray(firstCorrection?.originalDayEntries) ? firstCorrection.originalDayEntries : correctionDate
             ? (employeeSummaries.find((summary) => summary?.date === correctionDate)?.entries || [])
             : [];
 
@@ -677,32 +681,12 @@ const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) =
             }))
             .sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
 
-        const requestedEntries = normalizedDayEntries.map((entry) => ({ ...entry }));
+        const requestedEntries = [];
         const changedEntryIds = new Set();
 
         correctionsToRender.forEach((correction) => {
-            const requestTargetId = correction.targetEntryId;
-            const requestOriginalTs = correction.originalTimestamp;
-            const requestOriginalType = correction.originalPunchType;
-
-            const targetIndex = requestedEntries.findIndex((entry) => {
-                if (requestTargetId != null && entry.id === requestTargetId) return true;
-                if (!requestOriginalTs) return false;
-                const sameTs = entry.entryTimestamp === requestOriginalTs;
-                const sameType = !requestOriginalType || entry.punchType === requestOriginalType;
-                return sameTs && sameType;
-            });
-
-            if (targetIndex >= 0) {
-                requestedEntries[targetIndex] = {
-                    ...requestedEntries[targetIndex],
-                    entryTimestamp: correction.desiredTimestamp,
-                    punchType: correction.desiredPunchType,
-                };
-                changedEntryIds.add(requestedEntries[targetIndex].id);
-                return;
-            }
-
+            // Approval replaces the complete day with the requested stamps.
+            // Do not append them to the old day, which would preview duplicates.
             const syntheticId = `requested-${correction.id || correction.desiredTimestamp || Date.now()}`;
             requestedEntries.push({
                 id: syntheticId,
@@ -1082,7 +1066,7 @@ const AdminEmployeeOverviewPage = ({ dashboardBasePath = '/admin/dashboard' }) =
                     </div>
                     <div className="header-right-actions">
                         <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
-                        <Link className="back-to-dashboard-button" to={dashboardBasePath}>{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
+                        <Link className="back-to-dashboard-button" to={returnTo}>{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
                     </div>
                 </section>
 

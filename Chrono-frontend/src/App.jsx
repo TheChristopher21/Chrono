@@ -39,6 +39,7 @@ import AdminShiftRulesPage from "./pages/AdminSchedulePlanner/AdminScheduleRules
 import PrintSchedule from "./pages/AdminSchedulePlanner/PrintSchedule.jsx";
 import AdminKnowledgePage from "./pages/AdminKnowledge/AdminKnowledgePage.jsx";
 import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
+import CompanySelectionPage, { CompanyScopeGate } from './pages/CompanySelectionPage.jsx';
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
 import PrintReport from "./pages/PrintReport.jsx";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
@@ -126,8 +127,9 @@ function App() {
 
                         {/* Admin-Routen */}
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminDashboard /></PrivateRoute>} />
-                        <Route path="/admin/dashboard-neu" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><AdminDashboard experience="workspace" /></PrivateRoute>} />
-                        <Route path="/admin/dashboard-neu/mitarbeiter/:username" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><AdminEmployeeOverviewPage dashboardBasePath="/admin/dashboard-neu" /></PrivateRoute>} />
+                        <Route path="/admin/firmenauswahl" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN"><CompanySelectionPage /></PrivateRoute>} />
+                        <Route path="/admin/dashboard-neu" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><CompanyScopeGate><AdminDashboard experience="workspace" /></CompanyScopeGate></PrivateRoute>} />
+                        <Route path="/admin/dashboard-neu/mitarbeiter/:username" element={<PrivateRoute requiredRole="ROLE_SUPERADMIN" requiredPagePermission="adminDashboardWorkspace" roleRedirectTo="/admin/dashboard"><CompanyScopeGate><AdminEmployeeOverviewPage dashboardBasePath="/admin/dashboard-neu" /></CompanyScopeGate></PrivateRoute>} />
                         <Route path="/admin/dashboard/mitarbeiter/:username" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminEmployeeOverviewPage /></PrivateRoute>} />
                         <Route path="/admin/users" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminUsers"><AdminUserManagementPage /></PrivateRoute>} />
                         <Route path="/admin/change-password" element={<PrivateRoute requiredPagePermission="adminChangePassword"><AdminChangePassword /></PrivateRoute>} />

@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.dto.ProjectReportDTO;
 import com.chrono.chrono.entities.Project;
@@ -49,7 +50,7 @@ public class ReportController {
     private boolean publicIcsFeedWithoutToken;
 
     private boolean featureEnabled(User user) {
-        return user != null && RegistrationFeatures.isProjectsEnabled(user.getCompany());
+        return user != null && RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user));
     }
 
     private void requireTimesheetAccess(String username, Principal principal) {
@@ -103,7 +104,7 @@ public class ReportController {
         }
         LocalDate start = startDate != null && !startDate.isBlank() ? LocalDate.parse(startDate) : null;
         LocalDate end = endDate != null && !endDate.isBlank() ? LocalDate.parse(endDate) : null;
-        List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(user.getCompany().getId(), start, end);
+        List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(CompanyScope.companyFor(user).getId(), start, end);
         return ResponseEntity.ok(analytics);
     }
 

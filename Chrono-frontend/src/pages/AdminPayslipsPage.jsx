@@ -33,6 +33,12 @@ const formatHoursMinutes = (decimalHours) => {
   return `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, '0')}`;
 };
 
+const formatMinutes = (minutes) => {
+  if (!Number.isFinite(minutes)) return '–';
+  const absoluteMinutes = Math.abs(Math.round(minutes));
+  return `${minutes < 0 ? '-' : ''}${Math.floor(absoluteMinutes / 60)}:${String(absoluteMinutes % 60).padStart(2, '0')}`;
+};
+
 const toComparableDate = (value) => {
   if (!value) return '';
   return String(value).slice(0, 10);
@@ -195,7 +201,7 @@ const AdminPayslipsPage = () => {
   };
 
   const createPayslip = () => {
-    if (!form.userId || !form.start || !form.end) return;
+    if (!form.userId || !form.start || !form.end || form.start > form.end) return;
     const overtimeHours = form.payoutOvertime ? parseHoursMinutes(form.overtimeHours) : null;
     if (form.payoutOvertime && overtimeHours === null) {
       setActionError(t(
@@ -483,11 +489,31 @@ const AdminPayslipsPage = () => {
           <button type="button" className="secondary-btn" onClick={() => setSettingsOpen(true)}>
             {t('adminPayslips.documentDesign', 'Dokumentdesign')}
           </button>
-          <button type="button" className="primary-btn" onClick={() => { setActionError(''); setCreateOpen(true); }}>
+          <button type="button" className="primary-btn" aria-expanded={createOpen} aria-controls="create-payslip-section" onClick={() => { setActionError(''); setCreateOpen(true); }}>
             {t('adminPayslips.newPayrollRun', '+ Neue Abrechnung')}
           </button>
         </div>
       </header>
+
+      {createOpen && (
+        <CreatePayslipSection
+          form={form}
+          setForm={setForm}
+          users={users}
+          wizardPreview={wizardPreview}
+          setWizardPreview={setWizardPreview}
+          onCreate={createPayslip}
+          error={actionError}
+          onClose={() => {
+            setCreateOpen(false);
+            setWizardPreview(false);
+          }}
+          previewGross={previewGross}
+          previewNet={previewNet}
+          formatCurrency={formatCurrency}
+          t={t}
+        />
+      )}
 
       <section className="payroll-process" aria-label={t('adminPayslips.process.ariaLabel', 'Payroll Prozess')}>
         {processSteps.map((step, index) => (
@@ -756,26 +782,6 @@ const AdminPayslipsPage = () => {
         />
       )}
 
-      {createOpen && (
-        <CreatePayslipModal
-          form={form}
-          setForm={setForm}
-          users={users}
-          wizardPreview={wizardPreview}
-          setWizardPreview={setWizardPreview}
-          onCreate={createPayslip}
-          error={actionError}
-          onClose={() => {
-            setCreateOpen(false);
-            setWizardPreview(false);
-          }}
-          previewGross={previewGross}
-          previewNet={previewNet}
-          formatCurrency={formatCurrency}
-          t={t}
-        />
-      )}
-
       {settingsOpen && (
         <DocumentSettingsModal
           logoFile={logoFile}
@@ -875,7 +881,53 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
   );
 };
 
-const CreatePayslipModal = ({
+const OvertimeSummary = ({ userId, start, end, onApply, t }) => {
+  const hasPeriod = Boolean(start && end && start <= end);
+  const requestKey = `${userId}:${hasPeriod ? `${start}:${end}` : ''}`;
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    let active = true;
+    api.get('/api/payslips/admin/time-summary', {
+      params: { userId, ...(hasPeriod ? { start, end } : {}) },
+    }).then(({ data }) => {
+      if (active) setResult({ key: requestKey, data });
+    }).catch(() => {
+      if (active) setResult({ key: requestKey, error: true });
+    });
+    return () => { active = false; };
+  }, [userId, start, end, hasPeriod, requestKey]);
+
+  if (!userId) return <p className="muted-text">{t('adminPayslips.chooseUserForBalance', 'Benutzer auswählen, um den Überstundensaldo anzuzeigen.')}</p>;
+  if (result?.key !== requestKey) return <p role="status">{t('adminPayslips.loadingTimeSummary', 'Stunden werden geladen …')}</p>;
+  if (result.error) return <p role="alert">{t('adminPayslips.timeSummaryError', 'Die Stunden konnten nicht geladen werden. Die manuelle Eingabe ist weiterhin möglich.')}</p>;
+
+  const summary = result.data;
+  const metrics = [
+    { key: 'currentBalanceMinutes', label: t('adminPayslips.currentBalance', 'Aktueller Überstundensaldo'), apply: t('adminPayslips.applyCurrentBalance', 'Aktuellen Saldo übernehmen') },
+    ...(hasPeriod ? [
+      { key: 'differenceMinutes', label: t('adminPayslips.periodBalance', 'Überstunden im Zeitraum'), apply: t('adminPayslips.applyPeriodBalance', 'Zeitraumwert übernehmen') },
+      { key: 'workedMinutes', label: t('adminPayslips.periodWorked', 'Iststunden im Zeitraum') },
+      { key: 'expectedMinutes', label: t('adminPayslips.periodExpected', 'Sollstunden im Zeitraum') },
+    ] : []),
+  ];
+
+  return <div className="payroll-time-summary" aria-live="polite">
+    <dl>
+      {metrics.map(metric => <div key={metric.key}>
+        <dt>{metric.label}</dt>
+        <dd>{formatMinutes(summary?.[metric.key])} {t('payslips.hoursMinutesUnit', 'Std:Min.')}</dd>
+        {metric.apply && <button type="button" disabled={!Number.isFinite(summary?.[metric.key]) || summary[metric.key] <= 0} onClick={() => onApply(summary[metric.key])}>{metric.apply}</button>}
+      </div>)}
+    </dl>
+    <p className="muted-text">{hasPeriod
+      ? t('adminPayslips.periodBalanceHint', 'Die Zeitraumsdifferenz berücksichtigt die Zeitübersicht bis heute. Bereits ausgezahlte Überstunden sind im aktuellen Saldo berücksichtigt, nicht in der Zeitraumsdifferenz.')
+      : t('adminPayslips.choosePeriodForBalance', 'Start- und Enddatum auswählen, um zusätzlich die Stunden im Zeitraum anzuzeigen.')}</p>
+  </div>;
+};
+
+const CreatePayslipSection = ({
   form,
   setForm,
   users,
@@ -889,9 +941,7 @@ const CreatePayslipModal = ({
   formatCurrency,
   t
 }) => (
-  <div className="modal-layer" role="presentation">
-    <button type="button" className="modal-backdrop" aria-label={t('adminPayslips.closeDialog', 'Dialog schliessen')} onClick={onClose} />
-    <section className="payroll-modal" role="dialog" aria-modal="true" aria-labelledby="create-payslip-title">
+    <section className="payroll-create-section" id="create-payslip-section" aria-labelledby="create-payslip-title">
       <div className="modal-head">
         <div>
           <p className="payroll-eyebrow">{t('adminPayslips.newRunEyebrow', 'Neue Abrechnung')}</p>
@@ -905,23 +955,26 @@ const CreatePayslipModal = ({
           <legend>{t('adminPayslips.stepPeriod', '1. Zeitraum')}</legend>
           <label>
             <span>{t('adminPayslips.startDate', 'Startdatum')}</span>
-            <input type="date" value={form.start} onChange={event => setForm({ ...form, start: event.target.value })} />
+            <input type="date" value={form.start} max={form.end || undefined} onChange={event => setForm({ ...form, start: event.target.value })} />
           </label>
           <label>
             <span>{t('adminPayslips.endDate', 'Enddatum')}</span>
-            <input type="date" value={form.end} onChange={event => setForm({ ...form, end: event.target.value })} />
+            <input type="date" value={form.end} min={form.start || undefined} onChange={event => setForm({ ...form, end: event.target.value })} />
           </label>
           <label>
             <span>{t('adminPayslips.payout', 'Auszahlung')}</span>
             <input type="date" value={form.payoutDate} onChange={event => setForm({ ...form, payoutDate: event.target.value })} />
           </label>
+          {form.start && form.end && form.start > form.end && (
+            <p role="alert">{t('adminPayslips.invalidPeriod', 'Das Enddatum muss am oder nach dem Startdatum liegen.')}</p>
+          )}
         </fieldset>
 
         <fieldset>
           <legend>{t('adminPayslips.stepEmployees', '2. Mitarbeitende')}</legend>
           <label>
             <span>{t('employee', 'Mitarbeiter')}</span>
-            <select value={form.userId} onChange={event => setForm({ ...form, userId: event.target.value })}>
+            <select value={form.userId} onChange={event => { setForm({ ...form, userId: event.target.value, overtimeHours: '' }); setWizardPreview(false); }}>
               <option value="">{t('adminPayslips.chooseUser', 'Benutzer waehlen')}</option>
               {users.map(user => (
                 <option key={user.id} value={user.id}>{user.firstName || user.username} {user.lastName || ''}</option>
@@ -945,7 +998,19 @@ const CreatePayslipModal = ({
             />
             <span>{t('adminPayslips.payOutOvertime', 'Ueberstunden auszahlen')}</span>
           </label>
-          {form.payoutOvertime && (
+          <label className="checkbox-label">
+            <input type="checkbox" checked readOnly />
+            <span>{t('adminPayslips.calculateDeductionsAutomatically', 'Abzuege automatisch berechnen')}</span>
+          </label>
+          <label className="checkbox-label">
+            <input type="checkbox" checked readOnly />
+            <span>{t('adminPayslips.showPreviewBeforeCreate', 'Vorschau vor Erstellung anzeigen')}</span>
+          </label>
+        </fieldset>
+      </div>
+
+      {form.payoutOvertime && (
+        <div className="payroll-overtime-fields">
             <label>
               <span>{t('adminPayslips.overtimeHours', 'Ueberstunden (Std:Min.)')}</span>
               <input
@@ -957,17 +1022,15 @@ const CreatePayslipModal = ({
                 onChange={event => setForm({ ...form, overtimeHours: event.target.value })}
               />
             </label>
-          )}
-          <label className="checkbox-label">
-            <input type="checkbox" checked readOnly />
-            <span>{t('adminPayslips.calculateDeductionsAutomatically', 'Abzuege automatisch berechnen')}</span>
-          </label>
-          <label className="checkbox-label">
-            <input type="checkbox" checked readOnly />
-            <span>{t('adminPayslips.showPreviewBeforeCreate', 'Vorschau vor Erstellung anzeigen')}</span>
-          </label>
-        </fieldset>
-      </div>
+            <OvertimeSummary
+              userId={form.userId}
+              start={form.start}
+              end={form.end}
+              onApply={(minutes) => setForm(previous => ({ ...previous, overtimeHours: formatMinutes(minutes) }))}
+              t={t}
+            />
+        </div>
+      )}
 
       {wizardPreview && (
         <div className="run-preview">
@@ -996,12 +1059,12 @@ const CreatePayslipModal = ({
       {error && <div className="payroll-action-error" role="alert">{error}</div>}
       <div className="modal-actions">
         <button type="button" onClick={() => setWizardPreview(true)}>{t('adminPayslips.calculatePreview', 'Vorschau berechnen')}</button>
-        <button type="button" className="primary-btn" onClick={onCreate} disabled={!form.userId || !form.start || !form.end}>
+        <button type="button" onClick={onClose}>{t('cancel', 'Abbrechen')}</button>
+        <button type="button" className="primary-btn" onClick={onCreate} disabled={!form.userId || !form.start || !form.end || form.start > form.end}>
           {t('adminPayslips.createRunButton', 'Abrechnung erstellen')}
         </button>
       </div>
     </section>
-  </div>
 );
 
 const DocumentSettingsModal = ({ logoFile, setLogoFile, onSave, onClose, t }) => (

@@ -1,4 +1,5 @@
 package com.chrono.chrono.controller.pms;
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.PmsHousekeepingDtos;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.repositories.UserRepository;
@@ -24,6 +25,6 @@ public class PmsHousekeepingController {
         if(principal==null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         var user=users.findByUsernameWithPermissionContext(principal.getName()).filter(value -> !value.isDeleted()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         permissions.assertPageAccess(user,"pms",write ? "MANAGE" : "VIEW","PMS-Berechtigung fehlt.");
-        if(user.getCompany()==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN); return user.getCompany();
+        if(CompanyScope.companyFor(user)==null) throw new ResponseStatusException(HttpStatus.FORBIDDEN); return CompanyScope.companyFor(user);
     }
 }

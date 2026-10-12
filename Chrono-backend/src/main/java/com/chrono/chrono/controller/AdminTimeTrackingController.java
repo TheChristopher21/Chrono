@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
@@ -46,8 +47,8 @@ public class AdminTimeTrackingController {
                 UserPermissionService.ACCESS_VIEW,
                 "Keine Berechtigung für das Admin-Dashboard."
         );
-        Long adminCompanyId = (adminUser.getCompany() != null) ? adminUser.getCompany().getId() : null;
-        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        Long adminCompanyId = (CompanyScope.companyFor(adminUser) != null) ? CompanyScope.companyFor(adminUser).getId() : null;
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(adminUser);
 
         List<User> usersToList;
         if (isSuperAdmin) {
@@ -78,11 +79,11 @@ public class AdminTimeTrackingController {
         try {
             User currentUser = userRepository.findByUsername(principal.getName())
                     .orElseThrow(() -> new RuntimeException("Admin user not found: " + principal.getName()));
-            boolean isSuperAdmin = currentUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-            if (!isSuperAdmin && currentUser.getCompany() == null) {
+            boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(currentUser);
+            if (!isSuperAdmin && CompanyScope.companyFor(currentUser) == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Admin has no company assigned."));
             }
-            Long companyIdForImport = isSuperAdmin ? null : currentUser.getCompany().getId();
+            Long companyIdForImport = isSuperAdmin ? null : CompanyScope.companyFor(currentUser).getId();
             Map<String, Object> importResult = timeTrackingService.importTimeTrackingFromExcel(file.getInputStream(), companyIdForImport);
             
             List<?> errors = (List<?>) importResult.getOrDefault("errorMessages", Collections.emptyList());
@@ -104,11 +105,11 @@ public class AdminTimeTrackingController {
         try {
             User currentUser = userRepository.findByUsername(principal.getName())
                     .orElseThrow(() -> new RuntimeException("Admin user not found: " + principal.getName()));
-            boolean isSuperAdmin = currentUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-            if (!isSuperAdmin && currentUser.getCompany() == null) {
+            boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(currentUser);
+            if (!isSuperAdmin && CompanyScope.companyFor(currentUser) == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Admin has no company assigned."));
             }
-            Long companyIdForImport = isSuperAdmin ? null : currentUser.getCompany().getId();
+            Long companyIdForImport = isSuperAdmin ? null : CompanyScope.companyFor(currentUser).getId();
             Map<String, Object> importResult = timeTrackingService.importTimeTrackingFromRows(rows, companyIdForImport);
 
             List<?> errors = (List<?>) importResult.getOrDefault("errorMessages", Collections.emptyList());
@@ -128,7 +129,7 @@ public class AdminTimeTrackingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<String> rebuildBalances(Principal principal) {
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
-        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(adminUser);
         if (!isSuperAdmin) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Nur SUPERADMIN darf alle Salden neu berechnen.");
         }
@@ -147,12 +148,12 @@ public class AdminTimeTrackingController {
                 UserPermissionService.ACCESS_VIEW,
                 "Keine Berechtigung für das Admin-Dashboard."
         );
-        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(adminUser);
         List<User> usersToList;
         if (isSuperAdmin) {
             usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
-        } else if (adminUser.getCompany() != null) {
-            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
+        } else if (CompanyScope.companyFor(adminUser) != null) {
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(CompanyScope.companyFor(adminUser).getId());
         } else {
             logger.warn("Admin {} has no company assigned. Denying weekly balances.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -181,12 +182,12 @@ public class AdminTimeTrackingController {
                 UserPermissionService.ACCESS_VIEW,
                 "Keine Berechtigung für das Admin-Dashboard."
         );
-        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(adminUser);
         List<User> usersToList;
         if (isSuperAdmin) {
             usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
-        } else if (adminUser.getCompany() != null) {
-            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
+        } else if (CompanyScope.companyFor(adminUser) != null) {
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(CompanyScope.companyFor(adminUser).getId());
         } else {
             logger.warn("Admin {} has no company assigned. Denying tracking balances.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -219,12 +220,12 @@ public class AdminTimeTrackingController {
                 UserPermissionService.ACCESS_VIEW,
                 "Keine Berechtigung fÃ¼r das Admin-Dashboard."
         );
-        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        boolean isSuperAdmin = CompanyScope.isUnrestrictedSuperAdmin(adminUser);
         List<User> usersToList;
         if (isSuperAdmin) {
             usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
-        } else if (adminUser.getCompany() != null) {
-            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
+        } else if (CompanyScope.companyFor(adminUser) != null) {
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(CompanyScope.companyFor(adminUser).getId());
         } else {
             logger.warn("Admin {} has no company assigned. Denying period summaries.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -252,12 +253,12 @@ public class AdminTimeTrackingController {
                     "Keine Berechtigung für Änderungen im Admin-Dashboard."
             );
             User targetUser = userRepository.findByUsername(targetUsername).orElseThrow(() -> new RuntimeException("Zielbenutzer nicht gefunden."));
-            if (targetUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            if (targetUser.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Superadmin-Konten werden nicht in operativen Zeitübersichten verwaltet."));
             }
 
-            if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) &&
-                (adminUser.getCompany() == null || targetUser.getCompany() == null || !adminUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {
+            if (!CompanyScope.isUnrestrictedSuperAdmin(adminUser) &&
+                (CompanyScope.companyFor(adminUser) == null || targetUser.getCompany() == null || !CompanyScope.companyFor(adminUser).getId().equals(targetUser.getCompany().getId()))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin kann keine Benutzer anderer Firmen bearbeiten."));
             }
             String result = timeTrackingService.updateDayTimeEntries(targetUsername, date.toString(), updatedEntries, adminUsername);

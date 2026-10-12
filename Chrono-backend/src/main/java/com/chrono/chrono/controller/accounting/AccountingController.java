@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.accounting;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.accounting.*;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
@@ -79,10 +80,10 @@ public class AccountingController {
 
     private Company requireCompany(Principal principal) {
         User user = requireUser(principal);
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Company scoped user required");
         }
-        return user.getCompany();
+        return CompanyScope.companyFor(user);
     }
 
     private void requireAccountingAccess(Principal principal, String requiredLevel) {

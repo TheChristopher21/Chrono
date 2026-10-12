@@ -47,6 +47,81 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('AdminWorkspaceOverview', () => {
+    it('shows the previous day for requests without a linked stamp and removes the task after approval', async () => {
+        const input = props({ allCorrections: [correction(1, {
+            originalTimestamp: null, originalPunchType: null,
+            originalDayEntries: [
+                { id: 51, entryTimestamp: '2026-09-11T08:00:00', punchType: 'START' },
+                { id: 52, entryTimestamp: '2026-09-11T16:30:00', punchType: 'ENDE' },
+            ],
+        })] });
+        render(<AdminWorkspaceOverview {...input} />);
+        openCorrection();
+        expect(screen.getByText('Bisherige Tagesstempel')).toBeInTheDocument();
+        expect(screen.getByText('08:00 START · 16:30 ENDE')).toBeInTheDocument();
+        expect(screen.getByText('16:45')).toBeInTheDocument();
+        expect(screen.queryByText('Kein ursprünglicher Stempel')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Genehmigen' }));
+        await waitFor(() => expect(input.onApproveCorrection).toHaveBeenCalledOnce());
+        await waitFor(() => expect(screen.queryByRole('button', { name: 'Prüfen: Mirjam Burkart · Zeitkorrektur' })).not.toBeInTheDocument());
+    });
+
+    it('puts time-sensitive vacation decisions in focus and opens the first real decision', async () => {
+        const input = props({ allVacations: [
+            { id: 21, username: 'Mirjam', startDate: '2026-09-15', endDate: '2026-09-17' },
+            { id: 22, username: 'Luca', startDate: '2026-09-13', endDate: '2026-09-16' },
+            { id: 23, username: 'Jonas', startDate: '2026-09-01', endDate: '2026-09-10' },
+            { id: 24, username: 'Jonas', startDate: '2026-10-01', endDate: '2026-10-02' },
+        ] });
+        const { container } = render(<AdminWorkspaceOverview {...input} />);
+        expect(screen.getByRole('region', { name: 'Jetzt im Fokus' })).toHaveTextContent('Zeitnahe Urlaubsanträge: 2');
+        await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Ersten Vorgang prüfen' })); });
+        expect(screen.getByRole('button', { name: 'Zeitnaher Urlaub 2' })).toHaveAttribute('aria-pressed', 'true');
+        expect(container.querySelectorAll('.aw-task')).toHaveLength(2);
+        expect(container.querySelector('.aw-task.is-expanded')).toHaveAttribute('data-task-key', 'vacation:22');
+        expect(screen.getByRole('button', { name: 'Genehmigen' })).toBeEnabled();
+    });
+
+    it('counts distinct people per issue category and filters their real tasks', () => {
+        const input = props({ issueRows: [
+            { id: 'm', username: 'Mirjam', issues: [{ type: 'missing' }, { type: 'missing' }, { type: 'incomplete_work_end_missing' }] },
+            { id: 'l', username: 'Luca', issues: [{ type: 'auto_completed_incomplete_uncorrected' }] },
+            { id: 'j', username: 'Jonas', issues: [{ type: 'holiday_pending_decision' }] },
+        ] });
+        const { container } = render(<AdminWorkspaceOverview {...input} />);
+        const summary = screen.getByRole('group', { name: 'Zeitprobleme nach Art' });
+        fireEvent.click(within(summary).getByRole('button', { name: 'Automatisch beendet 1' }));
+        expect(container.querySelectorAll('.aw-task')).toHaveLength(1);
+        expect(container.querySelector('.aw-task')).toHaveAttribute('data-task-key', 'time:l');
+        fireEvent.click(screen.getByRole('button', { name: 'Alle' }));
+        expect(container.querySelectorAll('.aw-task')).toHaveLength(3);
+        expect(within(summary).getByRole('button', { name: 'Fehlende Stempelungen 1' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('shows the largest negative accounts with a direct employee action instead of an average', () => {
+        const input = props({ weeklyBalances: [
+            { username: 'Mirjam', trackingBalance: -120 }, { username: 'Luca', trackingBalance: -480 },
+            { username: 'Jonas', trackingBalance: 90 },
+        ] });
+        const { container } = render(<AdminWorkspaceOverview {...input} />);
+        const rows = container.querySelectorAll('.aw-account-negative li');
+        expect(rows[0]).toHaveTextContent('Luca Meier');
+        expect(rows[0]).toHaveTextContent('-8h 00m');
+        expect(rows[1]).toHaveTextContent('Mirjam Burkart');
+        fireEvent.click(within(rows[0]).getByRole('button'));
+        expect(input.onFocusEmployee).toHaveBeenCalledWith('Luca', undefined);
+        expect(container).not.toHaveTextContent('Ø Team-Saldo');
+    });
+
+    it('never reports a clear focus while time issues are still unknown or the load failed', () => {
+        const input = props({ issueRows: null });
+        const { rerender } = render(<AdminWorkspaceOverview {...input} />);
+        expect(screen.getByRole('region', { name: 'Jetzt im Fokus' })).toHaveTextContent('Zeitprüfung wird noch berechnet');
+        expect(screen.queryByRole('button', { name: 'Zeitproblem prüfen' })).not.toBeInTheDocument();
+        rerender(<AdminWorkspaceOverview {...input} issueRows={[]} loadError="Offline" />);
+        expect(screen.getByRole('region', { name: 'Jetzt im Fokus' })).toHaveTextContent('derzeit nicht aktuell');
+    });
+
     it('counts grouped requests, distinct affected people, registered absences and available balances', () => {
         const { container } = render(<AdminWorkspaceOverview {...props({
             users: [...users, { username: 'hourly', isHourly: true }],

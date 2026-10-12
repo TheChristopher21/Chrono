@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.*;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
@@ -25,29 +26,29 @@ public class PmsPaymentRequestController {
     @GetMapping("/folios/{folioId}/payment-requests")
     public List<PmsPaymentRequestView> list(@PathVariable Long propertyId, @PathVariable Long folioId, Principal principal) {
         User user = user(principal, UserPermissionService.ACCESS_VIEW);
-        return payments.list(user.getCompany().getId(), propertyId, folioId);
+        return payments.list(CompanyScope.companyFor(user).getId(), propertyId, folioId);
     }
     @PostMapping("/folios/{folioId}/payment-requests")
     public PmsPaymentRequestView create(@PathVariable Long propertyId, @PathVariable Long folioId,
             @Valid @RequestBody CreatePmsPaymentRequest request, Principal principal) {
         User user = user(principal, UserPermissionService.ACCESS_MANAGE);
-        return payments.create(user.getCompany().getId(), propertyId, folioId, request, user.getUsername());
+        return payments.create(CompanyScope.companyFor(user).getId(), propertyId, folioId, request, user.getUsername());
     }
     @PostMapping("/payment-requests/{id}/reconcile")
     public PmsPaymentRequestView reconcile(@PathVariable Long propertyId, @PathVariable Long id, Principal principal) {
         User user = user(principal, UserPermissionService.ACCESS_MANAGE);
-        return payments.reconcile(user.getCompany().getId(), propertyId, id, user.getUsername());
+        return payments.reconcile(CompanyScope.companyFor(user).getId(), propertyId, id, user.getUsername());
     }
     @PostMapping("/payment-requests/{id}/capture")
     public PmsPaymentRequestView capture(@PathVariable Long propertyId, @PathVariable Long id,
             @RequestBody(required = false) CaptureRequest request, Principal principal) {
         User user = user(principal, UserPermissionService.ACCESS_MANAGE);
-        return payments.capture(user.getCompany().getId(), propertyId, id, request == null ? null : request.amount(), user.getUsername());
+        return payments.capture(CompanyScope.companyFor(user).getId(), propertyId, id, request == null ? null : request.amount(), user.getUsername());
     }
     @PostMapping("/payment-requests/{id}/release")
     public PmsPaymentRequestView release(@PathVariable Long propertyId, @PathVariable Long id, Principal principal) {
         User user = user(principal, UserPermissionService.ACCESS_MANAGE);
-        return payments.release(user.getCompany().getId(), propertyId, id, user.getUsername());
+        return payments.release(CompanyScope.companyFor(user).getId(), propertyId, id, user.getUsername());
     }
     public record CaptureRequest(BigDecimal amount) {}
     private User user(Principal principal, String access) {
@@ -55,7 +56,7 @@ public class PmsPaymentRequestController {
         User user = users.findByUsernameWithPermissionContext(principal.getName()).filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht gefunden."));
         permissions.assertPageAccess(user, UserPermissionService.PAGE_PMS, access, "Die erforderliche PMS-Berechtigung fehlt.");
-        if (user.getCompany() == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
+        if (CompanyScope.companyFor(user) == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         return user;
     }
 }

@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CompanyRepository extends JpaRepository<Company, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "enabledFeatures")
+    java.util.Optional<Company> findWithFeaturesById(Long id);
     // optional: Company findByName(String name);
     List<Company> findByDemoTrueAndDemoExpiresAtBefore(LocalDateTime cutoff);
 }

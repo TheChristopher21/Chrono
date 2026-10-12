@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.repositories.ScheduleEntryRepository;
 import com.chrono.chrono.repositories.ScheduleChangeLogRepository;
 import com.chrono.chrono.repositories.UserRepository;
@@ -49,17 +50,18 @@ public class AdminScheduleEntryController {
     private ScheduleChangeLogRepository scheduleChangeLogRepository;
 
     private Long requireCompanyIdForSchedule(User actor) {
-        if (accessControlService.isSuperAdmin(actor)) {
+        if (CompanyScope.isUnrestrictedSuperAdmin(actor)) {
             return null;
         }
-        if (actor == null || actor.getCompany() == null || actor.getCompany().getId() == null) {
+        if (actor == null || CompanyScope.companyFor(actor) == null || CompanyScope.companyFor(actor).getId() == null) {
             throw new AccessDeniedException("Company scoped schedule access required");
         }
-        return actor.getCompany().getId();
+        return CompanyScope.companyFor(actor).getId();
     }
 
     private void requireScheduleUserAccess(User actor, User target) {
-        if (accessControlService.isSuperAdmin(actor)) {
+        CompanyScope.requireTarget(target);
+        if (CompanyScope.isUnrestrictedSuperAdmin(actor)) {
             return;
         }
         if (!accessControlService.sameCompany(actor, target)) {
@@ -96,7 +98,7 @@ public class AdminScheduleEntryController {
         ScheduleChangeLog log = new ScheduleChangeLog();
         log.setActor(actor);
         log.setTargetUser(target);
-        log.setCompany(target != null && target.getCompany() != null ? target.getCompany() : actor.getCompany());
+        log.setCompany(target != null && target.getCompany() != null ? target.getCompany() : CompanyScope.companyFor(actor));
         log.setScheduleEntryId(entry.getId());
         log.setActorUsername(actor.getUsername());
         log.setActorDisplayName(displayName(actor));
@@ -225,7 +227,7 @@ public class AdminScheduleEntryController {
         User actor = accessControlService.requireAuthenticatedUser(principal);
         LocalDate s = LocalDate.parse(start);
         LocalDate e = LocalDate.parse(end);
-        List<ScheduleEntry> entries = accessControlService.isSuperAdmin(actor)
+        List<ScheduleEntry> entries = CompanyScope.isUnrestrictedSuperAdmin(actor)
                 ? entryRepo.findByDateBetween(s, e)
                 : entryRepo.findByUser_Company_IdAndDateBetween(
                     requireCompanyIdForSchedule(actor), s, e);
@@ -241,7 +243,7 @@ public class AdminScheduleEntryController {
         }
         LocalDate s = LocalDate.parse(start);
         LocalDate e = LocalDate.parse(end);
-        List<ScheduleChangeLog> logs = accessControlService.isSuperAdmin(actor)
+        List<ScheduleChangeLog> logs = CompanyScope.isUnrestrictedSuperAdmin(actor)
                 ? scheduleChangeLogRepository.findByScheduleDateBetweenOrderByCreatedAtDesc(s, e)
                 : scheduleChangeLogRepository.findByCompany_IdAndScheduleDateBetweenOrderByCreatedAtDesc(
                     requireCompanyIdForSchedule(actor), s, e);
@@ -437,7 +439,7 @@ public class AdminScheduleEntryController {
         LocalDate weekStart = firstDate.with(DayOfWeek.MONDAY);
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        List<ScheduleEntry> existingEntries = accessControlService.isSuperAdmin(actor)
+        List<ScheduleEntry> existingEntries = CompanyScope.isUnrestrictedSuperAdmin(actor)
                 ? entryRepo.findByDateBetween(weekStart, weekEnd)
                 : entryRepo.findByUser_Company_IdAndDateBetween(
                     requireCompanyIdForSchedule(actor), weekStart, weekEnd);

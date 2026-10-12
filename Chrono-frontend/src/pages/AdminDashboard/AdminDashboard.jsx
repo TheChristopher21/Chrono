@@ -347,8 +347,19 @@ const AdminDashboard = ({ experience = 'classic' }) => {
         });
     }, [navigate, searchParams, dashboardBasePath, isWorkspace, workspaceTeam]);
 
+    const workspaceTabSearches = useRef(new Map());
+    if (isWorkspace && paneActive) workspaceTabSearches.current.set(getValidDashboardTab(searchParams.get('tab'), true), searchParams.toString());
     const openDashboardTab = useCallback((tabId, options = {}) => {
         const normalizedTab = getValidDashboardTab(tabId, isWorkspace);
+        if (isWorkspace) {
+            const saved = new URLSearchParams(workspaceTabSearches.current.get(normalizedTab) || '');
+            if ((saved.get('team') || '') !== workspaceTeam) {
+                ['focusUser', 'focusDate', 'requestUser', 'requestType', 'requestId'].forEach(key => saved.delete(key));
+            }
+            const search = makeDashboardSearch(saved, { tab: normalizedTab, team: workspaceTeam }, { preserve: true });
+            navigate({ pathname: dashboardBasePath, search: search ? `?${search}` : '' }, options);
+            return;
+        }
         setActiveMainTab(normalizedTab);
         setActiveIssuePill(null);
         navigateDashboard({
@@ -360,7 +371,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
             requestId: null,
             ...(isWorkspace && workspaceTeam ? { team: workspaceTeam } : {}),
         }, options);
-    }, [navigateDashboard, isWorkspace, workspaceTeam]);
+    }, [navigateDashboard, isWorkspace, workspaceTeam, navigate, dashboardBasePath]);
 
     const navigateWorkspaceAction = useCallback((type, value, updates = {}) => {
         const tab = WORKSPACE_ACTION_TABS[type];
@@ -388,8 +399,10 @@ const AdminDashboard = ({ experience = 'classic' }) => {
 
     const handleOpenUserOverview = useCallback((username) => {
         if (!username) return;
-        navigate(`${dashboardBasePath}/mitarbeiter/${encodeURIComponent(username)}`);
-    }, [navigate, dashboardBasePath]);
+        navigate(`${dashboardBasePath}/mitarbeiter/${encodeURIComponent(username)}`, {
+            state: isWorkspace ? { dashboardReturnTo: `${dashboardBasePath}${location.search}` } : undefined,
+        });
+    }, [navigate, dashboardBasePath, isWorkspace, location.search]);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
@@ -1491,7 +1504,7 @@ const AdminDashboard = ({ experience = 'classic' }) => {
         if (!isWorkspace) return;
         const focusKey = timeFocusTarget
             ? JSON.stringify([timeFocusTarget, searchParams.get('week'), workspaceTeam]) : null;
-        if (!focusKey) consumedWorkspaceFocusRef.current = null;
+        if (!focusKey && searchParams.get('tab') === 'time') consumedWorkspaceFocusRef.current = null;
 
         // Route views briefly render an unbound route while a new tab is created.
         // Only the active, bound destination may consume its navigation action.

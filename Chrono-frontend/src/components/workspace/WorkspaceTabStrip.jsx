@@ -155,7 +155,7 @@ const WorkspaceTabStrip = () => {
     if (!workspace || !workspace.tabs.length) return null;
 
     const openItem = (item, options) => {
-        const opened = options ? workspace.openRoute(item.url, options) : workspace.openRoute(item.url);
+        const opened = workspace.openRoute(item.url, { forceNew: true, ...options });
         if (!opened) {
             setLimitMessage(t('workspaceTabs.limitReached', 'Maximal 12 Tabs. Löse oder schließe zuerst einen angehefteten Tab.'));
             return;
@@ -346,8 +346,8 @@ const WorkspaceTabStrip = () => {
                         aria-expanded={launcherOpen}
                         aria-haspopup="dialog"
                         aria-controls="workspace-launcher-desktop"
-                        aria-label={t('workspaceTabs.open', 'Arbeitsbereich öffnen')}
-                        title={`${t('workspaceTabs.open', 'Arbeitsbereich öffnen')} (Ctrl+Shift+P)`}
+                        aria-label={t('workspaceTabs.newTab', 'Neuen Tab öffnen')}
+                        title={`${t('workspaceTabs.newTab', 'Neuen Tab öffnen')} (Ctrl+Shift+P)`}
                     ><IconPlus /></button>
                     <button
                         type="button"
@@ -361,7 +361,7 @@ const WorkspaceTabStrip = () => {
                     ><IconMore /></button>
 
                     {launcherOpen && (
-                        <div id="workspace-launcher-desktop" className="workspace-launcher" role="dialog" aria-label={t('workspaceTabs.open', 'Arbeitsbereich öffnen')}>
+                        <div id="workspace-launcher-desktop" className="workspace-launcher" role="dialog" aria-label={t('workspaceTabs.newTab', 'Neuen Tab öffnen')}>
                             <label className="workspace-launcher-search">
                                 <IconSearch />
                                 <input
@@ -438,7 +438,7 @@ const WorkspaceTabStrip = () => {
                     }}
                     aria-haspopup="dialog"
                     aria-controls="workspace-launcher-mobile"
-                    aria-label={t('workspaceTabs.open', 'Arbeitsbereich öffnen')}
+                    aria-label={t('workspaceTabs.newTab', 'Neuen Tab öffnen')}
                 ><IconPlus /></button>
                 {mobileOpen && (
                     <div id="workspace-mobile-drawer" ref={mobileDrawerRef} className="workspace-mobile-drawer" role="region" aria-label={t('workspaceTabs.ariaLabel', 'Offene Arbeitsbereiche')}>
@@ -449,7 +449,7 @@ const WorkspaceTabStrip = () => {
                     </div>
                 )}
                 {launcherOpen && (
-                    <div id="workspace-launcher-mobile" ref={mobileLauncherRef} className="workspace-mobile-launcher" role="dialog" aria-modal="true" aria-label={t('workspaceTabs.open', 'Arbeitsbereich öffnen')} onKeyDown={trapModalFocus}>
+                    <div id="workspace-launcher-mobile" ref={mobileLauncherRef} className="workspace-mobile-launcher" role="dialog" aria-modal="true" aria-label={t('workspaceTabs.newTab', 'Neuen Tab öffnen')} onKeyDown={trapModalFocus}>
                         <div className="workspace-mobile-launcher-head">
                             <label className="workspace-launcher-search">
                                 <IconSearch />

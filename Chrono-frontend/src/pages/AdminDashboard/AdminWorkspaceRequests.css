@@ -83,6 +83,11 @@
 .aw-requests :is(.aw-vacation-balance, .awr-overlaps) p { color: var(--aw-muted); font-size: 11px; line-height: 1.6; }
 .aw-requests :is(.aw-vacation-balance, .awr-overlaps) ul { margin: 8px 0; padding: 0; list-style: none; line-height: 1.7; }
 .aw-requests .awr-decision { border-top: 1px solid var(--aw-border); padding-top: 9px; margin-top: 0; }
+.aw-requests .awr-detail-navigation { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: 0 0 auto; margin-bottom: 8px; }
+.aw-requests .awr-back-list { display: none; }
+.aw-requests .awr-request-pager { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--aw-muted); font-size: 11px; }
+.aw-requests .awr-request-pager button { min-width: 32px; min-height: 32px; font-size: 18px; }
+.aw-requests .awr-details { scroll-margin-top: calc(var(--aw-chrome-height, 120px) + 12px); }
 .aw-requests .awr-decision .awr-hint { margin: 4px 0 0; }
 .aw-requests .awr-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 .aw-requests .awr-button { border: 1px solid var(--aw-border); border-radius: 9px; color: var(--aw-text); background: var(--aw-card); padding: 10px 16px; font-size: 12px; font-weight: 650; min-height: 39px; }
@@ -110,9 +115,8 @@
     .aw-requests .awr-detail-footer .awr-error { max-height: 65px; overflow-y: auto; margin-block: 5px; padding-block: 5px; }
 }
 /* Only this area adopts the measured desktop viewport; no shared shell rules change. */
-@media (min-width: 1100px) and (min-height: 740px) and (hover: hover) {
+@media (min-width: 1100px) and (min-height: 650px) and (hover: hover) {
     .admin-dashboard.scoped-dashboard.admin-workspace[data-workspace-tab="requests"] .admin-dashboard-shell { height: calc(100dvh - var(--aw-chrome-height, 120px)); min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); }
-    .admin-dashboard.scoped-dashboard.admin-workspace[data-workspace-tab="requests"] .aw-sidebar { min-height: 0; overflow-y: auto; scrollbar-width: thin; }
     .admin-dashboard.scoped-dashboard.admin-workspace[data-workspace-tab="requests"] .admin-dashboard-panels { display: flex; flex-direction: column; min-height: 0; }
     .admin-dashboard.scoped-dashboard.admin-workspace[data-workspace-tab="requests"] .dashboard-tab-panel.is-active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
     .admin-dashboard.scoped-dashboard.admin-workspace[data-workspace-tab="requests"] .aw-requests { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
@@ -129,6 +133,13 @@
     .aw-requests .awr-compare > span { display: none; }
 }
 @media (max-width: 760px) {
+    .aw-requests:not(.is-detail-open) .awr-details { display: none; }
+    .aw-requests.is-detail-open > :not(.awr-split):not(.awr-feedback):not(.awr-error) { display: none; }
+    .aw-requests.is-detail-open .awr-list-panel { display: none; }
+    .aw-requests.is-detail-open .awr-details { display: flex; flex-direction: column; margin-top: 0; border-top: 0; height: calc(100dvh - var(--aw-chrome-height, 120px) - 32px); min-height: 360px; }
+    .aw-requests.is-detail-open .awr-detail-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .aw-requests.is-detail-open .awr-detail-footer { flex: 0 0 auto; }
+    .aw-requests .awr-back-list { display: inline-flex; }
     .aw-requests .awr-split { display: block; }
     .aw-requests .awr-list-panel { border-right: 0; padding-right: 0; }
     .aw-requests .awr-list { max-height: 360px; }

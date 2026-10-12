@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.pms;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.pms.PmsOperationalHealthResponse;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
@@ -49,10 +50,10 @@ public class PmsMonitoringController {
         userPermissionService.assertPageAccess(
                 user, UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW,
                 "Die erforderliche PMS-Berechtigung fehlt.");
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
-        return user.getCompany();
+        return CompanyScope.companyFor(user);
     }
 }

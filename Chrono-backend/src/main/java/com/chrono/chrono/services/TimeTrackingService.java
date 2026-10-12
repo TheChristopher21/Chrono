@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimePeriodSummaryDTO;
@@ -74,17 +75,20 @@ public class TimeTrackingService {
     private EmploymentModelHistoryService employmentModelHistoryService;
 
     private User loadUserByUsername(String username) {
-        return userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        var selection = CompanyScope.selection();
+        if (selection != null && !selection.username().equals(username)) CompanyScope.requireTarget(user);
+        return user;
     }
 
     private boolean sameCompany(User user, Customer customer) {
         return user != null
-                && user.getCompany() != null
+                && CompanyScope.companyFor(user) != null
                 && customer != null
-                && ((customer.getCompany() == null && user.getCompany().getId() == null)
+                && ((customer.getCompany() == null && CompanyScope.companyFor(user).getId() == null)
                     || (customer.getCompany() != null
-                        && Objects.equals(user.getCompany().getId(), customer.getCompany().getId())));
+                        && Objects.equals(CompanyScope.companyFor(user).getId(), customer.getCompany().getId())));
     }
 
     private Customer resolveCustomerForUser(Long customerId, User user) {
@@ -131,11 +135,12 @@ public class TimeTrackingService {
     }
 
     private boolean canAdminAccess(User requester, User target) {
+        CompanyScope.requireTarget(target);
         return hasRole(requester, "ROLE_SUPERADMIN")
                 || (hasRole(requester, "ROLE_ADMIN")
-                    && requester.getCompany() != null
+                    && CompanyScope.companyFor(requester) != null
                     && target.getCompany() != null
-                    && Objects.equals(requester.getCompany().getId(), target.getCompany().getId()));
+                    && Objects.equals(CompanyScope.companyFor(requester).getId(), target.getCompany().getId()));
     }
 
     private Project resolveImplicitProject(User user, Customer customer, Project project, Task task) {
@@ -145,7 +150,7 @@ public class TimeTrackingService {
         if (task != null && task.getProject() != null) {
             return task.getProject();
         }
-        if (customer == null || user == null || !RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (customer == null || user == null || !RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             return null;
         }
 
@@ -160,11 +165,11 @@ public class TimeTrackingService {
     public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source, Long customerId, Long projectId, Long taskId, Integer durationMinutes, String description) {
         User user = loadUserByUsername(username);
         Customer customer = null;
-        if (customerId != null && RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (customerId != null && RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             customer = resolveCustomerForUser(customerId, user);
         }
         Project project = null;
-        if (projectId != null && RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (projectId != null && RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             project = resolveProjectForUser(projectId, user);
         }
         Task task = null;
@@ -426,6 +431,7 @@ public class TimeTrackingService {
     public TimeTrackingEntryDTO approveEntry(Long id) {
         TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entry not found"));
+        CompanyScope.requireTarget(entry.getUser());
         entry.setApproved(true);
         return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
     }
@@ -446,6 +452,7 @@ public class TimeTrackingService {
     public TimeTrackingEntryDTO revokeApproval(Long id) {
         TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entry not found"));
+        CompanyScope.requireTarget(entry.getUser());
         entry.setApproved(false);
         return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
     }
@@ -1137,7 +1144,7 @@ public class TimeTrackingService {
         LocalDate date = LocalDate.parse(dateStr);
 
         boolean isSuperAdmin = performingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-        if (!isSuperAdmin && (performingAdmin.getCompany() == null || targetUser.getCompany() == null || !performingAdmin.getCompany().getId().equals(targetUser.getCompany().getId()))) {
+        if (!isSuperAdmin && (CompanyScope.companyFor(performingAdmin) == null || targetUser.getCompany() == null || !CompanyScope.companyFor(performingAdmin).getId().equals(targetUser.getCompany().getId()))) {
             throw new SecurityException("Admin " + adminUsername + " ist nicht berechtigt, Benutzer " + targetUsername + " zu bearbeiten.");
         }
 
@@ -1335,11 +1342,11 @@ public class TimeTrackingService {
 
                     if (adminCompanyId != null) { // Nur prüfen, wenn der Admin einer Firma zugeordnet ist
                         User importingAdmin = userRepository.findAll().stream() // Ineffizient, besser Admin direkt übergeben oder laden
-                                .filter(u -> u.getCompany() != null && u.getCompany().getId().equals(adminCompanyId) && u.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN")))
+                                .filter(u -> CompanyScope.companyFor(u) != null && CompanyScope.companyFor(u).getId().equals(adminCompanyId) && u.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN")))
                                 .findFirst().orElse(null);
                         boolean isSuperAdmin = importingAdmin != null && importingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
-                        if (!isSuperAdmin && (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId))) {
+                        if (!isSuperAdmin && (CompanyScope.companyFor(user) == null || !CompanyScope.companyFor(user).getId().equals(adminCompanyId))) {
                             String msg = "Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.";
                             errors.add(msg);
                             rowData.put("error", msg);
@@ -1469,12 +1476,12 @@ public class TimeTrackingService {
 
             if (adminCompanyId != null) {
                 User importingAdmin = userRepository.findAll().stream()
-                        .filter(u -> u.getCompany() != null && u.getCompany().getId().equals(adminCompanyId)
+                        .filter(u -> CompanyScope.companyFor(u) != null && CompanyScope.companyFor(u).getId().equals(adminCompanyId)
                                 && u.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN")))
                         .findFirst().orElse(null);
                 boolean isSuperAdmin = importingAdmin != null && importingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
-                if (!isSuperAdmin && (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId))) {
+                if (!isSuperAdmin && (CompanyScope.companyFor(user) == null || !CompanyScope.companyFor(user).getId().equals(adminCompanyId))) {
                     String msg = "Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.";
                     errors.add(msg);
                     rowData.put("error", msg);
@@ -1562,11 +1569,12 @@ public class TimeTrackingService {
         TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entry not found: " + id));
         User entryUser = entry.getUser();
+        CompanyScope.requireTarget(entryUser);
         boolean allowed = requester.getId().equals(entryUser.getId()) ||
                 requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                 (requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                        requester.getCompany() != null && entryUser.getCompany() != null &&
-                        requester.getCompany().getId().equals(entryUser.getCompany().getId()));
+                        CompanyScope.companyFor(requester) != null && entryUser.getCompany() != null &&
+                        CompanyScope.companyFor(requester).getId().equals(entryUser.getCompany().getId()));
         if (!allowed) {
             throw new SecurityException("Not allowed");
         }
@@ -1597,11 +1605,12 @@ public class TimeTrackingService {
         TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entry not found: " + id));
         User entryUser = entry.getUser();
+        CompanyScope.requireTarget(entryUser);
         boolean allowed = requester.getId().equals(entryUser.getId()) ||
                 requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
                 (requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
-                        requester.getCompany() != null && entryUser.getCompany() != null &&
-                        requester.getCompany().getId().equals(entryUser.getCompany().getId()));
+                        CompanyScope.companyFor(requester) != null && entryUser.getCompany() != null &&
+                        CompanyScope.companyFor(requester).getId().equals(entryUser.getCompany().getId()));
         if (!allowed) {
             throw new SecurityException("Not allowed");
         }
@@ -1627,7 +1636,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignCustomerForDay(String username, LocalDate date, Long customerId) {
         User user = loadUserByUsername(username);
-        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (!RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             throw new IllegalStateException("Feature disabled");
         }
         Customer customer = resolveCustomerForUser(customerId, user);
@@ -1650,7 +1659,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignProjectForDay(String username, LocalDate date, Long projectId) {
         User user = loadUserByUsername(username);
-        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (!RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             throw new IllegalStateException("Feature disabled");
         }
         Project project = resolveProjectForUser(projectId, user);
@@ -1664,7 +1673,7 @@ public class TimeTrackingService {
     @Transactional
     public void assignCustomerForTimeRange(String username, LocalDate date, LocalTime startTime, LocalTime endTime, Long customerId) {
         User user = loadUserByUsername(username);
-        if (!RegistrationFeatures.isProjectsEnabled(user.getCompany())) {
+        if (!RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))) {
             throw new IllegalStateException("Feature disabled");
         }
         if (startTime == null || endTime == null) {

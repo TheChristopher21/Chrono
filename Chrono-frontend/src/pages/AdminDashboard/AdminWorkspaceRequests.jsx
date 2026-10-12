@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { originalDayText, originalTimeHeading } from './correctionOriginalTime';
 import ModalOverlay from '../../components/ModalOverlay';
 import api from '../../utils/api';
 import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess';
@@ -40,6 +41,7 @@ export default function AdminWorkspaceRequests({
     const [sortBy, setSortBy] = useState('date');
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const [selectedKey, setSelectedKey] = useState(null);
+    const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
     const [notes, setNotes] = useState({});
     const [decisions, setDecisions] = useState({});
     const [deletedIds, setDeletedIds] = useState(() => new Set());
@@ -111,6 +113,7 @@ export default function AdminWorkspaceRequests({
         if (!target) return;
         appliedFocus.current = focusedKey;
         setType(target.type); setStatus('all'); setSearch(''); setDateFilter(''); setSelectedKey(target.key);
+        setMobileDetailOpen(true);
         if (employeeFilter !== target.username) onEmployeeFilterChange?.(target.username);
     }, [focusedKey, rows, employeeFilter, onEmployeeFilterChange]);
     useEffect(() => {
@@ -121,6 +124,20 @@ export default function AdminWorkspaceRequests({
     }, [focusedKey, selected?.key]);
     useEffect(() => { if (deleteTarget) cancelDeleteRef.current?.focus(); }, [deleteTarget]);
 
+    useLayoutEffect(() => {
+        const detail = detailRef.current;
+        if (!mobileDetailOpen || !window.matchMedia?.('(max-width: 760px)').matches || !detail?.getClientRects().length) return;
+        const chromeHeight = parseFloat(getComputedStyle(detail).getPropertyValue('--aw-chrome-height')) || 120;
+        // Account for the measured navigation once; scrollIntoView also adds the
+        // global mobile scroll padding and would push the decision below the screen.
+        window.scrollTo({ top: window.scrollY + detail.getBoundingClientRect().top - chromeHeight - 12, behavior: 'instant' });
+    }, [mobileDetailOpen, selected?.key]);
+
+    const selectRequest = key => {
+        setSelectedKey(key);
+        setMobileDetailOpen(true);
+    };
+    const selectedIndex = visibleRows.findIndex(row => row.key === selected?.key);
     const reloadAfterWrite = async () => {
         if (!onReload) return;
         try { await onReload(); }
@@ -188,12 +205,12 @@ export default function AdminWorkspaceRequests({
     const renderPunch = (entry, original) => {
         const timestamp = original ? entry.originalTimestamp : entry.desiredTimestamp;
         const punchType = original ? entry.originalPunchType : entry.desiredPunchType;
-        return <div className="awr-punch"><span>{original ? t('adminDashboard.originalTimeLabel', 'Gestempelt') : t('adminDashboard.requestedTimeLabel', 'Beantragt')}</span>
-            <strong>{timestamp ? `${displayDate(timestamp)} · ${formatTime(timestamp)}` : original ? t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel') : t('adminWorkspaceRequests.noTime', 'Keine Zeit hinterlegt')}</strong>
+        return <div className="awr-punch"><span>{original ? originalTimeHeading(entry, t) : t('adminDashboard.requestedTimeLabel', 'Beantragt')}</span>
+            <strong>{timestamp ? `${displayDate(timestamp)} · ${formatTime(timestamp)}` : original ? originalDayText(entry, t) : t('adminWorkspaceRequests.noTime', 'Keine Zeit hinterlegt')}</strong>
             {punchType && <small>{t(`punchTypes.${punchType}`, punchType)}</small>}</div>;
     };
 
-    return <section className="aw-requests" aria-label={t('adminWorkspaceRequests.title', 'Antragscenter')} aria-busy={loading}>
+    return <section className={`aw-requests${mobileDetailOpen ? ' is-detail-open' : ''}`} aria-label={t('adminWorkspaceRequests.title', 'Antragscenter')} aria-busy={loading}>
         <div className="awr-heading"><div><h2>{t('adminWorkspaceRequests.title', 'Antragscenter')}</h2>{employeeFilter && <p>{nameOf(employeeFilter)}</p>}</div>
             <span className="awr-total">{(loading || loadError) && !rows.length ? '–' : rows.filter(row => row.pendingEntries.length).length} {t('adminWorkspaceRequests.open', 'Offen')}</span></div>
         <div className="awr-filters">
@@ -222,11 +239,22 @@ export default function AdminWorkspaceRequests({
             <div className="awr-list-panel"><div className="awr-list-heading"><strong>{visibleRows.length} {t('adminWorkspaceRequests.requests', 'Anträge')}</strong><span>{dateBasis === 'request' ? t('adminWorkspaceRequests.correctionDate', 'Erfasster Korrekturtag') : t('adminWorkspaceRequests.period', 'Zeitraum')}</span></div>
                 {visibleRows.length ? <ul className="awr-list" aria-label={t('adminWorkspaceRequests.list', 'Antragsliste')}>{visibleRows.map(row => <li key={row.key} data-request-key={row.key}>
                     <button type="button" ref={element => { if (element) rowButtons.current.set(row.key, element); else rowButtons.current.delete(row.key); }} className={`awr-row${selected?.key === row.key ? ' is-selected' : ''}`} aria-pressed={selected?.key === row.key}
-                        aria-controls={`${id}-details`} onClick={() => { setSelectedKey(row.key); if (window.matchMedia?.('(max-width: 760px)').matches) detailRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }}>
+                        aria-controls={`${id}-details`} onClick={() => selectRequest(row.key)}>
                         <span className={`awr-type awr-type-${row.type}`} aria-hidden="true">{row.type === 'vacation' ? 'U' : 'K'}</span><span className="awr-row-copy"><strong>{nameOf(row.username)}</strong><span>{typeLabel(row.type)}{row.type === 'correction' ? ` · ${row.entries.length} ${row.entries.length === 1 ? t('adminWorkspaceRequests.oneChange', 'Änderung') : t('changes', 'Änderungen')}` : ''}</span><time dateTime={(dateBasis === 'request' ? row.requestDate : row.startDate) || undefined}>{rowDateLabel(row)}</time></span><span className={`awr-status is-${row.status}`}>{statusLabel(row.status)}</span>
                     </button></li>)}</ul> : <p className="awr-empty">{loading ? t('loading', 'Wird geladen…') : t('adminWorkspaceRequests.empty', 'Keine Anträge für diese Filter.')}</p>}
             </div>
             <div className="awr-details" ref={detailRef} id={`${id}-details`}>
+                <div className="awr-detail-navigation">
+                    <button type="button" className="awr-link awr-back-list" onClick={() => {
+                        setMobileDetailOpen(false);
+                        window.requestAnimationFrame(() => rowButtons.current.get(selected?.key)?.focus());
+                    }}>← {t('adminWorkspaceRequests.backToList', 'Zur Antragsliste')}</button>
+                    {selected && <div className="awr-request-pager" aria-label={t('adminWorkspaceRequests.browse', 'Anträge durchgehen')}>
+                        <button type="button" className="awr-link" aria-label={t('adminWorkspaceRequests.previous', 'Vorheriger Antrag')} disabled={selectedIndex <= 0 || Boolean(savingKey)} onClick={() => selectRequest(visibleRows[selectedIndex - 1].key)}>←</button>
+                        <span>{selectedIndex + 1} / {visibleRows.length}</span>
+                        <button type="button" className="awr-link" aria-label={t('adminWorkspaceRequests.next', 'Nächster Antrag')} disabled={selectedIndex >= visibleRows.length - 1 || Boolean(savingKey)} onClick={() => selectRequest(visibleRows[selectedIndex + 1].key)}>→</button>
+                    </div>}
+                </div>
                 {!selected ? <p className="awr-empty">{t('adminWorkspaceRequests.choose', 'Wähle einen Antrag aus der Liste.')}</p> : <>
                     <div className="awr-detail-scroll" tabIndex={0} role="region" aria-label={t('adminWorkspaceRequests.details', 'Antragsdetails')}>
                     <header className="awr-detail-heading"><div><span className="awr-eyebrow">{typeLabel(selected.type)}</span><h3>{nameOf(selected.username)}</h3><p>{displayPeriod(selected.startDate, selected.endDate)}</p></div><span className={`awr-status is-${selected.status}`}>{statusLabel(selected.status)}</span></header>

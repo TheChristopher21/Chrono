@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
@@ -72,7 +73,7 @@ public class AccessControlService {
     public boolean sameCompany(User actor, User target) {
         return actor != null
                 && target != null
-                && sameCompany(actor.getCompany(), target.getCompany());
+                && sameCompany(CompanyScope.companyFor(actor), target.getCompany());
     }
 
     public boolean sameCompany(Company actorCompany, Company targetCompany) {
@@ -82,6 +83,7 @@ public class AccessControlService {
     }
 
     public boolean canAccessUser(User actor, User target) {
+        CompanyScope.requireTarget(target);
         return isSelf(actor, target)
                 || isSuperAdmin(actor)
                 || (isAdmin(actor) && sameCompany(actor, target));
@@ -94,6 +96,7 @@ public class AccessControlService {
     }
 
     public void requireCanManageUser(User actor, User target) {
+        CompanyScope.requireTarget(target);
         if (isSuperAdmin(actor)) {
             return;
         }
@@ -109,6 +112,7 @@ public class AccessControlService {
     }
 
     public void requirePayrollAccess(User actor, User target) {
+        CompanyScope.requireTarget(target);
         if (isSuperAdmin(actor)) {
             return;
         }
@@ -118,26 +122,27 @@ public class AccessControlService {
     }
 
     public void requireCompanyScope(User actor, Company targetCompany) {
+        CompanyScope.requireCompany(targetCompany);
         if (isSuperAdmin(actor)) {
             return;
         }
-        if (targetCompany == null || actor.getCompany() == null || !sameCompany(actor.getCompany(), targetCompany)) {
+        if (targetCompany == null || CompanyScope.companyFor(actor) == null || !sameCompany(CompanyScope.companyFor(actor), targetCompany)) {
             throw new AccessDeniedException("Not allowed to access this company data");
         }
     }
 
     public Long requireCompanyIdForTenantAdmin(User actor) {
-        if (isSuperAdmin(actor)) {
+        if (CompanyScope.isUnrestrictedSuperAdmin(actor)) {
             return null;
         }
-        if (actor.getCompany() == null || actor.getCompany().getId() == null) {
+        if (CompanyScope.companyFor(actor) == null || CompanyScope.companyFor(actor).getId() == null) {
             throw new AccessDeniedException("Company scoped admin required");
         }
-        return actor.getCompany().getId();
+        return CompanyScope.companyFor(actor).getId();
     }
 
     public List<User> visibleUsersForAdmin(User actor) {
-        if (isSuperAdmin(actor)) {
+        if (CompanyScope.isUnrestrictedSuperAdmin(actor)) {
             return userRepository.findOperationalUsersDeletedFalse();
         }
         Long companyId = requireCompanyIdForTenantAdmin(actor);

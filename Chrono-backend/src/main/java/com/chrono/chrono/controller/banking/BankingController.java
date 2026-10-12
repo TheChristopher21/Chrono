@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.banking;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.banking.BankAccountDTO;
 import com.chrono.chrono.dto.banking.CreateBankAccountRequest;
 import com.chrono.chrono.dto.banking.CreatePaymentBatchRequest;
@@ -69,7 +70,7 @@ public class BankingController {
 
     private Company getCompany(Principal principal) {
         User user = principal != null ? userService.getUserByUsername(principal.getName()) : null;
-        return user != null ? user.getCompany() : null;
+        return user != null ? CompanyScope.companyFor(user) : null;
     }
 
     @PostMapping("/accounts")

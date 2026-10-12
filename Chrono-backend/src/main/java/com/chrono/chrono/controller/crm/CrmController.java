@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller.crm;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.crm.*;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.User;
@@ -38,8 +39,8 @@ public class CrmController {
     }
 
     private boolean allowed(User user, Customer customer) {
-        return user != null && user.getCompany() != null && customer.getCompany() != null
-                && Objects.equals(user.getCompany().getId(), customer.getCompany().getId());
+        return user != null && CompanyScope.companyFor(user) != null && customer.getCompany() != null
+                && Objects.equals(CompanyScope.companyFor(user).getId(), customer.getCompany().getId());
     }
 
     private String resolveDisplayName(User user) {
@@ -326,11 +327,11 @@ public class CrmController {
     @PostMapping("/leads")
     public ResponseEntity<CrmLeadDTO> createLead(@RequestBody CreateCrmLeadRequest request, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         CrmLead lead = request.toEntity();
-        lead.setCompany(user.getCompany());
+        lead.setCompany(CompanyScope.companyFor(user));
         CrmLead saved = crmService.saveLead(lead);
         return ResponseEntity.created(URI.create("/api/crm/leads/" + saved.getId()))
                 .body(CrmLeadDTO.from(saved));
@@ -339,10 +340,10 @@ public class CrmController {
     @GetMapping("/leads")
     public ResponseEntity<List<CrmLeadDTO>> listLeads(@RequestParam(required = false) LeadStatus status, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
-        List<CrmLeadDTO> leads = crmService.getLeads(user.getCompany(), status).stream()
+        List<CrmLeadDTO> leads = crmService.getLeads(CompanyScope.companyFor(user), status).stream()
                 .map(CrmLeadDTO::from)
                 .toList();
         return ResponseEntity.ok(leads);
@@ -353,11 +354,11 @@ public class CrmController {
                                                  @RequestBody UpdateLeadStatusRequest request,
                                                  Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         return crmService.findLead(id)
-                .filter(lead -> Objects.equals(lead.getCompany().getId(), user.getCompany().getId()))
+                .filter(lead -> Objects.equals(lead.getCompany().getId(), CompanyScope.companyFor(user).getId()))
                 .map(lead -> crmService.updateLeadStatus(lead, request.getStatus()))
                 .map(CrmLeadDTO::from)
                 .map(ResponseEntity::ok)
@@ -367,11 +368,11 @@ public class CrmController {
     @PostMapping("/opportunities")
     public ResponseEntity<OpportunityDTO> createOpportunity(@RequestBody CreateOpportunityRequest request, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         Opportunity opportunity = request.toEntity();
-        opportunity.setCompany(user.getCompany());
+        opportunity.setCompany(CompanyScope.companyFor(user));
         if (request.getCustomerId() != null) {
             Customer customer = customerService.findById(request.getCustomerId()).orElse(null);
             if (customer == null || !allowed(user, customer)) {
@@ -390,10 +391,10 @@ public class CrmController {
     @GetMapping("/opportunities")
     public ResponseEntity<List<OpportunityDTO>> listOpportunities(@RequestParam(required = false) OpportunityStage stage, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
-        List<OpportunityDTO> opportunities = crmService.getOpportunities(user.getCompany(), stage).stream()
+        List<OpportunityDTO> opportunities = crmService.getOpportunities(CompanyScope.companyFor(user), stage).stream()
                 .map(OpportunityDTO::from)
                 .toList();
         return ResponseEntity.ok(opportunities);
@@ -404,11 +405,11 @@ public class CrmController {
                                                              @RequestBody UpdateOpportunityRequest request,
                                                              Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         return crmService.findOpportunity(id)
-                .filter(opportunity -> Objects.equals(opportunity.getCompany().getId(), user.getCompany().getId()))
+                .filter(opportunity -> Objects.equals(opportunity.getCompany().getId(), CompanyScope.companyFor(user).getId()))
                 .map(opportunity -> crmService.updateOpportunity(opportunity, request.getStage(),
                         request.getProbability(), request.getExpectedCloseDate()))
                 .map(OpportunityDTO::from)
@@ -419,11 +420,11 @@ public class CrmController {
     @PostMapping("/campaigns")
     public ResponseEntity<CampaignDTO> createCampaign(@RequestBody CreateCampaignRequest request, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         Campaign campaign = request.toEntity();
-        campaign.setCompany(user.getCompany());
+        campaign.setCompany(CompanyScope.companyFor(user));
         Campaign saved = crmService.saveCampaign(campaign);
         return ResponseEntity.created(URI.create("/api/crm/campaigns/" + saved.getId()))
                 .body(CampaignDTO.from(saved));
@@ -432,10 +433,10 @@ public class CrmController {
     @GetMapping("/campaigns")
     public ResponseEntity<List<CampaignDTO>> listCampaigns(@RequestParam(required = false) CampaignStatus status, Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
-        List<CampaignDTO> campaigns = crmService.getCampaigns(user.getCompany(), status).stream()
+        List<CampaignDTO> campaigns = crmService.getCampaigns(CompanyScope.companyFor(user), status).stream()
                 .map(CampaignDTO::from)
                 .toList();
         return ResponseEntity.ok(campaigns);
@@ -446,11 +447,11 @@ public class CrmController {
                                                       @RequestBody UpdateCampaignRequest request,
                                                       Principal principal) {
         User user = getUser(principal);
-        if (user == null || user.getCompany() == null) {
+        if (user == null || CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(401).build();
         }
         return crmService.findCampaign(id)
-                .filter(campaign -> Objects.equals(campaign.getCompany().getId(), user.getCompany().getId()))
+                .filter(campaign -> Objects.equals(campaign.getCompany().getId(), CompanyScope.companyFor(user).getId()))
                 .map(campaign -> crmService.updateCampaign(campaign, request.getStatus(), request.getName(),
                         request.getStartDate(), request.getEndDate(), request.getBudget(), request.getChannel()))
                 .map(CampaignDTO::from)

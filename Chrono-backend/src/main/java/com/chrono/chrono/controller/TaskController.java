@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.User;
@@ -31,7 +32,7 @@ public class TaskController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return RegistrationFeatures.isProjectsEnabled(u.getCompany());
+        return RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(u));
     }
 
     @GetMapping
@@ -44,7 +45,7 @@ public class TaskController {
         }
         Optional<Project> project = projectService.findById(projectId);
         if (project.isEmpty() || project.get().getCustomer() == null ||
-            !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !project.get().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(taskService.getTasks(projectId));
@@ -59,7 +60,7 @@ public class TaskController {
         }
         Project project = projectService.findById(task.getProject().getId()).orElse(null);
         if (project == null || project.getCustomer() == null ||
-            !project.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !project.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         task.setProject(project);
@@ -76,7 +77,7 @@ public class TaskController {
         }
         Task existing = existingOpt.get();
         if (existing.getProject() == null || existing.getProject().getCustomer() == null ||
-            !existing.getProject().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !existing.getProject().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         existing.setName(taskDetails.getName());
@@ -95,7 +96,7 @@ public class TaskController {
         }
         Task existing = existingOpt.get();
         if (existing.getProject() == null || existing.getProject().getCustomer() == null ||
-            !existing.getProject().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !existing.getProject().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         taskService.deleteById(id);

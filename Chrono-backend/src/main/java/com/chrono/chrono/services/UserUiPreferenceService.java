@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.UiPreferenceResponse;
 import com.chrono.chrono.dto.UiPreferenceUpdateRequest;
 import com.chrono.chrono.entities.Company;
@@ -187,7 +188,7 @@ public class UserUiPreferenceService {
         }
 
         requireAreaAccess(actor, area);
-        Company company = actor.getCompany();
+        Company company = CompanyScope.companyFor(actor);
         String tenantKey = company != null && company.getId() != null
                 ? "company:" + company.getId()
                 : "global";
@@ -286,14 +287,14 @@ public class UserUiPreferenceService {
         if (!propertyIdNode.isIntegralNumber()
                 || !propertyIdNode.canConvertToLong()
                 || propertyIdNode.longValue() <= 0
-                || actor.getCompany() == null
-                || actor.getCompany().getId() == null) {
+                || CompanyScope.companyFor(actor) == null
+                || CompanyScope.companyFor(actor).getId() == null) {
             return false;
         }
         if (hotelAccess != null && !hotelAccess.any(propertyIdNode.longValue())) return false;
         return propertyRepository.findByIdAndCompany_Id(
                 propertyIdNode.longValue(),
-                actor.getCompany().getId()
+                CompanyScope.companyFor(actor).getId()
         ).isPresent();
     }
 
@@ -302,12 +303,12 @@ public class UserUiPreferenceService {
         if (propertyIds.isEmpty()) {
             return;
         }
-        if (actor.getCompany() == null || actor.getCompany().getId() == null) {
+        if (CompanyScope.companyFor(actor) == null || CompanyScope.companyFor(actor).getId() == null) {
             throw new AccessDeniedException("A company assignment is required for PMS tabs.");
         }
         for (Long propertyId : propertyIds) {
             if (pmsPropertyAccess != null) pmsPropertyAccess.require(pmsPropertyAccess.access(actor.getUsername()), propertyId, null, false);
-            propertyRepository.findByIdAndCompany_Id(propertyId, actor.getCompany().getId())
+            propertyRepository.findByIdAndCompany_Id(propertyId, CompanyScope.companyFor(actor).getId())
                     .orElseThrow(() -> new AccessDeniedException("PMS property is not available."));
         }
     }
