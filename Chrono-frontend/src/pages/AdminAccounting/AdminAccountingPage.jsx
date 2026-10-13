@@ -3,6 +3,7 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
 import "../../styles/AdminAccountingPageScoped.css";
 
 const initialAccount = {
@@ -44,6 +45,13 @@ const AdminAccountingPage = () => {
     const [loading, setLoading] = useState(true);
     const [accountForm, setAccountForm] = useState(initialAccount);
     const [refreshFlag, setRefreshFlag] = useState(0);
+    useRefreshOnMutation(['accounting', 'banking'], () => {
+        setRefreshFlag((flag) => flag + 1);
+    }, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
     const [showJournalForm, setShowJournalForm] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
     const [filters, setFilters] = useState({

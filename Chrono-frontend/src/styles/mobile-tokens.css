@@ -4,7 +4,12 @@
     --space-mobile-lg: 1.6rem;
     --radius-mobile: 20px;
     --radius-mobile-lg: 28px;
-    --tabbar-height: 72px;
+    --tabbar-height: 68px;
+    --mobile-safe-top: env(safe-area-inset-top, 0px);
+    --mobile-safe-right: env(safe-area-inset-right, 0px);
+    --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-safe-left: env(safe-area-inset-left, 0px);
+    --tabbar-safe-area: calc(var(--tabbar-height) + var(--mobile-safe-bottom));
 }
 
 @media (max-width: 480px) {
@@ -25,8 +30,8 @@
     }
 }
 
-@supports (padding: max(0px)) {
+@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
     :root {
-        --tabbar-safe-area: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
+        --tabbar-height: 56px;
     }
 }

@@ -1,18 +1,23 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "inv_products")
+@Table(
+        name = "inv_products",
+        uniqueConstraints = @UniqueConstraint(name = "uk_inv_products_company_sku", columnNames = {"company_id", "sku"}),
+        indexes = @Index(name = "idx_inv_products_company", columnList = "company_id")
+)
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String sku;
 
     @Column(nullable = false)
@@ -32,6 +37,10 @@ public class Product {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     public Long getId() {
         return id;
@@ -95,5 +104,13 @@ public class Product {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 }

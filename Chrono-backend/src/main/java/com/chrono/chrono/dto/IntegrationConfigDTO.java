@@ -23,7 +23,7 @@ public class IntegrationConfigDTO {
         this.name = config.getName();
         this.type = config.getType();
         this.endpointUrl = config.getEndpointUrl();
-        this.authHeader = config.getAuthHeader();
+        this.authHeader = config.getAuthHeader() == null || config.getAuthHeader().isBlank() ? null : "********";
         this.active = config.getActive();
         this.autoSync = config.getAutoSync();
         this.lastTriggeredAt = config.getLastTriggeredAt();

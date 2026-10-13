@@ -1,11 +1,13 @@
 package com.chrono.chrono.dto.inventory;
 
 import com.chrono.chrono.entities.inventory.Warehouse;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class CreateWarehouseRequest {
-    private String code;
-    private String name;
-    private String location;
+    @NotBlank @Size(max = 255) private String code;
+    @NotBlank @Size(max = 255) private String name;
+    @Size(max = 512) private String location;
 
     public String getCode() {
         return code;

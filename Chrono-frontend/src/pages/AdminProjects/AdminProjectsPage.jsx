@@ -1,12 +1,14 @@
 // src/pages/AdminProjects/AdminProjectsPage.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { useProjects } from '../../context/ProjectContext';
 import { useCustomers } from '../../context/CustomerContext';
 import { useTasks } from '../../context/TaskContext';
+import { hasPageAccess, hasProjectsFeature } from '../../utils/pageAccess';
 import api from '../../utils/api';
 
 import '../../styles/AdminProjectsPageScoped.css';
@@ -38,6 +40,42 @@ const formatDateInput = (date) => {
     const day = `${d.getDate()}`.padStart(2, '0');
     return `${d.getFullYear()}-${month}-${day}`;
 };
+
+const isValidDateRange = (start, end) => Boolean(start && end && start <= end);
+
+const getResponseStatus = (error) => error?.response?.status ?? null;
+
+const logUnexpectedError = (label, error) => {
+    if (![401, 403].includes(getResponseStatus(error))) {
+        console.error(label, error);
+    }
+};
+
+const getLoadErrorMessage = (error, t, fallbackKey, fallbackMessage) => {
+    const status = getResponseStatus(error);
+    if (status === 401 || status === 403) {
+        return t(
+            'project.access.changed',
+            'Deine Berechtigung hat sich geändert. Bitte lade die Seite neu oder wende dich an eine Administratorin bzw. einen Administrator.'
+        );
+    }
+    return t(fallbackKey, fallbackMessage);
+};
+
+const InlineState = ({ type = 'info', message, onRetry, retryLabel }) => (
+    <div
+        className={`inline-state inline-state--${type}`}
+        role={type === 'error' ? 'alert' : 'status'}
+        aria-live={type === 'error' ? 'assertive' : 'polite'}
+    >
+        <span>{message}</span>
+        {onRetry && (
+            <button type="button" className="button-secondary" onClick={onRetry}>
+                {retryLabel}
+            </button>
+        )}
+    </div>
+);
 
 const collectDescendantIdsFromNode = (node) => {
     if (!node?.children) return [];
@@ -72,8 +110,9 @@ const ProjectTree = ({ nodes, analyticsMap, t }) => {
             {items.map((node) => {
                 const metrics = analyticsMap.get(node.id);
                 const utilizationPct = metrics?.utilization != null
-                    ? Math.min(100, Math.round(metrics.utilization * 100))
+                    ? Math.max(0, Math.round(metrics.utilization * 100))
                     : null;
+                const utilizationBarPct = utilizationPct != null ? Math.min(100, utilizationPct) : null;
                 const totalHours = metrics?.totalMinutes != null
                     ? (metrics.totalMinutes / 60).toFixed(1)
                     : null;
@@ -91,7 +130,7 @@ const ProjectTree = ({ nodes, analyticsMap, t }) => {
                                 )}
                             </div>
                             <div className="tree-metrics">
-                                {budgetHours && (
+                                {budgetHours !== null && (
                                     <span
                                         className="metric-chip"
                                         title={t('project.hierarchy.metrics.budgetTitle', 'Budget Stunden')}
@@ -99,7 +138,7 @@ const ProjectTree = ({ nodes, analyticsMap, t }) => {
                                         {t('project.hierarchy.metrics.budgetLabel', 'Budget')}: {budgetHours}
                                     </span>
                                 )}
-                                {totalHours && (
+                                {totalHours !== null && (
                                     <span
                                         className="metric-chip"
                                         title={t('project.hierarchy.metrics.actualTitle', 'Gebuchte Stunden')}
@@ -109,12 +148,17 @@ const ProjectTree = ({ nodes, analyticsMap, t }) => {
                                 )}
                                 {utilizationPct != null && (
                                     <div
-                                        className="metric-progress"
+                                        className={`metric-progress${utilizationPct > 100 ? ' is-over-budget' : ''}`}
                                         title={t('project.hierarchy.metrics.utilizationTitle', 'Auslastung')}
+                                        role="progressbar"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={utilizationBarPct}
+                                        aria-valuetext={`${utilizationPct}%`}
                                     >
                                         <div
                                             className="metric-progress-bar"
-                                            style={{ '--progress': (utilizationPct / 100).toString() }}
+                                            style={{ '--progress': (utilizationBarPct / 100).toString() }}
                                         />
                                         <span>{utilizationPct}%</span>
                                     </div>
@@ -136,27 +180,88 @@ const TAB_KEYS = ['projects', 'customers', 'tasks'];
 const AdminProjectsPage = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
+    const { currentUser } = useAuth();
+    const companyContextKey = currentUser?.company?.id ?? currentUser?.companyId ?? null;
+    const previousCompanyContextRef = useRef(companyContextKey);
 
-    const { projects, projectHierarchy, createProject, updateProject, deleteProject } = useProjects();
-    const { customers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
-    const { tasks, fetchTasks, createTask, updateTask, deleteTask } = useTasks();
+    const {
+        projects,
+        projectHierarchy,
+        projectsLoading = false,
+        projectsError = null,
+        fetchProjects,
+        createProject,
+        updateProject,
+        deleteProject
+    } = useProjects();
+    const {
+        customers,
+        customersLoading = false,
+        customersError = null,
+        fetchCustomers,
+        createCustomer,
+        updateCustomer,
+        deleteCustomer
+    } = useCustomers();
+    const {
+        tasks,
+        tasksLoading = false,
+        tasksError = null,
+        fetchTasks,
+        createTask,
+        updateTask,
+        deleteTask
+    } = useTasks();
+
+    const projectsFeatureEnabled = hasProjectsFeature(currentUser);
+    const canViewProjects = projectsFeatureEnabled && hasPageAccess(currentUser, 'adminProjects', 'VIEW');
+    const canManageProjects = projectsFeatureEnabled && hasPageAccess(currentUser, 'adminProjects', 'MANAGE');
+    const canViewCustomers = projectsFeatureEnabled && (
+        canViewProjects || hasPageAccess(currentUser, 'adminCustomers', 'VIEW')
+    );
+    const canManageCustomers = projectsFeatureEnabled && (
+        canManageProjects || hasPageAccess(currentUser, 'adminCustomers', 'MANAGE')
+    );
+    const canViewTasks = projectsFeatureEnabled && (
+        canViewProjects || hasPageAccess(currentUser, 'adminTasks', 'VIEW')
+    );
+    const canManageTasks = projectsFeatureEnabled && (
+        canManageProjects || hasPageAccess(currentUser, 'adminTasks', 'MANAGE')
+    );
+
+    const allowedTabs = useMemo(() => [
+        canViewProjects && 'projects',
+        canViewCustomers && 'customers',
+        canViewTasks && 'tasks'
+    ].filter(Boolean), [canViewProjects, canViewCustomers, canViewTasks]);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState(() => {
         const param = searchParams.get('tab');
-        return TAB_KEYS.includes(param) ? param : 'projects';
+        return TAB_KEYS.includes(param) ? param : null;
     });
 
     useEffect(() => {
         const param = searchParams.get('tab');
-        const normalized = TAB_KEYS.includes(param) ? param : 'projects';
+        const requested = TAB_KEYS.includes(param) ? param : 'projects';
+        const normalized = allowedTabs.includes(requested) ? requested : (allowedTabs[0] ?? null);
         if (normalized !== activeTab) {
             setActiveTab(normalized);
         }
-    }, [searchParams, activeTab]);
+        const canonicalParam = normalized === 'projects' ? null : normalized;
+        if ((param ?? null) !== canonicalParam) {
+            setSearchParams((previous) => {
+                const params = new URLSearchParams(previous);
+                if (canonicalParam) params.set('tab', canonicalParam);
+                else params.delete('tab');
+                return params;
+            }, { replace: true });
+        }
+    }, [searchParams, activeTab, allowedTabs, setSearchParams]);
 
     const handleTabChange = useCallback((tabKey) => {
-        const normalized = TAB_KEYS.includes(tabKey) ? tabKey : 'projects';
+        const normalized = allowedTabs.includes(tabKey) ? tabKey : (allowedTabs[0] ?? null);
+        if (!normalized) return;
         setActiveTab(normalized);
         setSearchParams((prev) => {
             const params = new URLSearchParams(prev);
@@ -167,7 +272,7 @@ const AdminProjectsPage = () => {
             }
             return params;
         });
-    }, [setSearchParams]);
+    }, [allowedTabs, setSearchParams]);
 
     // Create form state
     const [newName, setNewName] = useState('');
@@ -175,10 +280,12 @@ const AdminProjectsPage = () => {
     const [newBudget, setNewBudget] = useState('');
     const [newParentId, setNewParentId] = useState('');
     const [newHourlyRate, setNewHourlyRate] = useState('');
+    const newProjectNameRef = useRef(null);
 
     // Edit form state
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState('');
+    const [editingProjectCustomerId, setEditingProjectCustomerId] = useState('');
     const [editingBudget, setEditingBudget] = useState('');
     const [editingParentId, setEditingParentId] = useState('');
     const [editingHourlyRate, setEditingHourlyRate] = useState('');
@@ -194,30 +301,16 @@ const AdminProjectsPage = () => {
     const [analyticsEnd, setAnalyticsEnd] = useState(formatDateInput(today));
     const [analytics, setAnalytics] = useState([]);
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
+    const [analyticsError, setAnalyticsError] = useState(null);
+    const analyticsInitialLoadRef = useRef(false);
+    const analyticsRequestRef = useRef(0);
 
-    const [integrations, setIntegrations] = useState([]);
-    const [integrationLoading, setIntegrationLoading] = useState(false);
-    const [newIntegration, setNewIntegration] = useState({
-        name: '',
-        type: 'GENERIC_WEBHOOK',
-        endpointUrl: '',
-        authHeader: '',
-        active: true,
-        autoSync: false
-    });
-    const [lastIntegrationRun, setLastIntegrationRun] = useState(null);
-
-    const [auditLogs, setAuditLogs] = useState([]);
-    const [auditLoading, setAuditLoading] = useState(false);
-
-    const [billingProjectId, setBillingProjectId] = useState('');
-    const [billingStart, setBillingStart] = useState(formatDateInput(defaultStart));
-    const [billingEnd, setBillingEnd] = useState(formatDateInput(today));
-    const [billingIncludeChildren, setBillingIncludeChildren] = useState(true);
-    const [billingRate, setBillingRate] = useState('');
-    const [billingCurrency, setBillingCurrency] = useState('CHF');
-    const [invoiceResult, setInvoiceResult] = useState(null);
-    const [billingLoading, setBillingLoading] = useState(false);
+    const [projectSaving, setProjectSaving] = useState(false);
+    const [projectDeletingId, setProjectDeletingId] = useState(null);
+    const [customerSaving, setCustomerSaving] = useState(false);
+    const [customerDeletingId, setCustomerDeletingId] = useState(null);
+    const [taskSaving, setTaskSaving] = useState(false);
+    const [taskDeletingId, setTaskDeletingId] = useState(null);
 
     // Customer management state
     const [newCustomerName, setNewCustomerName] = useState('');
@@ -277,10 +370,17 @@ const AdminProjectsPage = () => {
         return ids;
     }, [hierarchyIndex, editingId]);
 
-    // Preselect first customer on mount/update
+    // Keep the selected customer inside the currently loaded company data.
     useEffect(() => {
-        if (customerList.length > 0 && !selectedCustomerId) {
-            setSelectedCustomerId(customerList[0].id);
+        if (customerList.length === 0) {
+            if (selectedCustomerId !== '') setSelectedCustomerId('');
+            return;
+        }
+        const selectionExists = customerList.some(
+            (customer) => String(customer.id) === String(selectedCustomerId)
+        );
+        if (!selectionExists) {
+            setSelectedCustomerId(customerList[0].id ?? '');
         }
     }, [customerList, selectedCustomerId]);
 
@@ -301,10 +401,10 @@ const AdminProjectsPage = () => {
     }, [projectList, selectedTaskProjectId]);
 
     useEffect(() => {
-        if (activeTab === 'tasks' && selectedTaskProjectId !== '') {
+        if (canViewTasks && activeTab === 'tasks' && selectedTaskProjectId !== '') {
             fetchTasks(coerceId(selectedTaskProjectId));
         }
-    }, [activeTab, selectedTaskProjectId, fetchTasks]);
+    }, [activeTab, selectedTaskProjectId, fetchTasks, canViewTasks]);
 
     const resetCreateForm = () => {
         setNewName('');
@@ -316,9 +416,10 @@ const AdminProjectsPage = () => {
     };
 
     const startEdit = (project) => {
+        if (!canManageProjects) return;
         setEditingId(project.id);
         setEditingName(project.name ?? '');
-        setEditingCustomerId(project.customer?.id ?? '');
+        setEditingProjectCustomerId(project.customer?.id ?? '');
         setEditingBudget(project.budgetMinutes ?? '');
         setEditingParentId(project.parent?.id ? String(project.parent.id) : '');
         setEditingHourlyRate(project.hourlyRate ?? '');
@@ -327,7 +428,7 @@ const AdminProjectsPage = () => {
     const cancelEdit = useCallback(() => {
         setEditingId(null);
         setEditingName('');
-        setEditingCustomerId('');
+        setEditingProjectCustomerId('');
         setEditingBudget('');
         setEditingParentId('');
         setEditingHourlyRate('');
@@ -335,43 +436,62 @@ const AdminProjectsPage = () => {
 
     const handleCreateCustomer = async (event) => {
         event.preventDefault();
+        if (!canManageCustomers) return;
         if (!newCustomerName.trim()) return;
+        setCustomerSaving(true);
         try {
             await createCustomer(newCustomerName);
             setNewCustomerName('');
             notify(t('customer.createSuccess', 'Kunde erfolgreich angelegt!'), 'success');
         } catch (err) {
-            console.error('Error creating customer', err);
+            logUnexpectedError('Error creating customer', err);
             notify(t('customer.createError', 'Fehler beim Anlegen des Kunden.'), 'error');
+        } finally {
+            setCustomerSaving(false);
         }
     };
 
     const handleUpdateCustomer = async (event) => {
         event.preventDefault();
+        if (!canManageCustomers) return;
         if (!editingCustomerName.trim()) return;
+        setCustomerSaving(true);
         try {
             await updateCustomer(editingCustomerId, editingCustomerName);
             setEditingCustomerId(null);
             setEditingCustomerName('');
+            if (canViewProjects) {
+                await Promise.allSettled([fetchProjects(), loadAnalytics()]);
+            }
             notify(t('customer.updateSuccess', 'Kunde erfolgreich gespeichert!'), 'success');
         } catch (err) {
-            console.error('Error updating customer', err);
+            logUnexpectedError('Error updating customer', err);
             notify(t('customer.updateError', 'Fehler beim Speichern des Kunden.'), 'error');
+        } finally {
+            setCustomerSaving(false);
         }
     };
 
     const handleDeleteCustomer = async (id) => {
+        if (!canManageCustomers || customerDeletingId !== null) return;
         if (!window.confirm(t('customer.deleteConfirm', 'Sind Sie sicher, dass Sie diesen Kunden löschen möchten?'))) return;
+        setCustomerDeletingId(id);
         try {
             await deleteCustomer(id);
+            if (canViewProjects) {
+                await Promise.allSettled([fetchProjects(), loadAnalytics()]);
+            }
             notify(t('customer.deleteSuccess', 'Kunde erfolgreich gelöscht!'), 'success');
         } catch (err) {
-            console.error('Error deleting customer', err);
+            logUnexpectedError('Error deleting customer', err);
             notify(t('customer.deleteError', 'Fehler beim Löschen des Kunden.'), 'error');
+        } finally {
+            setCustomerDeletingId(null);
         }
     };
 
     const startCustomerEdit = (customer) => {
+        if (!canManageCustomers) return;
         setEditingCustomerId(customer.id);
         setEditingCustomerName(customer.name ?? '');
     };
@@ -383,15 +503,22 @@ const AdminProjectsPage = () => {
 
     const handleCreateTask = async (event) => {
         event.preventDefault();
+        if (!canManageTasks) return;
         if (!newTaskName.trim() || !selectedTaskProjectId) {
             notify(t('task.create.validationError', 'Bitte Projekt auswählen und Namen eingeben.'), 'warning');
             return;
         }
+        const budget = asIntOrNull(newTaskBudget);
+        if (budget !== null && budget < 0) {
+            notify(t('task.create.budgetInvalid', 'Budget darf nicht negativ sein.'), 'warning');
+            return;
+        }
+        setTaskSaving(true);
         try {
             await createTask(
                 coerceId(selectedTaskProjectId),
                 newTaskName,
-                asIntOrNull(newTaskBudget),
+                budget,
                 newTaskBillable
             );
             setNewTaskName('');
@@ -399,22 +526,31 @@ const AdminProjectsPage = () => {
             setNewTaskBillable(false);
             notify(t('task.create.success', 'Aufgabe erfolgreich angelegt!'), 'success');
         } catch (err) {
-            console.error('Error creating task', err);
+            logUnexpectedError('Error creating task', err);
             notify(t('task.create.error', 'Fehler beim Anlegen der Aufgabe.'), 'error');
+        } finally {
+            setTaskSaving(false);
         }
     };
 
     const handleUpdateTask = async (event) => {
         event.preventDefault();
+        if (!canManageTasks) return;
         if (!editingTaskName.trim()) {
             notify(t('task.update.validationError', 'Bitte Namen eingeben.'), 'warning');
             return;
         }
+        const budget = asIntOrNull(editingTaskBudget);
+        if (budget !== null && budget < 0) {
+            notify(t('task.update.budgetInvalid', 'Budget darf nicht negativ sein.'), 'warning');
+            return;
+        }
+        setTaskSaving(true);
         try {
             await updateTask(
                 editingTaskId,
                 editingTaskName,
-                asIntOrNull(editingTaskBudget),
+                budget,
                 editingTaskBillable
             );
             setEditingTaskId(null);
@@ -423,23 +559,30 @@ const AdminProjectsPage = () => {
             setEditingTaskBillable(false);
             notify(t('task.update.success', 'Aufgabe erfolgreich gespeichert!'), 'success');
         } catch (err) {
-            console.error('Error updating task', err);
+            logUnexpectedError('Error updating task', err);
             notify(t('task.update.error', 'Fehler beim Speichern der Aufgabe.'), 'error');
+        } finally {
+            setTaskSaving(false);
         }
     };
 
     const handleDeleteTask = async (id) => {
+        if (!canManageTasks || taskDeletingId !== null) return;
         if (!window.confirm(t('task.delete.confirm', 'Sind Sie sicher, dass Sie diese Aufgabe löschen möchten?'))) return;
+        setTaskDeletingId(id);
         try {
             await deleteTask(id);
             notify(t('task.delete.success', 'Aufgabe erfolgreich gelöscht!'), 'success');
         } catch (err) {
-            console.error('Error deleting task', err);
+            logUnexpectedError('Error deleting task', err);
             notify(t('task.delete.error', 'Fehler beim Löschen der Aufgabe.'), 'error');
+        } finally {
+            setTaskDeletingId(null);
         }
     };
 
     const startTaskEdit = (task) => {
+        if (!canManageTasks) return;
         setEditingTaskId(task.id);
         setEditingTaskName(task.name ?? '');
         setEditingTaskBudget(task.budgetMinutes ?? '');
@@ -453,16 +596,21 @@ const AdminProjectsPage = () => {
         setEditingTaskBillable(false);
     };
 
-    const integrationTypes = useMemo(() => ([
-        { value: 'GENERIC_WEBHOOK', label: 'Webhook' },
-        { value: 'SAP', label: 'SAP' },
-        { value: 'JIRA', label: 'Jira' },
-        { value: 'MICROSOFT_TEAMS', label: 'Microsoft Teams' },
-        { value: 'SLACK', label: 'Slack' }
-    ]), []);
-
     const loadAnalytics = useCallback(async () => {
+        const requestId = ++analyticsRequestRef.current;
+        if (!canViewProjects) {
+            setAnalytics([]);
+            setAnalyticsError(null);
+            setAnalyticsLoading(false);
+            return;
+        }
+        if (!isValidDateRange(analyticsStart, analyticsEnd)) {
+            setAnalyticsError(t('project.period.invalid', 'Das Startdatum muss vor oder am Enddatum liegen.'));
+            setAnalyticsLoading(false);
+            return;
+        }
         setAnalyticsLoading(true);
+        setAnalyticsError(null);
         try {
             const res = await api.get('/api/report/analytics/projects', {
                 params: {
@@ -470,144 +618,26 @@ const AdminProjectsPage = () => {
                     endDate: analyticsEnd
                 }
             });
-            setAnalytics(Array.isArray(res.data) ? res.data : []);
+            if (requestId === analyticsRequestRef.current) {
+                setAnalytics(Array.isArray(res.data) ? res.data : []);
+            }
         } catch (err) {
-            console.error('Error loading analytics', err);
-            notify(t('project.analytics.error', 'Fehler beim Laden der Projekt-Analytics'), 'error');
+            if (requestId === analyticsRequestRef.current) {
+                logUnexpectedError('Error loading analytics', err);
+                setAnalytics([]);
+                setAnalyticsError(getLoadErrorMessage(
+                    err,
+                    t,
+                    'project.analytics.error',
+                    'Fehler beim Laden der Projekt-Analytics'
+                ));
+            }
         } finally {
-            setAnalyticsLoading(false);
+            if (requestId === analyticsRequestRef.current) {
+                setAnalyticsLoading(false);
+            }
         }
-    }, [analyticsStart, analyticsEnd, notify, t]);
-
-    const loadIntegrations = useCallback(async () => {
-        setIntegrationLoading(true);
-        try {
-            const res = await api.get('/api/integrations');
-            setIntegrations(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error('Error loading integrations', err);
-            notify(t('project.integration.errorLoad', 'Integrationen konnten nicht geladen werden.'), 'error');
-        } finally {
-            setIntegrationLoading(false);
-        }
-    }, [notify, t]);
-
-    const loadAuditLogs = useCallback(async () => {
-        setAuditLoading(true);
-        try {
-            const res = await api.get('/api/audit', { params: { limit: 25 } });
-            setAuditLogs(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error('Error loading audit logs', err);
-            notify(t('project.audit.errorLoad', 'Audit-Log konnte nicht geladen werden.'), 'error');
-        } finally {
-            setAuditLoading(false);
-        }
-    }, [notify, t]);
-
-    const handleIntegrationFieldChange = (field) => (event) => {
-        const value = field === 'active' || field === 'autoSync'
-            ? event.target.checked
-            : event.target.value;
-        setNewIntegration(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleCreateIntegration = async (e) => {
-        e.preventDefault();
-        if (!newIntegration.name.trim()) {
-            notify(t('project.integration.nameRequired', 'Name für die Integration angeben.'), 'warning');
-            return;
-        }
-        try {
-            await api.post('/api/integrations', {
-                ...newIntegration,
-                name: newIntegration.name.trim()
-            });
-            setNewIntegration({
-                name: '',
-                type: 'GENERIC_WEBHOOK',
-                endpointUrl: '',
-                authHeader: '',
-                active: true,
-                autoSync: false
-            });
-            notify(t('project.integration.created', 'Integration gespeichert!'), 'success');
-            loadIntegrations();
-            loadAuditLogs();
-        } catch (err) {
-            console.error('Error creating integration', err);
-            notify(t('project.integration.errorCreate', 'Integration konnte nicht gespeichert werden.'), 'error');
-        }
-    };
-
-    const handleTriggerIntegration = async (id) => {
-        try {
-            const res = await api.post(`/api/integrations/${id}/trigger`);
-            setLastIntegrationRun(res.data);
-            notify(t('project.integration.triggered', 'Integration erfolgreich ausgelöst!'), 'success');
-            loadIntegrations();
-            loadAuditLogs();
-        } catch (err) {
-            console.error('Error triggering integration', err);
-            notify(t('project.integration.errorTrigger', 'Integration konnte nicht ausgelöst werden.'), 'error');
-        }
-    };
-
-    const handleToggleIntegration = async (integration, field) => {
-        try {
-            await api.put(`/api/integrations/${integration.id}`, {
-                ...integration,
-                [field]: !integration[field]
-            });
-            notify(t('project.integration.updated', 'Integration aktualisiert!'), 'success');
-            loadIntegrations();
-            loadAuditLogs();
-        } catch (err) {
-            console.error('Error updating integration', err);
-            notify(t('project.integration.errorUpdate', 'Integration konnte nicht aktualisiert werden.'), 'error');
-        }
-    };
-
-    const handleDeleteIntegration = async (id) => {
-        if (!window.confirm(t('project.integration.deleteConfirm', 'Integration wirklich löschen?'))) return;
-        try {
-            await api.delete(`/api/integrations/${id}`);
-            notify(t('project.integration.deleted', 'Integration gelöscht!'), 'success');
-            loadIntegrations();
-            loadAuditLogs();
-        } catch (err) {
-            console.error('Error deleting integration', err);
-            notify(t('project.integration.errorDelete', 'Integration konnte nicht gelöscht werden.'), 'error');
-        }
-    };
-
-    const handleGenerateInvoice = async (e) => {
-        e.preventDefault();
-        if (!billingProjectId || !billingStart || !billingEnd) {
-            notify(t('project.billing.validation', 'Bitte Projekt und Zeitraum wählen.'), 'warning');
-            return;
-        }
-        const overrideRate = asDecimalOrNull(billingRate);
-        setBillingLoading(true);
-        try {
-            const res = await api.post('/api/billing/invoice', {
-                projectId: Number(billingProjectId),
-                startDate: billingStart,
-                endDate: billingEnd,
-                includeChildren: billingIncludeChildren,
-                overrideRate,
-                currency: billingCurrency
-            });
-            setInvoiceResult(res.data);
-            notify(t('project.billing.generated', 'Abrechnung erstellt!'), 'success');
-            loadAuditLogs();
-        } catch (err) {
-            console.error('Error generating invoice', err);
-            notify(t('project.billing.error', 'Abrechnung konnte nicht erstellt werden.'), 'error');
-        } finally {
-            setBillingLoading(false);
-        }
-    };
+    }, [analyticsStart, analyticsEnd, canViewProjects, companyContextKey, t]);
 
     // ESC cancels edit
     useEffect(() => {
@@ -619,16 +649,52 @@ const AdminProjectsPage = () => {
     }, [editingId, cancelEdit]);
 
     useEffect(() => {
-        loadIntegrations();
-        loadAuditLogs();
-    }, [loadIntegrations, loadAuditLogs]);
+        if (previousCompanyContextRef.current === companyContextKey) {
+            return;
+        }
+        previousCompanyContextRef.current = companyContextKey;
+        analyticsRequestRef.current += 1;
+        analyticsInitialLoadRef.current = false;
+        setAnalytics([]);
+        setAnalyticsError(null);
+        setAnalyticsLoading(false);
+        setNewName('');
+        setSelectedCustomerId('');
+        setNewBudget('');
+        setNewParentId('');
+        setNewHourlyRate('');
+        setNewCustomerName('');
+        setEditingCustomerId(null);
+        setEditingCustomerName('');
+        setSelectedTaskProjectId('');
+        setNewTaskName('');
+        setNewTaskBudget('');
+        setNewTaskBillable(false);
+        setEditingTaskId(null);
+        setEditingTaskName('');
+        setEditingTaskBudget('');
+        setEditingTaskBillable(false);
+        cancelEdit();
+    }, [companyContextKey, cancelEdit]);
 
     useEffect(() => {
-        loadAnalytics();
-    }, [loadAnalytics]);
+        if (!canViewProjects) {
+            analyticsRequestRef.current += 1;
+            analyticsInitialLoadRef.current = false;
+            setAnalytics([]);
+            setAnalyticsError(null);
+            setAnalyticsLoading(false);
+            return;
+        }
+        if (!analyticsInitialLoadRef.current) {
+            analyticsInitialLoadRef.current = true;
+            void loadAnalytics();
+        }
+    }, [canViewProjects, loadAnalytics]);
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        if (!canManageProjects || projectSaving) return;
         if (!newName.trim() || !selectedCustomerId) {
             notify(t('project.create.validationError', 'Bitte Projektname und Kunde auswählen.'), 'warning');
             return;
@@ -639,7 +705,12 @@ const AdminProjectsPage = () => {
             return;
         }
         const hourlyRate = asDecimalOrNull(newHourlyRate);
+        if (hourlyRate !== null && hourlyRate < 0) {
+            notify(t('project.create.rateInvalid', 'Der Stundensatz darf nicht negativ sein.'), 'warning');
+            return;
+        }
         const parentIdValue = newParentId ? Number(newParentId) : null;
+        setProjectSaving(true);
         try {
             await createProject({
                 name: newName.trim(),
@@ -650,16 +721,19 @@ const AdminProjectsPage = () => {
             });
             resetCreateForm();
             notify(t('project.create.success', 'Projekt erfolgreich angelegt!'), 'success');
-            loadAnalytics();
-            loadAuditLogs();
+            await loadAnalytics();
         } catch (err) {
+            logUnexpectedError('Error creating project', err);
             notify(t('project.create.error', 'Fehler beim Anlegen des Projekts.'), 'error');
+        } finally {
+            setProjectSaving(false);
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
-        if (!editingName.trim() || !editingCustomerId) {
+        if (!canManageProjects || projectSaving) return;
+        if (!editingName.trim() || !editingProjectCustomerId) {
             notify(t('project.update.validationError', 'Bitte Projektname und Kunde auswählen.'), 'warning');
             return;
         }
@@ -669,33 +743,44 @@ const AdminProjectsPage = () => {
             return;
         }
         const hourlyRate = asDecimalOrNull(editingHourlyRate);
+        if (hourlyRate !== null && hourlyRate < 0) {
+            notify(t('project.update.rateInvalid', 'Der Stundensatz darf nicht negativ sein.'), 'warning');
+            return;
+        }
         const parentIdValue = editingParentId ? Number(editingParentId) : null;
+        setProjectSaving(true);
         try {
             await updateProject(editingId, {
                 name: editingName.trim(),
-                customerId: editingCustomerId,
+                customerId: editingProjectCustomerId,
                 budgetMinutes: budget,
                 parentId: parentIdValue,
                 hourlyRate
             });
             cancelEdit();
             notify(t('project.update.success', 'Projekt erfolgreich gespeichert!'), 'success');
-            loadAnalytics();
-            loadAuditLogs();
+            await loadAnalytics();
         } catch (err) {
+            logUnexpectedError('Error updating project', err);
             notify(t('project.update.error', 'Fehler beim Speichern des Projekts.'), 'error');
+        } finally {
+            setProjectSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
+        if (!canManageProjects || projectDeletingId !== null) return;
         if (!window.confirm(t('project.delete.confirm', 'Sind Sie sicher, dass Sie dieses Projekt löschen möchten?'))) return;
+        setProjectDeletingId(id);
         try {
             await deleteProject(id);
             notify(t('project.delete.success', 'Projekt erfolgreich gelöscht!'), 'success');
-            loadAnalytics();
-            loadAuditLogs();
+            await loadAnalytics();
         } catch (err) {
+            logUnexpectedError('Error deleting project', err);
             notify(t('project.delete.error', 'Fehler beim Löschen des Projekts.'), 'error');
+        } finally {
+            setProjectDeletingId(null);
         }
     };
 
@@ -706,7 +791,34 @@ const AdminProjectsPage = () => {
         { id: 'projects', label: t('project.management.tabTitle', 'Projekte') },
         { id: 'customers', label: t('customer.management.title', 'Kunden') },
         { id: 'tasks', label: t('task.management.title', 'Aufgaben') }
-    ]), [t]);
+    ]).filter((tab) => allowedTabs.includes(tab.id)), [allowedTabs, t]);
+
+    const handleTabKeyDown = useCallback((event, tabId) => {
+        const currentIndex = allowedTabs.indexOf(tabId);
+        if (currentIndex < 0 || allowedTabs.length < 2) return;
+
+        let nextIndex = null;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            nextIndex = (currentIndex + 1) % allowedTabs.length;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+            nextIndex = (currentIndex - 1 + allowedTabs.length) % allowedTabs.length;
+        } else if (event.key === 'Home') {
+            nextIndex = 0;
+        } else if (event.key === 'End') {
+            nextIndex = allowedTabs.length - 1;
+        }
+
+        if (nextIndex === null) return;
+        event.preventDefault();
+        const nextTab = allowedTabs[nextIndex];
+        handleTabChange(nextTab);
+        window.requestAnimationFrame(() => document.getElementById(`admin-tab-${nextTab}`)?.focus());
+    }, [allowedTabs, handleTabChange]);
+
+    const focusProjectCreate = useCallback(() => {
+        handleTabChange('projects');
+        window.requestAnimationFrame(() => newProjectNameRef.current?.focus());
+    }, [handleTabChange]);
 
     const projectPulse = useMemo(() => {
         const totalProjects = projectList.length;
@@ -716,21 +828,13 @@ const AdminProjectsPage = () => {
             (sum, project) => sum + Number(project?.budgetMinutes ?? 0),
             0
         );
-        const projectsWithRates = projectList.filter((project) => project?.hourlyRate !== null && project?.hourlyRate !== undefined);
-        const averageRate = projectsWithRates.length > 0
-            ? projectsWithRates.reduce((sum, project) => sum + Number(project?.hourlyRate ?? 0), 0) / projectsWithRates.length
-            : null;
-        const activeIntegrations = integrations.filter((integration) => integration?.active).length;
-
         return {
             totalProjects,
             totalCustomers,
             projectsWithBudget,
-            totalBudgetHours: totalBudgetMinutes / 60,
-            activeIntegrations,
-            averageRate
+            totalBudgetHours: totalBudgetMinutes / 60
         };
-    }, [projectList, customerList, integrations]);
+    }, [projectList, customerList]);
 
     const formattedBudgetHours = useMemo(() => {
         if (!projectPulse.totalBudgetHours) return '—';
@@ -738,16 +842,51 @@ const AdminProjectsPage = () => {
         return value >= 100 ? Math.round(value).toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
     }, [projectPulse.totalBudgetHours]);
 
-    const formattedAverageRate = useMemo(() => {
-        if (projectPulse.averageRate === null || Number.isNaN(projectPulse.averageRate)) return '—';
-        return projectPulse.averageRate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    }, [projectPulse.averageRate]);
+    const showHeroStats = canViewProjects || canViewCustomers;
+
+    if (!projectsFeatureEnabled) {
+        return (
+            <>
+                <Navbar />
+                <main className="admin-projects-page scoped-dashboard neo-dashboard">
+                    <section className="content-section access-state" role="alert">
+                        <h1 className="section-title">{t('project.access.featureTitle', 'Projektmodul nicht verfügbar')}</h1>
+                        <p>
+                            {t(
+                                'project.access.featureDescription',
+                                'Das Projektmodul ist für diese Firma nicht aktiv. Bitte prüfe die Firmenkonfiguration.'
+                            )}
+                        </p>
+                    </section>
+                </main>
+            </>
+        );
+    }
+
+    if (allowedTabs.length === 0) {
+        return (
+            <>
+                <Navbar />
+                <main className="admin-projects-page scoped-dashboard neo-dashboard">
+                    <section className="content-section access-state" role="alert">
+                        <h1 className="section-title">{t('project.access.title', 'Kein Zugriff auf die Projektverwaltung')}</h1>
+                        <p>
+                            {t(
+                                'project.access.description',
+                                'Für dein Konto ist keiner der Bereiche Projekte, Kunden oder Aufgaben freigegeben.'
+                            )}
+                        </p>
+                    </section>
+                </main>
+            </>
+        );
+    }
 
     return (
         <>
             <Navbar />
-            <div className="admin-projects-page scoped-dashboard neo-dashboard">
-                <section className="page-hero">
+            <main className="admin-projects-page scoped-dashboard neo-dashboard">
+                <section className={`page-hero${showHeroStats ? '' : ' page-hero--single'}`}>
                     <div className="hero-heading">
                         <span className="hero-kicker">{t('project.management.hero.kicker', 'Chronos Control Center')}</span>
                         <h1>{t('project.management.hero.title', 'Projekte & Workflows orchestrieren')}</h1>
@@ -758,6 +897,7 @@ const AdminProjectsPage = () => {
                             )}
                         </p>
                         <div className="hero-actions">
+                            {canViewProjects && (
                             <button
                                 type="button"
                                 className="button-ghost hero-action"
@@ -768,41 +908,43 @@ const AdminProjectsPage = () => {
                                     ? t('loading', 'Lädt...')
                                     : t('project.management.hero.refreshAnalytics', 'Analytics aktualisieren')}
                             </button>
+                            )}
+                            {canManageProjects && (
                             <button
                                 type="button"
                                 className="button-primary hero-action"
-                                onClick={() => handleTabChange('projects')}
+                                onClick={focusProjectCreate}
                             >
                                 {t('project.management.hero.createProject', 'Neues Projekt starten')}
                             </button>
+                            )}
                         </div>
                     </div>
-                    <div className="hero-stats" role="list">
+                    {showHeroStats && <div className="hero-stats" role="list">
+                        {canViewProjects && <>
                         <div className="hero-stat-card" role="listitem">
-                            <span className="stat-label">{t('project.management.hero.totalProjects', 'Aktive Projekte')}</span>
+                            <span className="stat-label">{t('project.management.hero.totalProjects', 'Projekte gesamt')}</span>
                             <span className="stat-value">{projectPulse.totalProjects}</span>
                             <span className="stat-sublabel">
                                 {projectPulse.projectsWithBudget} {t('project.management.hero.projectsWithBudgetSuffix', 'mit Budget')}
                             </span>
                         </div>
+                        </>}
+                        {canViewCustomers && (
                         <div className="hero-stat-card" role="listitem">
-                            <span className="stat-label">{t('project.management.hero.totalCustomers', 'Verknüpfte Kunden')}</span>
+                            <span className="stat-label">{t('project.management.hero.totalCustomers', 'Kunden gesamt')}</span>
                             <span className="stat-value">{projectPulse.totalCustomers}</span>
-                            <span className="stat-sublabel">{t('project.management.hero.customersSubtitle', 'CRM synchronisiert')}</span>
+                            <span className="stat-sublabel">{t('project.management.hero.customersSubtitle', 'In der Kundenverwaltung erfasst')}</span>
                         </div>
+                        )}
+                        {canViewProjects && (
                         <div className="hero-stat-card" role="listitem">
                             <span className="stat-label">{t('project.management.hero.totalBudget', 'Gesamtbudget')}</span>
                             <span className="stat-value">{formattedBudgetHours}</span>
                             <span className="stat-sublabel">{t('project.management.hero.totalBudgetUnit', 'Stunden hinterlegt')}</span>
                         </div>
-                        <div className="hero-stat-card" role="listitem">
-                            <span className="stat-label">{t('project.management.hero.integrations', 'Integrationen')}</span>
-                            <span className="stat-value">{projectPulse.activeIntegrations}</span>
-                            <span className="stat-sublabel">
-                                {t('project.management.hero.ratePrefix', 'Ø Satz')} {formattedAverageRate} {t('project.management.hero.rateCurrency', 'CHF')}
-                            </span>
-                        </div>
-                    </div>
+                        )}
+                    </div>}
                 </section>
 
                 <div className="tab-shell">
@@ -821,8 +963,10 @@ const AdminProjectsPage = () => {
                                     role="tab"
                                     aria-selected={isActive}
                                     aria-controls={`admin-panel-${tab.id}`}
+                                    tabIndex={isActive ? 0 : -1}
                                     className={`tab-button${isActive ? ' is-active' : ''}`}
                                     onClick={() => handleTabChange(tab.id)}
+                                    onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
                                 >
                                     <span className="tab-label">{tab.label}</span>
                                 </button>
@@ -831,18 +975,37 @@ const AdminProjectsPage = () => {
                     </div>
 
                     <div className="tab-panel-wrapper">
-                    <div
+                    {canViewProjects && <div
                         id="admin-panel-projects"
                         role="tabpanel"
                         aria-labelledby="admin-tab-projects"
                         className={`tab-panel${activeTab === 'projects' ? ' is-active' : ''}`}
                         hidden={activeTab !== 'projects'}
                     >
+                        {!canManageProjects && (
+                            <InlineState
+                                message={t('project.access.readOnly', 'Du kannst Projekte ansehen, aber nicht verändern.')}
+                            />
+                        )}
                         <div className="content-grid content-grid--two">
+                            {canManageProjects && (
                             <section className="content-section">
                                 <h3 className="section-title">{t('project.create.title', 'Neues Projekt anlegen')}</h3>
 
-                                {!hasCustomers && (
+                                {customersError && (
+                                    <InlineState
+                                        type="error"
+                                        message={customersError}
+                                        onRetry={fetchCustomers}
+                                        retryLabel={t('retry', 'Erneut versuchen')}
+                                    />
+                                )}
+
+                                {customersLoading && !hasCustomers && (
+                                    <InlineState message={t('customer.loading', 'Kunden werden geladen…')} />
+                                )}
+
+                                {!customersLoading && !customersError && !hasCustomers && (
                                     <div className="empty-state">
                                         <h4>{t('project.create.noCustomersTitle', 'Noch keine Kunden angelegt')}</h4>
                                         <p>
@@ -855,7 +1018,7 @@ const AdminProjectsPage = () => {
                                 )}
 
                                 <form onSubmit={handleCreate} className="create-form" aria-label={t('project.create.form', 'Projekt anlegen')}>
-                                    <label className="sr-only" htmlFor="newProjectName">
+                                    <label className="field-label" htmlFor="newProjectName">
                                         {t('project.create.nameLabel', 'Projektname')}
                                     </label>
                                     <input
@@ -865,10 +1028,13 @@ const AdminProjectsPage = () => {
                                         value={newName}
                                         onChange={(e) => setNewName(e.target.value)}
                                         required
+                                        maxLength={255}
+                                        disabled={projectSaving}
                                         autoComplete="off"
+                                        ref={newProjectNameRef}
                                     />
 
-                                    <label className="sr-only" htmlFor="newProjectCustomer">
+                                    <label className="field-label" htmlFor="newProjectCustomer">
                                         {t('project.create.customerLabel', 'Kunde')}
                                     </label>
                                     <select
@@ -876,7 +1042,7 @@ const AdminProjectsPage = () => {
                                         value={selectedCustomerId}
                                         onChange={(e) => setSelectedCustomerId(e.target.value)}
                                         required
-                                        disabled={!hasCustomers}
+                                        disabled={!hasCustomers || projectSaving}
                                     >
                                         <option value="" disabled>
                                             {t('project.create.customerPlaceholder', 'Kunde auswählen...')}
@@ -888,13 +1054,14 @@ const AdminProjectsPage = () => {
                                         ))}
                                     </select>
 
-                                    <label className="sr-only" htmlFor="newProjectParent">
+                                    <label className="field-label" htmlFor="newProjectParent">
                                         {t('project.create.parentLabel', 'Übergeordnetes Projekt')}
                                     </label>
                                     <select
                                         id="newProjectParent"
                                         value={newParentId}
                                         onChange={(e) => setNewParentId(e.target.value)}
+                                        disabled={projectSaving}
                                     >
                                         <option value="">
                                             {t('project.create.noParent', 'Kein übergeordnetes Projekt')}
@@ -906,7 +1073,7 @@ const AdminProjectsPage = () => {
                                         ))}
                                     </select>
 
-                                    <label className="sr-only" htmlFor="newProjectBudget">
+                                    <label className="field-label" htmlFor="newProjectBudget">
                                         {t('project.create.budgetLabel', 'Budget (Minuten)')}
                                     </label>
                                     <input
@@ -917,9 +1084,10 @@ const AdminProjectsPage = () => {
                                         placeholder={t('project.create.budgetPlaceholder', 'Budget (Minuten)')}
                                         value={newBudget}
                                         onChange={(e) => setNewBudget(e.target.value)}
+                                        disabled={projectSaving}
                                     />
 
-                                    <label className="sr-only" htmlFor="newProjectRate">
+                                    <label className="field-label" htmlFor="newProjectRate">
                                         {t('project.create.rateLabel', 'Stundensatz (CHF)')}
                                     </label>
                                     <input
@@ -931,18 +1099,31 @@ const AdminProjectsPage = () => {
                                         placeholder={t('project.create.ratePlaceholder', 'Stundensatz (optional)')}
                                         value={newHourlyRate}
                                         onChange={(e) => setNewHourlyRate(e.target.value)}
+                                        disabled={projectSaving}
                                     />
 
-                                    <button type="submit" className="button-primary" disabled={!hasCustomers}>
-                                        {t('create', 'Anlegen')}
+                                    <button type="submit" className="button-primary" disabled={!hasCustomers || projectSaving}>
+                                        {projectSaving ? t('saving', 'Wird gespeichert…') : t('create', 'Anlegen')}
                                     </button>
                                 </form>
                             </section>
+                            )}
 
                             <section className="content-section">
                                 <h3 className="section-title">{t('project.list.title', 'Bestehende Projekte')}</h3>
 
-                                {!hasProjects ? (
+                                {projectsError && (
+                                    <InlineState
+                                        type="error"
+                                        message={projectsError}
+                                        onRetry={fetchProjects}
+                                        retryLabel={t('retry', 'Erneut versuchen')}
+                                    />
+                                )}
+
+                                {projectsLoading && !hasProjects ? (
+                                    <InlineState message={t('project.loading', 'Projekte werden geladen…')} />
+                                ) : !projectsError && !hasProjects ? (
                                     <div className="empty-state">
                                         <h4>{t('project.list.emptyTitle', 'Noch keine Projekte')}</h4>
                                         <p>
@@ -963,27 +1144,30 @@ const AdminProjectsPage = () => {
                                                             className="edit-form"
                                                             aria-label={t('project.edit.form', 'Projekt bearbeiten')}
                                                         >
-                                                            <label className="sr-only" htmlFor="editProjectName">
+                                                            <label className="field-label" htmlFor={`editProjectName-${p.id}`}>
                                                                 {t('project.edit.nameLabel', 'Projektname')}
                                                             </label>
                                                             <input
-                                                                id="editProjectName"
+                                                                id={`editProjectName-${p.id}`}
                                                                 type="text"
                                                                 value={editingName}
                                                                 onChange={(e) => setEditingName(e.target.value)}
                                                                 required
                                                                 autoFocus
+                                                                maxLength={255}
+                                                                disabled={projectSaving}
                                                                 autoComplete="off"
                                                             />
 
-                                                            <label className="sr-only" htmlFor="editProjectCustomer">
+                                                            <label className="field-label" htmlFor={`editProjectCustomer-${p.id}`}>
                                                                 {t('project.edit.customerLabel', 'Kunde')}
                                                             </label>
                                                             <select
-                                                                id="editProjectCustomer"
-                                                                value={editingCustomerId}
-                                                                onChange={(e) => setEditingCustomerId(e.target.value)}
+                                                                id={`editProjectCustomer-${p.id}`}
+                                                                value={editingProjectCustomerId}
+                                                                onChange={(e) => setEditingProjectCustomerId(e.target.value)}
                                                                 required
+                                                                disabled={projectSaving}
                                                             >
                                                                 <option value="" disabled>
                                                                     {t('project.edit.customerPlaceholder', 'Kunde auswählen...')}
@@ -995,13 +1179,14 @@ const AdminProjectsPage = () => {
                                                                 ))}
                                                             </select>
 
-                                                            <label className="sr-only" htmlFor="editProjectParent">
+                                                            <label className="field-label" htmlFor={`editProjectParent-${p.id}`}>
                                                                 {t('project.edit.parentLabel', 'Übergeordnetes Projekt')}
                                                             </label>
                                                             <select
-                                                                id="editProjectParent"
+                                                                id={`editProjectParent-${p.id}`}
                                                                 value={editingParentId}
                                                                 onChange={(e) => setEditingParentId(e.target.value)}
+                                                                disabled={projectSaving}
                                                             >
                                                                 <option value="">
                                                                     {t('project.edit.noParent', 'Kein übergeordnetes Projekt')}
@@ -1015,24 +1200,25 @@ const AdminProjectsPage = () => {
                                                                     ))}
                                                             </select>
 
-                                                            <label className="sr-only" htmlFor="editProjectBudget">
+                                                            <label className="field-label" htmlFor={`editProjectBudget-${p.id}`}>
                                                                 {t('project.edit.budgetLabel', 'Budget (Minuten)')}
                                                             </label>
                                                             <input
-                                                                id="editProjectBudget"
+                                                                id={`editProjectBudget-${p.id}`}
                                                                 type="number"
                                                                 min="0"
                                                                 inputMode="numeric"
                                                                 placeholder={t('project.edit.budgetPlaceholder', 'Budget (Minuten)')}
                                                                 value={editingBudget}
                                                                 onChange={(e) => setEditingBudget(e.target.value)}
+                                                                disabled={projectSaving}
                                                             />
 
-                                                            <label className="sr-only" htmlFor="editProjectRate">
+                                                            <label className="field-label" htmlFor={`editProjectRate-${p.id}`}>
                                                                 {t('project.edit.rateLabel', 'Stundensatz (CHF)')}
                                                             </label>
                                                             <input
-                                                                id="editProjectRate"
+                                                                id={`editProjectRate-${p.id}`}
                                                                 type="number"
                                                                 min="0"
                                                                 step="0.01"
@@ -1040,13 +1226,14 @@ const AdminProjectsPage = () => {
                                                                 placeholder={t('project.edit.ratePlaceholder', 'Stundensatz (optional)')}
                                                                 value={editingHourlyRate}
                                                                 onChange={(e) => setEditingHourlyRate(e.target.value)}
+                                                                disabled={projectSaving}
                                                             />
 
                                                             <div className="form-actions">
-                                                                <button type="submit" className="button-primary">
-                                                                    {t('save', 'Speichern')}
+                                                                <button type="submit" className="button-primary" disabled={projectSaving}>
+                                                                    {projectSaving ? t('saving', 'Wird gespeichert…') : t('save', 'Speichern')}
                                                                 </button>
-                                                                <button type="button" onClick={cancelEdit} className="button-secondary">
+                                                                <button type="button" onClick={cancelEdit} className="button-secondary" disabled={projectSaving}>
                                                                     {t('cancel', 'Abbrechen')}
                                                                 </button>
                                                             </div>
@@ -1078,14 +1265,18 @@ const AdminProjectsPage = () => {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            <div className="item-actions">
+                                                            {canManageProjects && <div className="item-actions">
                                                                 <button onClick={() => startEdit(p)} className="button-secondary">
                                                                     {t('edit', 'Bearbeiten')}
                                                                 </button>
-                                                                <button onClick={() => handleDelete(p.id)} className="button-danger">
-                                                                    {t('delete', 'Löschen')}
+                                                                <button
+                                                                    onClick={() => handleDelete(p.id)}
+                                                                    className="button-danger"
+                                                                    disabled={projectDeletingId !== null}
+                                                                >
+                                                                    {projectDeletingId === p.id ? t('deleting', 'Wird gelöscht…') : t('delete', 'Löschen')}
                                                                 </button>
-                                                            </div>
+                                                            </div>}
                                                         </>
                                                     )}
                                                 </li>
@@ -1100,284 +1291,128 @@ const AdminProjectsPage = () => {
                             <div className="section-header">
                                 <h3 className="section-title">{t('project.hierarchy.title', 'Projekt-Hierarchie & KPIs')}</h3>
                                 <div className="analytics-controls">
-                                    <input
-                                        type="date"
-                                        value={analyticsStart}
-                                        onChange={(e) => setAnalyticsStart(e.target.value)}
-                                    />
-                                    <input
-                                        type="date"
-                                        value={analyticsEnd}
-                                        onChange={(e) => setAnalyticsEnd(e.target.value)}
-                                    />
+                                    <div className="analytics-field">
+                                        <label className="field-label" htmlFor="analyticsStart">
+                                            {t('project.period.start', 'Von')}
+                                        </label>
+                                        <input
+                                            id="analyticsStart"
+                                            type="date"
+                                            value={analyticsStart}
+                                            onChange={(e) => setAnalyticsStart(e.target.value)}
+                                            disabled={analyticsLoading}
+                                        />
+                                    </div>
+                                    <div className="analytics-field">
+                                        <label className="field-label" htmlFor="analyticsEnd">
+                                            {t('project.period.end', 'Bis')}
+                                        </label>
+                                        <input
+                                            id="analyticsEnd"
+                                            type="date"
+                                            value={analyticsEnd}
+                                            onChange={(e) => setAnalyticsEnd(e.target.value)}
+                                            disabled={analyticsLoading}
+                                        />
+                                    </div>
                                     <button type="button" className="button-secondary" onClick={loadAnalytics} disabled={analyticsLoading}>
                                         {analyticsLoading ? t('loading', 'Lädt...') : t('refresh', 'Aktualisieren')}
                                     </button>
                                 </div>
                             </div>
+                            {analyticsError && (
+                                <InlineState
+                                    type="error"
+                                    message={analyticsError}
+                                    onRetry={loadAnalytics}
+                                    retryLabel={t('retry', 'Erneut versuchen')}
+                                />
+                            )}
+                            {analyticsLoading && analytics.length === 0 && (
+                                <InlineState message={t('project.analytics.loading', 'Projekt-KPIs werden geladen…')} />
+                            )}
                             <ProjectTree nodes={projectHierarchy} analyticsMap={analyticsMap} t={t} />
                         </section>
 
-                        <section className="content-section">
-                            <h3 className="section-title">{t('project.integration.title', 'Automatisierte Integrationen')}</h3>
-                            <form className="integration-form" onSubmit={handleCreateIntegration}>
-                                <input
-                                    type="text"
-                                    placeholder={t('project.integration.name', 'Name der Integration')}
-                                    value={newIntegration.name}
-                                    onChange={handleIntegrationFieldChange('name')}
-                                    required
-                                />
-                                <select value={newIntegration.type} onChange={handleIntegrationFieldChange('type')}>
-                                    {integrationTypes.map((type) => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input
-                                    type="url"
-                                    placeholder={t('project.integration.endpoint', 'Ziel-URL / Endpoint')}
-                                    value={newIntegration.endpointUrl}
-                                    onChange={handleIntegrationFieldChange('endpointUrl')}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder={t('project.integration.authHeader', 'Auth-Header (optional)')}
-                                    value={newIntegration.authHeader}
-                                    onChange={handleIntegrationFieldChange('authHeader')}
-                                />
-                                <label className="checkbox-inline">
-                                    <input
-                                        type="checkbox"
-                                        checked={newIntegration.active}
-                                        onChange={handleIntegrationFieldChange('active')}
-                                    />
-                                    {t('project.integration.active', 'Aktiv')}
-                                </label>
-                                <label className="checkbox-inline">
-                                    <input
-                                        type="checkbox"
-                                        checked={newIntegration.autoSync}
-                                        onChange={handleIntegrationFieldChange('autoSync')}
-                                    />
-                                    {t('project.integration.autoSync', 'Auto-Sync')}
-                                </label>
-                                <button type="submit" className="button-primary" disabled={integrationLoading}>
-                                    {t('project.integration.add', 'Integration hinzufügen')}
-                                </button>
-                            </form>
+                    </div>}
 
-                            <div className="integration-cards">
-                                {integrations.length === 0 ? (
-                                    <p className="empty-state-text">{t('project.integration.none', 'Noch keine Integrationen hinterlegt.')}</p>
-                                ) : (
-                                    integrations.map((integration) => (
-                                        <article key={integration.id} className="integration-card">
-                                            <header>
-                                                <h4>{integration.name}</h4>
-                                                <span className={`status-pill ${integration.active ? 'active' : 'inactive'}`}>
-                                                    {integration.active ? t('active', 'Aktiv') : t('inactive', 'Inaktiv')}
-                                                </span>
-                                            </header>
-                                            <ul>
-                                                <li><strong>{t('project.integration.type', 'Typ')}:</strong> {integration.type}</li>
-                                                {integration.endpointUrl && (
-                                                    <li><strong>URL:</strong> {integration.endpointUrl}</li>
-                                                )}
-                                                {integration.authHeader && (
-                                                    <li><strong>{t('project.integration.authLabel', 'Auth')}:</strong> {integration.authHeader}</li>
-                                                )}
-                                                {integration.lastTriggeredAt && (
-                                                    <li><strong>{t('project.integration.lastRun', 'Letzte Ausführung')}:</strong> {new Date(integration.lastTriggeredAt).toLocaleString()}</li>
-                                                )}
-                                                {integration.lastStatus && (
-                                                    <li><strong>{t('status', 'Status')}:</strong> {integration.lastStatus}</li>
-                                                )}
-                                            </ul>
-                                            <div className="integration-actions">
-                                                <button type="button" className="button-secondary" onClick={() => handleTriggerIntegration(integration.id)}>
-                                                    {t('project.integration.trigger', 'Test-Übertragung')}
-                                                </button>
-                                                <button type="button" className="button-secondary" onClick={() => handleToggleIntegration(integration, 'active')}>
-                                                    {integration.active ? t('project.integration.deactivate', 'Deaktivieren') : t('project.integration.activate', 'Aktivieren')}
-                                                </button>
-                                                <button type="button" className="button-secondary" onClick={() => handleToggleIntegration(integration, 'autoSync')}>
-                                                    {integration.autoSync ? t('project.integration.stopAuto', 'Auto-Sync stoppen') : t('project.integration.startAuto', 'Auto-Sync starten')}
-                                                </button>
-                                                <button type="button" className="button-danger" onClick={() => handleDeleteIntegration(integration.id)}>
-                                                    {t('delete', 'Löschen')}
-                                                </button>
-                                            </div>
-                                        </article>
-                                    ))
-                                )}
-                            </div>
-
-                            {lastIntegrationRun && (
-                                <div className="integration-result">
-                                    <h4>{t('project.integration.lastRunTitle', 'Letzte Simulation')}</h4>
-                                    <pre>{JSON.stringify(lastIntegrationRun, null, 2)}</pre>
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="content-section">
-                            <h3 className="section-title">{t('project.audit.title', 'Compliance & Audit')}</h3>
-                            {auditLoading ? (
-                                <p>{t('loading', 'Lädt...')}</p>
-                            ) : auditLogs.length === 0 ? (
-                                <p className="empty-state-text">{t('project.audit.empty', 'Noch keine Audit-Einträge vorhanden.')}</p>
-                            ) : (
-                                <div className="audit-table-wrapper">
-                                    <table className="audit-table">
-                                        <thead>
-                                            <tr>
-                                                <th>{t('date', 'Datum')}</th>
-                                                <th>{t('project.audit.user', 'Benutzer')}</th>
-                                                <th>{t('project.audit.action', 'Aktion')}</th>
-                                                <th>{t('project.audit.target', 'Ziel')}</th>
-                                                <th>{t('details', 'Details')}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {auditLogs.map((log) => (
-                                                <tr key={log.id}>
-                                                    <td>{log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}</td>
-                                                    <td>{log.username}</td>
-                                                    <td>{`${log.action} / ${log.severity || 'INFO'}`}</td>
-                                                    <td>{`${log.targetType}${log.targetId ? ` #${log.targetId}` : ''}`}</td>
-                                                    <td>{log.details}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="content-section">
-                            <h3 className="section-title">{t('project.billing.title', 'Automatisierte Abrechnung')}</h3>
-                            <form className="billing-form" onSubmit={handleGenerateInvoice}>
-                                <select value={billingProjectId} onChange={(e) => setBillingProjectId(e.target.value)} required>
-                                    <option value="">{t('project.billing.selectProject', 'Projekt wählen')}</option>
-                                    {sortedProjects.map((project) => (
-                                        <option key={project.id} value={project.id}>
-                                            {project.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input type="date" value={billingStart} onChange={(e) => setBillingStart(e.target.value)} required />
-                                <input type="date" value={billingEnd} onChange={(e) => setBillingEnd(e.target.value)} required />
-                                <label className="checkbox-inline">
-                                    <input
-                                        type="checkbox"
-                                        checked={billingIncludeChildren}
-                                        onChange={(e) => setBillingIncludeChildren(e.target.checked)}
-                                    />
-                                    {t('project.billing.includeChildren', 'Unterprojekte einbeziehen')}
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    inputMode="decimal"
-                                    placeholder={t('project.billing.overrideRate', 'Override-Stundensatz (optional)')}
-                                    value={billingRate}
-                                    onChange={(e) => setBillingRate(e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    value={billingCurrency}
-                                    onChange={(e) => setBillingCurrency(e.target.value)}
-                                    placeholder={t('project.billing.currency', 'Währung')}
-                                />
-                                <button type="submit" className="button-primary" disabled={billingLoading}>
-                                    {billingLoading ? t('loading', 'Lädt...') : t('project.billing.generate', 'Abrechnung erstellen')}
-                                </button>
-                            </form>
-
-                            {invoiceResult && (
-                                <div className="billing-summary">
-                                    <div className="billing-summary-header">
-                                        <h4>{invoiceResult.projectName}</h4>
-                                        <span>{invoiceResult.startDate} - {invoiceResult.endDate}</span>
-                                    </div>
-                                    <div className="billing-summary-metrics">
-                                        <span>{t('project.billing.totalHours', 'Billable Stunden')}: {(invoiceResult.totalBillableMinutes / 60).toFixed(2)}</span>
-                                        <span>{t('project.billing.totalAmount', 'Gesamtbetrag')}: {invoiceResult.totalAmount} {invoiceResult.currency}</span>
-                                        {invoiceResult.overrideRate && (
-                                            <span>{t('project.billing.overrideApplied', 'Override-Satz')}: {invoiceResult.overrideRate}</span>
-                                        )}
-                                        {!invoiceResult.overrideRate && invoiceResult.hourlyRate && (
-                                            <span>{t('project.billing.projectRate', 'Projekt-Satz')}: {invoiceResult.hourlyRate}</span>
-                                        )}
-                                    </div>
-                                    <table className="billing-lines">
-                                        <thead>
-                                            <tr>
-                                                <th>{t('project.billing.projectColumn', 'Projekt')}</th>
-                                                <th>{t('project.billing.taskColumn', 'Aufgabe')}</th>
-                                                <th>{t('project.billing.minutes', 'Minuten')}</th>
-                                                <th>{t('project.billing.amount', 'Betrag')}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {invoiceResult.lineItems?.map((line, idx) => (
-                                                <tr key={`${line.projectId}-${line.taskId || idx}`}>
-                                                    <td>{line.projectName}</td>
-                                                    <td>{line.taskName}</td>
-                                                    <td>{line.minutes}</td>
-                                                    <td>{line.amount}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </section>
-                    </div>
-
-                    <div
+                    {canViewCustomers && <div
                         id="admin-panel-customers"
                         role="tabpanel"
                         aria-labelledby="admin-tab-customers"
                         className={`tab-panel${activeTab === 'customers' ? ' is-active' : ''}`}
                         hidden={activeTab !== 'customers'}
                     >
+                        {!canManageCustomers && (
+                            <InlineState message={t('customer.access.readOnly', 'Du kannst Kunden ansehen, aber nicht verändern.')} />
+                        )}
                         <div className="content-grid content-grid--two">
+                            {canManageCustomers && (
                             <section className="content-section">
                                 <h3 className="section-title">{t('customer.create.title', 'Neuen Kunden anlegen')}</h3>
-                                <form onSubmit={handleCreateCustomer} className="create-form">
+                                <form onSubmit={handleCreateCustomer} className="create-form" aria-label={t('customer.create.title', 'Neuen Kunden anlegen')}>
+                                    <label className="field-label" htmlFor="newCustomerName">
+                                        {t('customer.create.nameLabel', 'Kundenname')}
+                                    </label>
                                     <input
+                                        id="newCustomerName"
                                         type="text"
                                         placeholder={t('customer.create.placeholder', 'Name des neuen Kunden')}
                                         value={newCustomerName}
                                         onChange={(e) => setNewCustomerName(e.target.value)}
                                         required
+                                        maxLength={255}
+                                        disabled={customerSaving}
                                     />
-                                    <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
+                                    <button type="submit" className="button-primary" disabled={customerSaving}>
+                                        {customerSaving ? t('saving', 'Wird gespeichert…') : t('create', 'Anlegen')}
+                                    </button>
                                 </form>
                             </section>
+                            )}
 
                             <section className="content-section">
                                 <h3 className="section-title">{t('customer.list.title', 'Bestehende Kunden')}</h3>
+                                {customersError && (
+                                    <InlineState
+                                        type="error"
+                                        message={customersError}
+                                        onRetry={fetchCustomers}
+                                        retryLabel={t('retry', 'Erneut versuchen')}
+                                    />
+                                )}
+                                {customersLoading && customerList.length === 0 ? (
+                                    <InlineState message={t('customer.loading', 'Kunden werden geladen…')} />
+                                ) : !customersError && customerList.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h4>{t('customer.list.empty', 'Noch keine Kunden vorhanden')}</h4>
+                                        <p>{t('customer.list.emptyHint', 'Lege einen Kunden an, um Projekte zuordnen zu können.')}</p>
+                                    </div>
+                                ) : (
                                 <div className="item-list-container">
                                     <ul className="item-list customer-list">
                                         {customerList.map((customer) => (
                                             <li key={customer.id} className="list-item">
                                                 {editingCustomerId === customer.id ? (
-                                                    <form onSubmit={handleUpdateCustomer} className="edit-form">
+                                                    <form onSubmit={handleUpdateCustomer} className="edit-form" aria-label={t('customer.edit.title', 'Kunde bearbeiten')}>
+                                                        <label className="field-label" htmlFor={`editCustomerName-${customer.id}`}>
+                                                            {t('customer.create.nameLabel', 'Kundenname')}
+                                                        </label>
                                                         <input
+                                                            id={`editCustomerName-${customer.id}`}
                                                             type="text"
                                                             value={editingCustomerName}
                                                             onChange={(e) => setEditingCustomerName(e.target.value)}
                                                             required
                                                             autoFocus
+                                                            maxLength={255}
+                                                            disabled={customerSaving}
                                                         />
                                                         <div className="form-actions">
-                                                            <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
-                                                            <button type="button" onClick={cancelCustomerEdit} className="button-secondary">
+                                                            <button type="submit" className="button-primary" disabled={customerSaving}>
+                                                                {customerSaving ? t('saving', 'Wird gespeichert…') : t('save', 'Speichern')}
+                                                            </button>
+                                                            <button type="button" onClick={cancelCustomerEdit} className="button-secondary" disabled={customerSaving}>
                                                                 {t('cancel', 'Abbrechen')}
                                                             </button>
                                                         </div>
@@ -1385,82 +1420,134 @@ const AdminProjectsPage = () => {
                                                 ) : (
                                                     <>
                                                         <span className="item-name">{customer.name}</span>
-                                                        <div className="item-actions">
+                                                        {canManageCustomers && <div className="item-actions">
                                                             <button onClick={() => startCustomerEdit(customer)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
-                                                            <button onClick={() => handleDeleteCustomer(customer.id)} className="button-danger">{t('delete', 'Löschen')}</button>
-                                                        </div>
+                                                            <button onClick={() => handleDeleteCustomer(customer.id)} className="button-danger" disabled={customerDeletingId !== null}>
+                                                                {customerDeletingId === customer.id ? t('deleting', 'Wird gelöscht…') : t('delete', 'Löschen')}
+                                                            </button>
+                                                        </div>}
                                                     </>
                                                 )}
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
+                                )}
                             </section>
                         </div>
-                    </div>
+                    </div>}
 
-                    <div
+                    {canViewTasks && <div
                         id="admin-panel-tasks"
                         role="tabpanel"
                         aria-labelledby="admin-tab-tasks"
                         className={`tab-panel${activeTab === 'tasks' ? ' is-active' : ''}`}
                         hidden={activeTab !== 'tasks'}
                     >
+                        {!canManageTasks && (
+                            <InlineState message={t('task.access.readOnly', 'Du kannst Aufgaben ansehen, aber nicht verändern.')} />
+                        )}
                         <section className="content-section">
                             <h3 className="section-title">{t('task.projectSelection', 'Projekt auswählen')}</h3>
-                            {hasProjects ? (
+                            {projectsError && (
+                                <InlineState
+                                    type="error"
+                                    message={projectsError}
+                                    onRetry={fetchProjects}
+                                    retryLabel={t('retry', 'Erneut versuchen')}
+                                />
+                            )}
+                            {projectsLoading && !hasProjects ? (
+                                <InlineState message={t('project.loading', 'Projekte werden geladen…')} />
+                            ) : hasProjects ? (
+                                <>
+                                <label className="field-label" htmlFor="taskProjectSelection">
+                                    {t('task.projectSelection', 'Projekt auswählen')}
+                                </label>
                                 <select
+                                    id="taskProjectSelection"
                                     value={selectedTaskProjectId}
                                     onChange={(e) => setSelectedTaskProjectId(e.target.value)}
                                     className="project-selector"
+                                    disabled={tasksLoading || taskSaving}
                                 >
-                                    {projectList.map((project) => (
+                                    {sortedProjects.map((project) => (
                                         <option key={project.id} value={project.id}>
-                                            {project.name}
+                                            {project.customer?.name ? `${project.customer.name} · ` : ''}{project.name}
                                         </option>
                                     ))}
                                 </select>
-                            ) : (
+                                </>
+                            ) : !projectsError ? (
                                 <div className="empty-state">
                                     <h4>{t('task.noProjects.title', 'Noch keine Projekte vorhanden')}</h4>
                                     <p>{t('task.noProjects.description', 'Lege zuerst ein Projekt an, um Aufgaben zu verwalten.')}</p>
                                 </div>
-                            )}
+                            ) : null}
                         </section>
 
                         {hasProjects && (
                             <div className="content-grid content-grid--two">
+                                {canManageTasks && (
                                 <section className="content-section">
                                     <h3 className="section-title">{t('task.create.title', 'Neue Aufgabe anlegen')}</h3>
-                                    <form onSubmit={handleCreateTask} className="create-form">
+                                    <form onSubmit={handleCreateTask} className="create-form" aria-label={t('task.create.title', 'Neue Aufgabe anlegen')}>
+                                        <label className="field-label" htmlFor="newTaskName">
+                                            {t('task.create.nameLabel', 'Aufgabenname')}
+                                        </label>
                                         <input
+                                            id="newTaskName"
                                             type="text"
                                             placeholder={t('task.create.namePlaceholder', 'Name der neuen Aufgabe')}
                                             value={newTaskName}
                                             onChange={(e) => setNewTaskName(e.target.value)}
                                             required
+                                            maxLength={255}
+                                            disabled={taskSaving}
                                         />
+                                        <label className="field-label" htmlFor="newTaskBudget">
+                                            {t('task.create.budgetPlaceholder', 'Budget (Minuten)')}
+                                        </label>
                                         <input
+                                            id="newTaskBudget"
                                             type="number"
+                                            min="0"
+                                            step="1"
+                                            inputMode="numeric"
                                             placeholder={t('task.create.budgetPlaceholder', 'Budget (Minuten)')}
                                             value={newTaskBudget}
                                             onChange={(e) => setNewTaskBudget(e.target.value)}
+                                            disabled={taskSaving}
                                         />
                                         <label className="checkbox-field">
                                             <input
                                                 type="checkbox"
                                                 checked={newTaskBillable}
                                                 onChange={(e) => setNewTaskBillable(e.target.checked)}
+                                                disabled={taskSaving}
                                             />
                                             {t('task.create.billable', 'Abrechenbar')}
                                         </label>
-                                        <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
+                                        <button type="submit" className="button-primary" disabled={taskSaving}>
+                                            {taskSaving ? t('saving', 'Wird gespeichert…') : t('create', 'Anlegen')}
+                                        </button>
                                     </form>
                                 </section>
+                                )}
 
                                 <section className="content-section">
                                     <h3 className="section-title">{t('task.list.title', 'Bestehende Aufgaben')}</h3>
-                                    {taskList.length === 0 ? (
+                                    {tasksError && (
+                                        <InlineState
+                                            type="error"
+                                            message={tasksError}
+                                            onRetry={() => fetchTasks(coerceId(selectedTaskProjectId))}
+                                            retryLabel={t('retry', 'Erneut versuchen')}
+                                        />
+                                    )}
+                                    {tasksLoading && taskList.length === 0 ? (
+                                        <InlineState message={t('task.loading', 'Aufgaben werden geladen…')} />
+                                    ) : !tasksError && taskList.length === 0 ? (
                                         <div className="empty-state">
                                             <h4>{t('task.list.empty', 'Noch keine Aufgaben für dieses Projekt')}</h4>
                                             <p>{t('task.list.emptyHint', 'Lege oben eine neue Aufgabe an, um loszulegen.')}</p>
@@ -1471,31 +1558,48 @@ const AdminProjectsPage = () => {
                                                 {taskList.map((task) => (
                                                     <li key={task.id} className="list-item">
                                                         {editingTaskId === task.id ? (
-                                                            <form onSubmit={handleUpdateTask} className="edit-form">
+                                                            <form onSubmit={handleUpdateTask} className="edit-form" aria-label={t('task.edit.title', 'Aufgabe bearbeiten')}>
+                                                                <label className="field-label" htmlFor={`editTaskName-${task.id}`}>
+                                                                    {t('task.create.nameLabel', 'Aufgabenname')}
+                                                                </label>
                                                                 <input
+                                                                    id={`editTaskName-${task.id}`}
                                                                     type="text"
                                                                     value={editingTaskName}
                                                                     onChange={(e) => setEditingTaskName(e.target.value)}
                                                                     required
                                                                     autoFocus
+                                                                    maxLength={255}
+                                                                    disabled={taskSaving}
                                                                 />
+                                                                <label className="field-label" htmlFor={`editTaskBudget-${task.id}`}>
+                                                                    {t('task.edit.budgetPlaceholder', 'Budget (Minuten)')}
+                                                                </label>
                                                                 <input
+                                                                    id={`editTaskBudget-${task.id}`}
                                                                     type="number"
+                                                                    min="0"
+                                                                    step="1"
+                                                                    inputMode="numeric"
                                                                     placeholder={t('task.edit.budgetPlaceholder', 'Budget (Minuten)')}
                                                                     value={editingTaskBudget}
                                                                     onChange={(e) => setEditingTaskBudget(e.target.value)}
+                                                                    disabled={taskSaving}
                                                                 />
                                                                 <label className="checkbox-field">
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={editingTaskBillable}
                                                                         onChange={(e) => setEditingTaskBillable(e.target.checked)}
+                                                                        disabled={taskSaving}
                                                                     />
                                                                     {t('task.edit.billable', 'Abrechenbar')}
                                                                 </label>
                                                                 <div className="form-actions">
-                                                                    <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
-                                                                    <button type="button" onClick={cancelTaskEdit} className="button-secondary">{t('cancel', 'Abbrechen')}</button>
+                                                                    <button type="submit" className="button-primary" disabled={taskSaving}>
+                                                                        {taskSaving ? t('saving', 'Wird gespeichert…') : t('save', 'Speichern')}
+                                                                    </button>
+                                                                    <button type="button" onClick={cancelTaskEdit} className="button-secondary" disabled={taskSaving}>{t('cancel', 'Abbrechen')}</button>
                                                                 </div>
                                                             </form>
                                                         ) : (
@@ -1513,10 +1617,12 @@ const AdminProjectsPage = () => {
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div className="item-actions">
+                                                                {canManageTasks && <div className="item-actions">
                                                                     <button onClick={() => startTaskEdit(task)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
-                                                                    <button onClick={() => handleDeleteTask(task.id)} className="button-danger">{t('delete', 'Löschen')}</button>
-                                                                </div>
+                                                                    <button onClick={() => handleDeleteTask(task.id)} className="button-danger" disabled={taskDeletingId !== null}>
+                                                                        {taskDeletingId === task.id ? t('deleting', 'Wird gelöscht…') : t('delete', 'Löschen')}
+                                                                    </button>
+                                                                </div>}
                                                             </>
                                                         )}
                                                     </li>
@@ -1527,10 +1633,10 @@ const AdminProjectsPage = () => {
                                 </section>
                             </div>
                         )}
-                    </div>
+                    </div>}
                 </div>
                 </div>
-            </div>
+            </main>
             </>
             );
             };

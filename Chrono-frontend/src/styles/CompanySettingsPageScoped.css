@@ -10,7 +10,7 @@
     --c-text-light: #6b7180;
     --c-muted: #595e6b;
 
-    --c-bg: #0f1117;      /* << HINTERGRUND SEITE (wird im Dark-Override ersetzt) */
+    --c-bg: #f4f6fb;
     --c-card: #ffffff;
     --c-surface: #f9fafb;
     --c-border: #d5d8e5;
@@ -160,6 +160,119 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-pri) 20%, transparent);
 }
 
+.scoped-dashboard .holiday-settings-panel {
+    border-top: 1px solid var(--c-line);
+    margin: calc(var(--u-gap) + 0.2rem) 0 var(--u-gap);
+    padding-top: var(--u-gap);
+}
+
+.scoped-dashboard .holiday-settings-header {
+    align-items: center;
+    display: flex;
+    gap: var(--u-gap-sm);
+    justify-content: space-between;
+    margin-bottom: var(--u-gap-sm);
+}
+
+.scoped-dashboard .holiday-settings-header h3 {
+    color: var(--c-text);
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.scoped-dashboard .holiday-profile-toggle,
+.scoped-dashboard .holiday-main-check,
+.scoped-dashboard .holiday-halfday-check {
+    align-items: center;
+    color: var(--c-text);
+    display: inline-flex;
+    gap: 0.5rem;
+}
+
+.scoped-dashboard .holiday-profile-toggle input,
+.scoped-dashboard .holiday-main-check input,
+.scoped-dashboard .holiday-halfday-check input {
+    accent-color: var(--c-pri);
+}
+
+.scoped-dashboard .holiday-profile-toggle {
+    font-weight: 600;
+}
+
+.scoped-dashboard .holiday-controls {
+    display: grid;
+    gap: var(--u-gap-sm);
+    grid-template-columns: 180px 1fr;
+    margin-bottom: var(--u-gap-sm);
+}
+
+.scoped-dashboard .holiday-controls select,
+.scoped-dashboard .holiday-controls input {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius-sm);
+    color: var(--c-text);
+    font-size: 0.95rem;
+    padding: 0.65rem 0.8rem;
+}
+
+[data-theme="dark"] .scoped-dashboard .holiday-controls select option {
+    background: var(--c-card);
+    color: var(--c-text);
+}
+
+.scoped-dashboard .holiday-list {
+    border: 1px solid var(--c-line);
+    border-radius: var(--u-radius-sm);
+    max-height: 460px;
+    overflow: auto;
+}
+
+.scoped-dashboard .holiday-row {
+    align-items: center;
+    background: var(--c-card);
+    border-bottom: 1px solid var(--c-line);
+    display: grid;
+    gap: var(--u-gap-sm);
+    grid-template-columns: minmax(0, 1fr) 120px;
+    min-height: 48px;
+    padding: 0.6rem 0.8rem;
+}
+
+.scoped-dashboard .holiday-row:last-child {
+    border-bottom: 0;
+}
+
+.scoped-dashboard .holiday-row.selected {
+    background: color-mix(in srgb, var(--c-pri) 7%, var(--c-card));
+}
+
+.scoped-dashboard .holiday-main-check {
+    min-width: 0;
+}
+
+.scoped-dashboard .holiday-name {
+    font-weight: 600;
+}
+
+.scoped-dashboard .holiday-country {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    color: var(--c-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.12rem 0.42rem;
+}
+
+.scoped-dashboard .holiday-region {
+    color: var(--c-text-light);
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Live-Vorschau & Fehler */
 .scoped-dashboard .company-settings-form .preview {
     font-size: 0.85rem; color: var(--c-text-light);
@@ -200,5 +313,16 @@
     }
     .scoped-dashboard .company-settings-form {
         gap: var(--u-gap-sm);
+    }
+    .scoped-dashboard .holiday-settings-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .scoped-dashboard .holiday-controls,
+    .scoped-dashboard .holiday-row {
+        grid-template-columns: 1fr;
+    }
+    .scoped-dashboard .holiday-halfday-check {
+        padding-left: 1.65rem;
     }
 }

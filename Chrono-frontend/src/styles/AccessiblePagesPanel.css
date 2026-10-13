@@ -1,0 +1,188 @@
+.accessible-pages-panel {
+    margin: 1.25rem 0 1.5rem;
+}
+
+.accessible-pages-panel.card {
+    padding: clamp(1.1rem, 2.2vw, 1.4rem);
+    border: 1px solid rgba(47, 91, 215, 0.16);
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f7f9ff 100%);
+    color: #172033;
+    box-shadow: 0 18px 38px rgba(26, 43, 88, 0.08);
+}
+
+.accessible-pages-panel.is-collapsed {
+    margin-bottom: 1rem;
+}
+
+.accessible-pages-panel__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.accessible-pages-panel.is-collapsed .accessible-pages-panel__head {
+    margin-bottom: 0;
+}
+
+.accessible-pages-panel__eyebrow {
+    margin: 0 0 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-primary, #2f5bd7);
+}
+
+.accessible-pages-panel__head h3 {
+    margin: 0;
+    color: #172033;
+}
+
+.accessible-pages-panel__subtitle {
+    margin: 0;
+    max-width: 34rem;
+    color: #526179;
+}
+
+.accessible-pages-panel.is-collapsed .accessible-pages-panel__subtitle {
+    display: none;
+}
+
+.accessible-pages-panel__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.accessible-pages-panel__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    border: 1px solid rgba(47, 91, 215, 0.22);
+    border-radius: 8px;
+    background: rgba(47, 91, 215, 0.08);
+    color: var(--c-primary, #2f5bd7);
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.accessible-pages-panel__toggle:hover {
+    background: rgba(47, 91, 215, 0.14);
+    border-color: rgba(47, 91, 215, 0.34);
+}
+
+.accessible-pages-panel__toggle:focus-visible {
+    outline: 2px solid var(--c-primary, #2f5bd7);
+    outline-offset: 2px;
+}
+
+.accessible-pages-panel__chevron {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.16s ease;
+}
+
+.accessible-pages-panel.is-collapsed .accessible-pages-panel__chevron {
+    transform: translateY(2px) rotate(-135deg);
+}
+
+.accessible-pages-panel__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+}
+
+.accessible-pages-panel__card {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(47, 91, 215, 0.14);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 244, 255, 0.72));
+    text-decoration: none;
+    color: #172033;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.accessible-pages-panel__card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(26, 43, 88, 0.08);
+    border-color: rgba(47, 91, 215, 0.24);
+}
+
+.accessible-pages-panel__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    padding: 0 0.5rem;
+    border-radius: 12px;
+    background: rgba(47, 91, 215, 0.1);
+    color: var(--c-primary, #2f5bd7);
+    font-weight: 700;
+}
+
+.accessible-pages-panel__card strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #111827;
+}
+
+.accessible-pages-panel__card p {
+    margin: 0;
+    color: #5e6574;
+    font-size: 0.94rem;
+    line-height: 1.4;
+}
+
+[data-theme="dark"] .accessible-pages-panel.card {
+    border-color: rgba(96, 165, 250, 0.24);
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.92));
+    color: #e5e7ec;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+}
+
+[data-theme="dark"] .accessible-pages-panel__head h3,
+[data-theme="dark"] .accessible-pages-panel__card strong {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .accessible-pages-panel__subtitle,
+[data-theme="dark"] .accessible-pages-panel__card p {
+    color: #aeb8ca;
+}
+
+[data-theme="dark"] .accessible-pages-panel__card {
+    border-color: rgba(96, 165, 250, 0.18);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.72), rgba(17, 24, 39, 0.66));
+    color: #e5e7ec;
+}
+
+[data-theme="dark"] .accessible-pages-panel__icon {
+    background: rgba(96, 165, 250, 0.16);
+    color: #93c5fd;
+}
+
+@media (max-width: 720px) {
+    .accessible-pages-panel__head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .accessible-pages-panel__actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

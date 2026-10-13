@@ -5,6 +5,7 @@ import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 // Styles
 import "../styles/UserPayslipsPageScoped.css"; // <— NEU
@@ -24,6 +25,15 @@ const PayslipsPage = () => {
     const [scheduleVisible, setScheduleVisible] = useState(false);
     const [isPendingExpanded, setIsPendingExpanded] = useState(true);
     const [isApprovedExpanded, setIsApprovedExpanded] = useState(true);
+    const [refreshTick, setRefreshTick] = useState(0);
+
+    useRefreshOnMutation(['payroll', 'people'], () => {
+        setRefreshTick((value) => value + 1);
+    }, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         if (!currentUser) return;
@@ -35,7 +45,7 @@ const PayslipsPage = () => {
             // User-Ansicht
             api.get('/api/payslips/my', { params: filter }).then(res => setApprovedSlips(res.data || []));
         }
-    }, [currentUser, filter, isAdmin]);
+    }, [currentUser, filter, isAdmin, refreshTick]);
 
     // Admin-Funktionen...
     const approve = id => api.post(`/api/payslips/approve/${id}`).then(() => api.get('/api/payslips/admin/pending').then(res => setPendingSlips(res.data || [])));

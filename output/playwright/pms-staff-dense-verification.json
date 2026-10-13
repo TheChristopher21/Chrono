@@ -1,0 +1,64 @@
+{
+  "capturedAtUtc": "2026-09-12T10:14:04.4255857Z",
+  "api": "http://127.0.0.1:18085",
+  "propertyId": 1,
+  "roomPlan": {
+    "totalRooms": 1007,
+    "denseFixtureStays": 500,
+    "missingDenseStays": 0,
+    "days": 30,
+    "pages": 21,
+    "pageDurationMs": [
+      35.9168,
+      32.2091,
+      44.6933,
+      28.5156,
+      29.0181,
+      28.8752,
+      30.7768,
+      38.0921,
+      39.657,
+      35.0708,
+      42.6559,
+      30.1207,
+      39.6894,
+      32.3303,
+      27.2469,
+      35.8587,
+      47.3205,
+      28.729,
+      26.724,
+      28.2443,
+      22.1567
+    ],
+    "distinctDisplayedStays": 505,
+    "pageSize": 50,
+    "uniqueRooms": 1007
+  },
+  "persistedLedger": {
+    "roomNights": 1500,
+    "roomLinesMissingTaxSnapshot": 1500,
+    "allFolioLines": 1500,
+    "departure": "2026-09-16",
+    "futureArrival": "2026-09-13",
+    "confirmedDenseStays": 500,
+    "operationsDurationMs": 177.9005,
+    "grossAmount": 238500.0,
+    "roomLines": 1500
+  },
+  "history": {
+    "internalOutboxTotalElements": 524,
+    "invoiceTotalElements": 1,
+    "openReceivableTotalElements": 0,
+    "receivableDurationMs": 7.9743,
+    "invoiceDurationMs": 7.471,
+    "receivablePageItems": 0,
+    "invoicePageItems": 1
+  },
+  "limits": [
+    "Durations are one sequential verification sample per request, not independent latency percentiles.",
+    "Dense stays and their folio lines were added; invoice/receivable history was not artificially expanded.",
+    "The hotel business day remains unchanged; the added stays begin tomorrow.",
+    "Legacy demo rates may have unknown tax; the explicit missing-tax count prevents any claim of net-revenue completeness."
+  ]
+}

@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         if (user.isDeleted()) {
             throw new UsernameNotFoundException("User not found");
+        }
+        if (user.isDemoExpired(LocalDateTime.now())) {
+            throw new UsernameNotFoundException("Demo session expired");
         }
         List<SimpleGrantedAuthority> authorities = (user.getRoles() != null && !user.getRoles().isEmpty())
                 ? user.getRoles().stream()

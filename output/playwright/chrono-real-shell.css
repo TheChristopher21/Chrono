@@ -1,0 +1,107 @@
+#chrono-browser-design{--cp-bg:light-dark(#f5f7fb,#111824);--cp-paper:light-dark(#ffffff,#1a2433);--cp-ink:light-dark(#1c2a40,#eef2f8);--cp-muted:light-dark(#61718a,#a4b2c8);--cp-line:light-dark(#e2e7f0,#303e53);--cp-accent:light-dark(#5149db,#aaa5ff);--cp-soft:light-dark(#efedff,#30314f);--cp-radius:10px;--cw-radius:10px;--cw-gap:20px;border:0;border-radius:0;background:var(--cp-bg);font-family:Inter,"Segoe UI",sans-serif;font-size:14px;overflow:clip}
+#chrono-browser-design .cp-chrome{min-height:70px;padding:12px 22px;gap:22px;background:var(--cp-paper)}
+#chrono-browser-design .rb-brand{min-width:188px;display:flex;padding:0;gap:11px;border:0;background:transparent;justify-content:flex-start;text-align:left}
+#chrono-browser-design .rb-brand:hover{background:transparent}
+#chrono-browser-design .rb-brand img{width:42px;height:42px;object-fit:contain;border-radius:50%;flex:none}
+#chrono-browser-design .rb-brand strong{font-size:13px;font-weight:500;display:block;letter-spacing:-.15px}
+#chrono-browser-design .rb-brand small{font-size:11px;display:block;margin-top:2px;color:var(--cp-muted)}
+#chrono-browser-design .rb-platform{font-size:12px;padding:7px 11px;gap:9px;background:var(--cp-bg);border-color:transparent}
+#chrono-browser-design .rb-platform svg{width:12px;height:12px}
+#chrono-browser-design .cp-chrome-tools{gap:10px}
+#chrono-browser-design .cp-chrome-tools .cp-icon{background:transparent;border:0;min-width:30px;padding:7px;color:var(--cp-muted)}
+#chrono-browser-design .cw-search{font-size:12px;border:1px solid var(--cp-line);background:var(--cp-bg);min-width:190px;padding:8px 10px;justify-content:flex-start;color:var(--cp-muted)}
+#chrono-browser-design .cw-search kbd{font-size:11px;background:var(--cp-paper);margin-left:auto}
+#chrono-browser-design .rb-language{font-size:11px;padding:6px;border:0;background:transparent;gap:6px}
+#chrono-browser-design .rb-account{font-size:12px;padding:0 0 0 8px;border:0;background:transparent;gap:9px;white-space:nowrap}
+#chrono-browser-design .rb-account .cp-avatar{background:light-dark(#e7f0fc,#293f60);color:light-dark(#3268af,#a8cdfc);width:30px;height:30px}
+#chrono-browser-design .rb-account>svg{width:12px;height:12px;color:var(--cp-muted)}
+#chrono-browser-design .rb-notifications{position:relative}
+#chrono-browser-design .rb-dot{width:5px;height:5px;border-radius:50%;background:var(--cp-accent);position:absolute;right:5px;top:4px}
+#chrono-browser-design .cp-workspace,#chrono-browser-design[data-workspaces="open"] .cp-workspace{display:flex;min-height:42px;padding:0 20px;gap:4px;background:var(--cp-paper);border-bottom:1px solid var(--cp-line)}
+#chrono-browser-design .cp-worktab{border:0;border-radius:6px 6px 0 0;min-height:41px;gap:1px;padding:3px 6px 3px 9px;box-shadow:none;background:transparent}
+#chrono-browser-design .cp-worktab.cp-active{background:var(--cp-soft);box-shadow:inset 0 -2px var(--cp-accent)}
+#chrono-browser-design .cp-worktab button{font-size:12px;gap:7px;padding:5px;background:transparent;color:var(--cp-muted)}
+#chrono-browser-design .cp-worktab.cp-active>button:first-child{color:var(--cp-accent)}
+#chrono-browser-design .cp-worktab .cp-icon{min-width:22px;padding:3px}
+#chrono-browser-design .cp-worktab svg{width:13px;height:13px}
+#chrono-browser-design .rb-preview-label{font-size:11px;margin-left:auto;color:var(--cp-muted);padding:5px 7px}
+#chrono-browser-design .cp-workspace>.cp-icon{border:0;background:transparent;color:var(--cp-muted)}
+#chrono-browser-design .cp-layout{grid-template-columns:186px minmax(0,1fr)}
+#chrono-browser-design .cp-sidebar{padding:22px 12px 18px}
+#chrono-browser-design .cp-sidebar button{font-size:13px;min-height:40px;padding:9px 11px;gap:10px}
+#chrono-browser-design .cp-side-bottom button{font-size:12px;padding:9px 8px}
+#chrono-browser-design .cw-nav-group{font-size:11px;letter-spacing:.2px;padding:0 11px 10px}
+#chrono-browser-design .cw-nav-favorites{margin-top:25px}
+#chrono-browser-design .cp-main{padding:28px 28px 20px;min-width:0}
+#chrono-browser-design h1{font-size:28px;letter-spacing:-.75px;font-weight:500}
+#chrono-browser-design .cw-breadcrumb{font-size:12px;margin-bottom:8px}
+#chrono-browser-design .cp-page-head{margin-bottom:22px}
+#chrono-browser-design .cw-header-actions button{font-size:13px;padding:10px 14px}
+#chrono-browser-design .cw-toolbar{margin-bottom:2px}
+#chrono-browser-design .cw-date-line,#chrono-browser-design .cw-team-select,#chrono-browser-design .cw-team-select select{font-size:12px}
+#chrono-browser-design .cw-grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:var(--cw-gap)}
+#chrono-browser-design .cw-inbox,#chrono-browser-design .cw-team-panel{box-shadow:0 2px 4px light-dark(#25335303,#0000000a)}
+#chrono-browser-design .cw-section-heading{padding:20px 20px 17px}
+#chrono-browser-design .cw-section-heading h2{font-size:17px}
+#chrono-browser-design .cw-section-heading p{font-size:12px;line-height:1.5;margin-top:5px}
+#chrono-browser-design .cw-filters{margin:0 18px}
+#chrono-browser-design .cw-filters button{font-size:12px;padding:7px 9px}
+#chrono-browser-design .cw-filters button span{font-size:12px}
+#chrono-browser-design .cw-task{margin:0 18px}
+#chrono-browser-design .cw-task-button{padding:14px 0;gap:12px}
+#chrono-browser-design .cw-task-copy strong{font-size:14px;line-height:1.3}
+#chrono-browser-design .cw-task-copy>small{font-size:12px;margin-top:4px;line-height:1.4}
+#chrono-browser-design .cw-task-title{font-size:12px;line-height:1.4;margin-top:4px}
+#chrono-browser-design .cw-task-open-label{font-size:12px;margin-top:1px;gap:4px}
+#chrono-browser-design .cw-task-button .cp-avatar{width:32px;height:32px;font-size:11px}
+#chrono-browser-design .cw-inbox-foot{padding:14px 18px;font-size:12px;gap:8px}
+#chrono-browser-design button.cw-link{font-size:12px}
+#chrono-browser-design .cw-today{padding:16px 19px 6px}
+#chrono-browser-design .cw-today h3,#chrono-browser-design .cw-coming-head h3{font-size:13px}
+#chrono-browser-design .cw-coming{padding:19px 19px 0}
+#chrono-browser-design .cw-absence{gap:11px;padding:17px 0}
+#chrono-browser-design .cw-absence strong{font-size:13px}
+#chrono-browser-design .cw-absence small,#chrono-browser-design .cw-absence-period{font-size:12px;line-height:1.35}
+#chrono-browser-design .cw-date{width:39px;min-width:39px;border-radius:7px;padding:6px 0}
+#chrono-browser-design .cw-date strong{font-size:19px;line-height:1.15}
+#chrono-browser-design .cw-date small{font-size:11px;margin-top:2px}
+#chrono-browser-design .cw-plan-actions{padding:10px 19px 19px;gap:13px}
+#chrono-browser-design .cw-calendar-button{font-size:12px;padding:9px}
+#chrono-browser-design .cw-balances{padding:22px 0 10px;gap:17px;grid-template-columns:.95fr 1fr 1fr 1.4fr auto}
+#chrono-browser-design .cw-balance-title h2{font-size:15px}
+#chrono-browser-design .cw-balances>button>strong{font-size:23px;font-weight:500}
+#chrono-browser-design .cw-balances>button>small{font-size:12px}
+#chrono-browser-design .cw-footer{font-size:11px;padding-top:11px}
+#chrono-browser-design .cp-sheet{padding:24px;background:var(--cp-paper);border-radius:12px;box-shadow:0 3px 10px light-dark(#24304b05,#00000012)}
+#chrono-browser-design .cp-sheet-head{padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--cp-line)}
+#chrono-browser-design .cp-sheet-head h2{font-size:22px;font-weight:500;letter-spacing:-.5px}
+#chrono-browser-design .rb-sheet-context{font-size:12px;color:var(--cp-muted);margin-bottom:5px}
+#chrono-browser-design .cp-sheet-head>.cp-icon{border:0;background:var(--cp-bg);border-radius:50%;width:32px;height:32px}
+#chrono-browser-design .rb-request-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#chrono-browser-design .rb-request-title .cp-person{margin:0 0 20px}
+#chrono-browser-design .rb-request-danger{padding-top:15px;text-align:right}
+#chrono-browser-design .rb-request-danger button{color:var(--cp-bad)}
+#chrono-browser-design .cp-request-detail{padding:22px}
+#chrono-browser-design .cp-request-detail .cr-review{padding:16px;border-top:0;border-radius:7px}
+#chrono-browser-design .cp-queue-layout{grid-template-columns:minmax(220px,.85fr) minmax(0,1.4fr)}
+#chrono-browser-design .cp-request{padding:17px;border-radius:0;background:transparent;width:100%;display:block}
+#chrono-browser-design .cp-request.cp-selected{background:var(--cp-soft);box-shadow:inset 3px 0 var(--cp-accent)}
+#chrono-browser-design .cp-request-top strong{font-size:13px}
+#chrono-browser-design .cp-request small{font-size:12px}
+#chrono-browser-design .cp-cal-day{min-height:99px;padding:9px;vertical-align:top;font-size:12px}
+#chrono-browser-design .cp-cal-heading{padding:11px 6px;font-size:12px}
+#chrono-browser-design .cp-event{font-size:11px;padding:3px 5px;margin-top:5px}
+#chrono-browser-design .cp-toolbar{gap:10px}
+#chrono-browser-design .cp-toolbar input,#chrono-browser-design .cp-toolbar select{font-size:13px}
+#chrono-browser-design .cp-table-wrap th,#chrono-browser-design .cp-table-wrap td{padding:13px 11px;font-size:12px}
+#chrono-browser-design .cp-module{border-radius:9px;padding:19px}
+#chrono-browser-design .cp-module small{font-size:12px}
+#chrono-browser-design .cr-review{border-radius:8px;border-top:0;padding:18px;background:var(--cp-bg)}
+#chrono-browser-design .cr-context{gap:20px}
+#chrono-browser-design .cp-toast{margin-left:210px;font-size:13px}
+@media(min-width:1250px){#chrono-browser-design .cp-layout{grid-template-columns:212px minmax(0,1fr)}#chrono-browser-design .cp-main{padding:30px 36px 24px}#chrono-browser-design .cw-grid{grid-template-columns:minmax(0,1.6fr) minmax(330px,1fr);gap:26px}#chrono-browser-design .cw-task-button{padding:16px 0}#chrono-browser-design .cw-section-heading{padding:21px 22px 17px}#chrono-browser-design .cw-task{margin:0 22px}#chrono-browser-design .cw-task-title{font-size:13px}#chrono-browser-design .cw-filters{margin:0 21px}#chrono-browser-design .cw-absence strong{font-size:14px}#chrono-browser-design .cw-absence{padding:20px 0}#chrono-browser-design .cp-sidebar button{padding:11px 13px}#chrono-browser-design .rb-brand{min-width:195px}#chrono-browser-design .cw-search{min-width:260px}}
+@media(max-width:1100px){#chrono-browser-design .rb-brand{min-width:160px}#chrono-browser-design .cw-search{min-width:145px}#chrono-browser-design .cp-chrome{gap:15px;padding:12px 18px}#chrono-browser-design .cp-chrome-tools{gap:7px}#chrono-browser-design .rb-account{gap:6px}#chrono-browser-design .rb-language span{display:none}}
+@media(max-width:920px){#chrono-browser-design .cp-layout{display:block}#chrono-browser-design .cp-sidebar{padding:8px 14px;flex-direction:row;flex-wrap:wrap;gap:4px}#chrono-browser-design .cp-sidebar button{padding:8px 10px;min-height:36px;font-size:12px}#chrono-browser-design .cw-nav-group,#chrono-browser-design .cw-nav-favorites,#chrono-browser-design .cp-side-bottom{display:none}#chrono-browser-design .cp-main{padding:25px 22px 18px}#chrono-browser-design .rb-account>span:not(.cp-avatar),#chrono-browser-design .rb-account>svg{display:none}#chrono-browser-design .rb-brand{min-width:150px}#chrono-browser-design .cp-chrome{gap:12px}#chrono-browser-design .cw-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:17px}#chrono-browser-design .cw-task-open-label{font-size:0}#chrono-browser-design .cw-task-open-label svg{width:15px;height:15px}#chrono-browser-design .cw-task-button{gap:9px}#chrono-browser-design .cw-task-copy strong{font-size:13px}#chrono-browser-design .cw-section-heading{padding:17px 16px}#chrono-browser-design .cw-section-heading h2{font-size:16px}#chrono-browser-design .cw-section-heading p{font-size:11px}#chrono-browser-design .cw-task{margin:0 15px}#chrono-browser-design .cw-filters{margin:0 13px}#chrono-browser-design .cw-filters button{font-size:11px;padding:7px 6px}#chrono-browser-design .cw-balances{grid-template-columns:1fr 1fr 1fr;gap:18px}#chrono-browser-design .cw-balance-title{grid-column:1/-1;display:flex;align-items:center;gap:12px}#chrono-browser-design .cw-balances>.cp-icon{display:none}#chrono-browser-design .cp-queue-layout{grid-template-columns:minmax(185px,.8fr) minmax(0,1.2fr)}}
+@media(max-width:650px){#chrono-browser-design .cp-chrome{padding:10px 13px;gap:8px;flex-wrap:nowrap}#chrono-browser-design .rb-brand{min-width:0;gap:7px}#chrono-browser-design .rb-brand img{width:34px;height:34px}#chrono-browser-design .rb-brand strong{font-size:12px;max-width:95px;line-height:1.3}#chrono-browser-design .rb-brand small{display:none}#chrono-browser-design .rb-platform{display:none}#chrono-browser-design .cw-search{min-width:0;border:0;background:transparent;font-size:0;padding:6px;gap:0}#chrono-browser-design .cw-search>span,#chrono-browser-design .cw-search kbd{display:none}#chrono-browser-design .rb-language{display:none}#chrono-browser-design .cp-chrome-tools{gap:3px}#chrono-browser-design .rb-notifications{display:none}#chrono-browser-design .rb-account{padding:0 0 0 4px}#chrono-browser-design .cp-workspace{padding:0 9px;gap:0;flex-wrap:wrap}#chrono-browser-design .cp-worktab{padding:2px 3px;min-height:37px;max-width:calc(100% - 58px)}#chrono-browser-design .cp-worktab button:first-child{font-size:11px;gap:5px}#chrono-browser-design .cp-worktab button:first-child>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:138px}#chrono-browser-design .cp-worktab .cp-icon{min-width:21px;padding:3px}#chrono-browser-design .rb-preview-label{font-size:11px;width:100%;order:4;padding:6px 4px;margin-left:0}#chrono-browser-design .cp-sidebar{padding:8px;gap:2px}#chrono-browser-design .cp-sidebar button{font-size:11px;padding:7px 8px;gap:5px}#chrono-browser-design .cp-main{padding:21px 14px 16px}#chrono-browser-design h1{font-size:25px}#chrono-browser-design .cw-header-actions button{font-size:12px;padding:9px 12px}#chrono-browser-design .cw-grid{grid-template-columns:minmax(0,1fr)}#chrono-browser-design .cw-task-open-label{font-size:12px}#chrono-browser-design .cw-task-button .cp-avatar{width:28px;height:28px}#chrono-browser-design .cw-task-copy strong{font-size:13px}#chrono-browser-design .cw-task-copy small{font-size:12px}#chrono-browser-design .cw-date-line{font-size:12px}#chrono-browser-design .cw-team-select select{font-size:12px}#chrono-browser-design .cw-balances{grid-template-columns:1fr 1fr}#chrono-browser-design .cw-balances>.cw-balance-title{display:block}#chrono-browser-design .cw-balances>button:nth-of-type(3){grid-column:1/-1}#chrono-browser-design .cp-sheet{padding:17px 14px}#chrono-browser-design .cp-sheet-head h2{font-size:19px}#chrono-browser-design .cp-request-detail{padding:15px}#chrono-browser-design .cp-queue-layout{grid-template-columns:minmax(0,1fr)}#chrono-browser-design .cp-cal-day{min-height:75px;padding:5px}#chrono-browser-design .cp-cal-heading{font-size:11px;padding:9px 1px}#chrono-browser-design .cp-toast{margin:12px 14px}#chrono-browser-design .cp-footerline{flex-wrap:wrap}}
+@media(max-width:380px){#chrono-browser-design .cw-task-open-label{font-size:0}#chrono-browser-design .cw-task-open-label svg{width:16px;height:16px}#chrono-browser-design .cw-filters button{padding:7px 5px}}
+@media(pointer:coarse){#chrono-browser-design button{min-height:44px}#chrono-browser-design input,#chrono-browser-design textarea,#chrono-browser-design select{font-size:16px!important}}

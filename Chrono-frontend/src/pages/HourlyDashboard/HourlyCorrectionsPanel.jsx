@@ -3,6 +3,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate, formatTime } from "./hourDashUtils"; // Stelle sicher, dass formatTime hier verfügbar ist
 import "../../styles/HourlyDashboardScoped.css"; // Stellt sicher, dass die Styles hier auch referenziert werden
+import { formatRequestAdmin } from "../../utils/correctionActor";
 
 const HourlyCorrectionsPanel = ({
                                     t,
@@ -111,7 +112,7 @@ const HourlyCorrectionsPanel = ({
                                             </h4>
                                             <span className="status-indicator">
                                                 <span>{statusIcon}</span>
-                                                <span className="font-semibold">{statusText}</span>
+                                                <span className="font-semibold">{statusText}{formatRequestAdmin(req, t) ? ` · ${formatRequestAdmin(req, t)}` : ''}</span>
                                             </span>
                                         </div>
                                         <p className="text-sm correction-date-indicator">
@@ -166,6 +167,8 @@ HourlyCorrectionsPanel.propTypes = {
             approved: PropTypes.bool,
             denied: PropTypes.bool,
             adminComment: PropTypes.string,
+            processedByAdminUsername: PropTypes.string,
+            processedByAdminInitials: PropTypes.string,
         })
     ).isRequired,
     selectedCorrectionMonday: PropTypes.instanceOf(Date).isRequired,

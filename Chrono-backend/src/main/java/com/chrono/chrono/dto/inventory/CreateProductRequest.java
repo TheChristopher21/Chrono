@@ -1,16 +1,19 @@
 package com.chrono.chrono.dto.inventory;
 
 import com.chrono.chrono.entities.inventory.Product;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
 public class CreateProductRequest {
-    private String sku;
-    private String name;
-    private String description;
-    private String unitOfMeasure;
-    private BigDecimal unitCost;
-    private BigDecimal unitPrice;
+    @NotBlank @Size(max = 255) private String sku;
+    @NotBlank @Size(max = 255) private String name;
+    @Size(max = 1024) private String description;
+    @Size(max = 32) private String unitOfMeasure;
+    @DecimalMin("0.0") private BigDecimal unitCost;
+    @DecimalMin("0.0") private BigDecimal unitPrice;
     private boolean active = true;
 
     public String getSku() {

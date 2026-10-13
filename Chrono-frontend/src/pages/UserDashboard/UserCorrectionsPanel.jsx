@@ -3,6 +3,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate, formatTime } from "./userDashUtils"; // formatTime hinzugefügt
 import "../../styles/UserDashboardScoped.css"; // Stellt sicher, dass die Styles hier auch referenziert werden
+import { formatRequestAdmin } from "../../utils/correctionActor";
 
 const UserCorrectionsPanel = ({
                                   t,
@@ -95,7 +96,7 @@ const UserCorrectionsPanel = ({
                                             </h4>
                                             <span className="status-indicator">
                                                 <span>{statusIcon}</span>
-                                                <span className="font-semibold">{statusText}</span>
+                                                <span className="font-semibold">{statusText}{formatRequestAdmin(req, t) ? ` · ${formatRequestAdmin(req, t)}` : ''}</span>
                                             </span>
                                         </div>
                                         <p className="text-sm correction-date-indicator">
@@ -157,6 +158,8 @@ UserCorrectionsPanel.propTypes = {
             approved: PropTypes.bool,
             denied: PropTypes.bool,
             adminComment: PropTypes.string,
+            processedByAdminUsername: PropTypes.string,
+            processedByAdminInitials: PropTypes.string,
         })
     ).isRequired,
 };

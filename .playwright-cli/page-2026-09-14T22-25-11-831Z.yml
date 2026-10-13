@@ -1,0 +1,135 @@
+- generic [ref=f37e2]:
+  - generic [ref=f37e5]:
+    - generic [ref=f37e6]:
+      - navigation "Hauptnavigation" [ref=f37e7]:
+        - link "Chrono" [ref=f37e9] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=f37e10]
+        - list [ref=f37e11]:
+          - listitem [ref=f37e12]:
+            - link "Arbeitszeit-Rechner" [ref=f37e13] [cursor=pointer]:
+              - /url: /arbeitszeit-rechner
+          - listitem [ref=f37e14]:
+            - button "Was ist neu?" [ref=f37e15] [cursor=pointer]
+          - listitem [ref=f37e19]:
+            - button "Dark Mode" [ref=f37e20] [cursor=pointer]
+          - listitem [ref=f37e24]:
+            - button "🌐" [ref=f37e25] [cursor=pointer]
+          - listitem [ref=f37e28]:
+            - button "Super Admin" [ref=f37e29] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f37e30]: S
+        - button "Plattform" [ref=f37e35] [cursor=pointer]
+      - region "Chrono Arbeitsbereiche" [ref=f37e38]:
+        - generic [ref=f37e39]:
+          - tablist "Offene Arbeitsbereiche" [ref=f37e40]:
+            - generic [ref=f37e41]:
+              - tab "Neues Dashboard" [ref=f37e42] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f37e43]: Admin
+              - 'button "Tab anheften: Neues Dashboard" [ref=f37e45] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard" [ref=f37e46] [cursor=pointer]'
+            - generic [ref=f37e47]:
+              - tab "Neues Dashboard · Kalender" [ref=f37e48] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f37e49]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Kalender" [ref=f37e51] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Kalender" [ref=f37e52] [cursor=pointer]'
+            - generic [ref=f37e53]:
+              - tab "Neues Dashboard · Mitarbeitende" [ref=f37e54] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f37e55]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Mitarbeitende" [ref=f37e57] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Mitarbeitende" [ref=f37e58] [cursor=pointer]'
+            - generic [ref=f37e59]:
+              - tab "Neues Dashboard · Anträge" [selected] [ref=f37e60] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f37e61]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Anträge" [ref=f37e63] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Anträge" [ref=f37e64] [cursor=pointer]'
+            - generic [ref=f37e65]:
+              - tab "Neues Dashboard · Zeitprüfung" [ref=f37e66] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f37e67]: Admin
+              - 'button "Tab anheften: Neues Dashboard · Zeitprüfung" [ref=f37e69] [cursor=pointer]'
+              - 'button "Tab schließen: Neues Dashboard · Zeitprüfung" [ref=f37e70] [cursor=pointer]'
+          - generic [ref=f37e71]:
+            - button "Arbeitsbereich öffnen" [ref=f37e72] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f37e73] [cursor=pointer]
+    - generic [ref=f37e74]:
+      - complementary "Arbeitsplatz-Navigation" [ref=f37e75]:
+        - generic [ref=f37e76]: Arbeitsplatz
+        - navigation "Admin-Dashboard Bereiche" [ref=f37e77]:
+          - button "Übersicht" [ref=f37e78] [cursor=pointer]
+          - button "Anträge" [ref=f37e82] [cursor=pointer]
+          - button "Zeitprüfung" [ref=f37e86] [cursor=pointer]
+          - button "Kalender" [ref=f37e90] [cursor=pointer]
+          - button "Mitarbeitende" [ref=f37e94] [cursor=pointer]
+          - button "Alle Module" [ref=f37e98] [cursor=pointer]
+        - generic [ref=f37e102]:
+          - generic [ref=f37e103]:
+            - generic [ref=f37e104]: Schnellzugriff
+            - navigation "Schnellzugriff" [ref=f37e105]:
+              - link "Dienstplan" [ref=f37e106] [cursor=pointer]:
+                - /url: /admin/schedule
+              - link "Payroll" [ref=f37e110] [cursor=pointer]:
+                - /url: /admin/payslips
+              - link "Analytics" [ref=f37e114] [cursor=pointer]:
+                - /url: /admin/analytics
+          - generic [ref=f37e118]:
+            - button "Befehle suchen" [ref=f37e119] [cursor=pointer]
+            - link "Zur bisherigen Übersicht" [ref=f37e123] [cursor=pointer]:
+              - /url: /admin/dashboard
+      - banner [ref=f37e126]:
+        - heading "Anträge" [level=1] [ref=f37e128]
+        - generic [ref=f37e130]:
+          - generic [ref=f37e131]: 15.09.2026 (Dienstag)
+          - generic [ref=f37e132]:
+            - text: Team
+            - combobox "Team" [ref=f37e133]:
+              - option "Alle Teams" [selected]
+        - generic [ref=f37e134]:
+          - button "Urlaub eintragen" [disabled] [ref=f37e135]
+          - group [ref=f37e138]:
+            - generic "Weitere Aktionen" [ref=f37e139] [cursor=pointer]
+      - main [ref=f37e145]:
+        - region "Antragscenter" [ref=f37e147]:
+          - generic [ref=f37e148]:
+            - heading "Antragscenter" [level=2] [ref=f37e150]
+            - generic [ref=f37e151]: 0 Offen
+          - generic [ref=f37e152]:
+            - generic [ref=f37e153]:
+              - text: Antragsart
+              - combobox "Antragsart" [ref=f37e154]:
+                - option "Alle" [selected]
+                - option "Urlaub"
+                - option "Zeitkorrektur"
+            - generic [ref=f37e155]:
+              - text: Status
+              - combobox "Status" [ref=f37e156]:
+                - option "Offen" [selected]
+                - option "Genehmigt"
+                - option "Abgelehnt"
+                - option "Erledigt"
+                - option "Alle"
+            - generic [ref=f37e157]:
+              - text: Person
+              - combobox "Person" [ref=f37e158]:
+                - option "Alle Personen" [selected]
+            - generic [ref=f37e159]:
+              - text: Namenssuche
+              - searchbox "Namenssuche" [ref=f37e160]
+          - generic [ref=f37e161]:
+            - generic [ref=f37e162]:
+              - text: Reihenfolge
+              - combobox "Reihenfolge" [ref=f37e163]:
+                - option "Ältestes Datum zuerst" [selected]
+                - option "Neuestes Datum zuerst"
+            - button "Weitere Filter" [ref=f37e164] [cursor=pointer]: Weitere Filter +
+          - generic [ref=f37e165]:
+            - generic [ref=f37e166]:
+              - generic [ref=f37e167]:
+                - strong [ref=f37e168]: 0 Anträge
+                - generic [ref=f37e169]: Zeitraum
+              - paragraph [ref=f37e170]: Lade...
+            - paragraph [ref=f37e172]: Wähle einen Antrag aus der Liste.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

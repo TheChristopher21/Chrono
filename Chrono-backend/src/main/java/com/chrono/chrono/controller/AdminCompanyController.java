@@ -1,9 +1,12 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.HolidayService;
+import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,57 +21,87 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/company")
-@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('PAYROLL_ADMIN')")
 public class AdminCompanyController {
 
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private CompanyRepository companyRepository;
+    @Autowired
+    private HolidayService holidayService;
+    @Autowired
+    private TimeTrackingService timeTrackingService;
 
     @GetMapping
     public ResponseEntity<?> getCompany(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElse(null);
-        if (admin == null || admin.getCompany() == null) {
+        if (admin == null || CompanyScope.companyFor(admin) == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Admin has no company");
         }
-        Company company = admin.getCompany();
-        return ResponseEntity.ok(Map.of(
-                "id", company.getId(),
-                "name", company.getName(),
-                "logoPath", company.getLogoPath()
-        ));
+        Company company = CompanyScope.companyFor(admin);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("id", company.getId());
+        body.put("name", company.getName());
+        body.put("logoPath", company.getLogoPath());
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/settings")
     public ResponseEntity<?> getSettings(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName()).orElse(null);
-        if (admin == null || admin.getCompany() == null) {
+        if (admin == null || CompanyScope.companyFor(admin) == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Admin has no company");
         }
-        Company company = admin.getCompany();
-        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
+        Company company = CompanyScope.companyFor(admin);
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(
+                company,
+                holidayService.getCompanyHolidayPreferences(company)
+        ));
+    }
+
+    @GetMapping("/holiday-catalog")
+    public ResponseEntity<?> getHolidayCatalog() {
+        return ResponseEntity.ok(holidayService.getHolidayCatalog());
     }
 
     @PutMapping("/settings")
     public ResponseEntity<?> updateSettings(@RequestBody CompanySettingsDTO dto, Principal principal) {
         User admin = userRepository.findByUsername(principal.getName()).orElse(null);
-        if (admin == null || admin.getCompany() == null) {
+        if (admin == null || CompanyScope.companyFor(admin) == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Admin has no company");
         }
-        Company company = admin.getCompany();
+        Company company = CompanyScope.companyFor(admin);
+        boolean holidaySettingsChanged = dto.getHolidayPreferences() != null || dto.getCustomHolidaySelectionEnabled() != null;
+        if (dto.getHolidayPreferences() != null && dto.getCustomHolidaySelectionEnabled() == null) {
+            dto.setCustomHolidaySelectionEnabled(true);
+        }
         dto.applyToEntity(company);
         companyRepository.save(company);
-        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
+        if (dto.getHolidayPreferences() != null) {
+            holidayService.replaceCompanyHolidayPreferences(company, dto.getHolidayPreferences());
+        }
+        if (holidaySettingsChanged) {
+            List<User> companyUsers = userRepository.findByCompany_IdAndDeletedFalse(company.getId());
+            for (User user : companyUsers) {
+                timeTrackingService.rebuildUserBalance(user);
+            }
+        }
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(
+                company,
+                holidayService.getCompanyHolidayPreferences(company)
+        ));
     }
 
     @PutMapping("/logo")
@@ -76,11 +109,11 @@ public class AdminCompanyController {
                                         Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElse(null);
-        if (admin == null || admin.getCompany() == null) {
+        if (admin == null || CompanyScope.companyFor(admin) == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Admin has no company");
         }
-        Company company = admin.getCompany();
+        Company company = CompanyScope.companyFor(admin);
         try {
             Path dir = Path.of("company-logos");
             Files.createDirectories(dir);

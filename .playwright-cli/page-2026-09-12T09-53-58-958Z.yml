@@ -1,0 +1,279 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e760]:
+    - generic [ref=f5e761]:
+      - navigation "Hauptnavigation" [ref=f5e762]:
+        - link "Chrono PMS" [ref=f5e764] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e765]
+        - list [ref=f5e766]:
+          - listitem [ref=f5e767]:
+            - link "Zu Chrono wechseln" [ref=f5e768] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e769]:
+            - button "Was ist neu?" [ref=f5e770] [cursor=pointer]
+          - listitem [ref=f5e774]:
+            - button "Dark Mode" [ref=f5e775] [cursor=pointer]
+          - listitem [ref=f5e779]:
+            - button "🌐" [ref=f5e780] [cursor=pointer]
+          - listitem [ref=f5e783]:
+            - button "Default Admin" [ref=f5e784] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e785]: D
+        - button "PMS-Bereiche" [ref=f5e790] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e793]:
+        - generic [ref=f5e794]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e795]:
+            - generic [ref=f5e796]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e797] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e798]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e800] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e801] [cursor=pointer]'
+            - generic [ref=f5e802]:
+              - tab "PMS · Zimmerplan" [ref=f5e803] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e804]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e806] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e807] [cursor=pointer]'
+            - generic [ref=f5e808]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f5e809] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e810]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f5e812] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f5e813] [cursor=pointer]'
+            - generic [ref=f5e814]:
+              - tab "PMS · Housekeeping & Reinigung" [selected] [ref=f5e815] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e816]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f5e818] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f5e819] [cursor=pointer]'
+          - generic [ref=f5e820]:
+            - button "Arbeitsbereich öffnen" [ref=f5e821] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e822] [cursor=pointer]
+    - generic [ref=f5e823]:
+      - complementary "PMS-Navigation" [ref=f5e824]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e825] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e826]: CH
+          - generic [ref=f5e827]:
+            - generic [ref=f5e828]: Aktives Hotel
+            - strong [ref=f5e829]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e830]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e831]:
+          - generic [ref=f5e832]:
+            - generic [ref=f5e833]: Rezeption
+            - button "Übersicht" [ref=f5e834] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e835]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e836] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e837]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e838] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e839]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e840] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e841]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e842] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e843]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e844] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e845]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e846]:
+            - generic [ref=f5e847]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e848] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e849]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e850] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e851]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e852] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e853]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e854] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e855]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e856]:
+            - generic [ref=f5e857]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e858] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e859]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e860] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e861]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e862] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e863]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e864]:
+            - generic [ref=f5e865]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e866] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e867]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e868] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e869]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e870] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e871]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e872] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e873]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e874] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e875]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e878]:
+          - strong [ref=f5e879]: PMS betriebsbereit
+          - generic [ref=f5e880]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e881]:
+        - generic [ref=f5e882]:
+          - generic [ref=f5e883]:
+            - generic [ref=f5e884]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e885]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e887] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e888]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e889]: Ctrl K
+        - region "Zimmerplan" [ref=f5e890]:
+          - generic [ref=f5e892]:
+            - generic [ref=f5e893]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Housekeeping & Reinigung" [level=2] [ref=f5e894]
+            - paragraph [ref=f5e895]: Reinigung, Zimmerfreigabe und technische Sperren koordinieren. · Betriebstag 12.09.2026
+          - generic [ref=f5e897]:
+            - region "Housekeeping-Arbeitsaufträge" [ref=f5e898]:
+              - generic [ref=f5e899]:
+                - generic [ref=f5e900]:
+                  - generic [ref=f5e901]: Chrono Demo Hotel Zürich · 2026-09-12
+                  - heading "Reinigung, Kontrolle und Abendservice" [level=3] [ref=f5e902]
+                - button "Aktualisieren" [ref=f5e903]
+              - paragraph [ref=f5e904]: Jede Arbeitsart hat ihren eigenen Auftrag pro Zimmer und Tag. Der Abendservice verändert die Freigabe des Zimmers nicht.
+              - generic [ref=f5e905]:
+                - generic [ref=f5e906]:
+                  - generic [ref=f5e907]:
+                    - generic [ref=f5e908]:
+                      - text: Zimmer, Mitarbeiter oder Notiz suchen
+                      - searchbox "Zimmer, Mitarbeiter oder Notiz suchen" [ref=f5e909]
+                    - generic [ref=f5e910]:
+                      - text: Arbeitsart filtern
+                      - combobox "Arbeitsart filtern" [ref=f5e911]:
+                        - option "Alle Arbeitsarten" [selected]
+                        - option "Reinigung"
+                        - option "Kontrolle"
+                        - option "Abendservice"
+                    - generic [ref=f5e912]:
+                      - text: Status filtern
+                      - combobox "Status filtern" [ref=f5e913]:
+                        - option "Alle Status" [selected]
+                        - option "Offen"
+                        - option "In Arbeit"
+                        - option "Erledigt"
+                        - option "Bitte nicht stören"
+                        - option "Zurückgestellt"
+                  - status [ref=f5e914]: 1 von 1 Aufgaben
+                  - button "Zimmer 102 · Reinigung Offen · Lea Priorität 90 · 35 Min. · Priorisierte Anreisevorbereitung" [ref=f5e916]:
+                    - strong [ref=f5e917]: Zimmer 102 · Reinigung
+                    - generic [ref=f5e918]: Offen · Lea
+                    - generic [ref=f5e919]: Priorität 90 · 35 Min. · Priorisierte Anreisevorbereitung
+                - generic [ref=f5e920]:
+                  - heading "Aufgabe anlegen" [level=3] [ref=f5e922]
+                  - group [ref=f5e924]:
+                    - generic [ref=f5e925]:
+                      - generic [ref=f5e926]:
+                        - text: Zimmer
+                        - combobox "Zimmer" [ref=f5e927]:
+                          - option "Zimmer wählen" [selected]
+                          - option "101"
+                          - option "102"
+                          - option "201"
+                          - option "202"
+                          - option "203"
+                          - option "301"
+                          - option "302"
+                      - generic [ref=f5e928]:
+                        - text: Servicetag
+                        - textbox "Servicetag" [ref=f5e929]: 2026-09-12
+                      - generic [ref=f5e930]:
+                        - text: Arbeitsart
+                        - combobox "Arbeitsart" [ref=f5e931]:
+                          - option "Reinigung" [selected]
+                          - option "Kontrolle"
+                          - option "Abendservice"
+                      - generic [ref=f5e932]:
+                        - text: Anlass
+                        - combobox "Anlass" [ref=f5e933]:
+                          - option "Manuell geplant" [selected]
+                          - option "Anreise"
+                          - option "Abreise"
+                          - option "Bleibezimmer"
+                          - option "Kontrolle"
+                      - generic [ref=f5e934]:
+                        - text: Zugewiesen an
+                        - textbox "Zugewiesen an" [ref=f5e935]
+                      - generic [ref=f5e936]:
+                        - text: Priorität
+                        - spinbutton "Priorität" [ref=f5e937]: "50"
+                      - generic [ref=f5e938]:
+                        - text: Geplante Minuten
+                        - spinbutton "Geplante Minuten" [ref=f5e939]: "30"
+                      - generic [ref=f5e940]:
+                        - text: Arbeitsnotiz
+                        - textbox "Arbeitsnotiz" [ref=f5e941]
+                    - button "Aufgabe speichern" [ref=f5e943] [cursor=pointer]
+            - generic [ref=f5e944]:
+              - generic [ref=f5e946]:
+                - generic [ref=f5e947]: Technik
+                - heading "Wartung & Zimmerverfügbarkeit" [level=3] [ref=f5e948]
+              - generic [ref=f5e949]:
+                - generic [ref=f5e950]:
+                  - text: Zimmer
+                  - combobox "Zimmer" [ref=f5e951]:
+                    - option "Zimmer wählen" [selected]
+                    - option "101 · City Einzelzimmer"
+                    - option "102 · City Einzelzimmer"
+                    - option "201 · Classic Doppelzimmer"
+                    - option "202 · Classic Doppelzimmer"
+                    - option "203 · Classic Doppelzimmer"
+                    - option "301 · Limmat Suite"
+                    - option "302 · Limmat Suite"
+                - generic [ref=f5e952]:
+                  - text: Priorität
+                  - combobox "Priorität" [ref=f5e953]:
+                    - option "Niedrig"
+                    - option "Normal" [selected]
+                    - option "Hoch"
+                    - option "Kritisch"
+                - generic [ref=f5e954]:
+                  - text: Titel
+                  - textbox "Titel" [ref=f5e955]
+                - generic [ref=f5e956]:
+                  - text: Zuständig
+                  - textbox "Zuständig" [ref=f5e957]
+                - generic [ref=f5e958]:
+                  - text: Fällig
+                  - textbox "Fällig" [ref=f5e959]: 2026-09-12
+                - generic [ref=f5e960]:
+                  - checkbox "Auswirkung auf die Zimmerverfügbarkeit erfassen" [checked] [ref=f5e961]
+                  - text: Auswirkung auf die Zimmerverfügbarkeit erfassen
+                - generic [ref=f5e962]:
+                  - text: Auswirkung auf Verfügbarkeit
+                  - combobox "Auswirkung auf Verfügbarkeit OOO und Eigennutzung nehmen das Zimmer aus dem Verkauf. Bei OOS bleibt es im Bestand und kann weiterhin zugewiesen werden." [ref=f5e963]:
+                    - option "Ausser Betrieb – nicht verkaufbar (OOO)" [selected]
+                    - option "Eingeschränkter Betrieb – weiterhin zuweisbar (OOS)"
+                    - option "Eigennutzung – nicht verkaufbar"
+                  - generic [ref=f5e964]: OOO und Eigennutzung nehmen das Zimmer aus dem Verkauf. Bei OOS bleibt es im Bestand und kann weiterhin zugewiesen werden.
+                - generic [ref=f5e965]:
+                  - text: Von
+                  - textbox "Von" [ref=f5e966]: 2026-09-12
+                - generic [ref=f5e967]:
+                  - text: Bis
+                  - textbox "Bis" [ref=f5e968]: 2026-09-13
+                - generic [ref=f5e969]:
+                  - text: Beschreibung
+                  - textbox "Beschreibung" [ref=f5e970]
+                - button "Wartungsauftrag erstellen" [ref=f5e972] [cursor=pointer]
+              - article [ref=f5e974]:
+                - generic [ref=f5e975]:
+                  - generic [ref=f5e976]: Zimmer 301 · Hoch · Offen
+                  - strong [ref=f5e977]: Klimaanlage prüfen
+                  - generic [ref=f5e978]: Technik-Team · Verfügbarkeitszeitraum erfasst
+                - button "Erledigt & freigeben" [ref=f5e979] [cursor=pointer]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

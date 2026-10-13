@@ -30,6 +30,31 @@ public class EmploymentModelHistoryService {
     }
 
     public User resolveUserSnapshotForDate(User user, LocalDate date) {
+        return createUserSnapshot(user, resolveHistoryForDate(user, date).orElse(null));
+    }
+
+    public Map<LocalDate, User> resolveUserSnapshotsForRange(User user, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, User> snapshots = new HashMap<>();
+        if (user == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            return snapshots;
+        }
+
+        List<UserEmploymentModelHistory> history = historyRepository.findByUserOrderByEffectiveFromAsc(user);
+        UserEmploymentModelHistory active = history.isEmpty() ? null : history.get(0);
+        int nextIndex = 0;
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            while (nextIndex < history.size()
+                    && !history.get(nextIndex).getEffectiveFrom().isAfter(date)) {
+                active = history.get(nextIndex);
+                nextIndex++;
+            }
+            snapshots.put(date, createUserSnapshot(user, active));
+        }
+        return snapshots;
+    }
+
+    private User createUserSnapshot(User user, UserEmploymentModelHistory history) {
         User snapshot = new User();
         snapshot.setId(user.getId());
         snapshot.setUsername(user.getUsername());
@@ -46,12 +71,10 @@ public class EmploymentModelHistoryService {
         snapshot.setBreakDuration(user.getBreakDuration());
         snapshot.setAnnualVacationDays(user.getAnnualVacationDays());
 
-        Optional<UserEmploymentModelHistory> historyOpt = resolveHistoryForDate(user, date);
-        if (historyOpt.isEmpty()) {
+        if (history == null) {
             return snapshot;
         }
 
-        UserEmploymentModelHistory history = historyOpt.get();
         snapshot.setIsHourly(history.getModelType() == EmploymentModelType.HOURLY);
         snapshot.setIsPercentage(history.getModelType() == EmploymentModelType.PERCENTAGE);
         snapshot.setWorkPercentage(history.getWorkPercentage());
@@ -75,6 +98,45 @@ public class EmploymentModelHistoryService {
 
     public LocalDate currentBerlinDate() {
         return LocalDate.now(ZoneId.of("Europe/Berlin"));
+    }
+
+    public LocalDate resolveLatestEffectiveFrom(User user) {
+        if (user == null) {
+            return null;
+        }
+        return historyRepository
+                .findFirstByUserOrderByEffectiveFromDesc(user)
+                .map(UserEmploymentModelHistory::getEffectiveFrom)
+                .orElseGet(() -> user.getEntryDate() != null ? user.getEntryDate() : currentBerlinDate());
+    }
+
+    public LocalDate resolveCurrentOvertimeStreakStart(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        LocalDate today = currentBerlinDate();
+        LocalDate fallback = user.getEntryDate();
+        List<UserEmploymentModelHistory> history = historyRepository.findByUserOrderByEffectiveFromAsc(user);
+        if (history.isEmpty()) {
+            return fallback;
+        }
+
+        LocalDate streakStart = null;
+        for (UserEmploymentModelHistory row : history) {
+            if (row.getEffectiveFrom() == null || row.getEffectiveFrom().isAfter(today)) {
+                continue;
+            }
+            if (row.getModelType() == EmploymentModelType.HOURLY) {
+                streakStart = null;
+                continue;
+            }
+            if (streakStart == null) {
+                streakStart = row.getEffectiveFrom();
+            }
+        }
+
+        return streakStart != null ? streakStart : fallback;
     }
 
     public boolean needsBaselineBefore(User user, LocalDate baselineDate) {
@@ -129,6 +191,21 @@ public class EmploymentModelHistoryService {
                 .findFirst();
         UserEmploymentModelHistory row = exactDay.orElseGet(UserEmploymentModelHistory::new);
         fillHistoryRowFromUser(row, user, model, effective);
+        historyRepository.save(row);
+    }
+
+    /**
+     * Applies a corrected employment configuration from the supplied date onward.
+     * Later rows must be removed, otherwise an old future snapshot would silently
+     * become active again and override the correction.
+     */
+    @Transactional
+    public void replaceHistoryFrom(User user, LocalDate effectiveFrom) {
+        LocalDate effective = effectiveFrom != null ? effectiveFrom : currentBerlinDate();
+        historyRepository.deleteFromDate(user, effective);
+
+        UserEmploymentModelHistory row = new UserEmploymentModelHistory();
+        fillHistoryRowFromUser(row, user, deriveCurrentModel(user), effective);
         historyRepository.save(row);
     }
 

@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
@@ -9,14 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "scm_sales_orders")
+@Table(
+        name = "scm_sales_orders",
+        uniqueConstraints = @UniqueConstraint(name = "uk_scm_sales_orders_company_number", columnNames = {"company_id", "order_number"}),
+        indexes = @Index(name = "idx_scm_sales_orders_company", columnList = "company_id")
+)
 public class SalesOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String orderNumber;
 
     @Column(nullable = false)
@@ -35,6 +40,10 @@ public class SalesOrder {
 
     @Column
     private Long projectId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -102,6 +111,14 @@ public class SalesOrder {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public List<SalesOrderLine> getLines() {

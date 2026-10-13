@@ -50,6 +50,13 @@ public class PaymentBatch {
     @Column(length = 1024)
     private String providerMessage;
 
+    private String deliveryChannel;
+
+    @Column(length = 1024)
+    private String providerArtifactPath;
+
+    private String providerArtifactName;
+
     public Long getId() {
         return id;
     }
@@ -144,5 +151,29 @@ public class PaymentBatch {
 
     public void setProviderMessage(String providerMessage) {
         this.providerMessage = providerMessage;
+    }
+
+    public String getDeliveryChannel() {
+        return deliveryChannel;
+    }
+
+    public void setDeliveryChannel(String deliveryChannel) {
+        this.deliveryChannel = deliveryChannel;
+    }
+
+    public String getProviderArtifactPath() {
+        return providerArtifactPath;
+    }
+
+    public void setProviderArtifactPath(String providerArtifactPath) {
+        this.providerArtifactPath = providerArtifactPath;
+    }
+
+    public String getProviderArtifactName() {
+        return providerArtifactName;
+    }
+
+    public void setProviderArtifactName(String providerArtifactName) {
+        this.providerArtifactName = providerArtifactName;
     }
 }

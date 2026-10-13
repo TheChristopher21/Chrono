@@ -1,0 +1,288 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e1507]:
+    - generic [ref=f5e1508]:
+      - navigation "Hauptnavigation" [ref=f5e1509]:
+        - link "Chrono PMS" [ref=f5e1511] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e1512]
+        - list [ref=f5e1513]:
+          - listitem [ref=f5e1514]:
+            - link "Zu Chrono wechseln" [ref=f5e1515] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e1516]:
+            - button "Was ist neu?" [ref=f5e1517] [cursor=pointer]
+          - listitem [ref=f5e1521]:
+            - button "Dark Mode" [ref=f5e1522] [cursor=pointer]
+          - listitem [ref=f5e1526]:
+            - button "🌐" [ref=f5e1527] [cursor=pointer]
+          - listitem [ref=f5e1530]:
+            - button "Default Admin" [ref=f5e1531] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1532]: D
+        - button "PMS-Bereiche" [ref=f5e1537] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e1540]:
+        - generic [ref=f5e1541]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e1542]:
+            - generic [ref=f5e1543]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e1544] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1545]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e1547] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e1548] [cursor=pointer]'
+            - generic [ref=f5e1549]:
+              - tab "PMS · Zimmerplan" [ref=f5e1550] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1551]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e1553] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e1554] [cursor=pointer]'
+            - generic [ref=f5e1555]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f5e1556] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1557]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f5e1559] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f5e1560] [cursor=pointer]'
+            - generic [ref=f5e1561]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f5e1562] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1563]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f5e1565] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f5e1566] [cursor=pointer]'
+            - generic [ref=f5e1567]:
+              - tab "PMS · Rechnungen" [ref=f5e1568] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1569]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f5e1571] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f5e1572] [cursor=pointer]'
+            - generic [ref=f5e1573]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [selected] [ref=f5e1574] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1575]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f5e1577] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f5e1578] [cursor=pointer]'
+          - generic [ref=f5e1579]:
+            - button "Arbeitsbereich öffnen" [ref=f5e1580] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e1581] [cursor=pointer]
+    - generic [ref=f5e1582]:
+      - complementary "PMS-Navigation" [ref=f5e1583]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e1584] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e1585]: CH
+          - generic [ref=f5e1586]:
+            - generic [ref=f5e1587]: Aktives Hotel
+            - strong [ref=f5e1588]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e1589]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e1590]:
+          - generic [ref=f5e1591]:
+            - generic [ref=f5e1592]: Rezeption
+            - button "Übersicht" [ref=f5e1593] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1594]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e1595] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1596]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e1597] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1598]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e1599] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1600]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e1601] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1602]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e1603] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1604]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e1605]:
+            - generic [ref=f5e1606]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e1607] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1608]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e1609] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1610]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e1611] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1612]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e1613] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1614]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e1615]:
+            - generic [ref=f5e1616]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e1617] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1618]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e1619] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1620]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e1621] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1622]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e1623]:
+            - generic [ref=f5e1624]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e1625] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1626]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e1627] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1628]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e1629] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1630]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e1631] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1632]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e1633] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1634]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e1637]:
+          - strong [ref=f5e1638]: PMS betriebsbereit
+          - generic [ref=f5e1639]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e1640]:
+        - generic [ref=f5e1641]:
+          - generic [ref=f5e1642]:
+            - generic [ref=f5e1643]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e1644]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e1646] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e1647]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e1648]: Ctrl K
+        - region [ref=f5e1649]:
+          - generic [ref=f5e1651]:
+            - generic [ref=f5e1652]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Veranstaltungen & Ressourcen" [level=2] [ref=f5e1653]
+            - paragraph [ref=f5e1654]: Räume, Ressourcen und Veranstaltungen planen. · Betriebstag 12.09.2026
+          - generic [ref=f5e1655]:
+            - generic [ref=f5e1656]:
+              - generic [ref=f5e1658]:
+                - generic [ref=f5e1659]: Tagung & Bankett
+                - heading "Veranstaltungsauftrag" [level=3] [ref=f5e1660]
+                - paragraph [ref=f5e1661]: Ablauf, Aufbau, Catering und Leistungen gemeinsam planen.
+              - generic [ref=f5e1662]:
+                - text: Veranstaltung
+                - combobox "Veranstaltung" [ref=f5e1663]:
+                  - option "Veranstaltung auswählen"
+                  - option "Strategie-Workshop · 26.09.2026, 09:00 Uhr" [selected]
+            - generic [ref=f5e1664]:
+              - generic [ref=f5e1665]:
+                - generic [ref=f5e1667]:
+                  - generic [ref=f5e1668]: Hotelressourcen
+                  - heading "Ressource anlegen" [level=3] [ref=f5e1669]
+                - generic [ref=f5e1670]:
+                  - generic [ref=f5e1671]:
+                    - text: Typ
+                    - combobox "Ressourcentyp" [ref=f5e1672]:
+                      - option "Tagungsraum" [selected]
+                      - option "Parkplatz"
+                      - option "Spa"
+                      - option "Restaurant"
+                      - option "Bar"
+                      - option "Ausstattung oder Gerät"
+                      - option "Sonstiges"
+                  - generic [ref=f5e1673]:
+                    - text: Code
+                    - textbox "Ressourcencode" [ref=f5e1674]
+                  - generic [ref=f5e1675]:
+                    - text: Name
+                    - textbox "Ressourcenname" [ref=f5e1676]
+                  - generic [ref=f5e1677]:
+                    - text: Lage / Raum
+                    - textbox "Lage / Raum" [ref=f5e1678]
+                  - generic [ref=f5e1679]:
+                    - text: Kapazität
+                    - spinbutton "Kapazität" [ref=f5e1680]: "20"
+                  - generic [ref=f5e1681]:
+                    - text: Preis pro Stunde (falls berechnet)
+                    - spinbutton "Preis pro Stunde (falls berechnet)" [ref=f5e1682]: "0"
+                  - button "Ressource anlegen" [ref=f5e1684] [cursor=pointer]
+                - separator [ref=f5e1685]
+                - heading "Ressource buchen" [level=4] [ref=f5e1686]
+                - generic [ref=f5e1687]:
+                  - generic [ref=f5e1688]:
+                    - text: Ressource
+                    - combobox "Buchungsressource" [ref=f5e1689]:
+                      - option "Ressource wählen" [selected]
+                      - option "Salon Limmat · max. 18"
+                  - generic [ref=f5e1690]:
+                    - text: Gruppe (optional)
+                    - combobox "Gruppe (optional)" [ref=f5e1691]:
+                      - option "Ohne Gruppe" [selected]
+                      - option "Helvetia Strategie-Retreat"
+                  - generic [ref=f5e1692]:
+                    - text: Titel
+                    - textbox "Eventtitel" [ref=f5e1693]
+                  - generic [ref=f5e1694]:
+                    - text: Veranstalter
+                    - textbox "Veranstalter" [ref=f5e1695]
+                  - generic [ref=f5e1696]:
+                    - text: Beginn
+                    - textbox "Eventbeginn" [ref=f5e1697]: 2026-09-12T09:00
+                  - generic [ref=f5e1698]:
+                    - text: Ende
+                    - textbox "Eventende" [ref=f5e1699]: 2026-09-12T12:00
+                  - generic [ref=f5e1700]:
+                    - text: Teilnehmende
+                    - spinbutton "Teilnehmende" [ref=f5e1701]: "1"
+                  - generic [ref=f5e1702]:
+                    - text: Gesamtbetrag
+                    - spinbutton "Gesamtbetrag" [ref=f5e1703]: "0"
+                  - generic [ref=f5e1704]:
+                    - text: Notizen
+                    - textbox "Notizen" [ref=f5e1705]
+                  - button "Konfliktfrei buchen" [ref=f5e1707] [cursor=pointer]
+              - generic [ref=f5e1708]:
+                - generic [ref=f5e1710]:
+                  - generic [ref=f5e1711]: Ressourcenbelegungen
+                  - heading "1 Buchungen" [level=3] [ref=f5e1712]
+                - article [ref=f5e1714]:
+                  - generic [ref=f5e1715]:
+                    - generic [ref=f5e1716]: Bestätigt · 26.09.2026, 09:00 Uhr bis 26.09.2026, 17:00 Uhr
+                    - strong [ref=f5e1717]: Strategie-Workshop
+                    - generic [ref=f5e1718]: Salon Limmat · 8 Personen · CHF 1'120.00
+                  - button "Stornieren" [ref=f5e1719] [cursor=pointer]
+            - region "Hotelverlauf" [ref=f5e1720]:
+              - generic [ref=f5e1721]:
+                - heading "Verlauf und ältere Einträge" [level=3] [ref=f5e1722]
+                - button "Verlauf aktualisieren" [ref=f5e1723]
+              - generic [ref=f5e1724]:
+                - generic [ref=f5e1725]:
+                  - text: Verlaufsbereich
+                  - combobox "Verlaufsbereich" [ref=f5e1726]:
+                    - option "Ressourcenbuchungen" [selected]
+                - generic [ref=f5e1727]:
+                  - text: Verlauf durchsuchen
+                  - searchbox "Verlauf durchsuchen" [ref=f5e1728]
+                - generic [ref=f5e1729]:
+                  - text: Einträge pro Seite
+                  - combobox "Einträge pro Seite" [ref=f5e1730]:
+                    - option "10"
+                    - option "25" [selected]
+                    - option "50"
+                    - option "100"
+              - status [ref=f5e1731]: 1 passende Einträge
+              - table [ref=f5e1733]:
+                - rowgroup [ref=f5e1734]:
+                  - row [ref=f5e1735]:
+                    - columnheader "ID" [ref=f5e1736]
+                    - columnheader "Bezeichnung" [ref=f5e1737]
+                    - columnheader "Veranstalter" [ref=f5e1738]
+                    - columnheader "Beginn" [ref=f5e1739]
+                    - columnheader "Ende" [ref=f5e1740]
+                    - columnheader "Personen" [ref=f5e1741]
+                    - columnheader "Status" [ref=f5e1742]
+                    - columnheader "Gesamtbetrag" [ref=f5e1743]
+                    - columnheader "Erstellt von" [ref=f5e1744]
+                    - columnheader "Erstellt" [ref=f5e1745]
+                - rowgroup [ref=f5e1746]:
+                  - row [ref=f5e1747]:
+                    - cell "1" [ref=f5e1748]
+                    - cell "Strategie-Workshop" [ref=f5e1749]
+                    - cell "Helvetia Consulting AG" [ref=f5e1750]
+                    - cell "2026-09-26 09:00:00" [ref=f5e1751]
+                    - cell "2026-09-26 17:00:00" [ref=f5e1752]
+                    - cell "8" [ref=f5e1753]
+                    - cell "CONFIRMED" [ref=f5e1754]
+                    - cell "CHF 1'120.00" [ref=f5e1755]
+                    - cell "Christopher (Demo-Daten)" [ref=f5e1756]
+                    - cell "2026-09-12 11:49:11.63022" [ref=f5e1757]
+              - generic [ref=f5e1758]:
+                - button "Vorherige Seite" [disabled] [ref=f5e1759]
+                - generic [ref=f5e1760]: Seite 1 von 1
+                - button "Nächste Seite" [disabled] [ref=f5e1761]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

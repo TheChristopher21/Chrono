@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useMemo } from 'react';
-import { minutesToHHMM, selectTrackableUsers } from './adminDashboardUtils';
+import { isHourlyEmploymentModel, minutesToHHMM, selectTrackableUsers } from './adminDashboardUtils';
 
 const AdminDashboardKpis = ({
     t,
@@ -50,6 +50,26 @@ const AdminDashboardKpis = ({
         return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
     }, [weeklyBalances, trackableUsernames, didFallbackTrackableUsers, excludedUsernames]);
 
+    const usersByUsername = useMemo(() => {
+        const map = new Map();
+        (Array.isArray(users) ? users : []).forEach((user) => {
+            if (user?.username) {
+                map.set(user.username, user);
+            }
+        });
+        return map;
+    }, [users]);
+
+    const overtimeEligibleWeeklyBalances = useMemo(() => (
+        relevantWeeklyBalances.filter((entry) => !isHourlyEmploymentModel(usersByUsername.get(entry?.username) || entry))
+    ), [relevantWeeklyBalances, usersByUsername]);
+
+    const overtimeEligibleTrackableUsers = useMemo(() => (
+        Array.isArray(trackableUsers)
+            ? trackableUsers.filter((user) => !isHourlyEmploymentModel(user))
+            : []
+    ), [trackableUsers]);
+
     const stats = useMemo(() => {
         const pendingVacations = Array.isArray(allVacations)
             ? allVacations.filter(vac => !vac.approved && !vac.denied).length
@@ -60,10 +80,10 @@ const AdminDashboardKpis = ({
             : 0;
 
         const balanceSamples = (
-            Array.isArray(relevantWeeklyBalances) && relevantWeeklyBalances.length > 0
-                ? relevantWeeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
-                : (Array.isArray(trackableUsers) && trackableUsers.length > 0
-                    ? trackableUsers.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
+            Array.isArray(overtimeEligibleWeeklyBalances) && overtimeEligibleWeeklyBalances.length > 0
+                ? overtimeEligibleWeeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
+                : (Array.isArray(overtimeEligibleTrackableUsers) && overtimeEligibleTrackableUsers.length > 0
+                    ? overtimeEligibleTrackableUsers.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
                     : [])
         ).filter(val => typeof val === 'number' && !Number.isNaN(val));
 
@@ -73,8 +93,8 @@ const AdminDashboardKpis = ({
 
         const negativeBalances = balanceSamples.filter(minutes => minutes < 0).length;
 
-        const topPositive = Array.isArray(relevantWeeklyBalances)
-            ? relevantWeeklyBalances.reduce((best, item) => {
+        const topPositive = Array.isArray(overtimeEligibleWeeklyBalances)
+            ? overtimeEligibleWeeklyBalances.reduce((best, item) => {
                 const minutes = Number.isFinite(item?.trackingBalance) ? item.trackingBalance : null;
                 if (minutes === null) return best;
                 if (!best || minutes > best.minutes) {
@@ -84,8 +104,8 @@ const AdminDashboardKpis = ({
             }, null)
             : null;
 
-        const topNegative = Array.isArray(relevantWeeklyBalances)
-            ? relevantWeeklyBalances.reduce((worst, item) => {
+        const topNegative = Array.isArray(overtimeEligibleWeeklyBalances)
+            ? overtimeEligibleWeeklyBalances.reduce((worst, item) => {
                 const minutes = Number.isFinite(item?.trackingBalance) ? item.trackingBalance : null;
                 if (minutes === null) return worst;
                 if (!worst || minutes < worst.minutes) {
@@ -104,7 +124,7 @@ const AdminDashboardKpis = ({
             topPositive,
             topNegative,
         };
-    }, [allVacations, allCorrections, relevantWeeklyBalances, trackableUsers]);
+    }, [allVacations, allCorrections, overtimeEligibleWeeklyBalances, overtimeEligibleTrackableUsers]);
 
     const cards = useMemo(() => {
         const openItems = stats.pendingVacations + stats.pendingCorrections;
