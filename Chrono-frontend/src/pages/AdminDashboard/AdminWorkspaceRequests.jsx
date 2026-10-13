@@ -8,6 +8,7 @@ import { formatRequestAdmin } from '../../utils/correctionActor';
 import { formatDate, formatTime, minutesToHHMM } from './adminDashboardUtils';
 import { workspaceAbsences, workspaceDate } from './adminWorkspaceData';
 import AdminWorkspaceVacationBalance from './AdminWorkspaceVacationBalance';
+import { AdminWorkspaceIcon } from './AdminWorkspaceChrome';
 import { buildWorkspaceRequestRows, matchesRequestDate, requestEntryKey, requestStatus, sortWorkspaceRequestRows } from './adminWorkspaceRequestsData';
 import './AdminWorkspaceRequests.css';
 
@@ -202,18 +203,27 @@ export default function AdminWorkspaceRequests({
         ? row.requestDate ? displayDate(row.requestDate) : t('adminWorkspaceRequests.dateMissing', 'Nicht erfasst')
         : displayPeriod(row.startDate, row.endDate);
     const resetFilters = () => { setType('all'); setStatus('pending'); setSearch(''); setDateFilter(''); onEmployeeFilterChange?.(''); };
+    const pendingCount = rows.filter(row => row.pendingEntries.length).length;
+    const sharedReason = selected?.type === 'correction' && selected.entries[0]?.reason
+        && selected.entries.every(entry => entry.reason === selected.entries[0].reason)
+        ? selected.entries[0].reason : null;
     const renderPunch = (entry, original) => {
         const timestamp = original ? entry.originalTimestamp : entry.desiredTimestamp;
         const punchType = original ? entry.originalPunchType : entry.desiredPunchType;
-        return <div className="awr-punch"><span>{original ? originalTimeHeading(entry, t) : t('adminDashboard.requestedTimeLabel', 'Beantragt')}</span>
-            <strong>{timestamp ? `${displayDate(timestamp)} · ${formatTime(timestamp)}` : original ? originalDayText(entry, t) : t('adminWorkspaceRequests.noTime', 'Keine Zeit hinterlegt')}</strong>
+        return <div className={`awr-punch${original ? ' is-original' : ' is-requested'}${timestamp ? '' : ' is-day-history'}`}><span>{original ? originalTimeHeading(entry, t) : t('adminDashboard.requestedTimeLabel', 'Beantragt')}</span>
+            <strong>{timestamp ? <><span className="awr-punch-date">{displayDate(timestamp)} · </span><span className="awr-punch-time">{formatTime(timestamp)}</span></> : original ? originalDayText(entry, t) : t('adminWorkspaceRequests.noTime', 'Keine Zeit hinterlegt')}</strong>
             {punchType && <small>{t(`punchTypes.${punchType}`, punchType)}</small>}</div>;
     };
 
     return <section className={`aw-requests${mobileDetailOpen ? ' is-detail-open' : ''}`} aria-label={t('adminWorkspaceRequests.title', 'Antragscenter')} aria-busy={loading}>
-        <div className="awr-heading"><div><h2>{t('adminWorkspaceRequests.title', 'Antragscenter')}</h2>{employeeFilter && <p>{nameOf(employeeFilter)}</p>}</div>
-            <span className="awr-total">{(loading || loadError) && !rows.length ? '–' : rows.filter(row => row.pendingEntries.length).length} {t('adminWorkspaceRequests.open', 'Offen')}</span></div>
-        <div className="awr-filters">
+        <div className="awr-heading">
+            <div className="awr-heading-copy"><span className="awr-heading-icon"><AdminWorkspaceIcon name="inbox" /></span><div>
+                <h2>{t('adminWorkspaceRequests.title', 'Antragscenter')}</h2>
+                <p>{employeeFilter ? nameOf(employeeFilter) : t('adminWorkspaceRequests.intro', 'Urlaub und Zeitkorrekturen prüfen und entscheiden.')}</p>
+            </div></div>
+            <span className="awr-total"><strong>{(loading || loadError) && !rows.length ? '–' : pendingCount}</strong>{' '}<span>{t('adminWorkspaceRequests.open', 'Offen')}</span></span>
+        </div>
+        <div className="awr-controls"><div className="awr-filters">
             <label>{t('adminWorkspaceRequests.type', 'Antragsart')}<select value={type} onChange={event => setType(event.target.value)}><option value="all">{t('all', 'Alle')}</option><option value="vacation">{typeLabel('vacation')}</option><option value="correction">{typeLabel('correction')}</option></select></label>
             <label>{t('status', 'Status')}<select value={status} onChange={event => setStatus(event.target.value)}><option value="pending">{statusLabel('pending')}</option><option value="approved">{statusLabel('approved')}</option><option value="denied">{statusLabel('denied')}</option><option value="processed">{t('adminWorkspaceRequests.processed', 'Erledigt')}</option><option value="all">{t('all', 'Alle')}</option></select></label>
             <label className="awr-person">{t('adminWorkspaceRequests.person', 'Person')}<select value={employeeFilter} disabled={!onEmployeeFilterChange} onChange={event => onEmployeeFilterChange?.(event.target.value)}><option value="">{t('adminWorkspaceRequests.allPeople', 'Alle Personen')}</option>{people.map(username => <option value={username} key={username}>{nameOf(username)}</option>)}</select></label>
@@ -222,6 +232,7 @@ export default function AdminWorkspaceRequests({
         <div className="awr-toolbar">
             <label>{t('adminWorkspaceRequests.order', 'Reihenfolge')}<select value={direction} onChange={event => setDirection(event.target.value)}><option value="asc">{sortBy === 'date' ? t('adminWorkspaceRequests.oldest', 'Ältestes Datum zuerst') : t('adminWorkspaceRequests.ascending', 'Aufsteigend')}</option><option value="desc">{sortBy === 'date' ? t('adminWorkspaceRequests.newest', 'Neuestes Datum zuerst') : t('adminWorkspaceRequests.descending', 'Absteigend')}</option></select></label>
             <button type="button" className="awr-more-filters" aria-expanded={advancedOpen} aria-controls={`${id}-advanced-filters`} onClick={() => setAdvancedOpen(value => !value)}>{t('adminWorkspaceRequests.moreFilters', 'Weitere Filter')}{dateFilter || dateBasis !== 'period' || sortBy !== 'date' ? ` · ${t('adminWorkspaceRequests.filterActive', 'aktiv')}` : ''} <span aria-hidden="true">{advancedOpen ? '−' : '+'}</span></button>
+        </div>
         </div>
         {advancedOpen && <div className="awr-advanced" id={`${id}-advanced-filters`}>
             <div className="awr-date-controls">
@@ -240,7 +251,7 @@ export default function AdminWorkspaceRequests({
                 {visibleRows.length ? <ul className="awr-list" aria-label={t('adminWorkspaceRequests.list', 'Antragsliste')}>{visibleRows.map(row => <li key={row.key} data-request-key={row.key}>
                     <button type="button" ref={element => { if (element) rowButtons.current.set(row.key, element); else rowButtons.current.delete(row.key); }} className={`awr-row${selected?.key === row.key ? ' is-selected' : ''}`} aria-pressed={selected?.key === row.key}
                         aria-controls={`${id}-details`} onClick={() => selectRequest(row.key)}>
-                        <span className={`awr-type awr-type-${row.type}`} aria-hidden="true">{row.type === 'vacation' ? 'U' : 'K'}</span><span className="awr-row-copy"><strong>{nameOf(row.username)}</strong><span>{typeLabel(row.type)}{row.type === 'correction' ? ` · ${row.entries.length} ${row.entries.length === 1 ? t('adminWorkspaceRequests.oneChange', 'Änderung') : t('changes', 'Änderungen')}` : ''}</span><time dateTime={(dateBasis === 'request' ? row.requestDate : row.startDate) || undefined}>{rowDateLabel(row)}</time></span><span className={`awr-status is-${row.status}`}>{statusLabel(row.status)}</span>
+                        <span className={`awr-type awr-type-${row.type}`} aria-hidden="true"><AdminWorkspaceIcon name={row.type === 'vacation' ? 'calendar' : 'clock'} /></span><span className="awr-row-copy"><strong>{nameOf(row.username)}</strong><span>{typeLabel(row.type)}{row.type === 'correction' ? ` · ${row.entries.length} ${row.entries.length === 1 ? t('adminWorkspaceRequests.oneChange', 'Änderung') : t('changes', 'Änderungen')}` : ''}</span><time dateTime={(dateBasis === 'request' ? row.requestDate : row.startDate) || undefined}>{rowDateLabel(row)}</time></span><span className={`awr-status is-${row.status}`}>{statusLabel(row.status)}</span>
                     </button></li>)}</ul> : <p className="awr-empty">{loading ? t('loading', 'Wird geladen…') : t('adminWorkspaceRequests.empty', 'Keine Anträge für diese Filter.')}</p>}
             </div>
             <div className="awr-details" ref={detailRef} id={`${id}-details`}>
@@ -257,10 +268,24 @@ export default function AdminWorkspaceRequests({
                 </div>
                 {!selected ? <p className="awr-empty">{t('adminWorkspaceRequests.choose', 'Wähle einen Antrag aus der Liste.')}</p> : <>
                     <div className="awr-detail-scroll" tabIndex={0} role="region" aria-label={t('adminWorkspaceRequests.details', 'Antragsdetails')}>
-                    <header className="awr-detail-heading"><div><span className="awr-eyebrow">{typeLabel(selected.type)}</span><h3>{nameOf(selected.username)}</h3><p>{displayPeriod(selected.startDate, selected.endDate)}</p></div><span className={`awr-status is-${selected.status}`}>{statusLabel(selected.status)}</span></header>
+                    <header className="awr-detail-heading">
+                        <span className="awr-person-avatar" aria-hidden="true">{nameOf(selected.username).split(/\s+/).slice(0, 2).map(word => word[0]).join('')}</span>
+                        <div className="awr-detail-identity"><span className="awr-eyebrow">{typeLabel(selected.type)}</span><h3>{nameOf(selected.username)}</h3><p><AdminWorkspaceIcon name="calendar" />{displayPeriod(selected.startDate, selected.endDate)}</p></div>
+                        <span className={`awr-status is-${selected.status}`}>{statusLabel(selected.status)}</span>
+                    </header>
                     <div className="awr-detail-links">{onOpenEmployee && <button type="button" className="awr-link" onClick={() => onOpenEmployee(selected.username)}>{t('adminWorkspaceRequests.profile', 'Mitarbeiterprofil')}</button>}{onOpenInTimeReview && <button type="button" className="awr-link" onClick={() => openTime(selected)}>{t('adminWorkspace.openTime', 'In Zeitprüfung öffnen')} ↗</button>}</div>
                     {selected.type === 'correction' && selected.requestDates.some(date => date !== selected.startDate) && <dl className="awr-facts"><div><dt>{t('adminWorkspaceRequests.correctionDate', 'Erfasster Korrekturtag')}</dt><dd>{selected.requestDates.map(displayDate).join(', ')}</dd></div></dl>}
-                    {selected.type === 'correction' ? <div className="awr-changes">{selected.entries.map(entry => <article className="awr-change" key={entry.id}><div className="awr-compare">{renderPunch(entry, true)}<span aria-hidden="true">→</span>{renderPunch(entry, false)}</div>{entry.reason && <p className="awr-existing-note"><strong>{t('reason', 'Grund')}: </strong>{entry.reason}</p>}<div className="awr-change-status"><span className={`awr-status is-${requestStatus(entry)}`}>{statusLabel(requestStatus(entry))}</span>{formatRequestAdmin(entry, t) && <small>{formatRequestAdmin(entry, t)}</small>}</div>{entry.adminComment && <p className="awr-existing-note"><strong>{t('adminWorkspaceRequests.savedComment', 'Gespeicherter Kommentar')}: </strong>{entry.adminComment}</p>}</article>)}</div> : <>
+                    {selected.type === 'correction' ? <div className="awr-changes">
+                        <div className="awr-changes-heading"><h4>{t('adminWorkspaceRequests.requestedChanges', 'Beantragte Änderungen')}</h4><span>{selected.entries.length} {selected.entries.length === 1 ? t('adminWorkspaceRequests.oneChange', 'Änderung') : t('changes', 'Änderungen')}</span></div>
+                        {selected.entries.map((entry, index) => <article className="awr-change" key={entry.id}>
+                            <div className="awr-change-heading"><span className="awr-change-number">{String(index + 1).padStart(2, '0')}</span><strong>{entry.desiredPunchType ? t(`punchTypes.${entry.desiredPunchType}`, entry.desiredPunchType) : t('adminWorkspace.correction', 'Zeitkorrektur')}</strong><span className={`awr-status is-${requestStatus(entry)}`}>{statusLabel(requestStatus(entry))}</span></div>
+                            <div className="awr-compare">{renderPunch(entry, true)}<span className="awr-compare-arrow" aria-hidden="true">→</span>{renderPunch(entry, false)}</div>
+                            {entry.reason && !sharedReason && <p className="awr-existing-note"><strong>{t('reason', 'Grund')}: </strong>{entry.reason}</p>}
+                            {formatRequestAdmin(entry, t) && <div className="awr-change-status"><small>{formatRequestAdmin(entry, t)}</small></div>}
+                            {entry.adminComment && <p className="awr-existing-note"><strong>{t('adminWorkspaceRequests.savedComment', 'Gespeicherter Kommentar')}: </strong>{entry.adminComment}</p>}
+                        </article>)}
+                        {sharedReason && <p className="awr-reason"><span>{t('reason', 'Grund')}</span>{sharedReason}</p>}
+                    </div> : <>
                         {selected.reason && <p className="awr-existing-note"><strong>{t('reason', 'Grund')}: </strong>{selected.reason}</p>}
                         <p className="awr-vacation-options">{selected.vacation.halfDay ? t('adminDashboard.halfDayShort', '½ Tag') : t('adminWorkspace.fullDay', 'Ganztags')}{selected.vacation.companyVacation && ` · ${t('adminWorkspaceRequests.companyVacation', 'Betriebsferien')}`}{selected.vacation.usesOvertime && ` · ${t('adminWorkspace.overtimeLeave', 'Überstundenfrei')}`}{selected.vacation.usesOvertime && Number.isFinite(selected.vacation.overtimeDeductionMinutes) && ` · ${minutesToHHMM(selected.vacation.overtimeDeductionMinutes)} ${t('hours', 'Stunden')}`}</p>
                         {selected.vacation.adminNote && <p className="awr-existing-note"><strong>{t('userDashboard.adminNote', 'Admin-Notiz')}: </strong>{selected.vacation.adminNote}</p>}

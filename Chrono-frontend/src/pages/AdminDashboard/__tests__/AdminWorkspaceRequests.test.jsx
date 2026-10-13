@@ -62,11 +62,12 @@ describe('AdminWorkspaceRequests', () => {
         })] }));
         const details = screen.getByRole('region', { name: 'Antragsdetails' });
         expect(within(details).getByText('Gestempelt')).toBeInTheDocument();
-        expect(within(details).getByText('10.09.2026 · 16:30')).toBeInTheDocument();
+        expect(within(details).getByText((_text, element) => element.tagName === 'STRONG' && element.textContent === '10.09.2026 · 16:30')).toBeInTheDocument();
         expect(within(details).getByText('Bisherige Tagesstempel')).toBeInTheDocument();
         expect(within(details).getByText('08:00 START · 16:30 ENDE')).toBeInTheDocument();
         expect(within(details).queryByText('Kein ursprünglicher Stempel')).not.toBeInTheDocument();
-        expect(within(details).getAllByText('10.09.2026 · 16:45')).toHaveLength(2);
+        expect(within(details).getAllByText((_text, element) => element.tagName === 'STRONG' && element.textContent === '10.09.2026 · 16:45')).toHaveLength(2);
+        expect(within(details).getAllByText('Termin dauerte länger.', { exact: false })).toHaveLength(1);
     });
 
     it('sorts one mixed list by real dates, keeps equal-date order stable, and distinguishes the request day from arrival', async () => {
@@ -219,11 +220,11 @@ describe('AdminWorkspaceRequests', () => {
     it('does not present an unloaded or failed initial inbox as zero open requests', () => {
         const input = props({ loading: true });
         const { rerender } = mount(input);
-        expect(screen.getByText('– Offen')).toBeInTheDocument();
+        expect(document.querySelector('.awr-total')).toHaveTextContent('– Offen');
         rerender(<div className="admin-workspace"><AdminWorkspaceRequests {...input} loading={false} loadError="Offline" /></div>);
-        expect(screen.getByText('– Offen')).toBeInTheDocument();
+        expect(document.querySelector('.awr-total')).toHaveTextContent('– Offen');
         rerender(<div className="admin-workspace"><AdminWorkspaceRequests {...input} loading={false} /></div>);
-        expect(screen.getByText('0 Offen')).toBeInTheDocument();
+        expect(document.querySelector('.awr-total')).toHaveTextContent('0 Offen');
     });
 
     it('sorts mixed history by username or status in either direction through advanced controls', async () => {

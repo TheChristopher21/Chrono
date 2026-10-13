@@ -1,166 +1,138 @@
-/* Overview only: a compact working surface, independent of the legacy dashboard. */
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview { container: aw-overview / inline-size; }
-
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus {
-    display: flex; align-items: center; justify-content: space-between; gap: 20px;
-    margin-bottom: 16px; padding: 20px 22px;
-    border: 1px solid var(--aw-border); border-left: 4px solid var(--aw-primary);
-    border-radius: 12px; background: var(--aw-card);
-}
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus.is-urgent { border-left-color: var(--aw-warning); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-copy { min-width: 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-eyebrow { color: var(--aw-primary); font-size: 11px; font-weight: 600; letter-spacing: .035em; }
+/* Scoped hierarchy: large figures, a working inbox and a separate context rail. */
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview { container: aw-overview / inline-size; max-width: 1760px; margin-inline: auto; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { min-height: 32px; margin-bottom: 12px; gap: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-data-context { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--aw-muted); font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-date { color: var(--aw-text); font-weight: 600; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; padding: 22px 24px; border: 1px solid color-mix(in srgb, var(--aw-primary) 28%, var(--aw-border)); border-radius: 16px; background: linear-gradient(110deg, var(--aw-primary-soft), var(--aw-card)); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus.is-urgent { background: linear-gradient(110deg, var(--aw-warning-soft), var(--aw-card)); border-color: color-mix(in srgb, var(--aw-warning) 35%, var(--aw-border)); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-icon { display: grid; place-items: center; flex: 0 0 52px; height: 52px; border: 1px solid color-mix(in srgb, var(--aw-primary) 25%, transparent); border-radius: 14px; color: var(--aw-primary); background: var(--aw-card); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-icon svg { width: 27px; height: 27px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus.is-urgent .aw-focus-icon { color: var(--aw-warning); border-color: var(--aw-warning); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-copy { flex: 1; min-width: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-eyebrow { color: var(--aw-primary); font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus.is-urgent .aw-focus-eyebrow { color: var(--aw-warning); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus h2 { margin: 5px 0 6px; color: var(--aw-text); font-size: clamp(17px, 1.5vw, 22px); font-weight: 600; line-height: 1.35; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus p { margin: 0; color: var(--aw-muted); font-size: 12px; line-height: 1.5; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus > button { flex-shrink: 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 10px; border-bottom: 1px solid var(--aw-line); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary button { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 9px; border: 1px solid var(--aw-border); border-radius: 6px; background: var(--aw-soft); color: var(--aw-muted); font-size: 11px; box-shadow: none; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary button[aria-pressed="true"] { border-color: var(--aw-primary); color: var(--aw-primary); background: var(--aw-primary-soft); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary strong { color: var(--aw-text); font-weight: 600; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary > small { flex-basis: 100%; color: var(--aw-muted); font-size: 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { flex-wrap: wrap; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-watch { display: block; margin-top: 16px; padding: 0; border: 1px solid var(--aw-border); border-radius: 12px; background: var(--aw-card); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-heading h2 { margin: 0; color: var(--aw-text); font-size: 16px; font-weight: 600; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-heading p { margin: 3px 0 0; color: var(--aw-muted); font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr); gap: 20px; padding: 0 18px 14px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative h3 { margin: 0 0 6px; color: var(--aw-muted); font-size: 12px; font-weight: 400; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative > p { margin: 8px 0; color: var(--aw-muted); font-size: 12px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative li + li { border-left: 1px solid var(--aw-line); padding-left: 14px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; width: 100%; min-height: 34px; padding: 6px 0; border: 0; border-radius: 0; background: transparent; color: var(--aw-text); text-align: left; font-size: 12px; box-shadow: none; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button > span:first-child { flex: 1; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button > span:first-child { grid-column: 1 / -1; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative strong { color: var(--aw-negative); font-weight: 600; font-variant-numeric: tabular-nums; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; padding: 12px 16px; border: 1px solid var(--aw-line); border-radius: 9px; background: var(--aw-soft); color: var(--aw-text); text-align: left; box-shadow: none; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader > span { display: flex; justify-content: space-between; gap: 12px; width: 100%; color: var(--aw-muted); font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader strong { font-size: 23px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader small { font-size: 12px; }
-
-@container aw-overview (max-width: 700px) {
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus { flex-wrap: wrap; gap: 12px; padding: 16px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative ul { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative li + li { border-left: 0; border-top: 1px solid var(--aw-line); padding-left: 0; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button { display: flex; gap: 12px; }
-}
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-focus { padding: 14px 18px; margin-bottom: 12px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { min-height: 30px; margin-bottom: 10px; gap: 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-data-context { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-select select { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; border: 1px solid var(--aw-border); border-radius: 9px; background: var(--aw-card); overflow: hidden; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; align-items: baseline; column-gap: 9px; row-gap: 5px; min-width: 0; margin: 0; padding: 12px 16px; border: 0; border-right: 1px solid var(--aw-border); border-radius: 0; background: transparent; color: var(--aw-text); text-align: left; box-shadow: none; cursor: pointer; transition: background-color 120ms; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:last-child { border-right: 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:hover:not(:disabled) { background: var(--aw-soft); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:focus-visible { position: relative; outline-offset: -4px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label { display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; gap: 8px; color: var(--aw-muted); font-size: 12px; line-height: 1.4; font-weight: 400; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label > span { color: var(--aw-primary); font-size: 14px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > strong { font-size: 26px; font-weight: 500; line-height: 1.15; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { color: var(--aw-muted); font-size: 11px; font-weight: 400; line-height: 1.4; overflow-wrap: anywhere; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-denominator { color: var(--aw-muted); font-size: 15px; font-weight: 400; letter-spacing: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus h2 { margin: 5px 0; color: var(--aw-text); font-size: clamp(21px, 1.8vw, 29px); font-weight: 700; letter-spacing: -.6px; line-height: 1.2; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus p { margin: 7px 0 0; color: var(--aw-muted); font-size: 13px; line-height: 1.5; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus > button { flex-shrink: 0; min-height: 42px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { --metric-color: var(--aw-primary); display: grid; position: relative; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 12px; min-width: 0; margin: 0; padding: 18px 20px; border: 1px solid var(--aw-border); border-radius: 13px; background: var(--aw-card); color: var(--aw-text); text-align: left; box-shadow: 0 3px 12px rgb(0 0 0 / 3%); cursor: pointer; transition: border-color 120ms, background-color 120ms; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:hover:not(:disabled) { border-color: var(--metric-color); background: color-mix(in srgb, var(--metric-color) 4%, var(--aw-card)); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric[data-metric="issues"] { --metric-color: var(--aw-warning); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric[data-metric="absences"] { --metric-color: var(--aw-positive); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric[data-metric="negative"] { --metric-color: var(--aw-negative); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-icon { grid-column: 2; grid-row: 1 / 3; display: grid; place-items: center; align-self: start; width: 38px; height: 38px; border-radius: 11px; background: color-mix(in srgb, var(--metric-color) 11%, var(--aw-card)); color: var(--metric-color); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label { grid-column: 1; grid-row: 1; color: var(--aw-muted); font-size: 13px; font-weight: 600; line-height: 1.4; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label > span { display: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > strong { grid-column: 1; font-size: 38px; font-weight: 700; letter-spacing: -1.4px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: 1 / -1; color: var(--aw-muted); font-size: 12px; line-height: 1.5; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-denominator { margin-left: 3px; font-size: 19px; font-weight: 400; color: var(--aw-muted); letter-spacing: 0; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-negative { color: var(--aw-negative); }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-positive { color: var(--aw-positive); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid { grid-template-columns: minmax(0, 1fr) minmax(265px, .46fr); gap: 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .48fr); gap: 20px; align-items: start; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid-single { grid-template-columns: minmax(0, 1fr); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-inbox, .aw-team-panel) { border-radius: 9px; box-shadow: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-overview-aside { display: grid; gap: 18px; min-width: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-overview-aside:empty { display: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-inbox, .aw-team-panel, .aw-account-watch) { border: 1px solid var(--aw-border); border-radius: 14px; background: var(--aw-card); box-shadow: none; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox:focus { outline: none; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading { padding: 13px 16px 10px; gap: 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading h2 { font-size: 16px; font-weight: 500; line-height: 1.35; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-section-heading p { margin-top: 3px; font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-preview-label { color: var(--aw-muted); font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { justify-content: flex-start; margin: 0 16px 0; padding: 2px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex: 0 1 auto; min-height: 30px; padding: 4px 12px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 8px; min-height: 29px; margin: 0 16px; padding: 4px 0; color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context .aw-text-button { min-height: 24px; padding: 2px 0; font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-list { padding: 0 16px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 10px 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-avatar { width: 29px; height: 29px; flex-basis: 29px; margin: 0; font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1px 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-name { font-size: 13px; font-weight: 500; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing { color: var(--aw-muted); font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing.is-near { color: var(--aw-warning); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing.is-near::before { display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 2px; content: ''; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-meta { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-section-heading, .aw-account-heading) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 20px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-section-heading, .aw-account-heading) h2 { margin: 0; color: var(--aw-text); font-size: 19px; line-height: 1.3; font-weight: 700; letter-spacing: -.3px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-section-heading, .aw-account-heading) p { margin: 5px 0 0; color: var(--aw-muted); font-size: 12px; line-height: 1.5; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-preview-label { display: grid; place-items: center; min-width: 34px; height: 34px; border-radius: 10px; background: var(--aw-primary-soft); color: var(--aw-primary); font-size: 16px; font-weight: 700; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { justify-content: flex-start; flex-wrap: wrap; margin: 0 20px; gap: 4px; padding: 4px; background: var(--aw-soft); border-radius: 9px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex: 1 1 auto; min-height: 36px; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button.is-active { background: var(--aw-card); color: var(--aw-primary); box-shadow: 0 1px 4px rgb(0 0 0 / 9%); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-count { display: inline-grid; place-items: center; min-width: 18px; padding: 1px 4px; border-radius: 4px; background: var(--aw-primary-soft); font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2px 8px; padding: 10px 20px 5px; color: var(--aw-muted); font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-context .aw-text-button { min-height: 28px; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary { display: flex; flex-wrap: wrap; gap: 6px; padding: 3px 20px 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary button { display: inline-flex; gap: 8px; align-items: center; padding: 5px 8px; min-height: 28px; border: 1px solid color-mix(in srgb, var(--aw-warning) 25%, var(--aw-border)); border-radius: 6px; color: var(--aw-warning); background: var(--aw-warning-soft); font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary button[aria-pressed="true"] { outline: 2px solid var(--aw-warning); outline-offset: 1px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-issue-summary > small { flex-basis: 100%; color: var(--aw-muted); font-size: 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-list { padding: 0 16px 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task { --task-color: var(--aw-primary); margin: 8px 0; padding: 0 14px; border: 1px solid var(--aw-line); border-left: 3px solid var(--task-color); border-radius: 10px; background: var(--aw-soft); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-time { --task-color: var(--aw-warning); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-vacation { --task-color: var(--aw-positive); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { display: flex; align-items: center; gap: 12px; min-height: 84px; padding: 14px 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-avatar { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; margin: 0; border-radius: 11px; color: var(--task-color); background: color-mix(in srgb, var(--task-color) 12%, var(--aw-card)); font-size: 12px; font-weight: 700; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-name { color: var(--aw-text); font-size: 15px; line-height: 1.4; font-weight: 650; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing { padding: 3px 7px; border-radius: 5px; color: var(--task-color); background: color-mix(in srgb, var(--task-color) 9%, var(--aw-card)); font-size: 10px; font-weight: 600; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-timing.is-near { color: var(--aw-warning); background: var(--aw-warning-soft); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-meta { display: block; margin-top: 6px; color: var(--aw-muted); font-size: 12px; line-height: 1.5; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-meta > span { display: inline; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-button { min-height: 32px; margin-top: 0; font-size: 12px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { margin: 0 0 12px 39px; padding: 13px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot { min-height: 40px; padding: 5px 16px; font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot > div { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot .aw-text-button { font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-empty, .aw-loading) { padding: 15px 0; font-size: 12px; line-height: 1.55; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox > .aw-empty { padding: 8px 16px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-today { padding: 10px 16px; background: var(--aw-card); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { padding: 10px 16px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head { gap: 8px; margin-bottom: 3px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head h3 { font-size: 12px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head h3::before { display: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-review-button { margin: 0; padding: 8px 11px; min-height: 36px; border: 1px solid var(--aw-border); border-radius: 7px; background: var(--aw-card); font-size: 12px; font-weight: 600; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { margin: 0 0 14px; padding: 16px; background: var(--aw-card); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot { padding: 10px 20px; min-height: 46px; font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox-foot > div { display: flex; gap: 14px; flex-wrap: wrap; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-today, .aw-coming) { padding: 14px 20px; background: transparent; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head h3 { font-size: 12px; font-weight: 650; }
 .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming-head > span { font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-count { font-size: 13px; font-weight: 500; color: var(--aw-muted); }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence { gap: 8px; padding: 9px 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy { display: block; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy p { margin: 2px 0 0; font-size: 11px; line-height: 1.45; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-kind { display: inline-block; margin-top: 2px; font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-more-absences { margin: 0; padding: 2px 0; min-height: 28px; font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balances { grid-template-columns: minmax(120px, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; gap: 0; margin-top: 12px; padding: 0; border-radius: 9px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title { padding: 10px 16px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title h3 { font-size: 13px; font-weight: 500; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title small { font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; min-height: 60px; padding: 10px 16px; border-radius: 0; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat small { grid-column: 1 / -1; font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat strong { font-size: 16px; font-weight: 500; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat > span { align-self: center; font-size: 11px; line-height: 1.4; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-footer { gap: 4px 16px; margin-top: 5px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-footer .aw-text-button { font-size: 11px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview :is(.aw-feedback, .aw-error) { margin-bottom: 10px; padding: 9px 12px; }
-
-/* Keep the first working decisions and account summary in view on laptops.
-   Content and expanded forms retain their natural height; nothing is clipped. */
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-toolbar { min-height: 28px; margin-bottom: 6px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metrics { margin-bottom: 10px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metric { padding-block: 9px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metric > strong { font-size: 24px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-section-heading { padding-top: 10px; padding-bottom: 7px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-review-context { padding-block: 2px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-task-row { min-height: 56px; padding-block: 8px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-inbox-foot { min-height: 36px; padding-block: 3px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balances { margin-top: 9px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balance-title,
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-balance-stat { min-height: 54px; padding-block: 7px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-today,
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-coming { padding-block: 8px; }
-.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-footer { margin-top: 2px; }
-
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-count { display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 7px; color: var(--aw-positive); background: color-mix(in srgb, var(--aw-positive) 10%, var(--aw-card)); font-size: 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence { gap: 8px; padding: 12px 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3px 8px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy .aw-task-name { grid-column: 1; font-size: 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy p { grid-row: 2; grid-column: 1 / -1; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy .aw-absence-kind { grid-column: 2; grid-row: 1; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-copy p { margin: 4px 0; font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-kind { display: inline-block; padding: 2px 7px; border-radius: 5px; color: var(--aw-positive); background: color-mix(in srgb, var(--aw-positive) 8%, var(--aw-card)); font-size: 10px; font-weight: 600; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-absence-kind.is-sick { color: var(--aw-warning); background: var(--aw-warning-soft); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-more-absences { margin: 0; padding: 4px 0; font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-watch { display: block; margin: 0; padding: 0; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-heading { flex-wrap: wrap; padding-bottom: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-heading .aw-text-button { font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-grid { display: grid; gap: 10px; padding: 0 20px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative h3 { margin: 0 0 8px; color: var(--aw-muted); font-size: 11px; font-weight: 600; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative > p { margin: 0; color: var(--aw-muted); font-size: 12px; line-height: 1.5; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative ul { margin: 0; padding: 0; list-style: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative li + li { border-top: 1px solid var(--aw-line); }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 0; border: 0; background: transparent; color: var(--aw-text); text-align: left; font-size: 12px; box-shadow: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative button > span:first-child { flex: 1; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-negative strong { color: var(--aw-negative); font-size: 15px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 12px; padding: 12px; border: 1px solid var(--aw-line); border-radius: 10px; background: var(--aw-soft); color: var(--aw-text); text-align: left; box-shadow: none; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader strong { grid-column: 2; grid-row: 1 / 3; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader small { grid-column: 1; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader > span { display: flex; justify-content: space-between; gap: 10px; color: var(--aw-muted); font-size: 11px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader strong { font-size: 27px; font-weight: 700; letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-account-leader small { font-size: 12px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-footer { margin-top: 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-empty { padding: 18px 0; font-size: 12px; line-height: 1.6; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-inbox > .aw-empty { padding-inline: 20px; }
+/* Short screens retain the same type scale. Only spacing becomes tighter. */
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-focus { padding: 16px 20px; margin-bottom: 14px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metrics { margin-bottom: 18px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-metric { padding: 14px 16px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact .aw-task-row { min-height: 76px; padding-block: 10px; }
+.admin-dashboard.scoped-dashboard.admin-workspace .aw-overview.aw-overview-compact :is(.aw-section-heading, .aw-account-heading) { padding-top: 16px; }
+@container aw-overview (max-width: 1000px) {
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { padding: 14px; gap: 6px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-icon { width: 30px; height: 30px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label { font-size: 12px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { align-items: flex-start; flex-direction: column; }
+}
 @container aw-overview (max-width: 850px) {
     .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-grid { grid-template-columns: minmax(0, 1fr); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel > .aw-section-heading { grid-column: 1 / -1; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { border-top: 1px solid var(--aw-border); border-left: 1px solid var(--aw-border); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-today { border-bottom: 0; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric { padding: 11px 12px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: 1 / -1; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-overview-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus { flex-wrap: wrap; gap: 12px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-copy { flex-basis: calc(100% - 70px); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus > button { margin-left: 64px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @container aw-overview (max-width: 570px) {
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { align-items: flex-start; flex-wrap: wrap; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:nth-child(2) { border-right: 0; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric:nth-child(-n+2) { border-bottom: 1px solid var(--aw-border); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: auto; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-preview-label { display: none; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balances { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-title { grid-column: 1 / -1; border-bottom: 1px solid var(--aw-border); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-balance-stat { grid-template-columns: minmax(0, 1fr); }
-}
-@container aw-overview (max-width: 400px) {
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > small { grid-column: 1 / -1; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-team-panel { grid-template-columns: minmax(0, 1fr); }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-coming { border-left: 0; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-avatar { display: none; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { flex-wrap: wrap; column-gap: 6px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-copy { flex: 1 1 100%; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-overview-aside { grid-template-columns: minmax(0, 1fr); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-toolbar { flex-wrap: wrap; align-items: flex-start; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus { padding: 18px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus-icon { display: none; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-focus > button { margin-left: 0; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metrics { gap: 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric > strong { font-size: 34px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-icon { grid-row: 2; align-self: center; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-metric-label { grid-column: 1 / -1; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row { flex-wrap: wrap; gap: 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-copy { flex: 1 1 calc(100% - 50px); }
     .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-row > .aw-review-button { margin-left: auto; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { margin-left: 0; padding: 10px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-title { justify-content: space-between; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { margin-inline: 10px; }
-    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex: 1; padding-inline: 5px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-list { padding-inline: 10px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-name { font-size: 14px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters { margin-inline: 12px; }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-filters button { flex-basis: calc(50% - 4px); }
+    .admin-dashboard.scoped-dashboard.admin-workspace .aw-overview .aw-task-detail { padding: 10px; }
 }
