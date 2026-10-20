@@ -72,6 +72,7 @@ class PmsFlywayBaselineTest {
              var statement = connection.createStatement()) {
             statement.execute("create table companies (id bigint primary key)");
             statement.execute("create table users (id bigint primary key)");
+            statement.execute("create table payslips (id bigint primary key)");
             LegacyCorrectionMigrationFixture.create(statement);
             statement.execute("create table legacy_marker (id bigint primary key, marker_value varchar(32))");
             statement.execute("insert into legacy_marker (id, marker_value) values (1, 'preserved')");

@@ -129,6 +129,8 @@ public class SecurityConfig {
                             .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
                     auth.requestMatchers("/api/admin/company/logo")
                             .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
+                    auth.requestMatchers("/api/admin/company/payroll-configuration", "/api/admin/company/payroll-configuration/**")
+                            .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
                     auth.requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPERADMIN");
                     auth.requestMatchers("/api/supply-chain/**").authenticated();
                     auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");

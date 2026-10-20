@@ -7,6 +7,8 @@ import com.chrono.chrono.dto.PayslipTimeSummaryDTO;
 import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.PayrollService;
+import com.chrono.chrono.services.PayrollReviewService;
+import com.chrono.chrono.dto.PayrollReviewDTO;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
@@ -42,6 +44,44 @@ public class PayslipController {
 
     @Autowired
     private TimeTrackingService timeTrackingService;
+
+    @Autowired
+    private PayrollReviewService payrollReviewService;
+    @Autowired
+    private com.chrono.chrono.services.PayrollCorrectionService correctionService;
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @PostMapping("/{id}/corrections")
+    public ResponseEntity<List<PayslipDTO>> correct(@PathVariable Long id,
+            @RequestBody com.chrono.chrono.services.PayrollCorrectionService.Request request, Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
+        return ResponseEntity.ok(correctionService.generate(id, request, requester.getUsername()).stream().map(PayslipDTO::new).toList());
+    }
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @DeleteMapping("/{id}/corrections")
+    public ResponseEntity<Void> discardCorrections(@PathVariable Long id, Principal principal) {
+        requireAccessiblePayslip(id, requireRequester(principal));
+        correctionService.discard(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @GetMapping("/admin/review")
+    public ResponseEntity<PayrollReviewDTO> review(
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        User target = requireTargetUser(userId);
+        requirePayrollAccess(requester, target);
+        try {
+            return ResponseEntity.ok(payrollReviewService.review(target, start, end));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+        }
+    }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/time-summary")
@@ -169,6 +209,20 @@ public class PayslipController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @PostMapping("/approve-batch")
+    public ResponseEntity<Void> approveBatch(@RequestBody ApprovalBatch request, Principal principal) {
+        if (request.ids() == null || request.ids().isEmpty() || request.ids().size() > 500 || request.ids().stream().anyMatch(java.util.Objects::isNull)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bitte zwischen 1 und 500 Abrechnungen auswählen.");
+        }
+        User requester = requireRequester(principal);
+        request.ids().stream().distinct().forEach(id -> requireAccessiblePayslip(id, requester));
+        payrollService.approveBatch(request.ids(), request.comment());
+        return ResponseEntity.ok().build();
+    }
+
+    public record ApprovalBatch(List<Long> ids, String comment) {}
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/approve/{id}")
     public ResponseEntity<Void> approve(@PathVariable Long id,
                                         @RequestParam(required = false) String comment,
@@ -203,9 +257,8 @@ public class PayslipController {
             if (accessControlService.isSuperAdmin(requester) && CompanyScope.companyFor(requester) == null) {
                 payrollService.approveAll(comment);
             } else {
-                for (User visibleUser : accessControlService.visibleUsersForAdmin(requester)) {
-                    payrollService.approveAllForUser(visibleUser.getId(), comment);
-                }
+                payrollService.approveForUsers(accessControlService.visibleUsersForAdmin(requester).stream()
+                        .map(User::getId).toList(), comment);
             }
         }
         return ResponseEntity.ok().build();
@@ -280,19 +333,20 @@ public class PayslipController {
         User requester = requireRequester(principal);
         StringBuilder sb = new StringBuilder();
         if ("de".equalsIgnoreCase(lang)) {
-            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto,Waehrung\n");
+            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto,Waehrung,BelegID,KorrekturZu,Freigegeben\n");
         } else {
-            sb.append("userId,periodStart,periodEnd,gross,deductions,net,currency\n");
+            sb.append("userId,periodStart,periodEnd,gross,deductions,net,currency,documentId,correctionOfId,approved\n");
         }
         payrollService.getAllPayslips(requester).forEach(ps -> {
-            String currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
+            String currency = new PayslipDTO(ps).getCurrency();
             sb.append(ps.getUser().getId()).append(',')
               .append(ps.getPeriodStart()).append(',')
               .append(ps.getPeriodEnd()).append(',')
               .append(ps.getGrossSalary()).append(',')
               .append(ps.getDeductions()).append(',')
               .append(ps.getNetSalary()).append(',')
-              .append(currency).append('\n');
+              .append(currency).append(',').append(ps.getId()).append(',')
+              .append(ps.getCorrectionOfId() == null ? "" : ps.getCorrectionOfId()).append(',').append(ps.isApproved()).append('\n');
         });
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);

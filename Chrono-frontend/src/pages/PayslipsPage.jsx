@@ -214,7 +214,7 @@ const PayslipsPage = () => {
                                     {approvedSlips.map(ps => (
                                         <tr key={ps.id}>
                                             {isAdmin && <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td>}
-                                            <td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}</td>
+                                            <td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}{ps.correctionOfId && <div>Differenzbeleg zu #{ps.correctionOfId}{Number(ps.netSalary) < 0 ? ' · Rückforderung / Verrechnung' : ''}</div>}</td>
                                             <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
                                             <td data-label={t('payslips.payoutDate')}>{ps.payoutDate}</td>
                                             <td className="actions-col">

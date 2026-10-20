@@ -76,6 +76,18 @@ const users = [
 const rowFor = (name) => screen.getByText(name).closest('tr');
 
 describe('AdminPayslipsPage', () => {
+  it('keeps CHF and EUR totals separate without presenting a currency conversion', async () => {
+    apiMock.get.mockImplementation(url => Promise.resolve({ data: url === '/api/payslips/admin/pending'
+      ? [{ ...pendingSlip, netSalary: 100, employerContributions: 10 }, { ...warningSlip, grossSalary: 300, netSalary: 200, employerContributions: 20, currency: 'EUR' }]
+      : [] }));
+    render(<AdminPayslipsPage />);
+    const total = screen.getByText('Auszahlung gesamt').closest('article');
+    await waitFor(() => expect(total).toHaveTextContent('EUR'));
+    expect(total).toHaveTextContent(/CHF\s*100[.,]00/);
+    expect(total).toHaveTextContent(/EUR\s*200[.,]00/);
+    expect(total).not.toHaveTextContent(/CHF\s*300[.,]00/);
+  });
+
   beforeEach(() => {
     apiMock.get.mockReset();
     apiMock.post.mockReset();
@@ -122,6 +134,37 @@ describe('AdminPayslipsPage', () => {
     expect(screen.queryByText('Bea Freigegeben')).not.toBeInTheDocument();
   });
 
+  it('reviews signed corrections and approves the entire linked run', async () => {
+    const user = userEvent.setup();
+    const corrections = [1, 2, 3].map(month => ({ ...pendingSlip, id: 20 + month,
+      periodStart: `2026-0${month}-01`, correctionOfId: month, correctionBatch: 'batch-1',
+      correctionReason: 'Vertrag berichtigt', grossSalary: -500, netSalary: -400,
+      correctedGrossSalary: 4500, correctedNetSalary: 3800, payoutOvertime: true, overtimeHours: -1.5 }));
+    apiMock.get.mockImplementation(url => Promise.resolve({ data: url === '/api/payslips/admin/pending' ? corrections : [] }));
+    render(<AdminPayslipsPage />);
+    await screen.findByText('Differenzbeleg zu #1');
+    expect(screen.queryByText('Negativer Nettolohn')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Differenzbeleg zu #1').closest('button'));
+    const drawer = within(screen.getByRole('dialog'));
+    expect(drawer.getByText('Vertrag berichtigt')).toBeInTheDocument();
+    expect(drawer.getByText('-1:30 Std:Min.')).toBeInTheDocument();
+    await user.click(drawer.getByRole('button', { name: 'Korrekturlauf freigeben (3 Belege)' }));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/api/payslips/approve-batch', expect.objectContaining({ ids: [21, 22, 23] })));
+    expect(apiMock.post.mock.calls.some(([url]) => /approve\/\d/.test(url))).toBe(false);
+  });
+
+  it('discards a selected correction run once and never deletes its original', async () => {
+    const user = userEvent.setup();
+    const corrections = [21, 22].map(id => ({ ...pendingSlip, id, correctionOfId: id - 20, correctionBatch: 'batch-1' }));
+    apiMock.get.mockImplementation(url => Promise.resolve({ data: url === '/api/payslips/admin/pending' ? corrections : [] }));
+    render(<AdminPayslipsPage />);
+    await screen.findByText('Differenzbeleg zu #1');
+    for (const checkbox of screen.getAllByRole('checkbox', { name: 'Anna Offen auswaehlen' })) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Loeschen' }));
+    await waitFor(() => expect(apiMock.delete).toHaveBeenCalledExactlyOnceWith('/api/payslips/21/corrections'));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('vollständig verworfen'));
+  });
+
   it('deletes an open payslip after confirmation and refreshes the lists', async () => {
     const user = userEvent.setup();
     render(<AdminPayslipsPage />);
@@ -152,7 +195,7 @@ describe('AdminPayslipsPage', () => {
     expect(apiMock.delete).not.toHaveBeenCalled();
   });
 
-  it('catches a 409 delete response and explains the required reopen step', async () => {
+  it('catches a 409 delete response and preserves approved documents', async () => {
     const user = userEvent.setup();
     apiMock.delete.mockRejectedValue({ response: { status: 409 } });
     render(<AdminPayslipsPage />);
@@ -162,10 +205,10 @@ describe('AdminPayslipsPage', () => {
     await user.click(within(row).getByRole('button', { name: 'Weitere Aktionen' }));
     await user.click(within(row).getByRole('button', { name: /L(?:ö|oe)schen/ }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Freigegebene Abrechnungen k(?:ö|oe)nnen nicht gel(?:ö|oe)scht werden.*zuerst zur(?:ü|ue)ckziehen/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Freigegebene Abrechnungen bleiben erhalten.*Korrekturbeleg/);
   });
 
-  it('offers reopen instead of delete for an approved payslip', async () => {
+  it('offers no reopening deletion or payment-date change for an approved payslip', async () => {
     const user = userEvent.setup();
     render(<AdminPayslipsPage />);
 
@@ -174,9 +217,9 @@ describe('AdminPayslipsPage', () => {
     await user.click(within(row).getByRole('button', { name: 'Weitere Aktionen' }));
 
     expect(within(row).queryByRole('button', { name: /L(?:ö|oe)schen/ })).not.toBeInTheDocument();
-    await user.click(within(row).getByRole('button', { name: /Zur(?:ü|ue)ckziehen/ }));
-
-    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith('/api/payslips/reopen/13'));
+    expect(within(row).queryByRole('button', { name: /Zur(?:ü|ue)ckziehen/ })).not.toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: /Auszahlung aendern/ })).not.toBeInTheDocument();
+    expect(apiMock.post).not.toHaveBeenCalled();
     expect(apiMock.delete).not.toHaveBeenCalled();
   });
 
@@ -191,7 +234,7 @@ describe('AdminPayslipsPage', () => {
 
     expect(apiMock.delete).not.toHaveBeenCalled();
     expect(window.confirm).not.toHaveBeenCalled();
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Bitte zuerst zur(?:ü|ue)ckziehen/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/separaten Korrekturbeleg/);
   });
 
   it('creates a new payslip with the entered period and employee', async () => {

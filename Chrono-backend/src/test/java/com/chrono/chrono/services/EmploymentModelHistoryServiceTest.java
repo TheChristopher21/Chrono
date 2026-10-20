@@ -244,4 +244,15 @@ class EmploymentModelHistoryServiceTest {
 
         assertEquals(LocalDate.of(2024, 4, 7), result);
     }
+
+    @Test
+    void historicalOvertimeStartIgnoresLaterHourlyTransitions() {
+        User user = new User(); user.setEntryDate(LocalDate.of(2026, 1, 1));
+        var first = new UserEmploymentModelHistory(); first.setEffectiveFrom(user.getEntryDate()); first.setModelType(EmploymentModelType.STANDARD);
+        var hourly = new UserEmploymentModelHistory(); hourly.setEffectiveFrom(LocalDate.of(2026, 7, 1)); hourly.setModelType(EmploymentModelType.HOURLY);
+        var later = new UserEmploymentModelHistory(); later.setEffectiveFrom(LocalDate.of(2026, 9, 1)); later.setModelType(EmploymentModelType.STANDARD);
+        when(historyRepository.findByUserOrderByEffectiveFromAsc(user)).thenReturn(List.of(first, hourly, later));
+        assertEquals(user.getEntryDate(), service.resolveOvertimeStreakStart(user, LocalDate.of(2026, 6, 30)));
+        assertEquals(later.getEffectiveFrom(), service.resolveOvertimeStreakStart(user, LocalDate.of(2026, 9, 30)));
+    }
 }

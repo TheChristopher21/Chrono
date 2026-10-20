@@ -13,6 +13,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +34,20 @@ class ApiPagePermissionInterceptorTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void payrollConfigurationRequiresManageAccessForEveryVersionWrite() {
+        User user = user("payroll", "ROLE_PAYROLL_ADMIN", Set.of("payroll"), Map.of(
+                UserPermissionService.PAGE_COMPANY_SETTINGS, UserPermissionService.ACCESS_NONE,
+                UserPermissionService.PAGE_ADMIN_PAYSLIPS, UserPermissionService.ACCESS_VIEW));
+        authenticate(user);
+        assertTrue(interceptor.preHandle(request("GET", "/api/admin/company/payroll-configuration/terms"), new MockHttpServletResponse(), new Object()));
+        for (String route : List.of("insurance", "pension", "terms")) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            assertFalse(interceptor.preHandle(request("POST", "/api/admin/company/payroll-configuration/" + route), response, new Object()));
+            assertEquals(403, response.getStatus());
+        }
     }
 
     @Test

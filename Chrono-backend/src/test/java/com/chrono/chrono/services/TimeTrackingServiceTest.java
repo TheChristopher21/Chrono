@@ -991,6 +991,59 @@ class TimeTrackingServiceTest {
         }
     }
 
+    @Test
+    void payrollBalanceUsesOnlyEarnedTimeToCutoffAndConsumesApprovedFuturePayments() {
+        LocalDate start = LocalDate.of(2026, 9, 1), cutoff = start.plusDays(1);
+        user.setIsHourly(false); user.setTrackingBalanceInMinutes(9999);
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(user, cutoff)).thenReturn(user);
+        when(employmentModelHistoryService.resolveOvertimeStreakStart(user, cutoff)).thenReturn(start);
+        when(employmentModelHistoryService.resolveUserSnapshotsForRange(user, start, cutoff)).thenReturn(new java.util.HashMap<>(java.util.Map.of(start, user, cutoff, user)));
+        var first = new DailyTimeSummaryDTO("alice", start, 540, 0, List.of(), null, false, null); first.setDifferenceMinutes(60);
+        var second = new DailyTimeSummaryDTO("alice", cutoff, 600, 0, List.of(), null, false, null); second.setDifferenceMinutes(120);
+        var service = spy(timeTrackingService); doReturn(List.of(first, second)).when(service).getUserHistory(user, start, cutoff);
+        Payslip committed = new Payslip(); committed.setApproved(true); committed.setPayoutOvertime(true); committed.setOvertimeHours(0.5); committed.setPayoutDate(cutoff.plusMonths(1));
+        Payslip draft = new Payslip(); draft.setPayoutOvertime(true); draft.setOvertimeHours(50.0);
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(committed, draft));
+        assertEquals(150, service.getPayrollOvertimeBalance(user, cutoff));
+        assertEquals(9999, user.getTrackingBalanceInMinutes());
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+        verify(timeTrackingEntryRepository).findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, start.atStartOfDay(), cutoff.plusDays(1).atStartOfDay());
+    }
+
+    @Test
+    void payrollPercentageBalanceUsesWeeklyTargetInsteadOfSumOfRoundedDailyTargets() {
+        LocalDate start = LocalDate.of(2026, 9, 7), cutoff = start.plusDays(4);
+        user.setIsHourly(false); user.setIsPercentage(true); user.setWorkPercentage(94);
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(user, cutoff)).thenReturn(user);
+        when(employmentModelHistoryService.resolveOvertimeStreakStart(user, cutoff)).thenReturn(start);
+        java.util.Map<LocalDate, User> snapshots = new java.util.HashMap<>();
+        java.util.List<DailyTimeSummaryDTO> summaries = new java.util.ArrayList<>();
+        java.util.List<TimeTrackingEntry> entries = new java.util.ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(cutoff); d = d.plusDays(1)) {
+            snapshots.put(d, user);
+            var summary = new DailyTimeSummaryDTO("alice", d, 480, 0, List.of(), null, false, null);
+            summary.setDifferenceMinutes(29); summaries.add(summary); // daily rounding would incorrectly yield 145
+            entries.add(entry(user, d.atTime(8, 0), TimeTrackingEntry.PunchType.START));
+            entries.add(entry(user, d.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE));
+        }
+        when(employmentModelHistoryService.resolveUserSnapshotsForRange(user, start, cutoff)).thenReturn(snapshots);
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, start.atStartOfDay(), cutoff.plusDays(1).atStartOfDay())).thenReturn(entries);
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(start), eq(cutoff), any())).thenReturn(2256);
+        var service = spy(timeTrackingService); doReturn(summaries).when(service).getUserHistory(user, start, cutoff);
+        assertEquals(144, service.getPayrollOvertimeBalance(user, cutoff));
+    }
+
+    @Test
+    void payrollBalanceBlocksUnresolvedPunchesBeforeUsingTheStoredBalance() {
+        user.setIsHourly(false);
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(user, date)).thenReturn(user);
+        when(employmentModelHistoryService.resolveOvertimeStreakStart(user, date)).thenReturn(date);
+        var service = spy(timeTrackingService);
+        doReturn(List.of(new DailyTimeSummaryDTO("alice", date, 600, 0, List.of(), null, true, null))).when(service).getUserHistory(user, date, date);
+        assertThrows(IllegalStateException.class, () -> service.getPayrollOvertimeBalance(user, date));
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
     private void invokeClearVacationOnPunchDay(User user, LocalDate punchDay) throws Exception {
         Method method = TimeTrackingService.class.getDeclaredMethod("clearVacationOnPunchDay", User.class, LocalDate.class);
         method.setAccessible(true);

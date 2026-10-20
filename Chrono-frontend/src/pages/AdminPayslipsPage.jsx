@@ -4,6 +4,8 @@ import api from '../utils/api';
 import '../styles/AdminPayslipsPageScoped.css';
 import { useTranslation, LanguageContext } from '../context/LanguageContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
+import PayrollReview from '../components/PayrollReview';
+import PayrollCorrectionForm from '../components/PayrollCorrectionForm';
 import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 const emptyForm = {
@@ -15,7 +17,7 @@ const emptyForm = {
   overtimeHours: ''
 };
 
-const hasPayrollWarning = (slip) => Number(slip?.grossSalary) < 0 || Number(slip?.netSalary) < 0;
+const hasPayrollWarning = (slip) => !slip?.correctionOfId && (Number(slip?.grossSalary) < 0 || Number(slip?.netSalary) < 0);
 
 const parseHoursMinutes = (value) => {
   const match = String(value ?? '').trim().match(/^(\d+)(?:[.:]([0-5]?\d))?$/);
@@ -29,8 +31,9 @@ const parseHoursMinutes = (value) => {
 
 const formatHoursMinutes = (decimalHours) => {
   const totalMinutes = Math.round(Number(decimalHours) * 60);
-  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return '-';
-  return `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, '0')}`;
+  if (!Number.isFinite(totalMinutes) || totalMinutes === 0) return '-';
+  const absoluteMinutes = Math.abs(totalMinutes);
+  return `${totalMinutes < 0 ? '-' : ''}${Math.floor(absoluteMinutes / 60)}:${String(absoluteMinutes % 60).padStart(2, '0')}`;
 };
 
 const formatMinutes = (minutes) => {
@@ -76,6 +79,7 @@ const AdminPayslipsPage = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [detailSlip, setDetailSlip] = useState(null);
+  const [correctionOriginal, setCorrectionOriginal] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [wizardPreview, setWizardPreview] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -119,22 +123,32 @@ const AdminPayslipsPage = () => {
   });
 
   const approve = (id, comment) => {
-    return api.post(`/api/payslips/approve/${id}`, null, { params: { comment } }).then(() => {
+    setActionError('');
+    const slip = payslips.find(item => item.id === id);
+    const request = slip?.correctionBatch
+      ? api.post('/api/payslips/approve-batch', { ids: payslips.filter(item => item.correctionBatch === slip.correctionBatch).map(item => item.id), comment })
+      : api.post(`/api/payslips/approve/${id}`, null, { params: { comment } });
+    return request.then(() => {
       refreshPayslips();
+      return true;
+    }).catch(error => {
+      setActionError(error?.response?.data?.message || t('payrollReview.approvalFailed', 'Die Abrechnung konnte nicht freigegeben werden.'));
+      return false;
     });
   };
 
   const deletePayslip = (id) => {
-    if (!window.confirm(t('payslips.deleteConfirm', 'Abrechnung wirklich loeschen?'))) return;
+    const slip = payslips.find(item => item.id === id);
+    if (!window.confirm(slip?.correctionBatch ? 'Den gesamten unfreigegebenen Korrekturlauf verwerfen? Originalbelege bleiben erhalten.' : t('payslips.deleteConfirm', 'Abrechnung wirklich loeschen?'))) return;
 
     setActionError('');
-    return api.delete(`/api/payslips/${id}`)
+    return api.delete(`/api/payslips/${id}${slip?.correctionBatch ? '/corrections' : ''}`)
       .then(() => refreshPayslips())
       .catch((error) => {
         const message = error?.response?.status === 409
           ? t(
-              'payslips.deleteApprovedError',
-              'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+              'payslips.approvedImmutable',
+              'Freigegebene Abrechnungen bleiben erhalten. Korrekturen benötigen einen separaten Korrekturbeleg.'
             )
           : error?.response?.data?.message || t(
               'payslips.deleteError',
@@ -148,7 +162,8 @@ const AdminPayslipsPage = () => {
     const val = prompt(t('payslips.enterPayoutDate', 'Auszahlungsdatum eingeben'), current || '');
     if (val) {
       api.post(`/api/payslips/set-payout/${id}`, null, { params: { payoutDate: val } })
-        .then(() => refreshPayslips());
+        .then(() => refreshPayslips())
+        .catch(error => setActionError(error?.response?.data?.message || 'Das Auszahlungsdatum konnte nicht geändert werden.'));
     }
   };
 
@@ -157,6 +172,9 @@ const AdminPayslipsPage = () => {
     if (comment !== null) {
       api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => {
         setSelectedIds([]);
+        refreshPayslips();
+      }).catch(error => {
+        setActionError(error?.response?.data?.message || t('payrollReview.approvalFailed', 'Die Abrechnung konnte nicht freigegeben werden.'));
         refreshPayslips();
       });
     }
@@ -194,10 +212,6 @@ const AdminPayslipsPage = () => {
         }, 500);
       })
       .catch(() => alert(t('payslips.printError', 'PDF konnte nicht geoeffnet werden.')));
-  };
-
-  const reopen = (id) => {
-    api.post(`/api/payslips/reopen/${id}`).then(() => refreshPayslips());
   };
 
   const createPayslip = () => {
@@ -355,12 +369,18 @@ const AdminPayslipsPage = () => {
 
   const totals = useMemo(() => {
     const selectedPeriodSlips = allPayslips.length ? allPayslips : [];
-    const payoutTotal = selectedPeriodSlips.reduce((sum, slip) => sum + (Number(slip.netSalary) || 0), 0);
-    const employerTotal = selectedPeriodSlips.reduce((sum, slip) => sum + (Number(slip.employerContributions) || 0), 0);
+    const byCurrency = new Map();
+    selectedPeriodSlips.forEach(slip => {
+      const currency = slip.currency || 'Unbekannt';
+      const amounts = byCurrency.get(currency) || { currency, payoutTotal: 0, employerTotal: 0 };
+      amounts.payoutTotal += Number(slip.netSalary) || 0;
+      amounts.employerTotal += Number(slip.employerContributions) || 0;
+      byCurrency.set(currency, amounts);
+    });
     const firstPayout = selectedPeriodSlips.find(slip => slip.payoutDate)?.payoutDate;
     const uniqueUsers = new Set(selectedPeriodSlips.map(slip => slip.userId).filter(Boolean)).size;
 
-    return { payoutTotal, employerTotal, firstPayout, uniqueUsers };
+    return { currencies: [...byCurrency.values()], firstPayout, uniqueUsers };
   }, [allPayslips]);
 
   const tabs = [
@@ -403,10 +423,12 @@ const AdminPayslipsPage = () => {
     const comment = prompt(t('payslips.approveBulkComment', 'Kommentar fuer Freigabe (optional)'));
     if (comment === null) return;
 
-    Promise.all(
-      selectedPending.map(slip => api.post(`/api/payslips/approve/${slip.id}`, null, { params: { comment } }))
-    ).then(() => {
+    setActionError('');
+    api.post('/api/payslips/approve-batch', { ids: selectedPending.map(slip => slip.id), comment }).then(() => {
       setSelectedIds([]);
+      refreshPayslips();
+    }).catch(error => {
+      setActionError(error?.response?.data?.message || t('payrollReview.batchFailed', 'Die Auswahl konnte nicht freigegeben werden. Bitte die Abrechnungsprüfung öffnen.'));
       refreshPayslips();
     });
   };
@@ -433,20 +455,29 @@ const AdminPayslipsPage = () => {
 
     if (selectedSlips.some(slip => getSlipStatus(slip) === 'approved')) {
       setActionError(t(
-        'payslips.deleteApprovedError',
-        'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+          'payslips.approvedImmutable',
+          'Freigegebene Abrechnungen bleiben erhalten. Korrekturen benötigen einen separaten Korrekturbeleg.'
       ));
       return;
     }
 
-    if (!window.confirm(t(
+    const correctionBatches = new Set(selectedSlips.map(slip => slip.correctionBatch).filter(Boolean));
+    const discardedSlips = payslips.filter(slip => selectedIds.includes(slip.id) || correctionBatches.has(slip.correctionBatch));
+    if (!window.confirm((correctionBatches.size ? 'Zugehörige Korrekturläufe werden vollständig verworfen. Originalbelege bleiben erhalten. ' : '') + t(
       'adminPayslips.bulkDeleteConfirm',
       '{{count}} Abrechnung(en) wirklich loeschen?',
-      { count: selectedSlips.length }
+      { count: discardedSlips.length }
     ))) return;
 
     setActionError('');
-    Promise.all(selectedSlips.map(slip => api.delete(`/api/payslips/${slip.id}`)))
+    const seenBatches = new Set();
+    const requests = selectedSlips.filter(slip => {
+      if (!slip.correctionBatch) return true;
+      if (seenBatches.has(slip.correctionBatch)) return false;
+      seenBatches.add(slip.correctionBatch);
+      return true;
+    });
+    Promise.all(requests.map(slip => api.delete(`/api/payslips/${slip.id}${slip.correctionBatch ? '/corrections' : ''}`)))
       .then(() => {
         setSelectedIds([]);
         refreshPayslips();
@@ -455,7 +486,7 @@ const AdminPayslipsPage = () => {
         const message = error?.response?.status === 409
           ? t(
               'payslips.deleteApprovedError',
-              'Freigegebene Abrechnungen koennen nicht geloescht werden. Bitte zuerst zurueckziehen.'
+              'Freigegebene Abrechnungen bleiben erhalten. Korrekturen benötigen einen separaten Korrekturbeleg.'
             )
           : error?.response?.data?.message || t(
               'payslips.deleteError',
@@ -465,10 +496,6 @@ const AdminPayslipsPage = () => {
         refreshPayslips();
       });
   };
-
-  const wizardUser = users.find(user => String(user.id) === String(form.userId));
-  const previewGross = wizardUser?.salary ?? wizardUser?.monthlySalary ?? 0;
-  const previewNet = Number(previewGross) ? Number(previewGross) * 0.86 : 0;
 
   return (
     <div className="admin-payslips-page scoped-dashboard">
@@ -508,8 +535,6 @@ const AdminPayslipsPage = () => {
             setCreateOpen(false);
             setWizardPreview(false);
           }}
-          previewGross={previewGross}
-          previewNet={previewNet}
           formatCurrency={formatCurrency}
           t={t}
         />
@@ -542,8 +567,11 @@ const AdminPayslipsPage = () => {
         </article>
         <article className="payroll-kpi">
           <span>{t('adminPayslips.kpis.totalPayout', 'Auszahlung gesamt')}</span>
-          <strong>{formatCurrency(totals.payoutTotal)}</strong>
-          <small>{t('adminPayslips.kpis.employerContributions', 'AG-Beitraege {{amount}}', { amount: formatCurrency(totals.employerTotal) })}</small>
+          {totals.currencies.length === 0 && <strong>–</strong>}
+          {totals.currencies.map(amounts => <div key={amounts.currency}>
+            <strong>{formatCurrency(amounts.payoutTotal, amounts.currency)}</strong>
+            <small>{t('adminPayslips.kpis.employerContributions', 'AG-Beitraege {{amount}}', { amount: formatCurrency(amounts.employerTotal, amounts.currency) })}</small>
+          </div>)}
         </article>
       </section>
 
@@ -691,6 +719,7 @@ const AdminPayslipsPage = () => {
                     <td data-label={t('employee', 'Mitarbeiter')}>
                       <button type="button" className="employee-link" onClick={() => setDetailSlip(slip)}>
                         <strong>{getEmployeeName(slip)}</strong>
+                        {slip.correctionOfId && <span>Differenzbeleg zu #{slip.correctionOfId}</span>}
                         <span>{t('adminPayslips.billedOvertime', '{{hours}} abgerechnete Ueberstunden', { hours: formatBilledOvertime(slip) })}</span>
                       </button>
                     </td>
@@ -700,7 +729,7 @@ const AdminPayslipsPage = () => {
                     </td>
                     <td data-label={t('adminPayslips.net', 'Netto')} className={Number(slip.netSalary) < 0 ? 'amount-negative' : ''}>
                       {formatCurrency(slip.netSalary, currency)}
-                      {Number(slip.netSalary) < 0 && <span className="inline-warning">{t('adminPayslips.negativeNetSalary', 'Negativer Nettolohn')}</span>}
+                      {Number(slip.netSalary) < 0 && <span className="inline-warning">{slip.correctionOfId ? 'Rückforderung / Verrechnung' : t('adminPayslips.negativeNetSalary', 'Negativer Nettolohn')}</span>}
                     </td>
                     <td data-label={t('common.status', 'Status')}>
                       <span className={`status-chip status-${statusMeta.tone}`}>{statusMeta.label}</span>
@@ -724,11 +753,9 @@ const AdminPayslipsPage = () => {
                         <div className="row-menu">
                           <button type="button" onClick={() => { setDetailSlip(slip); setMenuOpenId(null); }}>{t('adminPayslips.showDetails', 'Details anzeigen')}</button>
                           <button type="button" onClick={() => { printPdf(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.printPdf', 'PDF drucken')}</button>
-                          <button type="button" onClick={() => { editPayoutDate(slip.id, slip.payoutDate); setMenuOpenId(null); }}>{t('adminPayslips.changePayout', 'Auszahlung aendern')}</button>
-                          {status !== 'approved' ? (
+                          {status !== 'approved' && <button type="button" onClick={() => { editPayoutDate(slip.id, slip.payoutDate); setMenuOpenId(null); }}>{t('adminPayslips.changePayout', 'Auszahlung aendern')}</button>}
+                          {status !== 'approved' && !slip.correctionBatch && (
                             <button type="button" onClick={() => { approve(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.approveButton', 'Freigeben')}</button>
-                          ) : (
-                            <button type="button" onClick={() => { reopen(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.reopen', 'Zurueckziehen')}</button>
                           )}
                           {status !== 'approved' && (
                             <button type="button" className="danger-text" onClick={() => { deletePayslip(slip.id); setMenuOpenId(null); }}>{t('delete', 'Loeschen')}</button>
@@ -774,13 +801,19 @@ const AdminPayslipsPage = () => {
           formatCurrency={formatCurrency}
           formatDate={formatDate}
           onClose={() => setDetailSlip(null)}
-          onApprove={() => approve(detailSlip.id).then(() => setDetailSlip(null))}
+          onApprove={() => approve(detailSlip.id).then(success => { if (success) setDetailSlip(null); })}
           onPrint={() => printPdf(detailSlip.id)}
           onEditPayout={() => editPayoutDate(detailSlip.id, detailSlip.payoutDate)}
-          onReopen={() => reopen(detailSlip.id)}
+          onCorrect={() => { setCorrectionOriginal(detailSlip); setDetailSlip(null); }}
+          error={actionError}
+          correctionMembers={payslips.filter(item => detailSlip.correctionBatch && item.correctionBatch === detailSlip.correctionBatch)}
           t={t}
         />
       )}
+      {correctionOriginal && <PayrollCorrectionForm original={correctionOriginal} onClose={() => setCorrectionOriginal(null)} onCreated={async (created) => {
+        await refreshPayslips(); setCorrectionOriginal(null); setSelectedIds(created.map(item => item.id));
+        setActiveTab('all'); setDetailSlip(created[0] || null);
+      }} />}
 
       {settingsOpen && (
         <DocumentSettingsModal
@@ -795,7 +828,7 @@ const AdminPayslipsPage = () => {
   );
 };
 
-const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, onPrint, onEditPayout, onReopen, t }) => {
+const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, onPrint, onEditPayout, onCorrect, correctionMembers = [], error, t }) => {
   const status = getSlipStatus(slip);
   const statusMeta = getStatusMeta(status, t);
   const currency = slip.currency || 'CHF';
@@ -804,7 +837,7 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
   return (
     <div className="drawer-layer" role="presentation">
       <button type="button" className="drawer-backdrop" aria-label={t('adminPayslips.closeDetails', 'Details schliessen')} onClick={onClose} />
-      <aside className="payslip-drawer" aria-label={t('adminPayslips.drawerAria', 'Lohnabrechnung {{name}}', { name: getEmployeeName(slip) })}>
+      <aside className="payslip-drawer" role="dialog" aria-modal="true" aria-label={t('adminPayslips.drawerAria', 'Lohnabrechnung {{name}}', { name: getEmployeeName(slip) })}>
         <div className="drawer-head">
           <div>
             <span className={`status-chip status-${statusMeta.tone}`}>{statusMeta.label}</span>
@@ -813,6 +846,20 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
           </div>
           <button type="button" className="icon-action" onClick={onClose} aria-label={t('close', 'Schliessen')}>x</button>
         </div>
+
+        {slip.correctionOfId && <section className="drawer-section">
+          <h3>Differenzbeleg zu Original #{slip.correctionOfId}</h3>
+          <p>{slip.correctionReason}</p>
+          {slip.correctedGrossSalary != null && <p>Neuer Gesamtstand des Monats: Brutto {formatCurrency(slip.correctedGrossSalary, currency)}, Netto {formatCurrency(slip.correctedNetSalary, currency)}.</p>}
+          <p>Die ausgewiesenen Beträge sind Änderungen zum bisherigen Stand. Negative Nettodifferenzen sind Rückforderungen oder Verrechnungen.</p>
+          {correctionMembers.length > 0 && <><h4>Gemeinsam freizugebender Korrekturlauf</h4><ul>{correctionMembers.map(member => <li key={member.id}>
+            Original #{member.correctionOfId} · {formatDate(member.periodStart)} · Nettodifferenz {formatCurrency(member.netSalary, member.currency)}
+          </li>)}</ul></>}
+        </section>}
+
+        {[['Lohnbestandteile', slip.earnings], ['Abzugspositionen', slip.deductionsList]].map(([label, entries]) => <section className="drawer-section" key={label}>
+          <h3>{label}</h3><ul className="contribution-list">{(entries || []).map((entry, index) => <li key={`${entry.type}-${index}`}><span>{entry.type}</span><strong>{formatCurrency(entry.amount, currency)}</strong></li>)}</ul>
+        </section>)}
 
         <dl className="drawer-metrics">
           <div>
@@ -868,13 +915,15 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
         </section>
 
         <div className="drawer-actions">
+          {error && <p role="alert">{error}</p>}
           <button type="button" onClick={onPrint}>{t('adminPayslips.openPdf', 'PDF oeffnen')}</button>
           {status === 'approved' ? (
-            <button type="button" className="warning-btn" onClick={onReopen}>{t('adminPayslips.reopen', 'Zurueckziehen')}</button>
+            <><p>Freigegebene Abrechnungen bleiben unverändert. Eine Berichtigung benötigt einen separaten Korrekturbeleg.</p>
+            {!slip.correctionOfId && <button type="button" onClick={onCorrect}>Rückrechnung erstellen</button>}</>
           ) : (
-            <button type="button" className="primary-btn" onClick={onApprove}>{t('adminPayslips.approveButton', 'Freigeben')}</button>
+            <button type="button" className="primary-btn" onClick={onApprove}>{slip.correctionBatch ? `Korrekturlauf freigeben (${correctionMembers.length} Belege)` : t('adminPayslips.approveButton', 'Freigeben')}</button>
           )}
-          <button type="button" onClick={onEditPayout}>{t('adminPayslips.correct', 'Korrigieren')}</button>
+          {status !== 'approved' && <button type="button" onClick={onEditPayout}>{t('adminPayslips.correct', 'Korrigieren')}</button>}
         </div>
       </aside>
     </div>
@@ -936,8 +985,6 @@ const CreatePayslipSection = ({
   onCreate,
   error,
   onClose,
-  previewGross,
-  previewNet,
   formatCurrency,
   t
 }) => (
@@ -998,14 +1045,7 @@ const CreatePayslipSection = ({
             />
             <span>{t('adminPayslips.payOutOvertime', 'Ueberstunden auszahlen')}</span>
           </label>
-          <label className="checkbox-label">
-            <input type="checkbox" checked readOnly />
-            <span>{t('adminPayslips.calculateDeductionsAutomatically', 'Abzuege automatisch berechnen')}</span>
-          </label>
-          <label className="checkbox-label">
-            <input type="checkbox" checked readOnly />
-            <span>{t('adminPayslips.showPreviewBeforeCreate', 'Vorschau vor Erstellung anzeigen')}</span>
-          </label>
+          <p className="muted-text">{t('payrollReview.draftHint', 'Die Vorschau prüft Zeitdaten und Abrechnungsgrundlagen. Die Nettolohnberechnung ist noch nicht fachlich verifiziert.')}</p>
         </fieldset>
       </div>
 
@@ -1032,29 +1072,7 @@ const CreatePayslipSection = ({
         </div>
       )}
 
-      {wizardPreview && (
-        <div className="run-preview">
-          <h3>{t('adminPayslips.previewTitle', 'Vorschau Abrechnung')}</h3>
-          <dl>
-            <div>
-              <dt>{t('adminPayslips.employees', 'Mitarbeitende')}</dt>
-              <dd>{form.userId ? 1 : 0}</dd>
-            </div>
-            <div>
-              <dt>{t('errorsLabel', 'Fehler')}</dt>
-              <dd>{Number(previewNet) < 0 ? 1 : 0}</dd>
-            </div>
-            <div>
-              <dt>{t('adminPayslips.totalGross', 'Gesamtes Brutto')}</dt>
-              <dd>{formatCurrency(previewGross)}</dd>
-            </div>
-            <div>
-              <dt>{t('adminPayslips.totalNet', 'Gesamtes Netto')}</dt>
-              <dd>{formatCurrency(previewNet)}</dd>
-            </div>
-          </dl>
-        </div>
-      )}
+      {wizardPreview && <PayrollReview userId={form.userId} start={form.start} end={form.end} t={t} />}
 
       {error && <div className="payroll-action-error" role="alert">{error}</div>}
       <div className="modal-actions">

@@ -23,6 +23,27 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HolidayServiceTest {
 
+    @Test
+    void concurrentFirstRequestsReturnCompleteImmutableHolidaySets() throws Exception {
+        var service = new HolidayService();
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(12);
+        var gate = new java.util.concurrent.CountDownLatch(1);
+        try {
+            java.util.List<java.util.concurrent.Future<Set<LocalDate>>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < 48; i++) {
+                final int year = 2026 + i % 3;
+                futures.add(executor.submit(() -> { gate.await(); return service.getHolidays(year, "ZH"); }));
+            }
+            gate.countDown();
+            for (int i = 0; i < futures.size(); i++) {
+                var days = futures.get(i).get(10, java.util.concurrent.TimeUnit.SECONDS);
+                assertEquals(service.getHolidays(2026 + i % 3, "ZH"), days);
+                assertTrue(days.contains(LocalDate.of(2026 + i % 3, 8, 1)));
+                org.junit.jupiter.api.Assertions.assertThrows(UnsupportedOperationException.class, days::clear);
+            }
+        } finally { executor.shutdownNow(); }
+    }
+
     @Mock
     private CompanyHolidayPreferenceRepository companyHolidayPreferenceRepository;
 

@@ -927,6 +927,53 @@ public class TimeTrackingService {
         userRepository.save(freshUser);
     }
 
+    /** Read-only payroll entitlement at period end; later earned time cannot fund an earlier payslip. */
+    @Transactional(readOnly = true)
+    public int getPayrollOvertimeBalance(User user, LocalDate cutoff) {
+        User effective = employmentModelHistoryService.resolveUserSnapshotForDate(user, cutoff);
+        if (Boolean.TRUE.equals(effective.getIsHourly())) throw new IllegalStateException("Stundenlohn führt kein auszahlbares Überstundenkonto.");
+        LocalDate start = employmentModelHistoryService.resolveOvertimeStreakStart(user, cutoff);
+        if (start == null || start.isAfter(cutoff)) throw new IllegalStateException("Beginn des Überstundenkontos ist nicht bekannt.");
+        Map<LocalDate, DailyTimeSummaryDTO> days = new HashMap<>();
+        for (LocalDate from = start; !from.isAfter(cutoff); from = from.plusDays(366)) {
+            LocalDate to = from.plusDays(365).isAfter(cutoff) ? cutoff : from.plusDays(365);
+            for (DailyTimeSummaryDTO day : getUserHistory(user, from, to)) {
+                if (day.isNeedsCorrection() || day.getPrimaryTimes() != null && day.getPrimaryTimes().isOpen()) throw new IllegalStateException("Der Überstundensaldo enthält ungeklärte Zeiten am " + day.getDate() + ".");
+                days.put(day.getDate(), day);
+            }
+        }
+        var vacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        var snapshots = employmentModelHistoryService.resolveUserSnapshotsForRange(user, start, cutoff);
+        Map<LocalDate, List<TimeTrackingEntry>> entries = timeTrackingEntryRepository
+                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, start.atStartOfDay(), cutoff.plusDays(1).atStartOfDay())
+                .stream().filter(e -> e.getEntryDate() != null).collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
+        int balance = 0;
+        for (LocalDate day = start; !day.isAfter(cutoff); ) {
+            User historical = resolveEffectiveUserForBalanceDate(user, day, snapshots);
+            if (Boolean.TRUE.equals(historical.getIsPercentage())) {
+                LocalDate monday = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate weekEnd = monday.plusDays(6).isAfter(cutoff) ? cutoff : monday.plusDays(6);
+                LocalDate segmentEnd = findHistoricalBalanceSegmentEnd(user, day, weekEnd, snapshots);
+                // Use the same weekly rounding and historical segments as the live time account.
+                balance = Math.addExact(balance, computeWeeklyWorkDifferenceForPercentageUserInRange(historical, monday, day, segmentEnd, vacations, entries));
+                day = segmentEnd.plusDays(1);
+            } else {
+                DailyTimeSummaryDTO summary = days.get(day);
+                if (summary == null || summary.getDifferenceMinutes() == null) throw new IllegalStateException("Zeitgrundlage fehlt am " + day + ".");
+                balance = Math.addExact(balance, summary.getDifferenceMinutes());
+                day = day.plusDays(1);
+            }
+        }
+        // All already approved payouts consume entitlement, including future payment dates.
+        for (Payslip slip : payslipRepository.findByUser(user)) {
+            if (slip.isApproved() && slip.isPayoutOvertime() && isOvertimePayoutRelevantForBalance(slip, start) && slip.getOvertimeHours() != null)
+                balance = Math.subtractExact(balance, (int) Math.round(slip.getOvertimeHours() * 60));
+        }
+        for (var vacation : vacations) if (vacation.isUsesOvertime()) balance = Math.subtractExact(balance,
+                calculateAppliedOvertimeVacationMinutesInRange(user, vacation, start, cutoff, new HashMap<>()));
+        return balance;
+    }
+
     private boolean isOvertimePayoutRelevantForBalance(Payslip payslip,
                                                         LocalDate balanceStart) {
         LocalDate deductionDate = payslip.getPayoutDate() != null

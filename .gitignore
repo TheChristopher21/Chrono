@@ -5,6 +5,7 @@
 *.log
 *.sql
 !Chrono-backend/src/main/resources/db/migration/*.sql
+!ops/audit/payroll-readonly.sql
 compose-log.txt
 
 data/
@@ -26,4 +27,7 @@ release/
 # Local generated artifacts
 outputs/
 tmp/
+.playwright-cli/
+/output/playwright/
+/output/mysql-tax-20261016/
 

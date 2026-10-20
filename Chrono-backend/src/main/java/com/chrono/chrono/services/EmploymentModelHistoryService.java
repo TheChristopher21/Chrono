@@ -111,11 +111,15 @@ public class EmploymentModelHistoryService {
     }
 
     public LocalDate resolveCurrentOvertimeStreakStart(User user) {
+        return resolveOvertimeStreakStart(user, currentBerlinDate());
+    }
+
+    public LocalDate resolveOvertimeStreakStart(User user, LocalDate cutoff) {
         if (user == null) {
             return null;
         }
 
-        LocalDate today = currentBerlinDate();
+        LocalDate today = cutoff;
         LocalDate fallback = user.getEntryDate();
         List<UserEmploymentModelHistory> history = historyRepository.findByUserOrderByEffectiveFromAsc(user);
         if (history.isEmpty()) {

@@ -1,7 +1,9 @@
 /* CompanySettingsPageScoped.css */
 /* vollständig: Seite (Wrapper) + Card, Light/Dark sauber */
 
-.scoped-dashboard {
+.company-settings-page {
+    font-family: var(--ud-font-family, Inter, system-ui, -apple-system, "Segoe UI", sans-serif);
+    color: var(--c-text);
     /* ---- Design-Variablen (Light) ---- */
     --c-pri: #475bff;
     --c-pri-dim: #6b7cff;
@@ -37,7 +39,7 @@
 }
 
 /* ---- Dark Mode Variablen für die komplette Seite ---- */
-[data-theme="dark"] .scoped-dashboard {
+[data-theme="dark"] .company-settings-page {
     --c-text: #e5e7ec;
     --c-text-light: #a0a4b4;
     --c-muted: #a0a4b4;
@@ -52,7 +54,7 @@
 }
 
 /* ---------------- Card ---------------- */
-.scoped-dashboard .company-settings-card {
+.company-settings-page .company-settings-card {
     background: var(--c-card);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
@@ -63,7 +65,7 @@
 }
 
 /* Titel */
-.scoped-dashboard .company-settings-card h2 {
+.company-settings-page .company-settings-card h2 {
     margin: 0 0 var(--u-gap);
     font-size: clamp(1.4rem, 2.5vw, 1.7rem);
     font-weight: 700;
@@ -71,7 +73,7 @@
 }
 
 /* Info-Kästen */
-.scoped-dashboard .company-settings-card .info-box {
+.company-settings-page .company-settings-card .info-box {
     background: var(--c-surface);
     border: 1px solid var(--c-line);
     border-radius: var(--u-radius-sm);
@@ -80,12 +82,12 @@
     margin-bottom: var(--u-gap);
     line-height: 1.5;
 }
-.scoped-dashboard .company-settings-card .info-box.subtle {
+.company-settings-page .company-settings-card .info-box.subtle {
     margin-top: var(--u-gap);
     font-size: 0.9rem;
     color: var(--c-text-light);
 }
-.scoped-dashboard .company-settings-card .info-box code {
+.company-settings-page .company-settings-card .info-box code {
     background: var(--c-card);
     border: 1px solid var(--c-border);
     border-radius: 6px;
@@ -94,32 +96,32 @@
 }
 
 /* Formular-Layout */
-.scoped-dashboard .company-settings-form {
+.company-settings-page .company-settings-form {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--u-gap);
     margin-bottom: var(--u-gap);
 }
 @media (min-width: 860px) {
-    .scoped-dashboard .company-settings-form {
+    .company-settings-page .company-settings-form {
         grid-template-columns: 1fr 1fr;
     }
 }
-.scoped-dashboard .company-settings-form .form-group {
+.company-settings-page .company-settings-form .form-group {
     display: flex;
     flex-direction: column;
     gap: var(--u-gap-xs);
 }
 
 /* Labels + Badges */
-.scoped-dashboard .company-settings-form label {
+.company-settings-page .company-settings-form label {
     font-weight: 600;
     color: var(--c-text);
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
 }
-.scoped-dashboard .company-settings-form .badge {
+.company-settings-page .company-settings-form .badge {
     display: inline-block;
     font-size: 0.7rem;
     font-weight: 700;
@@ -132,19 +134,19 @@
 }
 
 /* Erklärzeile */
-.scoped-dashboard .company-settings-form .hint {
+.company-settings-page .company-settings-form .hint {
     color: var(--c-text-light);
     font-size: 0.85rem;
     line-height: 1.4;
 }
 
 /* Inputs */
-.scoped-dashboard .company-settings-form input[type="number"] { appearance: textfield; }
-.scoped-dashboard .company-settings-form input::-webkit-outer-spin-button,
-.scoped-dashboard .company-settings-form input::-webkit-inner-spin-button {
+.company-settings-page .company-settings-form input[type="number"] { appearance: textfield; }
+.company-settings-page .company-settings-form input::-webkit-outer-spin-button,
+.company-settings-page .company-settings-form input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
 }
-.scoped-dashboard .company-settings-form input {
+.company-settings-page .company-settings-form input {
     background: var(--c-card);
     color: var(--c-text);
     border: 1px solid var(--c-border);
@@ -153,20 +155,20 @@
     font-size: 0.95rem;
     transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
-.scoped-dashboard .company-settings-form input::placeholder { color: var(--c-text-light); }
-.scoped-dashboard .company-settings-form input:focus {
+.company-settings-page .company-settings-form input::placeholder { color: var(--c-text-light); }
+.company-settings-page .company-settings-form input:focus {
     outline: none;
     border-color: var(--c-pri);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-pri) 20%, transparent);
 }
 
-.scoped-dashboard .holiday-settings-panel {
+.company-settings-page .holiday-settings-panel {
     border-top: 1px solid var(--c-line);
     margin: calc(var(--u-gap) + 0.2rem) 0 var(--u-gap);
     padding-top: var(--u-gap);
 }
 
-.scoped-dashboard .holiday-settings-header {
+.company-settings-page .holiday-settings-header {
     align-items: center;
     display: flex;
     gap: var(--u-gap-sm);
@@ -174,40 +176,40 @@
     margin-bottom: var(--u-gap-sm);
 }
 
-.scoped-dashboard .holiday-settings-header h3 {
+.company-settings-page .holiday-settings-header h3 {
     color: var(--c-text);
     font-size: 1.05rem;
     margin: 0;
 }
 
-.scoped-dashboard .holiday-profile-toggle,
-.scoped-dashboard .holiday-main-check,
-.scoped-dashboard .holiday-halfday-check {
+.company-settings-page .holiday-profile-toggle,
+.company-settings-page .holiday-main-check,
+.company-settings-page .holiday-halfday-check {
     align-items: center;
     color: var(--c-text);
     display: inline-flex;
     gap: 0.5rem;
 }
 
-.scoped-dashboard .holiday-profile-toggle input,
-.scoped-dashboard .holiday-main-check input,
-.scoped-dashboard .holiday-halfday-check input {
+.company-settings-page .holiday-profile-toggle input,
+.company-settings-page .holiday-main-check input,
+.company-settings-page .holiday-halfday-check input {
     accent-color: var(--c-pri);
 }
 
-.scoped-dashboard .holiday-profile-toggle {
+.company-settings-page .holiday-profile-toggle {
     font-weight: 600;
 }
 
-.scoped-dashboard .holiday-controls {
+.company-settings-page .holiday-controls {
     display: grid;
     gap: var(--u-gap-sm);
     grid-template-columns: 180px 1fr;
     margin-bottom: var(--u-gap-sm);
 }
 
-.scoped-dashboard .holiday-controls select,
-.scoped-dashboard .holiday-controls input {
+.company-settings-page .holiday-controls select,
+.company-settings-page .holiday-controls input {
     background: var(--c-card);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius-sm);
@@ -216,19 +218,19 @@
     padding: 0.65rem 0.8rem;
 }
 
-[data-theme="dark"] .scoped-dashboard .holiday-controls select option {
+[data-theme="dark"] .company-settings-page .holiday-controls select option {
     background: var(--c-card);
     color: var(--c-text);
 }
 
-.scoped-dashboard .holiday-list {
+.company-settings-page .holiday-list {
     border: 1px solid var(--c-line);
     border-radius: var(--u-radius-sm);
     max-height: 460px;
     overflow: auto;
 }
 
-.scoped-dashboard .holiday-row {
+.company-settings-page .holiday-row {
     align-items: center;
     background: var(--c-card);
     border-bottom: 1px solid var(--c-line);
@@ -239,23 +241,23 @@
     padding: 0.6rem 0.8rem;
 }
 
-.scoped-dashboard .holiday-row:last-child {
+.company-settings-page .holiday-row:last-child {
     border-bottom: 0;
 }
 
-.scoped-dashboard .holiday-row.selected {
+.company-settings-page .holiday-row.selected {
     background: color-mix(in srgb, var(--c-pri) 7%, var(--c-card));
 }
 
-.scoped-dashboard .holiday-main-check {
+.company-settings-page .holiday-main-check {
     min-width: 0;
 }
 
-.scoped-dashboard .holiday-name {
+.company-settings-page .holiday-name {
     font-weight: 600;
 }
 
-.scoped-dashboard .holiday-country {
+.company-settings-page .holiday-country {
     background: var(--c-surface);
     border: 1px solid var(--c-border);
     border-radius: 999px;
@@ -265,7 +267,7 @@
     padding: 0.12rem 0.42rem;
 }
 
-.scoped-dashboard .holiday-region {
+.company-settings-page .holiday-region {
     color: var(--c-text-light);
     font-size: 0.85rem;
     overflow: hidden;
@@ -274,15 +276,15 @@
 }
 
 /* Live-Vorschau & Fehler */
-.scoped-dashboard .company-settings-form .preview {
+.company-settings-page .company-settings-form .preview {
     font-size: 0.85rem; color: var(--c-text-light);
 }
-.scoped-dashboard .company-settings-form .error {
+.company-settings-page .company-settings-form .error {
     color: var(--c-error); font-size: 0.85rem; font-weight: 600;
 }
 
 /* Button */
-.scoped-dashboard .company-settings-card .primary-btn {
+.company-settings-page .company-settings-card .primary-btn {
     background: var(--c-pri); color: #fff;
     border: 1px solid var(--c-pri);
     border-radius: 12px;
@@ -290,14 +292,14 @@
     font-weight: 600; cursor: pointer;
     transition: background .2s ease, transform .2s ease, border-color .2s ease;
 }
-.scoped-dashboard .company-settings-card .primary-btn:hover {
+.company-settings-page .company-settings-card .primary-btn:hover {
     background: var(--c-pri-dim);
     border-color: var(--c-pri-dim);
     transform: translateY(-1px);
 }
 
 /* Status/Feedback */
-.scoped-dashboard .company-settings-card > p {
+.company-settings-page .company-settings-card > p {
     margin-top: 0.7rem;
     color: var(--c-text-light);
     font-size: 0.95rem;
@@ -305,24 +307,24 @@
 
 /* Kleinere Screens */
 @media (max-width: 520px) {
-    .scoped-dashboard {
+    .company-settings-page {
         padding: var(--u-gap);
     }
-    .scoped-dashboard .company-settings-card {
+    .company-settings-page .company-settings-card {
         padding: var(--u-gap);
     }
-    .scoped-dashboard .company-settings-form {
+    .company-settings-page .company-settings-form {
         gap: var(--u-gap-sm);
     }
-    .scoped-dashboard .holiday-settings-header {
+    .company-settings-page .holiday-settings-header {
         align-items: flex-start;
         flex-direction: column;
     }
-    .scoped-dashboard .holiday-controls,
-    .scoped-dashboard .holiday-row {
+    .company-settings-page .holiday-controls,
+    .company-settings-page .holiday-row {
         grid-template-columns: 1fr;
     }
-    .scoped-dashboard .holiday-halfday-check {
+    .company-settings-page .holiday-halfday-check {
         padding-left: 1.65rem;
     }
 }

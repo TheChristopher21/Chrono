@@ -5,13 +5,11 @@ import com.chrono.chrono.dto.PayslipDTO;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.PayslipAudit;
 import com.chrono.chrono.entities.PayComponent;
-import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.PayslipSchedule;
 import com.chrono.chrono.repositories.PayslipAuditRepository;
 import com.chrono.chrono.repositories.PayslipRepository;
 import com.chrono.chrono.repositories.PayslipScheduleRepository;
-import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmailService;
 import com.chrono.chrono.services.PdfService;
@@ -20,10 +18,10 @@ import com.chrono.chrono.services.accounting.AccountingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +29,11 @@ import java.util.Set;
 
 @Service
 public class PayrollService {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PayrollService.class);
     @Autowired
     private PayslipRepository payslipRepository;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private TimeTrackingEntryRepository timeTrackingEntryRepository;
     @Autowired
     private PayslipAuditRepository payslipAuditRepository;
     @Autowired
@@ -45,19 +42,38 @@ public class PayrollService {
     private PdfService pdfService;
     @Autowired
     private PayslipScheduleRepository payslipScheduleRepository;
-    @Autowired
-    private TaxCalculationService taxCalculationService;
 
     @Autowired
     private AccountingService accountingService;
     @Autowired
     private TimeTrackingService timeTrackingService;
 
-    private static final double OVERTIME_BONUS = 0.25;
+    @Autowired
+    private PayrollApprovalGuard approvalGuard;
+
+    @Autowired
+    private PayrollCalculationService calculations;
 
     private void audit(Payslip ps, String action, String author, String comment) {
         PayslipAudit log = new PayslipAudit(ps, action, author, comment);
         payslipAuditRepository.save(log);
+    }
+
+    private void afterCommit(Runnable notification) {
+        Runnable delivery = () -> {
+            try { notification.run(); }
+            catch (RuntimeException failure) {
+                // Payroll is already committed; an HTTP failure would invite a duplicate retry.
+                logger.error("Abrechnung gespeichert; E-Mail-Benachrichtigung konnte nicht zugestellt werden.", failure);
+            }
+        };
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            delivery.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() { delivery.run(); }
+        });
     }
 
     @Transactional
@@ -67,69 +83,29 @@ public class PayrollService {
 
     @Transactional
     public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end, LocalDate payoutDate, Double overtimeHours, boolean payoutOvertime) {
+        PayrollReviewService.validatePeriod(start, end);
+        if (payoutOvertime && (overtimeHours == null || !Double.isFinite(overtimeHours) || overtimeHours <= 0)) {
+            throw new IllegalArgumentException("Bitte eine positive, endliche Anzahl Überstunden angeben.");
+        }
         User user = userRepository.findById(userId).orElseThrow();
-        if (Boolean.TRUE.equals(user.getIsHourly())
-                && (user.getHourlyRate() == null || user.getHourlyRate() <= 0.0)) {
-            throw new IllegalStateException(
-                    "Für Stundenlohn-Mitarbeitende muss vor der Abrechnung ein positiver Stundenansatz hinterlegt sein."
-            );
-        }
-        LocalDateTime startDt = start.atStartOfDay();
-        LocalDateTime endDt = end.plusDays(1).atStartOfDay();
-        List<TimeTrackingEntry> entries = timeTrackingEntryRepository
-                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, startDt, endDt);
-        long minutes = 0;
-        LocalDateTime lastStart = null;
-        for (TimeTrackingEntry e : entries) {
-            if (e.getPunchType() == TimeTrackingEntry.PunchType.START) {
-                lastStart = e.getEntryTimestamp();
-            } else if (e.getPunchType() == TimeTrackingEntry.PunchType.ENDE && lastStart != null) {
-                minutes += Duration.between(lastStart, e.getEntryTimestamp()).toMinutes();
-                lastStart = null;
-            }
-        }
-        double hours = minutes / 60.0;
-        double basePay;
-        double overtimePay = 0.0;
-        if (user.getIsHourly() != null && user.getIsHourly()) {
-            double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
-            double autoOvertimeHours = Math.max(0, hours - 160);
-            double baseHours = hours - autoOvertimeHours;
-            basePay = baseHours * rate;
-            overtimePay = autoOvertimeHours * rate * (1 + OVERTIME_BONUS);
-        } else {
-            basePay = user.getMonthlySalary() != null ? user.getMonthlySalary() : 0.0;
-            if (hours > 160 && user.getHourlyRate() != null) {
-                double autoOvertimeHours = hours - 160;
-                overtimePay = autoOvertimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
-            }
-        }
-
-        double manualOvertimePay = 0.0;
-        double paidOvertimeHours = 0.0;
-        if (payoutOvertime && overtimeHours != null && overtimeHours > 0) {
-            double rate = user.getHourlyRate() != null
-                    ? user.getHourlyRate()
-                    : (user.getMonthlySalary() != null ? user.getMonthlySalary() / 160.0 : 0.0);
-            double available = user.getTrackingBalanceInMinutes() != null
-                    ? user.getTrackingBalanceInMinutes() / 60.0
-                    : overtimeHours;
-            paidOvertimeHours = Math.min(overtimeHours, available);
-            manualOvertimePay = paidOvertimeHours * rate * (1 + OVERTIME_BONUS);
-        }
-
-        double gross = basePay + overtimePay + manualOvertimePay;
-        TaxCalculationService.Result res = taxCalculationService.calculate(user, gross);
+        var calculation = calculations.calculate(user, start, end, overtimeHours, payoutOvertime);
+        double basePay = calculation.gross().base().doubleValue();
+        double overtimePay = calculation.gross().premium().doubleValue();
+        double manualOvertimePay = calculation.gross().payout().doubleValue();
+        double paidOvertimeHours = calculation.gross().paidOvertimeMinutes() / 60.0;
+        double gross = calculation.gross().total().doubleValue();
+        TaxCalculationService.Result res = new TaxCalculationService.Result(calculation.employee(), calculation.employer(), calculation.taxReference());
         double deductions = res.getEmployeeTotal();
-        double net = gross - deductions;
+        double net = roundMoney(gross - deductions);
         double employer = res.getEmployerTotal();
         Payslip ps = new Payslip();
         ps.setUser(user);
         ps.setPeriodStart(start);
         ps.setPeriodEnd(end);
-        Integer maxVersion = payslipRepository.findByUserAndPeriodStartAndPeriodEnd(user, start, end)
-                .stream().map(Payslip::getVersion).max(Integer::compareTo).orElse(0);
-        ps.setVersion(maxVersion == null ? 0 : maxVersion + 1);
+        // JPA @Version is the optimistic-lock token, not a payroll revision counter.
+        ps.setCurrency(calculation.terms().currency());
+        ps.setCalculationVersion(PayrollCalculationService.VERSION);
+        ps.setCalculationSnapshot(calculations.snapshot(calculation));
         ps.setGrossSalary(gross);
         ps.setDeductions(deductions);
         ps.setNetSalary(net);
@@ -138,8 +114,9 @@ public class PayrollService {
         ps.setOneTimePayments(0.0);
         ps.setTaxFreeAllowances(0.0);
         ps.getEarnings().add(new PayComponent("Base salary", basePay));
+        if (calculation.gross().thirteenthAmount().signum() > 0) ps.getEarnings().add(new PayComponent("Thirteenth salary", calculation.gross().thirteenthAmount().doubleValue()));
         if (overtimePay > 0) {
-            ps.getEarnings().add(new PayComponent("Overtime", overtimePay));
+            ps.getEarnings().add(new PayComponent("Overtime premium", overtimePay));
         }
         if (payoutOvertime && paidOvertimeHours > 0) {
             ps.getEarnings().add(new PayComponent("Overtime payout", manualOvertimePay));
@@ -153,19 +130,27 @@ public class PayrollService {
             ps.getEmployerContribList().add(new PayComponent(entry.getKey(), entry.getValue()));
         }
         ps.setEmployerContributions(employer);
+        if (payoutDate != null && calculation.gross().thirteenthAmount().signum() > 0 && !java.time.YearMonth.from(payoutDate).equals(java.time.YearMonth.from(end)))
+            throw new IllegalArgumentException("Der 13. Monatslohn muss im Abrechnungsmonat ausbezahlt werden. Spätere Nachzahlungen als Rückrechnung zuordnen.");
         if (payoutDate != null) {
             ps.setPayoutDate(payoutDate);
         } else {
-            ps.setPayoutDate(end.plusDays(5));
+            ps.setPayoutDate(calculation.gross().thirteenthAmount().signum() > 0 ? end : end.plusDays(5));
         }
         ps.setBankAccount(user.getBankAccount());
         ps.setSocialSecurityNumber(user.getSocialSecurityNumber());
-        ps.setPayType(user.getIsHourly() != null && user.getIsHourly() ? "hourly" : "salary");
+        ps.setPayType(calculation.terms().hourly() ? "hourly" : "salary");
         ps.setApproved(false);
+        PayrollApprovalGuard.validateAmounts(ps);
         Payslip saved = payslipRepository.save(ps);
-        audit(saved, "GENERATED", user.getUsername(), null);
-        emailService.sendPayslipGeneratedMail(user, saved);
+        audit(saved, "GENERATED", user.getUsername(), PayrollCalculationService.VERSION + "; Regeln #" + calculation.rulesVersion());
+        afterCommit(() -> emailService.sendPayslipGeneratedMail(user, saved));
         return saved;
+    }
+
+    private static double roundMoney(double amount) {
+        if (!Double.isFinite(amount)) throw new IllegalArgumentException("Ungültiger Lohnbetrag.");
+        return java.math.BigDecimal.valueOf(amount).setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
     }
 
     @Transactional(readOnly = true)
@@ -184,8 +169,33 @@ public class PayrollService {
     }
 
     @Transactional
+    public void approveBatch(List<Long> ids, String comment) {
+        if (ids == null || ids.isEmpty() || ids.size() > 500 || ids.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("Bitte zwischen 1 und 500 Abrechnungen auswählen.");
+        }
+        List<Long> uniqueIds = ids.stream().distinct().sorted().toList();
+        List<Payslip> batch = payslipRepository.findAllById(uniqueIds);
+        if (batch.size() != uniqueIds.size()) throw new IllegalArgumentException("Mindestens eine Abrechnung wurde nicht gefunden.");
+        approvalGuard.validate(batch);
+        for (Payslip slip : batch.stream().sorted(java.util.Comparator.comparing(Payslip::getPeriodStart)).toList()) approveValidated(slip, comment);
+    }
+
+    @Transactional
+    public void approveForUsers(List<Long> userIds, String comment) {
+        List<Payslip> batch = userIds.stream().distinct().sorted()
+                .flatMap(id -> payslipRepository.findByUser(userRepository.findById(id).orElseThrow()).stream())
+                .filter(slip -> !slip.isApproved()).toList();
+        approvalGuard.validate(batch);
+        for (Payslip slip : batch.stream().sorted(java.util.Comparator.comparing(Payslip::getPeriodStart)).toList()) approveValidated(slip, comment);
+    }
+
+    @Transactional
     public void approvePayslip(Long id, String comment) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
+        approvalGuard.validate(List.of(ps));
+        approveValidated(ps, comment);
+    }
+    private void approveValidated(Payslip ps, String comment) {
         if (ps.isApproved()) {
             timeTrackingService.rebuildUserBalance(ps.getUser());
             return;
@@ -198,7 +208,7 @@ public class PayrollService {
         timeTrackingService.rebuildUserBalance(ps.getUser());
         accountingService.recordPayrollPosting(ps);
         audit(ps, "APPROVED", "ADMIN", comment);
-        emailService.sendPayslipApprovedMail(ps.getUser(), ps);
+        afterCommit(() -> emailService.sendPayslipApprovedMail(ps.getUser(), ps));
     }
 
     @Transactional
@@ -207,6 +217,8 @@ public class PayrollService {
         List<Payslip> slips = payslipRepository.findByUser(user).stream()
                 .filter(ps -> !ps.isApproved())
                 .toList();
+        approvalGuard.validate(slips);
+        slips = slips.stream().filter(ps -> !ps.isApproved()).toList();
         for (Payslip ps : slips) {
             ps.setApproved(true);
             ps.setLocked(true);
@@ -214,7 +226,7 @@ public class PayrollService {
             ps.setPdfPath(pdf);
             accountingService.recordPayrollPosting(ps);
             audit(ps, "APPROVED", "ADMIN", comment);
-            emailService.sendPayslipApprovedMail(ps.getUser(), ps);
+            afterCommit(() -> emailService.sendPayslipApprovedMail(ps.getUser(), ps));
         }
         if (!slips.isEmpty()) {
             payslipRepository.saveAllAndFlush(slips);
@@ -227,13 +239,16 @@ public class PayrollService {
         List<Payslip> slips = payslipRepository.findAll().stream()
                 .filter(ps -> !ps.isApproved())
                 .toList();
+        approvalGuard.validate(slips);
+        slips = slips.stream().filter(ps -> !ps.isApproved()).toList();
         for (Payslip ps : slips) {
             ps.setApproved(true);
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
             ps.setPdfPath(pdf);
             audit(ps, "APPROVED", "ADMIN", comment);
-            emailService.sendPayslipApprovedMail(ps.getUser(), ps);
+            accountingService.recordPayrollPosting(ps);
+            afterCommit(() -> emailService.sendPayslipApprovedMail(ps.getUser(), ps));
         }
         if (!slips.isEmpty()) {
             payslipRepository.saveAllAndFlush(slips);
@@ -252,6 +267,7 @@ public class PayrollService {
         if (ps.isApproved()) {
             throw new IllegalStateException("Cannot delete approved payslip");
         }
+        if (ps.isCorrection()) throw new IllegalStateException("Korrekturentwürfe müssen als vollständiger Lauf verworfen werden.");
         payslipAuditRepository.deleteByPayslip(ps);
         payslipRepository.delete(ps);
     }
@@ -259,6 +275,7 @@ public class PayrollService {
     @Transactional
     public void reopenPayslip(Long id) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.isApproved()) throw new IllegalStateException("Freigegebene Abrechnungen bleiben unverändert. Eine Korrektur benötigt eine separate Storno-/Korrekturbuchung.");
         ps.setApproved(false);
         ps.setLocked(false);
         ps.setPdfPath(null);
@@ -375,6 +392,10 @@ public class PayrollService {
     @Transactional
     public void setPayoutDate(Long payslipId, LocalDate payoutDate) {
         Payslip ps = payslipRepository.findById(payslipId).orElseThrow();
+        if (ps.isApproved()) throw new IllegalStateException("Das Auszahlungsdatum einer freigegebenen Abrechnung darf nicht nachträglich verändert werden.");
+        if (!ps.isCorrection() && ps.getEarnings().stream().anyMatch(c -> "Thirteenth salary".equals(c.getType()))
+                && (payoutDate == null || !java.time.YearMonth.from(payoutDate).equals(java.time.YearMonth.from(ps.getPeriodEnd()))))
+            throw new IllegalArgumentException("Der 13. Monatslohn muss im Abrechnungsmonat ausbezahlt werden.");
         ps.setPayoutDate(payoutDate);
         payslipRepository.save(ps);
     }

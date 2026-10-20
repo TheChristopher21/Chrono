@@ -22,8 +22,8 @@ public class HolidayService {
 
     private static final Logger logger = LoggerFactory.getLogger(HolidayService.class);
 
-    private final Map<Integer, Map<String, Set<LocalDate>>> holidayCache = new HashMap<>();
-    private final Map<Integer, Set<LocalDate>> nationalHolidayCache = new HashMap<>();
+    private final Map<Integer, Map<String, Set<LocalDate>>> holidayCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<Integer, Set<LocalDate>> nationalHolidayCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Autowired
     private CompanyHolidayPreferenceRepository companyHolidayPreferenceRepository;
@@ -113,12 +113,12 @@ public class HolidayService {
         String cantonKey = (cantonAbbreviation == null || cantonAbbreviation.trim().isEmpty()) ? "GENERAL" : cantonAbbreviation.toUpperCase();
 
         return holidayCache
-                .computeIfAbsent(year, k -> new HashMap<>())
-                .computeIfAbsent(cantonKey, k -> calculateHolidaysForCache(year, cantonAbbreviation));
+                .computeIfAbsent(year, k -> new java.util.concurrent.ConcurrentHashMap<>())
+                .computeIfAbsent(cantonKey, k -> Set.copyOf(calculateHolidaysForCache(year, cantonAbbreviation)));
     }
 
     public Set<LocalDate> getNationalHolidays(int year) {
-        return nationalHolidayCache.computeIfAbsent(year, this::calculateStrictNationalHolidays);
+        return nationalHolidayCache.computeIfAbsent(year, y -> Set.copyOf(calculateStrictNationalHolidays(y)));
     }
 
     private Set<LocalDate> calculateHolidaysForCache(int year, String cantonAbbreviation) {

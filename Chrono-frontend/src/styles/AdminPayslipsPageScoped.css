@@ -1113,3 +1113,9 @@
     max-height: calc(100vh - 1.5rem);
   }
 }
+.admin-payslips-page .payroll-review-issues { display: grid; gap: .75rem; padding-left: 1.5rem; }
+.admin-payslips-page .payroll-review-issues li { overflow-wrap: anywhere; line-height: 1.5; }
+.admin-payslips-page .review-blocker strong { color: var(--danger-color, #c0392b); }
+.admin-payslips-page .payroll-review-note { line-height: 1.5; }
+.admin-payslips-page .payroll-review-table { overflow-x: auto; }
+.admin-payslips-page .payroll-review summary { cursor: pointer; padding: .75rem 0; }

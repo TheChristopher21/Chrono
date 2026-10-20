@@ -34,6 +34,11 @@ public class PayslipDTO {
     private boolean approved;
     private Double overtimeHours;
     private boolean payoutOvertime;
+    private Long correctionOfId;
+    private String correctionBatch;
+    private String correctionReason;
+    private Double correctedGrossSalary;
+    private Double correctedNetSalary;
 
     public PayslipDTO(Payslip ps) {
         this.id = ps.getId();
@@ -49,7 +54,7 @@ public class PayslipDTO {
         this.bonuses = ps.getBonuses();
         this.oneTimePayments = ps.getOneTimePayments();
          this.taxFreeAllowances = ps.getTaxFreeAllowances();
-         this.currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
+         this.currency = ps.getCurrency() != null ? ps.getCurrency() : (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
          this.earnings = ps.getEarnings();
          this.deductionsList = ps.getDeductionsList();
          this.employerContribList = ps.getEmployerContribList();
@@ -64,6 +69,17 @@ public class PayslipDTO {
         this.approved = ps.isApproved();
         this.overtimeHours = ps.getOvertimeHours();
         this.payoutOvertime = ps.isPayoutOvertime();
+        this.correctionOfId = ps.getCorrectionOfId(); this.correctionBatch = ps.getCorrectionBatch();
+        if (ps.isCorrection() && ps.getCalculationSnapshot() != null) {
+            try {
+                var saved = new com.fasterxml.jackson.databind.ObjectMapper().readTree(ps.getCalculationSnapshot());
+                this.correctionReason = saved.path("correction").path("reason").asText();
+                java.math.BigDecimal gross = saved.path("gross").path("total").decimalValue(), deductions = java.math.BigDecimal.ZERO;
+                var values = saved.path("employee").elements();
+                while (values.hasNext()) deductions = deductions.add(values.next().decimalValue());
+                this.correctedGrossSalary = gross.doubleValue(); this.correctedNetSalary = gross.subtract(deductions).doubleValue();
+            } catch (java.io.IOException ignored) { /* Approval separately rejects unreadable snapshots. */ }
+        }
     }
 
     public Long getId() { return id; }
@@ -94,4 +110,9 @@ public class PayslipDTO {
     public String getCurrency() { return currency; }
     public Double getOvertimeHours() { return overtimeHours; }
     public boolean isPayoutOvertime() { return payoutOvertime; }
+    public Long getCorrectionOfId() { return correctionOfId; }
+    public String getCorrectionBatch() { return correctionBatch; }
+    public String getCorrectionReason() { return correctionReason; }
+    public Double getCorrectedGrossSalary() { return correctedGrossSalary; }
+    public Double getCorrectedNetSalary() { return correctedNetSalary; }
 }
