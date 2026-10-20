@@ -1,0 +1,2 @@
+bankAccount;transactionId;bookingDate;currency;amount;reference;debtorName
+QA-BANK-ACCOUNT;QA-BILL-TRANSACTION-2;2026-09-12;CHF;216.2;QABILL-2026-00001;QA Helvetia Consulting SAS

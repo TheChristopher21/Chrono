@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PayslipScheduleRepository extends JpaRepository<PayslipSchedule, Long> {
     Optional<PayslipSchedule> findByUser(User user);
     List<PayslipSchedule> findByNextRunLessThanEqual(LocalDate date);
+    void deleteByUser(User user);
 }

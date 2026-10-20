@@ -20,6 +20,8 @@ public class TimeTrackingEntryDTO {
     private TimeTrackingEntry.PunchSource source;
     private boolean correctedByUser;
     private String systemGeneratedNote;
+    private String correctionAdminUsername;
+    private String correctionAdminInitials;
 
     public TimeTrackingEntryDTO(Long id, String username, Long customerId, String customerName, Long projectId, String projectName, Long taskId, String taskName, Integer durationMinutes, String description, boolean approved, LocalDateTime entryTimestamp, TimeTrackingEntry.PunchType punchType, TimeTrackingEntry.PunchSource source, boolean correctedByUser, String systemGeneratedNote) {
         this.id = id;
@@ -42,7 +44,7 @@ public class TimeTrackingEntryDTO {
     
     public static TimeTrackingEntryDTO fromEntity(TimeTrackingEntry entry) {
         if (entry == null) return null;
-        return new TimeTrackingEntryDTO(
+        TimeTrackingEntryDTO dto = new TimeTrackingEntryDTO(
             entry.getId(),
             entry.getUser() != null ? entry.getUser().getUsername() : null,
             entry.getCustomer() != null ? entry.getCustomer().getId() : null,
@@ -60,6 +62,9 @@ public class TimeTrackingEntryDTO {
             entry.isCorrectedByUser(),
             entry.getSystemGeneratedNote()
         );
+        dto.correctionAdminUsername = entry.getCorrectionAdminUsername();
+        dto.correctionAdminInitials = entry.getCorrectionAdminInitials();
+        return dto;
     }
 
 
@@ -79,4 +84,6 @@ public class TimeTrackingEntryDTO {
     public TimeTrackingEntry.PunchSource getSource() { return source; }
     public boolean isCorrectedByUser() { return correctedByUser; }
     public String getSystemGeneratedNote() { return systemGeneratedNote; }
+    public String getCorrectionAdminUsername() { return correctionAdminUsername; }
+    public String getCorrectionAdminInitials() { return correctionAdminInitials; }
 }

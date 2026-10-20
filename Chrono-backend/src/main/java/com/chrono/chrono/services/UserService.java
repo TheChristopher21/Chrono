@@ -1,11 +1,14 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -13,18 +16,48 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserPermissionService userPermissionService;
+
     public User getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
         if (user.isDeleted()) {
             throw new UserNotFoundException("User not found: " + username);
         }
+        var selection = CompanyScope.selection();
+        if (selection != null && !selection.username().equals(username)) CompanyScope.requireTarget(user);
 
         // Sicherstellen, dass Null nicht vorkommt
         if (user.getTrackingBalanceInMinutes() == null) {
             user.setTrackingBalanceInMinutes(0);
         }
         return user;
+    }
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserProfileByUsername(String username) {
+        User user = userRepository.findByUsernameWithProfileContext(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        if (user.isDeleted()) {
+            throw new UserNotFoundException("User not found: " + username);
+        }
+
+        UserDTO profile = new UserDTO(user);
+        var selection = CompanyScope.selection();
+        if (selection != null && selection.username().equals(username)) {
+            var company = selection.company();
+            profile.setCompanyId(company.getId());
+            profile.setCompanyCantonAbbreviation(company.getCantonAbbreviation());
+            var features = new java.util.LinkedHashSet<>(com.chrono.chrono.utils.RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
+            features.addAll(com.chrono.chrono.utils.RegistrationFeatures.effectiveOptionalFeatures(company));
+            profile.setCompanyFeatureKeys(features);
+            profile.setCustomerTrackingEnabled(com.chrono.chrono.utils.RegistrationFeatures.isProjectsEnabled(company));
+            profile.setSelectedCompanyId(company.getId());
+            profile.setSelectedCompanyName(company.getName());
+        }
+        profile.setPagePermissions(userPermissionService.resolvePagePermissions(user));
+        return profile;
     }
 
     public void assertSameCompany(String requestingUsername, String targetUsername) {

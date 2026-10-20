@@ -1,0 +1,266 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e1807]:
+    - generic [ref=f5e1808]:
+      - navigation "Hauptnavigation" [ref=f5e1809]:
+        - link "Chrono PMS" [ref=f5e1811] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e1812]
+        - list [ref=f5e1813]:
+          - listitem [ref=f5e1814]:
+            - link "Zu Chrono wechseln" [ref=f5e1815] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e1816]:
+            - button "Was ist neu?" [ref=f5e1817] [cursor=pointer]
+          - listitem [ref=f5e1821]:
+            - button "Light Mode" [ref=f5e1822] [cursor=pointer]
+          - listitem [ref=f5e1827]:
+            - button "🌐" [ref=f5e1828] [cursor=pointer]
+          - listitem [ref=f5e1831]:
+            - button "Default Admin" [ref=f5e1832] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1833]: D
+        - button "PMS-Bereiche" [ref=f5e1838] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e1841]:
+        - generic [ref=f5e1842]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e1843]:
+            - generic [ref=f5e1844]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e1845] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1846]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e1848] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e1849] [cursor=pointer]'
+            - generic [ref=f5e1850]:
+              - tab "PMS · Zimmerplan" [ref=f5e1851] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1852]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e1854] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e1855] [cursor=pointer]'
+            - generic [ref=f5e1856]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f5e1857] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1858]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f5e1860] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f5e1861] [cursor=pointer]'
+            - generic [ref=f5e1862]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f5e1863] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1864]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f5e1866] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f5e1867] [cursor=pointer]'
+            - generic [ref=f5e1868]:
+              - tab "PMS · Rechnungen" [ref=f5e1869] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1870]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f5e1872] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f5e1873] [cursor=pointer]'
+            - generic [ref=f5e1874]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f5e1875] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1876]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f5e1878] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f5e1879] [cursor=pointer]'
+            - generic [ref=f5e1880]:
+              - tab "PMS · Berichte & Kennzahlen" [selected] [ref=f5e1881] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e1882]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f5e1884] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f5e1885] [cursor=pointer]'
+          - generic [ref=f5e1886]:
+            - button "Arbeitsbereich öffnen" [ref=f5e1887] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e1888] [cursor=pointer]
+    - generic [ref=f5e1889]:
+      - complementary "PMS-Navigation" [ref=f5e1890]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e1891] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e1892]: CH
+          - generic [ref=f5e1893]:
+            - generic [ref=f5e1894]: Aktives Hotel
+            - strong [ref=f5e1895]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e1896]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e1897]:
+          - generic [ref=f5e1898]:
+            - generic [ref=f5e1899]: Rezeption
+            - button "Übersicht" [ref=f5e1900] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1901]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e1902] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1903]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e1904] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1905]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e1906] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1907]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e1908] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1909]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e1910] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1911]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e1912]:
+            - generic [ref=f5e1913]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e1914] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1915]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e1916] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1917]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e1918] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1919]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e1920] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1921]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e1922]:
+            - generic [ref=f5e1923]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e1924] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1925]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e1926] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1927]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e1928] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1929]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e1930]:
+            - generic [ref=f5e1931]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e1932] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1933]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e1934] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1935]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e1936] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1937]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e1938] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1939]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e1940] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e1941]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e1944]:
+          - strong [ref=f5e1945]: PMS betriebsbereit
+          - generic [ref=f5e1946]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e1947]:
+        - generic [ref=f5e1948]:
+          - generic [ref=f5e1949]:
+            - generic [ref=f5e1950]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e1951]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e1953] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e1954]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e1955]: Ctrl K
+        - region "Veranstaltungen & Ressourcen" [ref=f5e1956]:
+          - generic [ref=f5e1958]:
+            - generic [ref=f5e1959]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Berichte & Kennzahlen" [level=2] [ref=f5e1960]
+            - paragraph [ref=f5e1961]: Auslastung, Umsatz und operative Leistung auswerten. · Betriebstag 12.09.2026
+          - generic [ref=f5e1962]:
+            - alert [ref=f5e1963]: Leistung 5 hat keinen bestätigten Steuersatz. Vor der Netto-Umsatzauswertung den Steuersatz im Rechnungsprozess klären.
+            - generic [ref=f5e1964]:
+              - generic [ref=f5e1965]:
+                - generic [ref=f5e1966]:
+                  - generic [ref=f5e1967]: Revenue Management
+                  - heading "Buchungsentwicklung und Monatsbudget" [level=3] [ref=f5e1968]
+                - generic [ref=f5e1969]: Betriebstag 12.09.2026
+              - paragraph [ref=f5e1970]: Vergleichen Sie Zimmernächte und Netto-Zimmererlöse bestätigter und eingecheckter Aufenthalte mit einem tatsächlich gespeicherten Buchungsstand. Frühstück, Restaurant und sonstige Leistungen sind separat.
+              - generic [ref=f5e1971]:
+                - generic [ref=f5e1972]:
+                  - text: Aufenthalt ab
+                  - textbox "Aufenthalt ab" [ref=f5e1973]: 2026-09-12
+                - generic [ref=f5e1974]:
+                  - text: Bis einschließlich
+                  - textbox "Bis einschließlich" [ref=f5e1975]: 2026-10-11
+                - generic [ref=f5e1976]:
+                  - text: Vergleichsstand
+                  - combobox "Vergleichsstand" [ref=f5e1977]:
+                    - option "Neuester gespeicherter Stand" [selected]
+                - button "Aktualisieren" [ref=f5e1978]
+              - generic [ref=f5e1979]: Noch kein Vergleichsstand vorhanden. Vergangene Buchungsstände werden nicht nachträglich rekonstruiert.
+              - status [ref=f5e1980]: Für 11 Zimmernächte fehlen eindeutige Zimmerleistungen oder Steuersätze. Nettoerlöse bleiben bis zur Klärung als nicht verfügbar markiert.
+              - generic [ref=f5e1981]:
+                - generic [ref=f5e1982]:
+                  - generic [ref=f5e1983]: Gebuchte Zimmernächte
+                  - strong [ref=f5e1984]: "11"
+                  - generic [ref=f5e1985]: Kein vollständiger Vergleich
+                - generic [ref=f5e1986]:
+                  - generic [ref=f5e1987]: Netto-Zimmererlöse
+                  - strong [ref=f5e1988]: Nicht verfügbar
+                  - generic [ref=f5e1989]: Aktueller Buchungsstand
+                - generic [ref=f5e1990]:
+                  - generic [ref=f5e1991]: Erlösveränderung (Pickup)
+                  - strong [ref=f5e1992]: Kein Vergleich
+                  - generic [ref=f5e1993]: Aktuell minus gespeicherter Vergleich
+              - figure "12.09.2026 Lücken zeigen fehlende Werte. 11.10.2026" [ref=f5e1994]:
+                - generic [ref=f5e1995]:
+                  - generic [ref=f5e1996]: CHF 1.00
+                  - generic [ref=f5e1997]: Aktueller Buchungsstand Gespeicherter Vergleich
+                - 'img "Netto-Zimmererlöse je Aufenthaltstag: aktueller und gespeicherter Buchungsstand" [ref=f5e1998]'
+                - generic [ref=f5e1999]: CHF 0.00
+                - generic [ref=f5e2001]:
+                  - generic [ref=f5e2002]: 12.09.2026
+                  - generic [ref=f5e2003]: Lücken zeigen fehlende Werte.
+                  - generic [ref=f5e2004]: 11.10.2026
+              - table [ref=f5e2006]:
+                - caption [ref=f5e2007]: Monatsvergleich · Budgets bei Teilmonaten anteilig nach Kalendertagen
+                - rowgroup [ref=f5e2008]:
+                  - row [ref=f5e2009]:
+                    - columnheader "Aufenthaltsmonat" [ref=f5e2010]
+                    - columnheader "Zimmernächte" [ref=f5e2011]
+                    - columnheader "Nettoerlöse" [ref=f5e2012]
+                    - columnheader "Erlösveränderung" [ref=f5e2013]
+                    - columnheader "Budget Nettoerlöse" [ref=f5e2014]
+                    - columnheader "Abweichung vom Budget" [ref=f5e2015]
+                - rowgroup [ref=f5e2016]:
+                  - row [ref=f5e2017]:
+                    - rowheader "2026-09 19 von 30 Tagen" [ref=f5e2018]:
+                      - text: 2026-09
+                      - generic [ref=f5e2019]: 19 von 30 Tagen
+                    - cell "8" [ref=f5e2020]
+                    - cell "Nicht verfügbar" [ref=f5e2021]
+                    - cell "Kein Vergleich" [ref=f5e2022]
+                    - cell "Nicht geplant" [ref=f5e2023]
+                    - cell "—" [ref=f5e2024]
+                  - row [ref=f5e2025]:
+                    - rowheader "2026-10 11 von 31 Tagen" [ref=f5e2026]:
+                      - text: 2026-10
+                      - generic [ref=f5e2027]: 11 von 31 Tagen
+                    - cell "3" [ref=f5e2028]
+                    - cell "Nicht verfügbar" [ref=f5e2029]
+                    - cell "Kein Vergleich" [ref=f5e2030]
+                    - cell "Nicht geplant" [ref=f5e2031]
+                    - cell "—" [ref=f5e2032]
+              - group [ref=f5e2033]:
+                - generic "Aufenthaltstage einzeln anzeigen" [ref=f5e2034] [cursor=pointer]
+              - generic [ref=f5e2035]:
+                - generic [ref=f5e2036]:
+                  - heading "Täglichen Vergleich sichern" [level=4] [ref=f5e2037]
+                  - paragraph [ref=f5e2038]: Pro Hotel und offenem Betriebstag wird einmal ein unveränderlicher Stand der nächsten 366 Tage gespeichert. Ein erneuter Klick überschreibt keine Historie.
+                  - button "Buchungsstand jetzt sichern" [ref=f5e2039]
+                - generic [ref=f5e2040]:
+                  - heading "Monatsbudget festlegen" [level=4] [ref=f5e2041]
+                  - paragraph [ref=f5e2042]: Das Budget gilt für den vollständigen Kalendermonat und diese Hotelwährung.
+                  - generic [ref=f5e2043]:
+                    - generic [ref=f5e2044]:
+                      - text: Monat
+                      - combobox "Monat" [ref=f5e2045]:
+                        - option "2026-09" [selected]
+                        - option "2026-10"
+                    - generic [ref=f5e2046]:
+                      - text: Netto-Zimmererlöse (CHF)
+                      - spinbutton "Netto-Zimmererlöse (CHF)" [ref=f5e2047]
+                    - generic [ref=f5e2048]:
+                      - text: Zimmernächte
+                      - spinbutton "Zimmernächte" [ref=f5e2049]
+                  - button "Monatsbudget speichern" [ref=f5e2050]
+            - generic [ref=f5e2052]:
+              - generic [ref=f5e2054]:
+                - generic [ref=f5e2055]: Umsatz & Auslastung
+                - heading "Zimmerauslastung, ADR und RevPAR" [level=3] [ref=f5e2056]
+              - generic [ref=f5e2057]:
+                - generic [ref=f5e2058]:
+                  - text: Von
+                  - textbox "Bericht von" [ref=f5e2059]: 2026-09-01
+                - generic [ref=f5e2060]:
+                  - text: Bis (einschliesslich)
+                  - textbox "Bericht bis" [ref=f5e2061]: 2026-09-12
+                - button "Bericht aktualisieren" [ref=f5e2063] [cursor=pointer]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

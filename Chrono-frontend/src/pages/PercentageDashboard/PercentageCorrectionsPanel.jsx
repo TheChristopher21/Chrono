@@ -2,6 +2,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate, formatTime } from "./percentageDashUtils";
+import { formatRequestAdmin } from "../../utils/correctionActor";
 
 const PercentageCorrectionsPanel = ({
                                         t,
@@ -76,7 +77,7 @@ const PercentageCorrectionsPanel = ({
                                     <li key={req.id} className={statusClass}>
                                         <div className="correction-header-info">
                                             <h4 className="font-semibold">{t("adminDashboard.correctionRequestFor", "Antrag für")}: {req.username}</h4>
-                                            <span className="status-indicator"><span>{statusIcon}</span><span className="font-semibold">{statusText}</span></span>
+                                            <span className="status-indicator"><span>{statusIcon}</span><span className="font-semibold">{statusText}{formatRequestAdmin(req, t) ? ` · ${formatRequestAdmin(req, t)}` : ''}</span></span>
                                         </div>
                                         <p className="text-sm correction-date-indicator"><strong>{t("date")}:</strong> {correctionDisplayDate}</p>
                                         <div className="correction-info text-sm mt-2">

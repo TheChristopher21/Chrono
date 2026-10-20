@@ -1,0 +1,329 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation "Hauptnavigation" [ref=e763]:
+      - link "Chrono" [ref=e765] [cursor=pointer]:
+        - /url: /
+        - img "Chrono" [ref=e766]
+      - list [ref=e767]:
+        - listitem [ref=e768]:
+          - link "Plattform" [ref=e769] [cursor=pointer]:
+            - /url: /#platform
+        - listitem [ref=e770]:
+          - link "Lösungen" [ref=e771] [cursor=pointer]:
+            - /url: /#features
+        - listitem [ref=e772]:
+          - link "Preise" [ref=e773] [cursor=pointer]:
+            - /url: /#preise
+        - listitem [ref=e774]:
+          - link "Arbeitszeit-Rechner" [ref=e775] [cursor=pointer]:
+            - /url: /arbeitszeit-rechner
+        - listitem [ref=e776]:
+          - link "Login" [ref=e777] [cursor=pointer]:
+            - /url: /login
+        - listitem [ref=e778]:
+          - link "Demo anfragen" [ref=e779] [cursor=pointer]:
+            - /url: /register
+        - listitem [ref=e780]:
+          - button "Dark Mode" [ref=e781] [cursor=pointer]
+        - listitem [ref=e785]:
+          - button "🌐" [ref=e786] [cursor=pointer]
+    - generic [ref=e790]:
+      - heading "Datenschutzerklärung für Chrono" [level=1] [ref=e791]
+      - generic [ref=e793]:
+        - heading "Datenschutzerklärung" [level=1] [ref=e794]
+        - paragraph [ref=e795]: Zuletzt aktualisiert am 7. September 2026
+        - paragraph [ref=e796]: Ein transparenter Umgang mit Personendaten ist uns ein sehr wichtiges Anliegen. Die vorliegende Datenschutzerklärung informiert darüber, welche Personendaten wir zu welchem Zweck erheben und an wen wir diese weitergeben. Wir überprüfen und erneuern diese Datenschutzerklärung regelmässig, um höchste Transparenz gewährleisten zu können.
+        - heading "Welche Daten wir erfassen" [level=2] [ref=e797]
+        - generic [ref=e798]:
+          - dialog [ref=e802] [cursor=pointer]:
+            - generic [ref=e803]:
+              - img "General Data Icon" [ref=e805]
+              - generic [ref=e813]: Allgemeine Personendaten
+            - generic [ref=e815]:
+              - generic [ref=e816]: mehr anzeigen
+              - img "icon" [ref=e817]
+          - dialog [ref=e822] [cursor=pointer]:
+            - generic [ref=e823]:
+              - img "Provided Data Icon" [ref=e825]
+              - generic [ref=e833]: Überlassene Daten
+            - generic [ref=e835]:
+              - generic [ref=e836]: mehr anzeigen
+              - img "icon" [ref=e837]
+          - dialog [ref=e842] [cursor=pointer]:
+            - generic [ref=e843]:
+              - img "Collected Data Icon" [ref=e845]
+              - generic [ref=e853]: Erhobene Daten
+            - generic [ref=e855]:
+              - generic [ref=e856]: mehr anzeigen
+              - img "icon" [ref=e857]
+          - dialog [ref=e862] [cursor=pointer]:
+            - generic [ref=e863]:
+              - img "Data Transfer Icon" [ref=e865]
+              - generic [ref=e874]: Datenweitergabe
+            - generic [ref=e876]:
+              - generic [ref=e877]: mehr anzeigen
+              - img "icon" [ref=e878]
+        - heading "Welche Dienste wir nutzen" [level=2] [ref=e880]
+        - dialog [ref=e885] [cursor=pointer]:
+          - generic [ref=e886]:
+            - img "Generic Tracker Icon" [ref=e888]
+            - generic [ref=e892]:
+              - generic [ref=e893]: PrivacyBee
+              - generic [ref=e894]: https://www.privacybee.io/
+          - generic [ref=e895]:
+            - generic [ref=e896]: mehr anzeigen
+            - img "icon" [ref=e897]
+        - heading "Datenschutzerklärung" [level=2] [ref=e899]
+        - paragraph [ref=e901]:
+          - link "1. Was tun wir?" [ref=e902] [cursor=pointer]:
+            - /url: "#was-tun-wir"
+          - link "2. Über was informieren wir?" [ref=e903] [cursor=pointer]:
+            - /url: "#uber-was-informieren-wir"
+          - link "3. Begriffsdefinitionen" [ref=e904] [cursor=pointer]:
+            - /url: "#begriffsdefinitionen"
+          - link "4. Kontakt" [ref=e905] [cursor=pointer]:
+            - /url: "#kontakt"
+          - link "5. Datensicherheit" [ref=e906] [cursor=pointer]:
+            - /url: "#datensicherheit"
+          - link "6. Betroffenenrechte" [ref=e907] [cursor=pointer]:
+            - /url: "#betroffenenrechte"
+          - link "7. Datenverarbeitungen im Allgemeinen" [ref=e908] [cursor=pointer]:
+            - /url: "#datenverarbeitungen-im-allgemeinen"
+          - link "8. Datenverarbeitungen im Einzelnen" [ref=e909] [cursor=pointer]:
+            - /url: "#datenverarbeitungen-im-einzelnen"
+          - link "9. Bleibt unsere Datenschutzerklärung immer gleich?" [ref=e910] [cursor=pointer]:
+            - /url: "#bleibt-unsere-datenschutzerklarung-immer-gleich"
+        - heading "Was tun wir?" [level=3] [ref=e911]
+        - paragraph [ref=e912]: Chrono (Lettenstrasse 20, 9122 Mogelsberg) betreibt die Website chrono-logisch.ch (nachfolgend als «wir» bzw. «uns» bezeichnet). Auf dieser Website können Sie sich über unsere Organisation informieren, unsere Online-Services in Anspruch nehmen und mit uns in Kontakt treten.
+        - paragraph [ref=e913]: Der Schutz Ihrer persönlichen Daten ist uns ein grosses Anliegen. Wir informieren Sie in dieser Datenschutzerklärung transparent und verständlich darüber, welche Daten wir über unsere Website sammeln und wie wir damit umgehen.
+        - paragraph [ref=e914]:
+          - text: Aus diesem Grund verwenden wir die Icons des Vereins
+          - link "PRIVACY ICONS" [ref=e915] [cursor=pointer]:
+            - /url: https://privacy-icons.ch
+          - text: . Sie sollen Ihnen dabei helfen, sich rasch einen Überblick über die Verarbeitung Ihrer Daten durch uns zu verschaffen.
+        - heading "Über was informieren wir?" [level=3] [ref=e916]
+        - list [ref=e917]:
+          - listitem [ref=e918]: Wer für die Datenverarbeitung verantwortlich ist;
+          - listitem [ref=e919]: Welche Daten erhoben werden;
+          - listitem [ref=e920]: Zu welchem Zweck diese Daten erhoben werden;
+          - listitem [ref=e921]: An wen wir diese Daten weitergeben;
+          - listitem [ref=e922]: Wie Sie einer Datenverarbeitung widersprechen können;
+          - listitem [ref=e923]: Welche Rechte Sie haben und wie Sie diese geltend machen können.
+        - generic [ref=e924]:
+          - heading "Begriffsdefinitionen" [level=3] [ref=e925]
+          - heading "Was sind personenbezogene Daten?" [level=4] [ref=e926]
+          - paragraph [ref=e927]: Personenbezogene Daten (gleichbedeutend mit dem Begriff «Personendaten») sind alle Angaben, die sich auf eine bestimmte oder bestimmbare natürliche Person beziehen. Dazu gehören beispielsweise Name, Adresse, Geburtsdatum, E-Mail-Adresse oder Telefonnummer sowie die IP-Adresse. Auch Daten über persönliche Vorlieben wie Freizeitbeschäftigungen oder Mitgliedschaften zählen zu den personenbezogenen Daten.
+          - heading "Was sind besondere Kategorien personenbezogener Daten?" [level=4] [ref=e928]
+          - paragraph [ref=e929]: "Besondere Kategorien personenbezogener Daten (gleichbedeutend mit dem Begriff «besonders schützenswerte Daten») sind:"
+          - list [ref=e930]:
+            - listitem [ref=e931]: Daten über religiöse, weltanschauliche, politische oder gewerkschaftliche Ansichten oder Tätigkeiten;
+            - listitem [ref=e932]: Daten über die Gesundheit, Intimsphäre, die Zugehörigkeit zu einer Rasse oder Ethnie, sowie zum Sexualleben und zur sexuellen Orientierung;
+            - listitem [ref=e933]: Daten zu administrativen oder strafrechtlichen Verfolgungen und Sanktionen, sowie Daten über Massnahmen der sozialen Hilfe;
+            - listitem [ref=e934]: Genetische Daten und biometrische Daten, die eine Person eindeutig identifizieren.
+          - paragraph [ref=e935]: Soweit erforderlich und Sie uns diese Daten selbst preisgeben, können wir Daten, die einer besonderen Kategorie von personenbezogenen Daten angehören, verarbeiten. In diesem Fall unterliegt deren Verarbeitung strengerer Vertraulichkeit.
+        - generic [ref=e936]:
+          - heading "Was ist das Verarbeiten von personenbezogenen Daten?" [level=4] [ref=e937]
+          - paragraph [ref=e938]: Verarbeiten (gleichbedeutend mit dem Begriff «Bearbeiten») ist jeder Umgang mit personenbezogenen Daten, unabhängig von den angewandten Mitteln und Verfahren, insbesondere das Beschaffen, Speichern, Aufbewahren, Verwenden, Verändern, Bekanntgeben, Archivieren, Löschen oder Vernichten von personenbezogenen Daten.
+          - heading "Was ist das Bekanntgeben von personenbezogenen Daten?" [level=4] [ref=e939]
+          - paragraph [ref=e940]: Dies ist das Übermitteln oder Zugänglichmachen von personenbezogenen Daten, bspw. die Veröffentlichung oder die Offenbarung an einen Dritten.
+        - heading "Kontakt" [level=3] [ref=e941]
+        - paragraph [ref=e942]: "Bei Fragen oder Anliegen zum Schutz Ihrer Daten durch uns, können Sie sich an unseren Datenschutzverantwortlichen wenden:"
+        - paragraph [ref=e943]: ChronoChristopher SiefertLettenstrasse 209122 Mogelsbergsiefertchristopher@chrono-logisch.ch
+        - heading "Datensicherheit" [level=3] [ref=e944]
+        - paragraph [ref=e945]: Wir werden Ihre Daten sicher aufbewahren und alle angemessenen Massnahmen ergreifen, um Ihre Daten vor Verlust, Zugriff, Missbrauch oder Änderungen zu schützen.
+        - paragraph [ref=e946]: Unsere Vertragspartner und Mitarbeitenden, die Zugang zu Ihren Daten haben, sind zur Einhaltung der datenschutzrechtlichen Bestimmungen verpflichtet. In manchen Fällen wird es im Rahmen der Auftragsverarbeitung erforderlich sein, dass wir Ihre Anfragen an mit uns verbundene Unternehmen weiterreichen. Auch in diesen Fällen werden Ihre Daten vertraulich behandelt.
+        - paragraph [ref=e947]: Innerhalb unserer Website verwenden wir das SSL-Verfahren (Secure Socket Layer) in Verbindung mit der jeweils höchsten Verschlüsselungsstufe, die von Ihrem Browser unterstützt wird.
+        - heading "Betroffenenrechte" [level=3] [ref=e948]
+        - heading "Auskunftsrecht" [level=4] [ref=e949]
+        - paragraph [ref=e950]: Sie können jederzeit eine Auskunft, über die von uns über Sie gespeicherten Daten verlangen. Wir bitten Sie, Ihr Auskunftsgesuch zusammen mit einem glaubhaften Identitätsnachweis an siefertchristopher@chrono-logisch.ch zu senden.
+        - paragraph [ref=e951]: Die Auskunft erfolgt in schriftlicher oder auch in anderer Form, ggf. auch elektronisch. Sofern Sie dies verlangen, können wir Ihnen die Auskunft auch mündlich erteilen, sofern Sie Ihre Identität in anderer Form nachweisen. Stellen Sie den Auskunftsantrag elektronisch, stellen wir die Auskünfte in einem gängigen elektronischen Format zur Verfügung, sofern Sie nichts anderes angeben.
+        - paragraph [ref=e952]: Die Auskunft ist im Regelfall unentgeltlich. Werden darüber hinaus Kopien angefordert, kann ein angemessenes Entgelt verlangt werden.
+        - paragraph [ref=e953]: Das Recht eine Kopie über die verarbeiteten Daten zu erhalten, darf die Rechte und Freiheiten anderer Personen nicht beeinträchtigen.
+        - paragraph [ref=e954]: Im Falle von offensichtlich unbegründeten oder exzessiven Auskunftsanträgen behalten wir uns vor, die Auskunft im Rahmen der gesetzlichen Schranken zu verweigern oder ein angemessenes Entgelt dafür zu verlangen.
+        - paragraph [ref=e955]: Die Bearbeitung Ihres Gesuchs unterliegt der gesetzlichen Frist von 30 Tagen. Diese Frist dürfen wir aufgrund der Komplexität und der hohen Anzahl von Anfragen um zwei weitere Monate verlängern, soweit dies erforderlich ist. Sie werden über die Fristverlängerung innerhalb eines Monats nach dem Stellen des Auskunftsgesuch informiert. Zugleich werden Ihnen die Gründe für die Verlängerung genannt.
+        - heading "Löschung und Berichtigung" [level=4] [ref=e956]
+        - paragraph [ref=e957]: Sie haben jederzeit die Möglichkeit, die Löschung oder Berichtigung bzw. Vervollständigung Ihrer Daten zu verlangen, sofern keine gesetzlichen Aufbewahrungspflichten oder ein gesetzlicher Erlaubnistatbestand entgegenstehen.
+        - paragraph [ref=e958]: Bitte beachten Sie, dass die Ausübung Ihrer Rechte unter Umständen im Konflikt mit vertraglichen Vereinbarungen stehen und entsprechende Auswirkungen auf die Vertragsdurchführung haben kann (z.B. vorzeitige Vertragsauflösung oder Kostenfolgen).
+        - heading "Einschränkung der Bearbeitung" [level=4] [ref=e959]
+        - paragraph [ref=e960]: Sie haben ausserdem das Recht, eine Einschränkung der Verarbeitung zu verlangen, wenn Sie die Richtigkeit dieser Daten bestreiten, die Verarbeitung unrechtmässig ist, die Daten nicht länger benötigt werden oder Sie Widerspruch gegen die Verarbeitung erhoben haben.
+        - paragraph [ref=e961]: Wird die Verarbeitung der Daten eingeschränkt, dürfen diese nur noch gespeichert werden. Eine weitergehende Verarbeitung darf nur mit Ihrer Einwilligung, zur Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen, zum Schutz der Rechte einer anderen Person oder aus Gründen eines wichtigen öffentlichen Interesses erfolgen. Im Falle einer Aufhebung der Einschränkung werden Sie benachrichtigt.
+        - heading "Recht auf Datenherausgabe und -übertragung" [level=4] [ref=e962]
+        - paragraph [ref=e963]: "Sie haben das Recht, Ihre Daten in einem gängigen Dateiformat zu erhalten oder (falls technisch umsetzbar) an einen Dritten übermitteln zu lassen, wenn wir Ihre Daten automatisiert verarbeiten, und wenn:"
+        - list [ref=e964]:
+          - listitem [ref=e965]: Sie Ihre Einwilligung für die Verarbeitung dieser Daten erteilt haben; oder
+          - listitem [ref=e966]: Sie Daten im Zusammenhang mit dem Abschluss oder der Abwicklung eines Vertrags bekannt gegeben haben.
+        - heading "Widerspruchsrecht" [level=4] [ref=e967]
+        - paragraph [ref=e968]: Sie haben das Recht, aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit gegen die Verarbeitung inkl. Profiling, die auf der Basis unserer berechtigten Interessen erfolgt, Widerspruch einzulegen. Dieses Recht gilt auch für Verarbeitungen zum Zwecke der Direktwerbung.
+        - heading "Rechtsweg" [level=4] [ref=e969]
+        - paragraph [ref=e970]:
+          - text: Sind Sie von der Verarbeitung personenbezogener Daten betroffen, haben Sie das Recht, Ihre Rechte gerichtlich durchzusetzen oder bei der zuständigen Aufsichtsbehörde eine Beschwerde einzureichen. Die zuständige Aufsichtsbehörde in der Schweiz ist der
+          - link "Eidgenössische Datenschutz- und Öffentlichkeitsbeauftragte" [ref=e971] [cursor=pointer]:
+            - /url: https://www.edoeb.admin.ch
+          - text: .
+        - heading "Datenverarbeitungen im Allgemeinen" [level=3] [ref=e972]
+        - heading "Welche Daten verarbeiten wir von Ihnen und von wem erhalten wir diese Daten?" [level=4] [ref=e973]
+        - paragraph [ref=e974]: "In erster Linie verarbeiten wir personenbezogene Daten, die Sie uns übermitteln oder die wir beim Betrieb unserer Website erheben. Unter Umständen erhalten wir personenbezogene Daten über Sie auch von Dritten. Das können folgende Kategorien sein:"
+        - list [ref=e975]:
+          - listitem [ref=e976]: Personenstammdaten (Name, Adresse, Geburtsdaten etc.);
+          - listitem [ref=e977]: Kontaktdaten (Handynummer, E-Mailadresse etc.);
+          - listitem [ref=e978]: Finanzdaten (bspw. Kontoangaben);
+          - listitem [ref=e979]: Onlinekennungen (bspw. Cookie-Kennung, IP-Adressen);
+        - paragraph [ref=e980]: "Diese Daten können aus den folgenden Quellen stammen:"
+        - list [ref=e981]:
+          - listitem [ref=e982]: Angaben aus öffentlich zugänglichen Quellen (z.B. Medien, Internet);
+          - listitem [ref=e983]: Angaben aus öffentlichen Registern (z.B. Handelsregister, Betreibungsregister, Grundbuch);
+          - listitem [ref=e984]: Angaben im Zusammenhang mit behördlichen oder gerichtlichen Verfahren;
+          - listitem [ref=e985]: Angaben betreffend Ihrer beruflichen Funktionen und Aktivitäten (bspw. berufliche Netzwerke);
+          - listitem [ref=e986]: Angaben über Sie in Korrespondenz und Besprechungen mit Dritten;
+          - listitem [ref=e987]: Bonitätsauskünfte (soweit wir mit Ihnen persönliche Geschäfte abwickeln);
+          - listitem [ref=e988]: Angaben über Sie, die uns Personen aus Ihrem Umfeld geben, damit wir Verträge mit Ihnen abschliessen oder abwickeln können;
+          - listitem [ref=e989]: Daten im Zusammenhang mit der Benutzung der Website.
+        - heading "Unter welchen Voraussetzungen verarbeiten wir Ihre Daten?" [level=4] [ref=e990]
+        - paragraph [ref=e991]: Wir verarbeiten Ihre Daten nach Treu und Glauben und nach den in dieser Datenschutzerklärung festgelegten Zwecken. Wir achten dabei auf eine transparente und verhältnismässige Verarbeitung.
+        - paragraph [ref=e992]: "Sollten wir diese Grundsätze ausnahmsweise nicht einhalten können, kann die Datenverarbeitung trotzdem rechtmässig sein, weil ein Rechtfertigungsgrund vorliegt. Als Rechtfertigungsgrund kommt namentlich in Frage:"
+        - list [ref=e993]:
+          - listitem [ref=e994]: Ihre Einwilligung;
+          - listitem [ref=e995]: die Durchführung eines Vertrages oder vorvertraglicher Massnahmen;
+          - listitem [ref=e996]: die Erfüllung gesetzlicher Vorschriften;
+          - listitem [ref=e997]: unsere berechtigten Interessen, sofern Ihre Interessen nicht überwiegen.
+        - paragraph [ref=e998]: Unter Umständen sind Sie verpflichtet, uns gewisse personenbezogene Daten bekanntzugeben, damit wir miteinander geschäftliche Beziehungen anbahnen können. Ohne solche Daten sind wir normalerweise nicht in der Lage, einen Vertrag abzuwickeln. Die Website kann im Normalfall ebenfalls nicht genutzt werden, wenn gewisse Angaben zur Sicherstellung des Datenverkehrs, wie Ihre IP-Adresse, nicht offengelegt werden.
+        - heading "Wie können Sie eine erteilte Einwilligung widerrufen?" [level=4] [ref=e999]
+        - paragraph [ref=e1000]: Haben Sie uns eine Einwilligung zur Verarbeitung Ihrer personenbezogenen Daten für bestimmte Zwecke erteilt, verarbeiten wir Ihre Daten im Rahmen dieser Einwilligung, soweit wir keinen anderen Rechtfertigungsgrund haben bzw. kein anderer Erlaubnistatbestand erfüllt ist.
+        - paragraph [ref=e1001]: Sie können Ihre erteilte Einwilligung für die Zukunft jederzeit widerrufen und eine E-Mail an die im Impressum genannte Adresse schicken. Bereits erfolgte Datenverarbeitungen sind von dem Widerruf nicht betroffen und behalten ihre Gültigkeit.
+        - heading "In welchen Fällen geben wir Ihre Daten an Dritte weiter?" [level=4] [ref=e1002]
+        - heading "a. Grundsatz" [level=5] [ref=e1003]
+        - paragraph [ref=e1004]: "Wir sind unter Umständen darauf angewiesen, die Dienste Dritter oder von verbundenen Unternehmen in Anspruch zu nehmen und diese mit der Verarbeitung Ihrer Daten zu beauftragen (sog. Auftragsverarbeiter). Kategorien der Empfänger sind namentlich:"
+        - list [ref=e1005]:
+          - listitem [ref=e1006]: Buchhaltung, Treuhand und Revisionsunternehmens;
+          - listitem [ref=e1007]: Beratungsunternehmen (Rechtsberatung, Steuern etc.);
+          - listitem [ref=e1008]: IT-Dienstleister (Webhosting, Support, Clouddienste, Websitegestaltung etc.);
+          - listitem [ref=e1009]: Zahlungsdienstleister (ausschließlich nach Ihrer vorherigen Zustimmung);
+          - listitem [ref=e1010]: Anbieter von Tracking-, Conversion- und Werbedienstleistungen.
+        - paragraph [ref=e1011]: Wir stellen sicher, dass eine Weitergabe der Daten nur mit Ihrer ausdrücklichen Einwilligung erfolgt, sofern es sich dabei um keine Auftragsdatenverarbeitung handelt. Zudem stellen wir sicher, dass diese Dritten und unsere verbundenen Unternehmen die Voraussetzungen des Datenschutzes einhalten und Ihre personenbezogenen Daten vertraulich behandeln. Unter Umständen sind wir auch verpflichtet, Ihre personenbezogenen Daten an Behörden bekanntzugeben.
+        - heading "b. Weitergabe an Partner und Kooperationsunternehmen" [level=5] [ref=e1012]
+        - paragraph [ref=e1013]: Wir arbeiten teils mit unterschiedlichen Unternehmen und Partnern zusammen, die Ihre Angebote auf unserer Website aufschalten. Es ist für Sie erkennbar, dass es sich um ein Drittangebot (als «Werbung» gekennzeichnet) handelt.
+        - paragraph [ref=e1014]: Wenn Sie ein solches Angebot in Anspruch nehmen, übermitteln wir Ihre personenbezogenen Daten an den entsprechenden Partner oder das Kooperationsunternehmen (z.B. Name, Funktion, Kommunikation etc.), dessen Angebot Sie wahrnehmen wollen, sofern Sie darin zuvor ausdrücklich eingewilligt haben. Diese Partner und Kooperationsunternehmen sind eigenständig für die empfangenen personenbezogenen Daten verantwortlich. Nach der Übermittlung der Daten gelten die Datenschutzbestimmungen des jeweiligen Partners.
+        - heading "c. Weitergabe ins Ausland" [level=5] [ref=e1015]
+        - paragraph [ref=e1016]: Unter Umständen kann es im Rahmen der Auftragsverarbeitung zu Übermittlung Ihrer personenbezogenen Daten an Unternehmen im Ausland kommen. Diese Unternehmen sind im gleichen Umfang zum Datenschutz verpflichtet, wie wir selbst. Die Übermittlung kann weltweit stattfinden.
+        - paragraph [ref=e1017]:
+          - text: Entspricht das Datenschutzniveau nicht demjenigen des der Schweiz, so nehmen wir eine vorgängige Risikoeinschätzung vor und stellen vertraglich sicher, dass der gleiche Schutz wie in der Schweiz garantiert wird (bspw. mittels der neuen Standardvertragsklauseln der EU-Kommission oder anderen, gesetzlich vorgegebenen Massnahmen). Sollte unsere Risikoeinschätzung negativ ausfallen, ergreifen wir zusätzliche technische Massnahmen zum Schutz Ihrer Daten. Sie können die Standardvertragsklauseln der EU-Kommission abrufen unter folgendem
+          - link "Link" [ref=e1018] [cursor=pointer]:
+            - /url: https://commission.europa.eu/publications/standard-contractual-clauses-controllers-and-processors-eueea_de
+          - text: .
+        - heading "Wie lange bewahren wir Ihre Daten auf?" [level=4] [ref=e1019]
+        - paragraph [ref=e1020]: Wir speichern personenbezogene Daten nur so lange, wie dies erforderlich ist, um die einzelnen Zwecke, zu denen die Daten erhoben wurden, zu erfüllen.
+        - paragraph [ref=e1021]: Vertragsdaten speichern wir länger, da wir dazu durch gesetzliche Vorschriften verpflichtet sind. Wir müssen insbesondere geschäftliche Kommunikation, geschlossene Verträge und Buchungsbelege bis zu 10 Jahren aufbewahren. Soweit wir solche Daten von Ihnen nicht mehr zur Durchführung der Dienstleistungen benötigen, werden die Daten für die weitere Verarbeitung eingeschränkt und wir verwenden diese nur noch für Zwecke der Rechnungslegung und für Steuerzwecke.
+        - heading "Datenverarbeitungen im Einzelnen" [level=3] [ref=e1022]
+        - heading "Bereitstellen der Website und Erstellung von Logfiles" [level=4] [ref=e1023]
+        - paragraph [ref=e1024]: Indem Sie chrono-logisch.ch lediglich besuchen, sich also nicht registrieren oder anderweitige Informationen preisgeben, werden nur die Daten erhoben, die Ihr Browser an unseren Server automatisiert übermittelt. Die Daten sind für den Betrieb der Website technisch erforderlich.
+        - paragraph [ref=e1025]:
+          - strong [ref=e1026]: Welche Daten verarbeiten wir?
+        - paragraph [ref=e1027]: "Zur Bereitstellung der Website und bei der Erstellung von Logfiles werden insbesondere folgende Daten bearbeitet:"
+        - list [ref=e1028]:
+          - listitem [ref=e1029]: Name des Internetserviceproviders
+          - listitem [ref=e1030]: IP-Adresse
+          - listitem [ref=e1031]: Technische Informationen wie Browser, Betriebssystem oder Bildschirmauflösung
+          - listitem [ref=e1032]: das Datum und die Uhrzeit des Zugriffs
+          - listitem [ref=e1033]: Referrer-URL
+        - paragraph [ref=e1034]: Diese Daten können keiner bestimmten Person zugeordnet werden und es findet keine Zusammenführung dieser Daten mit anderen Datenquellen statt.
+        - paragraph [ref=e1035]:
+          - strong [ref=e1036]: Zu welchem Zweck verarbeiten wir die Daten?
+        - paragraph [ref=e1037]: Die Verarbeitung der Logfiles erfolgt, um die Funktionsfähigkeit der Website zu garantieren und zur Sicherstellung der Sicherheit unserer informationstechnischen Systeme.
+        - paragraph [ref=e1038]:
+          - strong [ref=e1039]: An wen geben wir die Daten weiter?
+        - paragraph [ref=e1040]:
+          - text: Die Weitergabe der Daten durch uns richtet sich nach unseren
+          - link "Ausführungen zur Datenweitergabe" [ref=e1041] [cursor=pointer]:
+            - /url: "#in-welchen-fallen-geben-wir-ihre-daten-an-dritte-weiter"
+          - text: .
+        - paragraph [ref=e1042]:
+          - strong [ref=e1043]: Wie können Sie die Datenverarbeitung verhindern?
+        - paragraph [ref=e1044]: Die Daten werden nur so lang gespeichert, wie dies zur Erreichung des Zweckes ihrer Erhebung notwendig ist. Dementsprechend werden die Daten nach Beendigung jeder Sitzung gelöscht. Die Speicherung der Logfiles ist für den Betrieb der Website zwingend notwendig, Sie haben daher keine Möglichkeit, dagegen Widerspruch zu erheben, es denn Sie besuchen unsere Website nicht.
+        - heading "Cookies" [level=4] [ref=e1045]
+        - paragraph [ref=e1046]: Unsere Website verwendet Cookies. Bei Cookies handelt es sich um Textdateien, die mit Hilfe des Browsers auf dem Betriebssystem Ihres Gerätes abgelegt werden, wenn Sie unsere Website aufrufen. Cookies richten auf Ihrem Rechner keinen Schaden an und enthalten keine Viren. Teils sind Cookies technisch notwendig, damit die Website funktionieren kann. Die meisten der von uns verwendeten Cookies sind so genannte “Session-Cookies”. Sie werden nach Ende Ihres Besuchs automatisch gelöscht. Andere Cookies bleiben auf Ihrem Endgerät gespeichert, bis Sie diese löschen oder deren Laufzeit abläuft.
+        - paragraph [ref=e1047]:
+          - strong [ref=e1048]: Zu welchem Zweck verarbeiten wir die Daten?
+        - paragraph [ref=e1049]: Wir verwenden Cookies, damit wir anhand der erhobenen Daten unsere Website benutzerfreundlicher, effektiver und sicherer gestalten können. Insbesondere verwenden wir die Cookies für das Speichern Ihrer Präferenzen (beispielsweise Sprach- und Ortseinstellungen), die schnelle Bereitstellung und attraktive Darstellung der Websiteinhalte (beispielsweise durch die Verwendung von Fonts und Content Delivery Networks) sowie für die Analyse der Nutzung dieser Website zur statistischen Auswertung sowie für kontinuierliche Verbesserungen (in der Regel mittels Third Party Cookies). Für welche Zwecke wir die (technisch nicht notwendigen) Cookies im Einzelnen verwenden, ergibt sich aus den nachfolgenden Ausführungen in dieser Datenschutzerklärung.
+        - paragraph [ref=e1050]:
+          - strong [ref=e1051]: An wen geben wir die Daten weiter?
+        - paragraph [ref=e1052]:
+          - text: Die Weitergabe der Daten durch uns richtet sich nach unseren
+          - link "Ausführungen zur Datenweitergabe" [ref=e1053] [cursor=pointer]:
+            - /url: "#in-welchen-fallen-geben-wir-ihre-daten-an-dritte-weiter"
+          - text: . Zudem sind die nachfolgenden Ausführungen zu den einzelnen Datenbearbeitungen in dieser Datenschutzerklärung zu beachten.
+        - paragraph [ref=e1054]:
+          - strong [ref=e1055]: Wie können Sie die Datenverarbeitung verhindern?
+        - paragraph [ref=e1056]: Cookies werden auf Ihrem Rechner gespeichert. Sie können diese vollständig löschen oder durch Änderung der Einstellungen in Ihrem Browser die Übertragung deaktivieren oder einschränken. Bei Deaktivierung von Cookies für unsere Website können möglicherweise nicht mehr alle Funktionen der Website vollumfänglich genutzt werden.
+        - paragraph [ref=e1057]: "Anleitungen zu den gängigsten Browsern finden Sie hier:"
+        - list [ref=e1058]:
+          - listitem [ref=e1059]:
+            - text: Für
+            - link "Chrome" [ref=e1060] [cursor=pointer]:
+              - /url: https://support.google.com/accounts/answer/61416?hl=de&co=GENIE.Platform%3DDesktop
+            - text: von Google
+          - listitem [ref=e1061]:
+            - text: Für
+            - link "Safari" [ref=e1062] [cursor=pointer]:
+              - /url: https://support.apple.com/de-ch/guide/safari/sfri11471/mac
+            - text: von Apple
+          - listitem [ref=e1063]:
+            - text: Für
+            - link "Edge" [ref=e1064] [cursor=pointer]:
+              - /url: https://support.microsoft.com/de-de/windows/l%C3%B6schen-und-verwalten-von-cookies-168dab11-0753-043d-7c16-ede5947fc64d
+            - text: von Microsoft
+          - listitem [ref=e1065]:
+            - text: Für
+            - link "Firefox" [ref=e1066] [cursor=pointer]:
+              - /url: https://support.mozilla.org/de/kb/Cookies-blockieren#:~:text=Cookies%20einer%20einzelnen%20Website%20blockieren,-Sie%20k%C3%B6nnen%20mithilfe&text=Klicken%20Sie%20in%20der%20Men%C3%BCleiste,das%20H%C3%A4kchen%20bei%20Standard%20verwenden.
+            - text: von Mozilla
+        - paragraph [ref=e1067]: Bei Cookies, die für die Erfolgs- und Reichweitenmessung oder für Werbung verwendet werden, ist für zahlreiche Dienste ein allgemeiner Widerspruch («Opt-out») über die Network Advertising Initiative (NAI), YourAdChoices (Digital Advertising Alliance) oder Your Online Choices (European Interactive Digital Advertising Alliance, EDAA) möglich.
+        - heading "Zählpixel" [level=4] [ref=e1068]
+        - paragraph [ref=e1069]: Wir können Zählpixel auf unserer Website oder in unseren E-Mails verwenden. Zählpixel werden auch als Web-Beacons bezeichnet. Bei Zählpixeln handelt es sich um kleine, üblicherweise nicht sichtbare Bilder, die beim Besuch unserer Website oder beim Öffnen unserer E-Mails automatisch abgerufen werden.
+        - paragraph [ref=e1070]:
+          - strong [ref=e1071]: Welche Daten verarbeiten wir?
+        - paragraph [ref=e1072]: Mit Zählpixeln können die gleichen Angaben wie in Logfiles erfasst werden. Zudem können Bewegungsprofile der gesamten Sitzung erhoben werden. Insbesondere werden Zählpixel durch Dritte, deren Dienste wir nutzen, eingesetzt. Über diese Dienste von Dritten wird in dieser Erklärung nachfolgend im Einzelnen informiert.
+        - paragraph [ref=e1073]:
+          - strong [ref=e1074]: Zu welchem Zweck verarbeiten wir die Daten?
+        - paragraph [ref=e1075]: Zählpixel werden von verschiedenen Trackingdiensten verwendet, um die Nutzung dieser Website zu analysieren und zur statistischen Auswertung sowie für kontinuierliche Verbesserungen. Zudem können Zählpixel für E-Mail-Tracking verwendet werden.
+        - paragraph [ref=e1076]:
+          - strong [ref=e1077]: An wen geben wir die Daten weiter?
+        - paragraph [ref=e1078]:
+          - text: Die Weitergabe der Daten durch uns richtet sich nach unseren
+          - link "Ausführungen zur Datenweitergabe" [ref=e1079] [cursor=pointer]:
+            - /url: "#in-welchen-fallen-geben-wir-ihre-daten-an-dritte-weiter"
+          - text: . Beachten Sie zudem die Ausführungen in dieser Datenschutzerklärung zu den einzelnen Trackingdiensten.
+        - paragraph [ref=e1080]:
+          - strong [ref=e1081]: Wie können Sie die Datenverarbeitung verhindern?
+        - paragraph [ref=e1082]: Um die Datenverarbeitung mittels Zählpixeln zu verhindern, können Sie geeignete Browsererweiterungen wie uBlockOrigin installieren und in Ihrem E-Mail-Programm externe Grafiken blockieren.
+        - heading "PrivacyBee" [level=4] [ref=e1083]
+        - generic [ref=e1084]:
+          - paragraph [ref=e1085]: Wir verwenden auf unserer Website den PrivacyBee, eine Dienstleistung des Anbieters PrivacyBee AG, Laupenstrasse 1, 3008 Bern, Schweiz. PrivacyBee wird verwendet, um alle datenschutzrelevanten Dienste zu erkennen und daraus eine individuelle Datenschutzerklärung für die Website zu erzeugen.
+          - paragraph [ref=e1086]:
+            - strong [ref=e1087]: Welche Daten verarbeiten wir?
+            - text: "PrivacyBee ist ein Dienst zur Generierung von Datenschutzerklärungen, die dann per JavaScript in unsere Website eingebunden wird. Für die Bereitstellung dieses Dienstes werden folgende Daten verarbeitet:"
+          - list [ref=e1088]:
+            - listitem [ref=e1089]: IP-Adresse
+            - listitem [ref=e1090]: Browser-Typ und -Version
+            - listitem [ref=e1091]: Betriebssystem
+            - listitem [ref=e1092]: Datum und Uhrzeit des Zugriffs auf unsere Datenschutzerklärung
+          - paragraph [ref=e1093]:
+            - strong [ref=e1094]: Zu welchem Zweck verarbeiten wir die Daten?
+            - text: Die Erhebung dieser Daten ermöglicht uns, die Datenschutzerklärung korrekt auf Ihrer Endgerätekonfiguration anzuzeigen und sicherzustellen, dass die Inhalte korrekt und auf dem neuesten Stand sind.
+          - paragraph [ref=e1095]:
+            - strong [ref=e1096]: An wen geben wir die Daten weiter?
+            - text: Die Weitergabe der Daten durch uns richtet sich nach unseren Ausführungen zur Datenweitergabe. Die Daten, die durch die Nutzung von PrivacyBee gesammelt werden, bleiben bei PrivacyBee.
+          - paragraph [ref=e1097]:
+            - strong [ref=e1098]: Wie können Sie die Verarbeitung Ihrer Daten verhindern?
+            - text: Um die Verarbeitung Ihrer Daten durch PrivacyBee zu verhindern, können Sie JavaScript in Ihrem Browser deaktivieren. Bitte beachten Sie jedoch, dass bei einer Deaktivierung von JavaScript unter Umständen nicht alle Funktionen unserer Website vollumfänglich nutzbar sind. Eine spezifische Opt-out-Möglichkeit für den Dienst PrivacyBee selbst bieten wir nicht an, da der Dienst wesentlich für die Bereitstellung unserer Datenschutzerklärung ist.
+        - heading "Bleibt unsere Datenschutzerklärung immer gleich?" [level=3] [ref=e1099]
+        - paragraph [ref=e1100]:
+          - text: Wir können diese Datenschutzerklärung jederzeit ändern. Die Änderungen werden auf
+          - link "chrono-logisch.ch" [ref=e1101] [cursor=pointer]:
+            - /url: https://chrono-logisch.ch
+          - text: veröffentlicht. Sie werden nicht gesondert informiert.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

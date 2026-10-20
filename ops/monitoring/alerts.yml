@@ -1,0 +1,73 @@
+groups:
+  - name: chrono-availability
+    rules:
+      - alert: ChronoBackendDown
+        expr: up{job="chrono-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Chrono backend is unavailable
+          description: Prometheus could not scrape the Chrono backend for two minutes.
+
+      - alert: ChronoHighServerErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="chrono-backend",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="chrono-backend"}[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono has an elevated HTTP 5xx rate
+          description: More than 5 percent of HTTP requests failed for ten minutes.
+
+      - alert: ChronoJvmMemoryPressure
+        expr: |
+          (
+            sum(jvm_memory_used_bytes{job="chrono-backend",area="heap"})
+            /
+            clamp_min(sum(jvm_memory_max_bytes{job="chrono-backend",area="heap"}), 1)
+          ) > 0.90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono JVM heap usage is high
+          description: Heap usage has stayed above 90 percent for fifteen minutes.
+
+      - alert: ChronoDatabasePoolExhausted
+        expr: hikaricp_connections_pending{job="chrono-backend"} > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Chrono database pool is saturated
+          description: Requests have waited for a database connection for five minutes.
+
+      - alert: ChronoDatabasePoolPressure
+        expr: |
+          hikaricp_connections_active{job="chrono-backend"}
+          /
+          clamp_min(hikaricp_connections_max{job="chrono-backend"}, 1) > 0.85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono database pool usage is high
+          description: More than 85 percent of database connections are active.
+
+      - alert: ChronoHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{job="chrono-backend"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono p95 request latency is high
+          description: The 95th percentile response time has exceeded one second for ten minutes.

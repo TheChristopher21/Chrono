@@ -1,0 +1,58 @@
+### Result
+{"checks":["Firma A zeigt Alice","Firma A zeigt keinen Mitarbeiter aus B","Anträge gehören Firma A","Browser-Zurück reaktiviert keine alte Firma","Firma B übernimmt keinen Entwurf aus A","Nach Firmenwechsel keine Daten aus A","Anträge gehören Firma B","Schnellzugriff behält die gewählte Firma","Neuladen behält Firma B","Ein Dashboard-Tab pro Firmenansicht","Aktive Firma auch mobil sichtbar","Keine Browserfehler: "],"errors":[]}
+### Ran Playwright code
+```js
+await (async page => {
+  const checks=[],errors=[];
+  page.on('pageerror', error=>errors.push(String(error)));
+  const assert=(value,label)=>{if(!value)throw new Error(label);checks.push(label);};
+  const side=()=>page.locator('.aw-sidebar:visible');
+  const active=()=>page.locator('[data-workspace-pane]:not([aria-hidden])');
+  await page.screenshot({path:'output/playwright/chrono-company-selection.png'});
+  await page.getByRole('button',{name:/Atelier Zürich.*Firma ansehen/}).click();
+  await page.locator('.company-context-bar:visible').getByText('Atelier Zürich',{exact:true}).waitFor();
+  await side().getByRole('button',{name:'Mitarbeitende',exact:true}).click();
+  await page.locator('[data-workspace-tab="employees"]:visible').waitFor();
+  assert(await active().getByText('Alice Alpha',{exact:true}).count()>0,'Firma A zeigt Alice');
+  assert(await active().getByText('Bob Beta',{exact:true}).count()===0,'Firma A zeigt keinen Mitarbeiter aus B');
+  await side().getByRole('button',{name:/^Anträge/}).click();
+  await page.locator('[data-workspace-tab="requests"]:visible').waitFor();
+  await page.locator('.aw-requests:visible').getByRole('textbox',{name:'Kommentar zur Entscheidung'}).fill('Entwurf nur Firma A');
+  assert(await page.locator('.aw-requests:visible').getByText('Korrektur Atelier Zürich',{exact:false}).count()>0,'Anträge gehören Firma A');
+  await page.screenshot({path:'output/playwright/chrono-company-a.png'});
+  await page.locator('.company-context-bar:visible').getByRole('link',{name:'Firma wechseln'}).click();
+  await page.getByRole('button',{name:/Beratung Bern.*Firma ansehen/}).click();
+  await page.locator('.company-context-bar:visible').getByText('Beratung Bern',{exact:true}).waitFor();
+  await page.goBack();
+  await page.locator('.company-context-bar:visible').getByText('Beratung Bern',{exact:true}).waitFor();
+  assert(await page.locator('.company-context-bar:visible').getByText('Atelier Zürich',{exact:true}).count()===0,'Browser-Zurück reaktiviert keine alte Firma');
+  await page.goForward();
+  await page.locator('.company-context-bar:visible').getByText('Beratung Bern',{exact:true}).waitFor();
+  await side().getByRole('button',{name:/^Anträge/}).click();
+  await page.locator('[data-workspace-tab="requests"]:visible').waitFor();
+  assert(await page.locator('.aw-requests:visible').getByRole('textbox',{name:'Kommentar zur Entscheidung'}).inputValue()==='','Firma B übernimmt keinen Entwurf aus A');
+  assert(await active().getByText('Alice Alpha',{exact:true}).count()===0,'Nach Firmenwechsel keine Daten aus A');
+  assert(await page.locator('.aw-requests:visible').getByText('Korrektur Beratung Bern',{exact:false}).count()>0,'Anträge gehören Firma B');
+  await side().getByRole('link',{name:'Dienstplan',exact:true}).click();
+  await page.locator('.aw-module-workspace:visible').waitFor();
+  assert(await page.locator('.company-context-bar:visible').getByText('Beratung Bern',{exact:true}).isVisible(),'Schnellzugriff behält die gewählte Firma');
+  await page.reload();
+  await page.locator('.company-context-bar:visible').getByText('Beratung Bern',{exact:true}).waitFor();
+  await side().getByRole('button',{name:'Mitarbeitende',exact:true}).click();
+  await page.locator('[data-workspace-tab="employees"]:visible').waitFor();
+  assert(await active().getByText('Bob Beta',{exact:true}).count()>0,'Neuladen behält Firma B');
+  assert(await page.locator('.workspace-tab:visible').count()===1,'Ein Dashboard-Tab pro Firmenansicht');
+  await page.screenshot({path:'output/playwright/chrono-company-b.png'});
+  await page.setViewportSize({width:390,height:844});
+  assert(await page.locator('.company-context-bar:visible').isVisible(),'Aktive Firma auch mobil sichtbar');
+  await page.screenshot({path:'output/playwright/chrono-company-mobile.png'});
+  assert(!errors.length,`Keine Browserfehler: ${errors.join('; ')}`);
+  return {checks,errors};
+}
+)(page);
+```
+### Page
+- Page URL: http://127.0.0.1:5173/admin/dashboard-neu?tab=employees
+- Page Title: Chrono-Logisch | Arbeitszeit, Abwesenheiten & Lohnprozesse
+### Events
+- New console entries: .playwright-cli\console-2026-10-08T11-28-29-363Z.log#L6-L10

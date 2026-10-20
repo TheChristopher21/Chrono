@@ -1,6 +1,7 @@
 import React from 'react';
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from "prop-types";
+import { getUserDisplayName } from '../../utils/userDisplay';
 
 const PrintUserTimesModal = ({
                                  printUserModalVisible,
@@ -17,8 +18,8 @@ const PrintUserTimesModal = ({
                              }) => {
     const sortedUsers = React.useMemo(() => {
         return [...availableUsers].sort((a, b) => {
-            const aName = `${a.firstName || ''} ${a.lastName || ''} ${a.username}`.trim().toLowerCase();
-            const bName = `${b.firstName || ''} ${b.lastName || ''} ${b.username}`.trim().toLowerCase();
+            const aName = getUserDisplayName(a).toLowerCase();
+            const bName = getUserDisplayName(b).toLowerCase();
             if (aName < bName) return -1;
             if (aName > bName) return 1;
             return 0;
@@ -50,9 +51,7 @@ const PrintUserTimesModal = ({
                                 <option value={printUser}>{printUser}</option>
                             )}
                             {sortedUsers.map(user => {
-                                const displayName = user.firstName && user.lastName
-                                    ? `${user.firstName} ${user.lastName} (${user.username})`
-                                    : user.username;
+                                const displayName = getUserDisplayName(user);
                                 return (
                                     <option key={user.username} value={user.username}>
                                         {displayName}

@@ -106,4 +106,75 @@ class AccountingServiceTest {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(totalDebit).isEqualByComparingTo(totalCredit);
     }
+
+    @Test
+    void recordPayrollPostingCreatesBalancedEntryForNegativePayslip() {
+        Payslip payslip = new Payslip();
+        payslip.setGrossSalary(-1845.63);
+        payslip.setDeductions(-118.12);
+        payslip.setNetSalary(-1727.51);
+        payslip.setEmployerContributions(-177.18);
+        payslip.setPayoutDate(LocalDate.of(2026, 3, 23));
+
+        User user = new User();
+        user.setUsername("mirjam.burkhardt");
+        user.setPassword("secret");
+        user.setCountry("CH");
+        user.setPersonnelNumber("EMP-2");
+        payslip.setUser(user);
+
+        JournalEntry entry = accountingService.recordPayrollPosting(payslip);
+
+        assertThat(entry.getId()).isNotNull();
+        assertThat(entry.getLines()).hasSize(5);
+        assertThat(entry.getLines()).allSatisfy(line -> {
+            assertThat(line.getDebit()).isGreaterThanOrEqualTo(BigDecimal.ZERO);
+            assertThat(line.getCredit()).isGreaterThanOrEqualTo(BigDecimal.ZERO);
+        });
+
+        BigDecimal totalDebit = entry.getLines().stream()
+                .map(JournalEntryLine::getDebit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCredit = entry.getLines().stream()
+                .map(JournalEntryLine::getCredit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(totalDebit).isEqualByComparingTo(totalCredit);
+    }
+
+    @Test
+    void recordPayrollPostingIsIdempotentForTheSamePayslip() {
+        Payslip payslip = new Payslip();
+        payslip.setId(99L);
+        payslip.setGrossSalary(100.0);
+        payslip.setDeductions(10.0);
+        payslip.setNetSalary(90.0);
+        payslip.setEmployerContributions(5.0);
+        payslip.setPayoutDate(LocalDate.of(2026, 8, 25));
+
+        User user = new User();
+        user.setUsername("hourly.employee");
+        payslip.setUser(user);
+
+        JournalEntry first = accountingService.recordPayrollPosting(payslip);
+        JournalEntry second = accountingService.recordPayrollPosting(payslip);
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(journalEntryRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void recordPayrollPostingSkipsZeroValuePayslip() {
+        Payslip payslip = new Payslip();
+        payslip.setId(100L);
+        payslip.setGrossSalary(0.0);
+        payslip.setDeductions(0.0);
+        payslip.setNetSalary(0.0);
+        payslip.setEmployerContributions(0.0);
+        payslip.setUser(new User());
+
+        JournalEntry entry = accountingService.recordPayrollPosting(payslip);
+
+        assertThat(entry).isNull();
+        assertThat(journalEntryRepository.count()).isZero();
+    }
 }

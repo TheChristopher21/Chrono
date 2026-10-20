@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:fillColor="@color/chrono_icon_background"
+        android:pathData="M48,4C72.3,4 92,23.7 92,48C92,72.3 72.3,92 48,92C23.7,92 4,72.3 4,48C4,23.7 23.7,4 48,4Z" />
+    <path
+        android:fillColor="@color/chrono_icon_foreground"
+        android:fillType="evenOdd"
+        android:pathData="M48,17C65.12,17 79,30.88 79,48C79,65.12 65.12,79 48,79C30.88,79 17,65.12 17,48C17,30.88 30.88,17 48,17ZM48,26C60.15,26 70,35.85 70,48C70,60.15 60.15,70 48,70C35.85,70 26,60.15 26,48C26,35.85 35.85,26 48,26Z" />
+    <path
+        android:strokeColor="@color/chrono_icon_accent"
+        android:strokeLineCap="round"
+        android:strokeWidth="5"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M48,47 L48,32 M48,47 L61,55" />
+    <path
+        android:fillColor="@color/chrono_icon_accent"
+        android:pathData="M44,43h8v8h-8z" />
+</vector>

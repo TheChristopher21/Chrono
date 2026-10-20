@@ -1,0 +1,48 @@
+async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});
+ await page.goto('http://127.0.0.1:8765/chrono-admin-browser.html');await page.waitForSelector('#chrono-browser-design');
+ const check=(v,s)=>{if(!v)throw new Error(s)};
+ check(await page.locator('.rb-brand img').evaluate(el=>el.complete&&el.naturalWidth>0),'Original logo visible');
+ await page.screenshot({path:'output/playwright/chrono-admin-10-full-browser-light.png',fullPage:true});
+ await page.emulateMedia({colorScheme:'dark'});
+ await page.screenshot({path:'output/playwright/chrono-admin-10-full-browser-dark.png',fullPage:true});
+ const bad=[];
+ const snap=async(name,width)=>{
+   await page.setViewportSize({width,height:1000});
+   const overflow=await page.evaluate(()=>{const root=document.querySelector('#chrono-browser-design'),b=root.getBoundingClientRect();return [...root.querySelectorAll('*')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&(r.right>b.right+2||r.left<b.left-2)&&!el.closest('.cp-table-wrap')}).map(el=>({cls:el.className,text:el.textContent.slice(0,60)})).slice(0,6)});
+   if(overflow.length)bad.push({name,width,overflow});
+   await page.screenshot({path:'output/playwright/chrono-admin-10-'+name+'-'+width+'.png',fullPage:true});
+ };
+ await page.emulateMedia({colorScheme:'light'});
+ await page.locator('[data-act="real-workspace"][data-i="1"]').click();
+ check((await page.locator('.cp-sheet').innerText()).includes('Mirjam Burkart'),'Employee profile opened');
+ check(await page.locator('[data-real-employee-calendar]').count()===1,'Personal calendar');
+ await snap('employee',1440);await snap('employee',736);await snap('employee',320);
+ await page.setViewportSize({width:1440,height:1000});
+ await page.locator('[data-act="plan-vacation"][data-p="0"]').first().click();
+ check(await page.locator('[name="person"]').isDisabled(),'Person fixed');
+ check(!await page.locator('label:has([name="company"])').count(),'Company vacation hidden in context');
+ await page.locator('[name="start"]').fill('2026-10-05');await page.locator('[name="end"]').fill('2026-10-09');
+ await page.locator('[data-act="addperiod"]').click();
+ await page.locator('[name="start"]').fill('2026-12-01');await page.locator('[name="end"]').fill('2026-12-03');
+ await snap('vacation',1440);await snap('vacation',736);await snap('vacation',320);
+ await page.locator('[data-act="localSubmit"]').click();
+ check((await page.locator('.cp-vac-saved').innerText()).includes('2 Zeiträume'),'Multiple periods saved');
+ check(await page.locator('[data-act="localSubmit"]').isDisabled(),'Duplicate save disabled');
+ await page.locator('.cp-sheet-head [data-act="close"]').click();
+ await page.locator('[data-view="requests"]').first().click();
+ await snap('requests',1024);await snap('requests',320);
+ await page.setViewportSize({width:1440,height:1000});
+ await page.locator('[data-view="overview"]').first().click();
+ await page.locator('.rb-account').click();await page.locator('[data-bind="role"]').selectOption('Nur Ansicht');
+ await page.locator('.cp-sheet-head [data-act="close"]').click();
+ check(await page.locator('.cw-header-actions [data-act="vacation"]').isDisabled(),'Read-only primary action disabled');
+ await page.locator('.rb-account').click();await page.locator('[data-bind="role"]').selectOption('Super Admin');await page.locator('.cp-sheet-head [data-act="close"]').click();
+ await page.locator('.cp-sidebar [data-module="Payroll"]').click();
+ check(await page.locator('.cp-worktab').count()===3,'Workspace count grows');
+ check((await page.locator('.cp-worktab.cp-active').innerText()).includes('Payroll'),'Active workspace');
+ await page.locator('.cp-worktab.cp-active [data-act="real-tabclose"]').click();
+ check(await page.locator('.cp-worktab').count()===2,'Workspace closes');
+ return{logo:true,employee:true,employeeCalendar:true,fixedPerson:true,companyHidden:true,twoPeriods:true,duplicateSaveDisabled:true,rolePrimaryDisabled:true,dynamicWorkspaces:true,bad,errors};
+}

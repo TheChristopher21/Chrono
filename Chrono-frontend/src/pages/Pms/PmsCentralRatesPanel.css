@@ -1,0 +1,7 @@
+.pms-central-rates { margin-top: 1.2rem; }
+.pms-central-rates-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .7rem; }
+.pms-central-rates-heading h3, .pms-central-rates-heading h4 { margin: .4rem 0; }
+.pms-central-rates-heading > span { color: var(--pms-muted, #595e6b); font-size: .8rem; }
+.pms-central-rate-target { min-width: 0; margin: 1rem 0; padding: 1rem; border: 1px solid var(--pms-line, #d5d8e5); border-radius: 12px; background: var(--pms-soft, #f9fafb); }
+.pms-central-rate-target .pms-form-grid { margin-top: .8rem; }
+.pms-central-rate-summary { border-top: 1px solid var(--pms-line, #d5d8e5); padding-top: .8rem; margin-bottom: 0; font-weight: 600; overflow-wrap: anywhere; }

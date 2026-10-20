@@ -1,0 +1,98 @@
+[
+  {
+    "name": "chrono-focus",
+    "sizes": [
+      {
+        "width": 1022,
+        "scrollWidth": 1022,
+        "height": 998,
+        "overflow": false
+      },
+      {
+        "width": 734,
+        "scrollWidth": 734,
+        "height": 1244,
+        "overflow": false
+      },
+      {
+        "width": 358,
+        "scrollWidth": 358,
+        "height": 1560,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(24, 34, 30)",
+      "color": "rgb(229, 238, 232)"
+    },
+    "interactions": [
+      {
+        "approvalRemaining": "5"
+      },
+      {
+        "history": "AW\nAnna Weber\nZeitkorrektur · Fehlender Endstempel · 17:15 Uhr\nAnsehen"
+      },
+      {
+        "hourly": "Noah Frei\nEmpfang · Stundenlohn\n\t12:30\t—\t—\t—\tGeprüft\t×"
+      },
+      {
+        "timeInputs": 4
+      },
+      {
+        "nextMonth": "Oktober 2026"
+      },
+      {
+        "modules": "Personal & Planung\nPayroll / Lohnabrechnung\n↗"
+      },
+      {
+        "view": "home",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "inbox",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "calendar",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "planning",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  }
+]

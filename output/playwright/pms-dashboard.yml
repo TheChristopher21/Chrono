@@ -1,0 +1,361 @@
+- generic [ref=f4e2]:
+  - generic [ref=f4e7]:
+    - generic [ref=f4e8]:
+      - navigation "Hauptnavigation" [ref=f4e9]:
+        - link "Chrono PMS" [ref=f4e11] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f4e12]
+        - list [ref=f4e13]:
+          - listitem [ref=f4e14]:
+            - link "Zu Chrono wechseln" [ref=f4e15] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f4e16]:
+            - button "Was ist neu?" [ref=f4e17] [cursor=pointer]
+          - listitem [ref=f4e21]:
+            - button "Dark Mode" [ref=f4e22] [cursor=pointer]
+          - listitem [ref=f4e26]:
+            - button "🌐" [ref=f4e27] [cursor=pointer]
+          - listitem [ref=f4e30]:
+            - button "Default Admin" [ref=f4e31] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e32]: D
+        - button "PMS-Bereiche" [ref=f4e37] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f4e40]:
+        - generic [ref=f4e41]:
+          - tablist "Offene Arbeitsbereiche" [ref=f4e42]:
+            - generic [ref=f4e43]:
+              - tab "Hotelverwaltung (PMS)" [selected] [ref=f4e44] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f4e45]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f4e47] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f4e48] [cursor=pointer]'
+          - generic [ref=f4e49]:
+            - button "Arbeitsbereich öffnen" [ref=f4e50] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f4e51] [cursor=pointer]
+    - generic [ref=f4e52]:
+      - complementary "PMS-Navigation" [ref=f4e53]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f4e54] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f4e55]: CH
+          - generic [ref=f4e56]:
+            - generic [ref=f4e57]: Aktives Hotel
+            - strong [ref=f4e58]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f4e59]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f4e60]:
+          - generic [ref=f4e61]:
+            - generic [ref=f4e62]: Rezeption
+            - button "Übersicht" [ref=f4e63] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e64]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f4e65] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e66]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f4e67] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e68]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f4e69] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e70]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f4e71] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e72]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f4e73] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e74]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f4e75]:
+            - generic [ref=f4e76]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f4e77] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e78]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f4e79] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e80]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f4e81] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e82]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f4e83] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e84]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f4e85]:
+            - generic [ref=f4e86]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f4e87] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e88]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f4e89] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e90]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f4e91] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e92]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f4e93]:
+            - generic [ref=f4e94]: Steuerung & System
+            - button "Hotelportfolio" [ref=f4e95] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e96]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f4e97] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e98]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f4e99] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e100]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f4e101] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e102]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f4e103] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f4e104]: SYS
+              - text: Schnittstellen
+        - generic [ref=f4e107]:
+          - strong [ref=f4e108]: PMS betriebsbereit
+          - generic [ref=f4e109]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f4e110]:
+        - generic [ref=f4e111]:
+          - generic [ref=f4e112]:
+            - generic [ref=f4e113]: Chrono Hotel-PMS
+            - heading "Guten Tag, Default Admin" [level=1] [ref=f4e114]
+            - paragraph [ref=f4e115]: Deine operative Übersicht für den aktuellen Hotelbetrieb.
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f4e117] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f4e118]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f4e119]: Ctrl K
+        - region "Betriebstag und Status" [ref=f4e120]:
+          - generic [ref=f4e121]:
+            - button "Vorheriger Tag" [ref=f4e122] [cursor=pointer]: ←
+            - generic [ref=f4e123]:
+              - generic [ref=f4e124]: Betriebstag
+              - strong [ref=f4e125]: Samstag, 12. September 2026
+            - button "Nächster Tag" [ref=f4e126] [cursor=pointer]: →
+            - button "Heute" [ref=f4e127] [cursor=pointer]
+          - generic [ref=f4e130]:
+            - generic [ref=f4e131]: Systemstatus
+            - strong [ref=f4e132]: Betriebsprüfung mit Hinweisen
+        - generic [ref=f4e133]:
+          - generic [ref=f4e134]:
+            - button "Übersicht anpassen" [ref=f4e135] [cursor=pointer]
+            - status [ref=f4e136]: Mit dem Benutzerkonto synchronisiert
+          - generic [ref=f4e137]:
+            - region "Schnellaktionen" [ref=f4e138]:
+              - region [ref=f4e140]:
+                - generic [ref=f4e141]:
+                  - generic [ref=f4e142]:
+                    - generic [ref=f4e143]: Rezeption
+                    - heading "Schnellaktionen" [level=2] [ref=f4e144]
+                  - paragraph [ref=f4e145]: Für schnelle Bedienung werden die Tastaturkürzel eingeblendet.
+                - generic [ref=f4e146]:
+                  - button "Gast vor Ort aufnehmen Gastdaten, Meldeschein, Zimmer und Check-in in einem Ablauf Alt W" [ref=f4e147] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e148]: "01"
+                    - generic [ref=f4e149]:
+                      - strong [ref=f4e150]: Gast vor Ort aufnehmen
+                      - generic [ref=f4e151]: Gastdaten, Meldeschein, Zimmer und Check-in in einem Ablauf
+                    - generic [ref=f4e152]: Alt W
+                    - generic [aria-hidden] [ref=f4e153]: →
+                  - button "Reservierung anlegen Telefon-, E-Mail- oder Direktbuchung erfassen Ctrl N" [ref=f4e154] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e155]: "02"
+                    - generic [ref=f4e156]:
+                      - strong [ref=f4e157]: Reservierung anlegen
+                      - generic [ref=f4e158]: Telefon-, E-Mail- oder Direktbuchung erfassen
+                    - generic [ref=f4e159]: Ctrl N
+                    - generic [aria-hidden] [ref=f4e160]: →
+                  - button "Einchecken Anreise prüfen und Gast einchecken Ctrl I" [ref=f4e161] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e162]: "03"
+                    - generic [ref=f4e163]:
+                      - strong [ref=f4e164]: Einchecken
+                      - generic [ref=f4e165]: Anreise prüfen und Gast einchecken
+                    - generic [ref=f4e166]: Ctrl I
+                    - generic [aria-hidden] [ref=f4e167]: →
+                  - button "Auschecken Gastkonto prüfen und Gast auschecken Ctrl O" [ref=f4e168] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e169]: "04"
+                    - generic [ref=f4e170]:
+                      - strong [ref=f4e171]: Auschecken
+                      - generic [ref=f4e172]: Gastkonto prüfen und Gast auschecken
+                    - generic [ref=f4e173]: Ctrl O
+                    - generic [aria-hidden] [ref=f4e174]: →
+                  - button "Gast suchen Profile, Aufenthalte und Reservierungen Ctrl G" [ref=f4e175] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e176]: "05"
+                    - generic [ref=f4e177]:
+                      - strong [ref=f4e178]: Gast suchen
+                      - generic [ref=f4e179]: Profile, Aufenthalte und Reservierungen
+                    - generic [ref=f4e180]: Ctrl G
+                    - generic [aria-hidden] [ref=f4e181]: →
+                  - button "Zahlung erfassen Offene Gastkonten und Zahlungen bearbeiten Ctrl P" [ref=f4e182] [cursor=pointer]:
+                    - generic [aria-hidden] [ref=f4e183]: "06"
+                    - generic [ref=f4e184]:
+                      - strong [ref=f4e185]: Zahlung erfassen
+                      - generic [ref=f4e186]: Offene Gastkonten und Zahlungen bearbeiten
+                    - generic [ref=f4e187]: Ctrl P
+                    - generic [aria-hidden] [ref=f4e188]: →
+            - region "Kennzahlen" [ref=f4e189]:
+              - region "Kennzahlen des Betriebstags" [ref=f4e191]:
+                - article [ref=f4e192]:
+                  - generic [ref=f4e193]: Auslastung
+                  - strong [ref=f4e194]: 50 %
+                  - generic [ref=f4e195]: 3 von 6 Zimmern verkauft oder belegt
+                - article [ref=f4e196]:
+                  - generic [ref=f4e197]: Gäste im Haus
+                  - strong [ref=f4e198]: "2"
+                  - generic [ref=f4e199]: Eingecheckte Aufenthalte
+                - article [ref=f4e200]:
+                  - generic [ref=f4e201]: Anreisen
+                  - strong [ref=f4e202]: "1"
+                  - generic [ref=f4e203]: Am Betriebstag
+                - article [ref=f4e204]:
+                  - generic [ref=f4e205]: Abreisen
+                  - strong [ref=f4e206]: "0"
+                  - generic [ref=f4e207]: Am Betriebstag
+                - article [ref=f4e208]:
+                  - generic [ref=f4e209]: Zu reinigen
+                  - strong [ref=f4e210]: "1"
+                  - generic [ref=f4e211]: 1 Aufgaben
+                - article [ref=f4e212]:
+                  - generic [ref=f4e213]: Offene Gastkonten
+                  - strong [ref=f4e214]: CHF 4339.50
+                  - generic [ref=f4e215]: 9 offene Gastkonten
+            - region "Anreisen" [ref=f4e216]:
+              - generic [ref=f4e218]:
+                - generic [ref=f4e219]:
+                  - generic [ref=f4e220]:
+                    - generic [ref=f4e221]: Rezeption
+                    - heading "Anreisen heute" [level=2] [ref=f4e222]
+                  - button "Alle anzeigen" [ref=f4e223] [cursor=pointer]
+                - generic [aria-hidden] [ref=f4e224]:
+                  - generic [ref=f4e225]: Gast
+                  - generic [ref=f4e226]: Zeit
+                  - generic [ref=f4e227]: Zimmer
+                  - generic [ref=f4e228]: Status
+                - generic [ref=f4e229]:
+                  - generic [ref=f4e230]:
+                    - strong [ref=f4e231]: Daniel Meier
+                    - generic [ref=f4e232]: CHR-3C26B96C
+                  - generic [ref=f4e233]: 15:00
+                  - generic [ref=f4e234]: "102"
+                  - button "Einchecken" [ref=f4e235] [cursor=pointer]
+            - region "Zimmerstatus" [ref=f4e236]:
+              - generic [ref=f4e238]:
+                - generic [ref=f4e239]:
+                  - generic [ref=f4e240]:
+                    - generic [ref=f4e241]: Zimmerstatus
+                    - heading "Zimmerstatus" [level=2] [ref=f4e242]
+                  - button "Zimmerplan" [ref=f4e243] [cursor=pointer]
+                - generic [ref=f4e244]:
+                  - generic "7 Zimmer eingerichtet" [ref=f4e245]:
+                    - strong [ref=f4e246]: "7"
+                    - generic [ref=f4e247]: Zimmer
+                  - generic [ref=f4e248]:
+                    - generic [ref=f4e249]:
+                      - text: Sauber & frei
+                      - strong [ref=f4e251]: "3"
+                    - generic [ref=f4e252]:
+                      - text: Zu reinigen
+                      - strong [ref=f4e254]: "1"
+                    - generic [ref=f4e255]:
+                      - text: Reinigung läuft
+                      - strong [ref=f4e257]: "0"
+                    - generic [ref=f4e258]:
+                      - text: Zu kontrollieren
+                      - strong [ref=f4e260]: "0"
+                    - generic [ref=f4e261]:
+                      - text: Belegt
+                      - strong [ref=f4e263]: "3"
+                    - generic [ref=f4e264]:
+                      - text: Eingeschränkter Betrieb (OOS)
+                      - strong [ref=f4e266]: "0"
+                    - generic [ref=f4e267]:
+                      - text: Nicht verkaufbar
+                      - strong [ref=f4e269]: "1"
+            - region "Abreisen & Gastkonten" [ref=f4e270]:
+              - generic [ref=f4e272]:
+                - generic [ref=f4e273]:
+                  - generic [ref=f4e274]:
+                    - generic [ref=f4e275]: Rezeption
+                    - heading "Abreisen & offene Gastkonten" [level=2] [ref=f4e276]
+                  - button "Gastkonten öffnen" [ref=f4e277] [cursor=pointer]
+                - generic [ref=f4e278]:
+                  - generic [ref=f4e279]:
+                    - generic [ref=f4e280]: Abreisen
+                    - strong [ref=f4e281]: "0"
+                  - generic [ref=f4e282]:
+                    - generic [ref=f4e283]: Offener Betrag
+                    - strong [ref=f4e284]: CHF 4339.50
+                  - button "Gastkonten bearbeiten" [ref=f4e285] [cursor=pointer]
+            - region "Housekeeping" [ref=f4e286]:
+              - generic [ref=f4e288]:
+                - generic [ref=f4e289]:
+                  - generic [ref=f4e290]:
+                    - generic [ref=f4e291]: Housekeeping
+                    - heading "Arbeitslast" [level=2] [ref=f4e292]
+                  - button "Aufgaben öffnen" [ref=f4e293] [cursor=pointer]
+                - generic [ref=f4e294]:
+                  - generic [ref=f4e295]:
+                    - generic [ref=f4e296]: Benötigt
+                    - strong [ref=f4e297]: 0.6 h
+                  - generic [aria-hidden] [ref=f4e298]: →
+                  - generic [ref=f4e299]:
+                    - generic [ref=f4e300]: Eingeplant
+                    - strong [ref=f4e301]: 0 h
+                  - generic [ref=f4e302]: 1 Aufgaben
+                - paragraph [ref=f4e303]: Abreisen erzeugen automatisch priorisierte Reinigungsaufgaben. Sauberstatus und Check-in-Bereitschaft bleiben dadurch synchron.
+            - region "Systeme" [ref=f4e304]:
+              - generic [ref=f4e306]:
+                - generic [ref=f4e307]:
+                  - generic [ref=f4e308]:
+                    - generic [ref=f4e309]: Schnittstellenstatus
+                    - heading "Systeme" [level=2] [ref=f4e310]
+                  - button "Details" [ref=f4e311] [cursor=pointer]
+                - generic [ref=f4e312]:
+                  - generic [ref=f4e313]:
+                    - generic [ref=f4e314]: Datenbank
+                    - strong [ref=f4e316]: Datenbankabfrage erfolgreich.
+                  - generic [ref=f4e317]:
+                    - generic [ref=f4e318]: Externe Übertragungen
+                    - strong [ref=f4e320]: 24 offen, 0 fehlgeschlagen, 0 endgültig fehlgeschlagen.
+                  - generic [ref=f4e321]:
+                    - generic [ref=f4e322]: Änderungsprotokoll
+                    - strong [ref=f4e324]: 27 letzte Ereignisse geprüft, 0 ungültig.
+                  - generic [ref=f4e325]:
+                    - generic [ref=f4e326]: Datensicherung
+                    - strong [ref=f4e328]: Automatische Datenbanksicherung ist nicht aktiviert.
+                  - generic [ref=f4e329]:
+                    - generic [ref=f4e330]: Restore-Probelauf
+                    - strong [ref=f4e332]: Automatischer Restore-Probelauf ist nicht aktiviert.
+            - region "Prüfungen" [ref=f4e333]:
+              - generic [ref=f4e335]:
+                - generic [ref=f4e336]:
+                  - generic [ref=f4e337]:
+                    - generic [ref=f4e338]: Betriebsprüfungen
+                    - heading "Prüfungen" [level=2] [ref=f4e339]
+                  - generic [ref=f4e340]: Nachvollziehbar geprüft
+                - generic [ref=f4e341]:
+                  - generic [aria-hidden] [ref=f4e342]: ✓
+                  - generic [ref=f4e343]:
+                    - strong [ref=f4e344]: Keine aktiven Betriebsalarme
+                    - paragraph [ref=f4e345]: Datenbank, Übertragungen, Änderungsprotokoll und Sicherungen werden nachvollziehbar geprüft.
+            - region "Ersteinrichtung" [ref=f4e346]:
+              - generic [ref=f4e348]:
+                - generic [ref=f4e349]:
+                  - generic [ref=f4e350]: Ersteinrichtung
+                  - heading "Hoteleinrichtung abschliessen" [level=2] [ref=f4e351]
+                  - paragraph [ref=f4e352]: 1 Hotel, 3 Zimmertypen und 7 Zimmer sind eingerichtet.
+                  - button "Einrichtung verwalten" [ref=f4e353] [cursor=pointer]
+                - list [ref=f4e354]:
+                  - listitem [ref=f4e355]:
+                    - generic [ref=f4e356]: "1"
+                    - strong [ref=f4e357]: Hotel und Betriebsdaten anlegen
+                    - generic [ref=f4e358]: Abgeschlossen
+                  - listitem [ref=f4e359]:
+                    - generic [ref=f4e360]: "2"
+                    - strong [ref=f4e361]: Zimmertypen und Zimmer erfassen
+                    - generic [ref=f4e362]: Abgeschlossen
+                  - listitem [ref=f4e363]:
+                    - generic [ref=f4e364]: "3"
+                    - strong [ref=f4e365]: Ratenpläne und Verfügbarkeiten definieren
+                    - generic [ref=f4e366]: Abgeschlossen
+                  - listitem [ref=f4e367]:
+                    - generic [ref=f4e368]: "4"
+                    - strong [ref=f4e369]: Gastkonten und Zahlungsarten aktivieren
+                    - generic [ref=f4e370]: Abgeschlossen
+                  - listitem [ref=f4e371]:
+                    - generic [ref=f4e372]: "5"
+                    - strong [ref=f4e373]: Buchungskanäle anbinden
+                    - generic [ref=f4e374]: Wartet auf Grundlage
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

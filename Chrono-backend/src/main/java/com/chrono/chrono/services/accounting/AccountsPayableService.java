@@ -1,5 +1,6 @@
 package com.chrono.chrono.services.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.accounting.*;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
 import org.springframework.data.domain.Page;
@@ -76,13 +77,29 @@ public class AccountsPayableService {
                 pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<VendorInvoice> findPendingInvoices(Company company, Pageable pageable) {
+        return vendorInvoiceRepository.findByCompanyAndStatusIn(
+                company,
+                Set.of(InvoiceStatus.OPEN, InvoiceStatus.PARTIALLY_PAID),
+                pageable);
+    }
+
     @Transactional
     public VendorInvoice applyPayment(Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
+        return applyPayment(null, invoiceId, amount, paymentDate, memo);
+    }
+
+    @Transactional
+    public VendorInvoice applyPayment(Company company, Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Payment amount must be positive");
         }
-        VendorInvoice invoice = vendorInvoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new IllegalArgumentException("Vendor invoice not found: " + invoiceId));
+        VendorInvoice invoice = company != null
+                ? vendorInvoiceRepository.findByIdAndCompany(invoiceId, company)
+                    .orElseThrow(() -> new IllegalArgumentException("Vendor invoice not found: " + invoiceId))
+                : vendorInvoiceRepository.findById(invoiceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Vendor invoice not found: " + invoiceId));
 
         Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
         Account liability = accountingService.ensureAccount("2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);

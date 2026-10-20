@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -9,7 +10,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useCustomers } from '../../context/CustomerContext';
 import jsPDF from 'jspdf';
 import { parseISO } from 'date-fns';
-import { useUserData } from '../../hooks/useUserData';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation';
 import autoTable from "jspdf-autotable";
 
 import {
@@ -19,8 +20,6 @@ import {
     formatDate,
     formatTime,
     minutesToHHMM,
-    computeTotalWorkedMinutesInRange,
-    expectedDayMinutesForPercentageUser,
     parseHex16,
     sortEntries
 } from './percentageDashUtils';
@@ -30,18 +29,28 @@ import PercentageVacationSection from './PercentageVacationSection';
 import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
+import {
+    CALCULATION_STATUS,
+} from '../../components/CalculationStatusNotice.jsx';
+import ConfigurableDashboard from '../../components/dashboard/ConfigurableDashboard.jsx';
 
 // Einheitliche Styles importieren
 import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
 
+const PERCENTAGE_DASHBOARD_REFRESH_SCOPES = [
+    'time',
+    'absence',
+    'requests',
+    'people',
+    'holidays',
+    'company',
+];
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     const { currentUser, fetchCurrentUser } = useAuth();
     const navigate = useNavigate();
-    const { refreshData } = useUserData();
-
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
     const { customers, fetchCustomers } = useCustomers();
@@ -64,6 +73,8 @@ const PercentageDashboard = () => {
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
     const [holidaysForUserCanton, setHolidaysForUserCanton] = useState({ data: {}, year: null, canton: null });
+    const [weekPeriodSummary, setWeekPeriodSummary] = useState(null);
+    const [weekPeriodStatus, setWeekPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
 
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
@@ -154,9 +165,38 @@ const PercentageDashboard = () => {
         }
     }, [userProfile, notify, t]);
 
-    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+    const fetchWeekPeriodSummary = useCallback(async () => {
+        if (!userProfile?.username) {
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.IDLE);
+            return;
+        }
+        const startDate = formatLocalDate(selectedMonday);
+        const weekEndDate = formatLocalDate(addDays(selectedMonday, 6));
+        const endDate = [weekEndDate, formatLocalDate(new Date())].sort()[0];
+        if (endDate < startDate) {
+            setWeekPeriodSummary({ workedMinutes: 0, breakMinutes: 0, expectedMinutes: 0, differenceMinutes: 0, dailySummaries: [] });
+            setWeekPeriodStatus(CALCULATION_STATUS.READY);
+            return;
+        }
+        setWeekPeriodSummary(null);
+        setWeekPeriodStatus(CALCULATION_STATUS.LOADING);
+        try {
+            const response = await api.get('/api/timetracking/period-summary', {
+                params: { username: userProfile.username, startDate, endDate }
+            });
+            setWeekPeriodSummary(response.data || null);
+            setWeekPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+        } catch (error) {
+            console.error('Fehler beim Laden der Backend-Wochenberechnung (Percentage):', error);
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.ERROR);
+        }
+    }, [selectedMonday, userProfile?.username]);
+
+    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation, force = false) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
-        if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+        if (!force && holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
             return;
         }
         try {
@@ -169,22 +209,50 @@ const PercentageDashboard = () => {
         }
     }, [t, holidaysForUserCanton]);
 
+    const refreshPercentageDashboard = useCallback(async () => {
+        const cantonAbbr = userProfile?.company?.cantonAbbreviation
+            || userProfile?.companyCantonAbbreviation
+            || '';
+        await Promise.all([
+            loadProfileAndInitialData(),
+            fetchDataForUser(),
+            fetchWeekPeriodSummary(),
+            userProfile
+                ? fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr, true)
+                : Promise.resolve(),
+        ]);
+    }, [fetchDataForUser, fetchHolidaysForUser, fetchWeekPeriodSummary, loadProfileAndInitialData, selectedMonday, userProfile]);
+
+    useRefreshOnMutation(
+        PERCENTAGE_DASHBOARD_REFRESH_SCOPES,
+        refreshPercentageDashboard,
+        {
+            enabled: Boolean(currentUser),
+            debounceMs: 120,
+            refreshOnFocus: true,
+            focusThrottleMs: 30_000,
+        },
+    );
+
     useEffect(() => {
         if (userProfile) {
             fetchDataForUser();
+            fetchWeekPeriodSummary();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
             fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [userProfile, fetchDataForUser, fetchWeekPeriodSummary, fetchHolidaysForUser, selectedMonday]);
 
-    useEffect(() => {
-        const interval = setInterval(doNfcCheck, 2000);
-        return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const showPunchMessage = useCallback((message) => {
+        setPunchMessage(message);
+        setTimeout(() => setPunchMessage(''), 3000);
+    }, []);
 
-    async function doNfcCheck() {
+    const doNfcCheck = useCallback(async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -194,19 +262,15 @@ const PercentageDashboard = () => {
             lastPunchTimeRef.current = Date.now();
             showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
             await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
-            if (currentUser && cardUser === currentUser.username) {
-                fetchDataForUser();
-                loadProfileAndInitialData();
-            }
         } catch (err) {
             console.error('NFC error', err);
         }
-    }
+    }, [showPunchMessage, t]);
 
-    function showPunchMessage(msg) {
-        setPunchMessage(msg);
-        setTimeout(() => setPunchMessage(''), 3000);
-    }
+    useEffect(() => {
+        const interval = setInterval(doNfcCheck, 2000);
+        return () => clearInterval(interval);
+    }, [doNfcCheck]);
 
     async function handleManualPunch() {
         if (!userProfile) return;
@@ -218,7 +282,6 @@ const PercentageDashboard = () => {
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
-            fetchDataForUser();
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
@@ -232,7 +295,6 @@ const PercentageDashboard = () => {
                 params: { username: userProfile.username, date: isoDate }
             });
             notify(t("dailyNoteSaved", "Notiz gespeichert!"), 'success');
-            fetchDataForUser();
         } catch (err) {
             console.error('Fehler beim Speichern der Tagesnotiz:', err);
             notify(t("dailyNoteError", "Notiz konnte nicht gespeichert werden."), 'error');
@@ -267,7 +329,6 @@ const PercentageDashboard = () => {
             await Promise.all(correctionPromises);
             notify(t('userDashboard.correctionSuccess'), 'success');
             setShowCorrectionModal(false);
-            fetchDataForUser();
         } catch (error) {
             console.error('Fehler beim Absenden der Korrekturanträge:', error);
             const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
@@ -323,28 +384,10 @@ const PercentageDashboard = () => {
         doc.save(`Zeitenbericht_Prozent_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
     }
 
-    const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i));
-    const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4));
-
-    const expectedWorkDaysPerWeek = (userProfile?.expectedWorkDays && userProfile.expectedWorkDays > 0)
-        ? userProfile.expectedWorkDays
-        : 5;
-
-    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj, index) => {
-        const isoDate = formatLocalDate(dayObj);
-        const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
-        const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-        const isHoliday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
-        let daySoll = index < expectedWorkDaysPerWeek ? expectedDayMinutesForPercentageUser(userProfile) : 0;
-
-        if (isHoliday || (vacationToday && !vacationToday.halfDay) || (sickToday && !sickToday.halfDay)) {
-            daySoll = 0;
-        } else if (vacationToday?.halfDay || sickToday?.halfDay) {
-            daySoll = Math.round(daySoll / 2);
-        }
-        return sum + daySoll;
-    }, 0);
-    const weeklyDiff = weeklyWorked - weeklyExpected;
+    const weekDatesForOverview = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const weeklyWorked = Number.isFinite(weekPeriodSummary?.workedMinutes) ? weekPeriodSummary.workedMinutes : null;
+    const weeklyExpected = Number.isFinite(weekPeriodSummary?.expectedMinutes) ? weekPeriodSummary.expectedMinutes : null;
+    const weeklyDiff = Number.isFinite(weekPeriodSummary?.differenceMinutes) ? weekPeriodSummary.differenceMinutes : null;
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
     if (!userProfile) {
@@ -379,58 +422,104 @@ const PercentageDashboard = () => {
                     </div>
                 </header>
 
-                {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-                <PercentageWeekOverview
-                    t={t}
-                    dailySummaries={dailySummaries}
-                    monday={selectedMonday}
-                    setMonday={setSelectedMonday}
-                    weeklyWorked={weeklyWorked}
-                    weeklyExpected={weeklyExpected}
-                    weeklyDiff={weeklyDiff}
-                    handleManualPunch={handleManualPunch}
-                    openCorrectionModal={openCorrectionModalForDay}
-                    userProfile={userProfile}
-                    customers={customers}
-                    recentCustomers={recentCustomers}
-                    projects={projects}
-                    tasks={tasks}
-                    selectedCustomerId={selectedCustomerId}
-                    setSelectedCustomerId={setSelectedCustomerId}
-                    selectedProjectId={selectedProjectId}
-                    selectedTaskId={selectedTaskId}
-                    setSelectedTaskId={setSelectedTaskId}
-                    vacationRequests={vacationRequests}
-                    sickLeaves={sickLeaves}
-                    holidaysForUserCanton={holidaysForUserCanton?.data}
-                    reloadData={fetchDataForUser}
-                    editingNote={editingNote}
-                    setEditingNote={setEditingNote}
-                    noteContent={noteContent}
-                    setNoteContent={setNoteContent}
-                    handleNoteSave={handleNoteSave}
-                />
-
-                <section className="vacation-section content-section">
-                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
-                    <PercentageVacationSection
-                        t={t}
-                        userProfile={userProfile}
-                        vacationRequests={vacationRequests}
-                        onRefreshVacations={fetchDataForUser}
-                    />
-                </section>
-
-                <PercentageCorrectionsPanel
-                    t={t}
-                    correctionRequests={correctionRequests}
-                    selectedCorrectionMonday={selectedCorrectionMonday}
-                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
-                    showCorrectionsPanel={showCorrectionsPanel}
-                    setShowCorrectionsPanel={setShowCorrectionsPanel}
-                    showAllCorrections={showAllCorrections}
-                    setShowAllCorrections={setShowAllCorrections}
+                <ConfigurableDashboard
+                    context="USER_PERCENTAGE"
+                    permissionContext={currentUser}
+                    storageIdentity={currentUser?.id || currentUser?.username}
+                    registry={[
+                        {
+                            id: 'quick-links',
+                            title: t('dashboardWidgets.quickLinks', 'Freigegebene Seiten'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <AccessiblePagesPanel
+                                    context="user"
+                                    title="Deine freigegebenen Seiten"
+                                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
+                                />
+                            ),
+                        },
+                        {
+                            id: 'weekly-time',
+                            title: t('dashboardWidgets.weeklyTime', 'Zeiterfassung & Wochenübersicht'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['L', 'full'],
+                            component: (
+                                <>
+                                    {punchMessage && <div className="punch-message">{punchMessage}</div>}
+                                    <PercentageWeekOverview
+                                        t={t}
+                                        dailySummaries={dailySummaries}
+                                        monday={selectedMonday}
+                                        setMonday={setSelectedMonday}
+                                        weeklyWorked={weeklyWorked}
+                                        weeklyExpected={weeklyExpected}
+                                        weeklyDiff={weeklyDiff}
+                                        calculationStatus={weekPeriodStatus}
+                                        handleManualPunch={handleManualPunch}
+                                        openCorrectionModal={openCorrectionModalForDay}
+                                        userProfile={userProfile}
+                                        customers={customers}
+                                        recentCustomers={recentCustomers}
+                                        projects={projects}
+                                        tasks={tasks}
+                                        selectedCustomerId={selectedCustomerId}
+                                        setSelectedCustomerId={setSelectedCustomerId}
+                                        selectedProjectId={selectedProjectId}
+                                        selectedTaskId={selectedTaskId}
+                                        setSelectedTaskId={setSelectedTaskId}
+                                        vacationRequests={vacationRequests}
+                                        sickLeaves={sickLeaves}
+                                        holidaysForUserCanton={holidaysForUserCanton?.data}
+                                        editingNote={editingNote}
+                                        setEditingNote={setEditingNote}
+                                        noteContent={noteContent}
+                                        setNoteContent={setNoteContent}
+                                        handleNoteSave={handleNoteSave}
+                                    />
+                                </>
+                            ),
+                        },
+                        {
+                            id: 'vacation',
+                            title: t('dashboardWidgets.vacation', 'Urlaub & Abwesenheiten'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <section className="vacation-section content-section">
+                                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
+                                    <PercentageVacationSection
+                                        t={t}
+                                        userProfile={userProfile}
+                                        vacationRequests={vacationRequests}
+                                    />
+                                </section>
+                            ),
+                        },
+                        {
+                            id: 'corrections',
+                            title: t('dashboardWidgets.corrections', 'Korrekturanträge'),
+                            requiredPagePermission: 'dashboard',
+                            defaultSize: 'full',
+                            sizes: ['M', 'L', 'full'],
+                            component: (
+                                <PercentageCorrectionsPanel
+                                    t={t}
+                                    correctionRequests={correctionRequests}
+                                    selectedCorrectionMonday={selectedCorrectionMonday}
+                                    setSelectedCorrectionMonday={setSelectedCorrectionMonday}
+                                    showCorrectionsPanel={showCorrectionsPanel}
+                                    setShowCorrectionsPanel={setShowCorrectionsPanel}
+                                    showAllCorrections={showAllCorrections}
+                                    setShowAllCorrections={setShowAllCorrections}
+                                />
+                            ),
+                        },
+                    ]}
                 />
 
                 <PrintReportModal

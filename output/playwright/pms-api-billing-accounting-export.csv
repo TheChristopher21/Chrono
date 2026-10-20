@@ -1,0 +1,5 @@
+date;document;debitAccount;creditAccount;description;debitAmount;creditAmount;currency;taxRate;netAmount;taxAmount
+"2026-09-12";"FOLIO-510-1523";"1100";"3200";"Übernachtung QA Double";108.10;108.10;"CHF";8.1;100.00;8.10
+"2026-09-13";"FOLIO-510-1524";"1100";"3200";"Übernachtung QA Double";108.10;108.10;"CHF";8.1;100.00;8.10
+"2026-09-12";"PAY-990006";"1105";"1100";"Zahlung CHR-FB8C2D15";216.20;216.20;"CHF";0;216.20;0.00
+"2026-09-12";"AR-PAY-1";"1021";"1105";"Bankimport #1: QA-BILL-TRANSACTION-2";216.20;216.20;"CHF";0;216.20;0.00

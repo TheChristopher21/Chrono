@@ -25,6 +25,9 @@ public class VacationRequest {
     @Column(name = "overtime_deduction_minutes") // NEUES FELD
     private Integer overtimeDeductionMinutes; // Nur für usesOvertime = true & prozentuale User
 
+    @Column(name = "admin_note", length = 1000)
+    private String adminNote;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonBackReference("user-vacationRequests")
@@ -65,6 +68,14 @@ public class VacationRequest {
     }
     public void setOvertimeDeductionMinutes(Integer overtimeDeductionMinutes) { // NEUER SETTER
         this.overtimeDeductionMinutes = overtimeDeductionMinutes;
+    }
+
+    public String getAdminNote() {
+        return adminNote;
+    }
+
+    public void setAdminNote(String adminNote) {
+        this.adminNote = adminNote;
     }
 
     @JsonProperty("username")

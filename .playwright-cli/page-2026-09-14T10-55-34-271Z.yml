@@ -1,0 +1,229 @@
+- iframe [ref=e2]:
+  - generic "Chrono Entwurf 03 – Teamfokus" [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]: c
+        - text: chrono
+        - generic [ref=f1e6]: Entwurf · Beispieldaten
+      - generic [ref=f1e7]:
+        - button "Plattform ▾" [ref=f1e8] [cursor=pointer]
+        - button "Suchen ⌘ K" [ref=f1e9] [cursor=pointer]
+        - button "Benachrichtigungen" [ref=f1e10] [cursor=pointer]:
+          - text: ○
+          - generic [ref=f1e11]: "10"
+        - button "Farbschema wechseln" [ref=f1e12] [cursor=pointer]: ◐
+        - button "DE ▾" [ref=f1e13] [cursor=pointer]
+        - button "SA · Admin ▾" [ref=f1e14] [cursor=pointer]
+    - generic "Arbeitsbereiche" [ref=f1e15]:
+      - generic [ref=f1e16]:
+        - generic [ref=f1e17]: Admin · Übersicht
+        - button "Übersicht anheften" [ref=f1e18] [cursor=pointer]: ⌖
+        - button "Übersicht schliessen" [ref=f1e19] [cursor=pointer]: ×
+      - generic [ref=f1e20]:
+        - generic [ref=f1e21]: Mirjam Burkart
+        - button "Mitarbeiter anheften" [ref=f1e22] [cursor=pointer]: ⌖
+        - button "Mitarbeiter schliessen" [ref=f1e23] [cursor=pointer]: ×
+      - button "Arbeitsbereich hinzufügen" [ref=f1e24] [cursor=pointer]: ＋
+    - generic [ref=f1e25]:
+      - complementary [ref=f1e26]:
+        - generic [ref=f1e27]: Arbeitszentrale
+        - navigation "Hauptnavigation" [ref=f1e28]:
+          - button "◫ Übersicht" [ref=f1e29] [cursor=pointer]:
+            - generic [ref=f1e30]: ◫
+            - text: Übersicht
+          - button "◷ Zeitprüfung" [ref=f1e31] [cursor=pointer]:
+            - generic [ref=f1e32]: ◷
+            - text: Zeitprüfung
+          - button "▤ Anträge 10" [ref=f1e33] [cursor=pointer]:
+            - generic [ref=f1e34]: ▤
+            - text: Anträge
+            - generic [ref=f1e35]: "10"
+          - button "▦ Kalender" [ref=f1e36] [cursor=pointer]:
+            - generic [ref=f1e37]: ▦
+            - text: Kalender
+          - button "▧ Module" [ref=f1e38] [cursor=pointer]:
+            - generic [ref=f1e39]: ▧
+            - text: Module
+        - generic [ref=f1e40]:
+          - button "◷ Eigene Zeiterfassung" [ref=f1e41] [cursor=pointer]
+          - button "Alle Funktionen" [ref=f1e42] [cursor=pointer]
+          - button "◌ Ansicht anpassen" [ref=f1e43] [cursor=pointer]
+          - generic [ref=f1e44]: ● Mit Konto synchronisiert
+      - main [ref=f1e45]:
+        - generic [ref=f1e46]:
+          - generic [ref=f1e47]:
+            - generic [ref=f1e48]: Menschen im Mittelpunkt · 14. September 2026
+            - heading "Dein Team. Alles im Blick." [level=1] [ref=f1e49]
+            - paragraph [ref=f1e50]: Alle Teams · Diese Woche · 14.–20. September
+          - generic [ref=f1e51]:
+            - button "Alle Funktionen" [ref=f1e52] [cursor=pointer]
+            - button "＋ Abwesenheit" [ref=f1e53] [cursor=pointer]
+        - generic [ref=f1e54]:
+          - button "ZUR ENTSCHEIDUNG 10 Anträge ansehen ↗" [ref=f1e55] [cursor=pointer]:
+            - generic [ref=f1e56]: ZUR ENTSCHEIDUNG
+            - generic [ref=f1e57]: "10"
+            - generic [ref=f1e58]: Anträge ansehen ↗
+          - button "ZEITEN PRÜFEN 7 6 fehlend · 1 unvollständig" [ref=f1e59] [cursor=pointer]:
+            - generic [ref=f1e60]: ZEITEN PRÜFEN
+            - generic [ref=f1e61]: "7"
+            - generic [ref=f1e62]: 6 fehlend · 1 unvollständig
+          - button "Ø TEAM-SALDO −402h 27m 8 negative Salden ↗" [ref=f1e63] [cursor=pointer]:
+            - generic [ref=f1e64]: Ø TEAM-SALDO
+            - generic [ref=f1e65]: −402h 27m
+            - generic [ref=f1e66]: 8 negative Salden ↗
+          - button "TOP-SALDO 30h 49m Gabriela Tschopp ↗" [ref=f1e67] [cursor=pointer]:
+            - generic [ref=f1e68]: TOP-SALDO
+            - generic [ref=f1e69]: 30h 49m
+            - generic [ref=f1e70]: Gabriela Tschopp ↗
+        - generic [ref=f1e71]:
+          - generic [ref=f1e72]:
+            - generic [ref=f1e73]:
+              - heading "Mitarbeitende" [level=2] [ref=f1e74]
+              - generic [ref=f1e75]: Diese Woche
+            - generic [ref=f1e76]:
+              - textbox "Mitarbeitende suchen" [ref=f1e77]:
+                - /placeholder: Mitarbeitende suchen …
+              - combobox "Team auswählen" [ref=f1e78]:
+                - option "Alle Teams" [selected]
+                - option "Administration"
+                - option "Service"
+                - option "Logistik"
+              - button "Anpassen" [ref=f1e79] [cursor=pointer]
+            - generic [ref=f1e80]:
+              - generic [ref=f1e81]: PERSON / STATUS
+              - generic [ref=f1e82]: MO – FR
+              - generic [ref=f1e83]: SALDO
+            - generic [ref=f1e84]:
+              - generic [ref=f1e85]:
+                - generic [ref=f1e86]:
+                  - generic [ref=f1e87]: MB
+                  - generic [ref=f1e88]:
+                    - button "Mirjam Burkart" [ref=f1e89] [cursor=pointer]
+                    - generic [ref=f1e90]: Unvollständig
+                - generic "Wochentage Montag bis Freitag" [ref=f1e91]:
+                  - generic [ref=f1e92]: M
+                  - generic [ref=f1e93]: D
+                  - generic [ref=f1e94]: M
+                  - generic [ref=f1e95]: D
+                  - generic [ref=f1e96]: F
+                - generic [ref=f1e97]: −12h 15m
+              - generic [ref=f1e98]:
+                - generic [ref=f1e99]:
+                  - generic [ref=f1e100]: GT
+                  - generic [ref=f1e101]:
+                    - button "Gabriela Tschopp" [ref=f1e102] [cursor=pointer]
+                    - generic [ref=f1e103]: Zeiten vollständig
+                - generic "Wochentage Montag bis Freitag" [ref=f1e104]:
+                  - generic [ref=f1e105]: M
+                  - generic [ref=f1e106]: D
+                  - generic [ref=f1e107]: M
+                  - generic [ref=f1e108]: D
+                  - generic [ref=f1e109]: F
+                - generic [ref=f1e110]: +30h 49m
+              - generic [ref=f1e111]:
+                - generic [ref=f1e112]:
+                  - generic [ref=f1e113]: MO
+                  - generic [ref=f1e114]:
+                    - button "Milka Otten" [ref=f1e115] [cursor=pointer]
+                    - generic [ref=f1e116]: Fehlende Zeit
+                - generic "Wochentage Montag bis Freitag" [ref=f1e117]:
+                  - generic [ref=f1e118]: M
+                  - generic [ref=f1e119]: D
+                  - generic [ref=f1e120]: M
+                  - generic [ref=f1e121]: D
+                  - generic [ref=f1e122]: F
+                - generic [ref=f1e123]: −1744h 00m
+              - generic [ref=f1e124]:
+                - generic [ref=f1e125]:
+                  - generic [ref=f1e126]: AF
+                  - generic [ref=f1e127]:
+                    - button "Anna Fischer" [ref=f1e128] [cursor=pointer]
+                    - generic [ref=f1e129]: Fehlende Zeit
+                - generic "Wochentage Montag bis Freitag" [ref=f1e130]:
+                  - generic [ref=f1e131]: M
+                  - generic [ref=f1e132]: D
+                  - generic [ref=f1e133]: M
+                  - generic [ref=f1e134]: D
+                  - generic [ref=f1e135]: F
+                - generic [ref=f1e136]: −444h 00m
+              - generic [ref=f1e137]:
+                - generic [ref=f1e138]:
+                  - generic [ref=f1e139]: DM
+                  - generic [ref=f1e140]:
+                    - button "Demo Manager" [ref=f1e141] [cursor=pointer]
+                    - generic [ref=f1e142]: Auto-geschlossen
+                - generic "Wochentage Montag bis Freitag" [ref=f1e143]:
+                  - generic [ref=f1e144]: M
+                  - generic [ref=f1e145]: D
+                  - generic [ref=f1e146]: M
+                  - generic [ref=f1e147]: D
+                  - generic [ref=f1e148]: F
+                - generic [ref=f1e149]: −399h 00m
+              - generic [ref=f1e150]:
+                - generic [ref=f1e151]:
+                  - generic [ref=f1e152]: BK
+                  - generic [ref=f1e153]:
+                    - button "Ben Keller" [ref=f1e154] [cursor=pointer]
+                    - generic [ref=f1e155]: Fehlende Zeit
+                - generic "Wochentage Montag bis Freitag" [ref=f1e156]:
+                  - generic [ref=f1e157]: M
+                  - generic [ref=f1e158]: D
+                  - generic [ref=f1e159]: M
+                  - generic [ref=f1e160]: D
+                  - generic [ref=f1e161]: F
+                - generic [ref=f1e162]: −315h 00m
+            - generic [ref=f1e163]:
+              - generic [ref=f1e164]: 6 von 12 Mitarbeitenden
+              - button "Alle Problemfälle öffnen ↗" [ref=f1e165] [cursor=pointer]
+          - generic [ref=f1e166]:
+            - generic [ref=f1e167]: MB
+            - generic [ref=f1e169]:
+              - generic [ref=f1e170]: Ausgewählt
+              - heading "Mirjam Burkart" [level=2] [ref=f1e171]
+              - paragraph [ref=f1e172]: Administration · 80 %
+            - generic [ref=f1e173]:
+              - generic [ref=f1e174]:
+                - generic [ref=f1e175]: Zeitsaldo
+                - strong [ref=f1e176]: −12h 15m
+              - generic [ref=f1e177]:
+                - generic [ref=f1e178]: Resturlaub
+                - strong [ref=f1e179]: 12 Tage
+            - generic [ref=f1e180]:
+              - button "＋ Urlaub eintragen" [ref=f1e181] [cursor=pointer]
+              - button "Zeitkonto öffnen ↗" [ref=f1e182] [cursor=pointer]
+              - button "Krankheit / Abwesenheit" [ref=f1e183] [cursor=pointer]
+            - generic [ref=f1e184]: Person ist in allen Aktionen vorausgewählt.
+        - generic [ref=f1e185]:
+          - generic [ref=f1e186]:
+            - generic [ref=f1e187]:
+              - heading "Offene Anträge 10" [level=2] [ref=f1e188]:
+                - text: Offene Anträge
+                - generic [ref=f1e189]: "10"
+              - button "Alle ansehen ↗" [ref=f1e190] [cursor=pointer]
+            - generic [ref=f1e191]:
+              - generic [ref=f1e192]:
+                - strong [ref=f1e193]: Milka Otten
+                - generic [ref=f1e194]: Zeitkorrektur · 12.08.2025
+              - button "Prüfen" [ref=f1e195] [cursor=pointer]
+            - generic [ref=f1e196]:
+              - generic [ref=f1e197]:
+                - strong [ref=f1e198]: Milka Otten
+                - generic [ref=f1e199]: Zeitkorrektur · 13.08.2025
+              - button "Prüfen" [ref=f1e200] [cursor=pointer]
+          - generic [ref=f1e201]:
+            - generic [ref=f1e202]:
+              - heading "Abwesenheiten" [level=2] [ref=f1e203]
+              - button "Kalender ↗" [ref=f1e204] [cursor=pointer]
+            - text: Heute und die nächsten 7 Tage
+            - generic [ref=f1e205]: Keine Abwesenheiten geplant.Das gesamte Team ist verfügbar.
+        - generic [ref=f1e206]:
+          - generic [ref=f1e207]: Schnellzugriff
+          - button "Benutzerverwaltung ↗" [ref=f1e208] [cursor=pointer]
+          - button "Payroll ↗" [ref=f1e209] [cursor=pointer]
+          - button "Dienstplan ↗" [ref=f1e210] [cursor=pointer]
+          - button "Analytics ↗" [ref=f1e211] [cursor=pointer]
+          - button "Alle Module" [ref=f1e212] [cursor=pointer]
+        - generic [ref=f1e213]:
+          - generic [ref=f1e214]: Entwurf 03 · Teamfokus · Ausschliesslich lokale Beispieldaten
+          - button "Alle Funktionen ↗" [ref=f1e215] [cursor=pointer]
+          - generic [ref=f1e216]: ● Mit Konto synchronisiert

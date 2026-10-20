@@ -1,0 +1,77 @@
+#chrono-klar-planung{--cp-gap:18px;--cp-plan-teal:light-dark(#157b6c,#84d7c7);--cp-plan-teal-bg:light-dark(#e8f5f1,#203e3c);--cp-plan-sick-bg:light-dark(#fcecef,#422d37);--cp-plan-warn-bg:light-dark(#fff4dc,#433c28)}
+#chrono-klar-planung .cp-priority{display:none}
+#chrono-klar-planung .cp-page-head{margin-bottom:20px}
+#chrono-klar-planung .cp-main{padding:24px}
+#chrono-klar-planung .cp-grid{gap:var(--cp-gap);grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:0}
+#chrono-klar-planung .cp-overview-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 20px;background:var(--cp-paper);border:1px solid var(--cp-line);border-radius:var(--cp-radius);padding:0;overflow:clip}
+#chrono-klar-planung button.cp-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px;border:0;border-right:1px solid var(--cp-line);border-radius:0;padding:15px 16px;text-align:left;background:transparent}
+#chrono-klar-planung button.cp-stat:last-child{border-right:0}
+#chrono-klar-planung button.cp-stat:hover{background:var(--cp-soft)}
+#chrono-klar-planung .cp-stat>span{font-size:11px;color:var(--cp-muted)}
+#chrono-klar-planung .cp-stat>strong{font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
+#chrono-klar-planung .cp-stat>small{font-size:11px}
+#chrono-klar-planung .cp-week-panel{padding:18px;min-width:0}
+#chrono-klar-planung .cp-plan-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+#chrono-klar-planung .cp-plan-head h2{font-size:19px}
+#chrono-klar-planung .cp-plan-head .cp-eyebrow{margin-bottom:5px}
+#chrono-klar-planung .cp-plan-controls{display:flex;align-items:center;gap:5px}
+#chrono-klar-planung .cp-plan-controls button{padding:6px 8px;font-size:11px}
+#chrono-klar-planung .cp-plan-divider{height:20px;border-left:1px solid var(--cp-line);margin:0 3px}
+#chrono-klar-planung .cp-plan-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 14px}
+#chrono-klar-planung .cp-plan-filter{display:flex;align-items:center;gap:10px;margin:0;color:var(--cp-muted);font-size:12px}
+#chrono-klar-planung .cp-plan-filter select{width:auto;min-width:140px;margin:0}
+#chrono-klar-planung .cp-plan-toolbar .cp-actions button{font-size:12px}
+#chrono-klar-planung .cp-planning-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0}
+#chrono-klar-planung .cp-week-grid{overflow:clip;border:1px solid var(--cp-line);border-radius:9px}
+#chrono-klar-planung .cp-week-head,#chrono-klar-planung .cp-week-row{display:grid;grid-template-columns:142px repeat(7,minmax(0,1fr));align-items:stretch}
+#chrono-klar-planung .cp-week-head{background:var(--cp-bg);border-bottom:1px solid var(--cp-line)}
+#chrono-klar-planung .cp-week-label{padding:13px 10px;color:var(--cp-muted);font-size:11px;align-self:center}
+#chrono-klar-planung .cp-week-head button{border:0;border-left:1px solid var(--cp-line);border-radius:0;background:transparent;display:flex;flex-direction:column;gap:1px;padding:8px 2px}
+#chrono-klar-planung .cp-week-head strong{font-size:15px;font-weight:500}
+#chrono-klar-planung .cp-week-head .cp-head-today{background:var(--cp-soft);color:var(--cp-accent)}
+#chrono-klar-planung .cp-week-head .cp-head-selected{box-shadow:inset 0 -2px var(--cp-accent)}
+#chrono-klar-planung .cp-week-row+.cp-week-row{border-top:1px solid var(--cp-line)}
+#chrono-klar-planung .cp-week-person{display:flex;align-items:center;gap:8px;justify-content:flex-start;background:transparent;border:0;border-radius:0;padding:8px 9px;text-align:left;min-width:0}
+#chrono-klar-planung .cp-week-person .cp-avatar{height:25px;width:25px;flex:none}
+#chrono-klar-planung .cp-week-person strong{display:block;font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+#chrono-klar-planung .cp-week-person small{display:block;margin-top:3px;font-size:11px}
+#chrono-klar-planung .cp-week-slot{border:0;border-left:1px solid var(--cp-line);border-radius:0;background:var(--cp-paper);padding:7px 4px;min-width:0;white-space:normal;color:var(--cp-muted)}
+#chrono-klar-planung .cp-week-slot>span{padding:7px 2px;min-width:0;width:100%;border-radius:5px;display:block;font-size:11px;font-variant-numeric:tabular-nums;background:var(--cp-bg);overflow-wrap:anywhere}
+#chrono-klar-planung .cp-week-slot.cp-slot-away>span{background:var(--cp-plan-teal-bg);color:var(--cp-plan-teal)}
+#chrono-klar-planung .cp-week-slot.cp-slot-sick>span{background:var(--cp-plan-sick-bg);color:var(--cp-bad)}
+#chrono-klar-planung .cp-week-slot.cp-slot-warning>span{background:var(--cp-plan-warn-bg);color:var(--cp-warn)}
+#chrono-klar-planung .cp-week-slot.cp-slot-off{background:var(--cp-bg)}
+#chrono-klar-planung .cp-week-slot.cp-slot-off>span{background:transparent}
+#chrono-klar-planung .cp-week-slot:hover{background:var(--cp-soft)}
+#chrono-klar-planung .cp-week-slot .cp-slot-day{display:none}
+#chrono-klar-planung .cp-week-slot>.cp-slot-mobile{display:none}
+#chrono-klar-planung .cp-plan-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 0}
+#chrono-klar-planung .cp-plan-foot button{font-size:11px}
+#chrono-klar-planung .cp-plan-legend{display:flex;gap:11px;flex-wrap:wrap;color:var(--cp-muted);font-size:11px}
+#chrono-klar-planung .cp-plan-legend>span{display:inline-flex;align-items:center;gap:4px}
+#chrono-klar-planung .cp-plan-legend .cp-legend-dot{height:6px;width:6px;border-radius:2px;display:inline-block}
+#chrono-klar-planung .cp-dot-work{background:var(--cp-muted)}
+#chrono-klar-planung .cp-dot-away{background:var(--cp-plan-teal)}
+#chrono-klar-planung .cp-dot-sick{background:var(--cp-bad)}
+#chrono-klar-planung .cp-dot-warning{background:var(--cp-warn)}
+#chrono-klar-planung .cp-plan-agenda{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--cp-line)}
+#chrono-klar-planung .cp-agenda-heading{min-width:90px}
+#chrono-klar-planung .cp-agenda-heading .cp-eyebrow{display:block;letter-spacing:.8px;margin:0;font-size:11px}
+#chrono-klar-planung .cp-agenda-heading>strong{display:block;font-size:21px;letter-spacing:-.5px;color:var(--cp-accent)}
+#chrono-klar-planung .cp-agenda-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+#chrono-klar-planung .cp-agenda-people{flex:1;min-width:130px}
+#chrono-klar-planung .cp-agenda-person{display:flex;align-items:center;gap:8px;border:0;background:transparent;justify-content:flex-start;text-align:left;padding:5px;min-width:0}
+#chrono-klar-planung .cp-agenda-person>span:not(.cp-avatar){flex:1}
+#chrono-klar-planung .cp-agenda-person strong,#chrono-klar-planung .cp-agenda-person small{display:block;font-size:11px}
+#chrono-klar-planung .cp-plan-agenda>.cp-text{font-size:11px}
+#chrono-klar-planung .cp-review-button{font-size:11px;padding:6px 7px}
+#chrono-klar-planung .cp-module-strip{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 18px}
+#chrono-klar-planung .cp-module-strip h3{font-size:13px}
+#chrono-klar-planung .cp-module-links{display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex:1}
+#chrono-klar-planung .cp-module-links button{font-size:11px}
+#chrono-klar-planung .cp-plan-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px}
+@media(min-width:1280px){#chrono-klar-planung .cp-planning-layout{grid-template-columns:minmax(0,1fr) 180px;gap:18px}#chrono-klar-planung .cp-plan-agenda{display:flex;flex-direction:column;align-items:flex-start;border-top:0;border-left:1px solid var(--cp-line);padding:4px 0 0 18px;gap:14px}#chrono-klar-planung .cp-agenda-people{flex:0}#chrono-klar-planung .cp-plan-agenda>.cp-text{margin-top:auto}}
+@media(max-width:900px){#chrono-klar-planung .cp-layout{grid-template-columns:160px minmax(0,1fr)}#chrono-klar-planung .cp-main{padding:18px}#chrono-klar-planung .cp-week-head,#chrono-klar-planung .cp-week-row{grid-template-columns:124px repeat(7,minmax(0,1fr))}#chrono-klar-planung .cp-week-person .cp-avatar{display:none}#chrono-klar-planung .cp-hybrid-grid{grid-template-columns:minmax(0,1fr)}#chrono-klar-planung .cp-hybrid-grid>.cp-panel{grid-column:1/-1}#chrono-klar-planung .cp-stat>strong{font-size:21px}#chrono-klar-planung button.cp-stat{padding:13px 10px}}
+@media(max-width:620px){#chrono-klar-planung .cp-layout{display:block}#chrono-klar-planung .cp-sidebar{padding:8px 12px;border-right:0;border-bottom:1px solid var(--cp-line);display:flex;flex-direction:row;gap:2px;flex-wrap:wrap}#chrono-klar-planung .cp-side-label,#chrono-klar-planung .cp-side-bottom{display:none}#chrono-klar-planung .cp-sidebar button{padding:9px;font-size:11px}#chrono-klar-planung .cp-sidebar .cp-count{display:none}#chrono-klar-planung .cp-main{padding:16px}#chrono-klar-planung .cp-overview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#chrono-klar-planung button.cp-stat:nth-child(2){border-right:0}#chrono-klar-planung button.cp-stat:nth-child(-n+2){border-bottom:1px solid var(--cp-line)}#chrono-klar-planung .cp-week-panel{padding:13px}#chrono-klar-planung .cp-plan-head h2{font-size:17px}#chrono-klar-planung .cp-plan-controls{gap:4px}#chrono-klar-planung .cp-plan-toolbar{gap:10px}#chrono-klar-planung .cp-plan-toolbar .cp-actions{width:100%}#chrono-klar-planung .cp-plan-toolbar .cp-primary{flex:1}#chrono-klar-planung .cp-week-head{grid-template-columns:repeat(7,minmax(0,1fr))}#chrono-klar-planung .cp-week-head .cp-week-label{display:none}#chrono-klar-planung .cp-week-head button:first-of-type{border-left:0}#chrono-klar-planung .cp-week-row{grid-template-columns:repeat(7,minmax(0,1fr));padding:8px 0}#chrono-klar-planung .cp-week-person{grid-column:1/-1;padding:3px 9px 9px}#chrono-klar-planung .cp-week-person .cp-avatar{display:inline-grid}#chrono-klar-planung .cp-week-person>span:not(.cp-avatar){display:flex;align-items:center;gap:9px;flex:1}#chrono-klar-planung .cp-week-person small{margin-top:0;margin-left:auto}#chrono-klar-planung .cp-week-slot{border:0;padding:3px 2px;display:flex;flex-direction:column;gap:2px}#chrono-klar-planung .cp-week-slot .cp-slot-day{display:block;font-size:11px}#chrono-klar-planung .cp-week-slot>span{padding:7px 1px;font-size:11px}#chrono-klar-planung .cp-plan-agenda{gap:10px}#chrono-klar-planung .cp-agenda-people{min-width:120px}#chrono-klar-planung .cp-plan-detail-actions{grid-template-columns:1fr}#chrono-klar-planung .cp-module-strip{gap:10px}#chrono-klar-planung .cp-module-links{width:100%;flex:auto}#chrono-klar-planung .cp-module-links button{flex:1 1 110px}#chrono-klar-planung .cp-panel-head{gap:10px}#chrono-klar-planung .cp-panel-head h3{font-size:13px}#chrono-klar-planung .cp-plan-foot{gap:8px}}
+@media(pointer:coarse){#chrono-klar-planung .cp-week-head button,#chrono-klar-planung .cp-week-slot{min-height:44px}#chrono-klar-planung .cp-plan-controls button{min-height:44px;min-width:44px}}
+@media(max-width:620px){#chrono-klar-planung .cp-week-slot>.cp-slot-desktop,#chrono-klar-planung .cp-week-slot .cp-slot-day{display:none}#chrono-klar-planung .cp-week-slot>.cp-slot-mobile{display:block}#chrono-klar-planung .cp-plan-legend .cp-dot-away:after{content:none}}

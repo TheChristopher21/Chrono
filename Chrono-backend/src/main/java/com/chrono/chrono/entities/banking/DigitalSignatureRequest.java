@@ -1,5 +1,7 @@
 package com.chrono.chrono.entities.banking;
 
+import com.chrono.chrono.entities.Company;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -11,6 +13,11 @@ public class DigitalSignatureRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
 
     private String documentType;
 
@@ -43,6 +50,14 @@ public class DigitalSignatureRequest {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public String getDocumentType() {

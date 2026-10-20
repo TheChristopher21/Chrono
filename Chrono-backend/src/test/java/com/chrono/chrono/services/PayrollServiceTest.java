@@ -49,90 +49,84 @@ class PayrollServiceTest {
 
     @Mock
     private AccountingService accountingService;
+    @Mock
+    private TimeTrackingService timeTrackingService;
+
+    @Mock
+    private PayrollApprovalGuard approvalGuard;
+
+    @Mock
+    private PayrollCalculationService calculations;
 
     @InjectMocks
     private PayrollService payrollService;
 
     @Test
-    void generatePayslip_calculatesGrossNetWithOvertime() {
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("john");
-        user.setIsHourly(true);
-        user.setHourlyRate(10.0);
-        user.setBankAccount("123");
-        user.setSocialSecurityNumber("456");
-
-        LocalDate start = LocalDate.of(2024, 1, 1);
-        LocalDate end = LocalDate.of(2024, 1, 31);
-
+    void generatePayslipStoresIndependentCalculationAndSnapshotWithoutChangingBalance() {
+        User user = new User(); user.setId(1L); user.setUsername("john"); user.setTrackingBalanceInMinutes(120);
+        LocalDate start = LocalDate.of(2026,1,1), end = LocalDate.of(2026,1,31);
+        var gross = new com.chrono.chrono.services.payroll.PayrollGrossCalculator.Result(
+                new java.math.BigDecimal("5000.00"), java.math.BigDecimal.ZERO,
+                new java.math.BigDecimal("56.25"), new java.math.BigDecimal("5056.25"),90);
+        var calculation = new PayrollCalculationService.Calculation(12L, PayrollTestTerms.swiss(),start,end,List.of(),gross,
+                Map.of("Tax",100.0),Map.of("Employer",50.0),"Test reference");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        TimeTrackingEntry startEntry = new TimeTrackingEntry();
-        startEntry.setPunchType(TimeTrackingEntry.PunchType.START);
-        startEntry.setEntryTimestamp(start.atStartOfDay());
-        TimeTrackingEntry endEntry = new TimeTrackingEntry();
-        endEntry.setPunchType(TimeTrackingEntry.PunchType.ENDE);
-        endEntry.setEntryTimestamp(start.atStartOfDay().plusHours(170));
-        when(timeTrackingEntryRepository
-                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
-                .thenReturn(List.of(startEntry, endEntry));
-
-        when(payslipRepository.findByUserAndPeriodStartAndPeriodEnd(user, start, end))
-                .thenReturn(Collections.emptyList());
-
-        Map<String, Double> emp = Map.of("Tax", 100.0);
-        Map<String, Double> empEr = Map.of("Employer", 50.0);
-        TaxCalculationService.Result res = new TaxCalculationService.Result(emp, empEr);
-        when(taxCalculationService.calculate(eq(user), anyDouble())).thenReturn(res);
-        when(payslipRepository.save(any(Payslip.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Payslip ps = payrollService.generatePayslip(1L, start, end, null);
-
-        assertEquals(1725.0, ps.getGrossSalary());
-        assertEquals(100.0, ps.getDeductions());
-        assertEquals(1625.0, ps.getNetSalary());
-        assertEquals(50.0, ps.getEmployerContributions());
-        assertEquals(2, ps.getEarnings().size());
-        assertEquals("Base salary", ps.getEarnings().get(0).getType());
-        assertEquals("Overtime", ps.getEarnings().get(1).getType());
-        verify(emailService).sendPayslipGeneratedMail(user, ps);
-        ArgumentCaptor<PayslipAudit> captor = ArgumentCaptor.forClass(PayslipAudit.class);
-        verify(payslipAuditRepository).save(captor.capture());
-        assertEquals("GENERATED", captor.getValue().getAction());
+        when(calculations.calculate(user,start,end,1.5,true)).thenReturn(calculation);
+        when(calculations.snapshot(calculation)).thenReturn("saved-inputs");
+        when(payslipRepository.save(any(Payslip.class))).thenAnswer(i -> i.getArgument(0));
+        Payslip slip = payrollService.generatePayslip(1L,start,end,null,1.5,true);
+        assertEquals(5056.25,slip.getGrossSalary()); assertEquals(4956.25,slip.getNetSalary());
+        assertEquals(50.0,slip.getEmployerContributions()); assertEquals(1.5,slip.getOvertimeHours());
+        assertEquals("CHF",slip.getCurrency()); assertEquals("saved-inputs",slip.getCalculationSnapshot());
+        assertEquals(PayrollCalculationService.VERSION,slip.getCalculationVersion());
+        assertNull(slip.getVersion()); assertEquals(120,user.getTrackingBalanceInMinutes());
+        verify(emailService).sendPayslipGeneratedMail(user,slip);
     }
 
     @Test
-    void generatePayslip_payoutOvertimeAdjustsBalanceAndPay() {
+    void rejectedCalculationCreatesNoPayslipOrNotification() {
+        User user = new User(); user.setId(38L);
+        LocalDate start = LocalDate.of(2026,1,1), end = LocalDate.of(2026,1,31);
+        when(userRepository.findById(38L)).thenReturn(Optional.of(user));
+        when(calculations.calculate(user,start,end,null,false)).thenThrow(new IllegalStateException("Lohnregeln fehlen"));
+        assertThrows(IllegalStateException.class, () -> payrollService.generatePayslip(38L,start,end,null));
+        verifyNoInteractions(payslipRepository,emailService,payslipAuditRepository);
+    }
+
+    @Test
+    void approvePayslip_rebuildsBalanceAfterPersistingApproval() {
         User user = new User();
-        user.setId(1L);
-        user.setUsername("john");
-        user.setIsHourly(true);
-        user.setHourlyRate(10.0);
-        user.setTrackingBalanceInMinutes(120);
+        user.setTrackingBalanceInMinutes(180);
 
-        LocalDate start = LocalDate.of(2024, 1, 1);
-        LocalDate end = LocalDate.of(2024, 1, 31);
+        Payslip ps = new Payslip();
+        ps.setId(42L);
+        ps.setUser(user);
+        ps.setPayoutOvertime(true);
+        ps.setOvertimeHours(2.0);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(timeTrackingEntryRepository
-                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
-                .thenReturn(Collections.emptyList());
-        when(payslipRepository.findByUserAndPeriodStartAndPeriodEnd(user, start, end))
-                .thenReturn(Collections.emptyList());
+        when(payslipRepository.findById(42L)).thenReturn(Optional.of(ps));
+        when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
+        when(payslipRepository.saveAndFlush(ps)).thenReturn(ps);
+        when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
 
-        Map<String, Double> emp = Map.of();
-        Map<String, Double> empEr = Map.of();
-        TaxCalculationService.Result res = new TaxCalculationService.Result(emp, empEr);
-        when(taxCalculationService.calculate(eq(user), anyDouble())).thenReturn(res);
-        when(payslipRepository.save(any(Payslip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        payrollService.approvePayslip(42L, null);
 
-        Payslip ps = payrollService.generatePayslip(1L, start, end, null, 1.5, true);
+        assertTrue(ps.isApproved());
+        verify(timeTrackingService).rebuildUserBalance(user);
+        verify(userRepository, never()).save(user);
+    }
 
-        assertEquals(18.75, ps.getGrossSalary());
-        assertEquals(1.5, ps.getOvertimeHours());
-        assertTrue(ps.isPayoutOvertime());
-        assertEquals(30, user.getTrackingBalanceInMinutes());
+    @Test
+    void historicalApprovedPayslipCannotBeReopenedOrRedated() {
+        Payslip slip = new Payslip(); slip.setId(76L); slip.setApproved(true); slip.setLocked(true);
+        slip.setGrossSalary(1234.56); slip.setNetSalary(-10.01); slip.setPdfPath("historical.pdf");
+        when(payslipRepository.findById(76L)).thenReturn(Optional.of(slip));
+        assertThrows(IllegalStateException.class, () -> payrollService.reopenPayslip(76L));
+        assertThrows(IllegalStateException.class, () -> payrollService.setPayoutDate(76L,LocalDate.of(2026,1,1)));
+        assertTrue(slip.isApproved()); assertTrue(slip.isLocked());
+        assertEquals(-10.01,slip.getNetSalary()); assertEquals("historical.pdf",slip.getPdfPath());
+        verifyNoInteractions(timeTrackingService,accountingService,pdfService,emailService,payslipAuditRepository);
+        verify(payslipRepository,never()).saveAndFlush(any()); verify(payslipRepository,never()).save(any());
     }
 
     @Test
@@ -142,7 +136,7 @@ class PayrollServiceTest {
         ps.setUser(new User());
         when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
         when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
-        when(payslipRepository.save(ps)).thenReturn(ps);
+        when(payslipRepository.saveAndFlush(ps)).thenReturn(ps);
         when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
 
         payrollService.approvePayslip(2L, "ok");
@@ -158,6 +152,52 @@ class PayrollServiceTest {
     }
 
     @Test
+    void approvePayslip_isIdempotentWhenAlreadyApproved() {
+        User user = new User();
+        Payslip ps = new Payslip();
+        ps.setId(2L);
+        ps.setUser(user);
+        ps.setApproved(true);
+        when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
+
+        payrollService.approvePayslip(2L, "again");
+
+        verify(timeTrackingService).rebuildUserBalance(user);
+        verify(payslipRepository, never()).saveAndFlush(any());
+        verify(accountingService, never()).recordPayrollPosting(any());
+        verify(payslipAuditRepository, never()).save(any());
+        verify(emailService, never()).sendPayslipApprovedMail(any(), any());
+    }
+
+    @Test
+    void approveAllForUser_skipsAlreadyApprovedPayslips() {
+        User user = new User();
+        user.setId(5L);
+
+        Payslip approved = new Payslip();
+        approved.setId(10L);
+        approved.setUser(user);
+        approved.setApproved(true);
+
+        Payslip pending = new Payslip();
+        pending.setId(11L);
+        pending.setUser(user);
+
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(approved, pending));
+        when(pdfService.generatePayslipPdf(pending)).thenReturn("file.pdf");
+
+        payrollService.approveAllForUser(5L, "batch");
+
+        verify(payslipRepository).saveAllAndFlush(List.of(pending));
+        verify(accountingService).recordPayrollPosting(pending);
+        verify(accountingService, never()).recordPayrollPosting(approved);
+        verify(emailService).sendPayslipApprovedMail(user, pending);
+        verify(emailService, never()).sendPayslipApprovedMail(user, approved);
+        verify(timeTrackingService).rebuildUserBalance(user);
+    }
+
+    @Test
     void deletePayslip_throwsWhenApproved() {
         Payslip ps = new Payslip();
         ps.setId(3L);
@@ -167,5 +207,52 @@ class PayrollServiceTest {
         assertThrows(IllegalStateException.class, () -> payrollService.deletePayslip(3L));
         verify(payslipRepository, never()).delete(any());
     }
-}
 
+    @Test
+    void batchChecksEverySelectedPayslipBeforeAnyPdfPostingOrEmail() {
+        Payslip first = new Payslip(); first.setId(1L);
+        Payslip second = new Payslip(); second.setId(2L);
+        when(payslipRepository.findAllById(List.of(1L,2L))).thenReturn(List.of(first,second));
+        doThrow(new IllegalStateException("Invalid second payslip")).when(approvalGuard).validate(List.of(first,second));
+        assertThrows(IllegalStateException.class, () -> payrollService.approveBatch(List.of(2L,1L,1L), "batch"));
+        verifyNoInteractions(pdfService,accountingService,emailService);
+        verify(payslipRepository,never()).saveAndFlush(any());
+    }
+
+    @Test
+    void approvalNotificationWaitsUntilCommitAndIsNotSentOnRollback() {
+        Payslip ps = new Payslip(); ps.setId(2L); ps.setUser(new User());
+        when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            payrollService.approvePayslip(2L, "test");
+            verifyNoInteractions(emailService);
+            var callbacks = org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations();
+            assertEquals(1, callbacks.size());
+            callbacks.forEach(callback -> callback.afterCompletion(org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK));
+            verifyNoInteractions(emailService);
+        } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+        ps.setApproved(false);
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            payrollService.approvePayslip(2L, "test");
+            org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations().forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+            verify(emailService).sendPayslipApprovedMail(ps.getUser(),ps);
+        } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+    }
+
+    @Test
+    void committedApprovalDoesNotReportFailureWhenNotificationDeliveryFails() {
+        Payslip ps = new Payslip(); ps.setId(2L); ps.setUser(new User());
+        when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
+        doThrow(new IllegalStateException("Mail unavailable")).when(emailService).sendPayslipApprovedMail(ps.getUser(), ps);
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            payrollService.approvePayslip(2L, "test");
+            assertDoesNotThrow(() -> org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit));
+            assertTrue(ps.isApproved());
+            verify(payslipRepository, times(1)).saveAndFlush(ps);
+        } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+    }
+}

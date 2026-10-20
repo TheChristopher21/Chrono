@@ -1,0 +1,85 @@
+[
+  {
+    "name": "chrono-nightdesk",
+    "sizes": [
+      {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 1230,
+        "overflow": false
+      },
+      {
+        "width": 736,
+        "scrollWidth": 736,
+        "height": 1292,
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 1858,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(12, 16, 24)",
+      "color": "rgb(237, 244, 250)"
+    },
+    "interactions": [
+      {
+        "afterApproval": "07 offen"
+      },
+      {
+        "history": "Sara Meier\nKorrektur\nMontag, 7. Sept. · Ausstempeln\nGenehmigt\n·\nIm Verlauf\nSara Meier\nFerien\n24.–28. August · 5 Tage\nGenehmigt\n·\nIm Verlauf"
+      },
+      {
+        "monthlyPDF": "CHRONO · PDF-BERICHT\nNora Frei · 100 % Pensum\n1. Sept.–30. Sept. 2026\n\nIst: 182:36 h\nSoll: 176:00 h\nPeriodensaldo: +06:36 h\nGesamtsaldo: +12:40 h\n\nStatus: Vollständige Buchungen\nDemodaten · Erstellt durch Jan Steiner"
+      },
+      {
+        "personFilter": "SM\nSara Meier\nProdukt & Design · 100 %\n\t40:00\t40:00\t00:00\t+04:30\tGeprüft"
+      },
+      {
+        "savedAbsence": "Abwesenheit lokal gespeichert und im Kalender eingetragen.\nSchliessen"
+      },
+      {
+        "nextMonth": "Oktober 2026"
+      },
+      {
+        "pms": "GESCHÄFT\nPMS\nHotelverwaltung und Reservationen"
+      },
+      {
+        "view": "work",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "calendar",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  }
+]

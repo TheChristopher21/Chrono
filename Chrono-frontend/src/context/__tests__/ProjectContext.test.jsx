@@ -51,7 +51,15 @@ const renderWithConsumer = () => {
 
 describe('ProjectProvider', () => {
     beforeEach(() => {
-        authState = { authToken: 'token', currentUser: { customerTrackingEnabled: true } };
+        authState = {
+            authToken: 'token',
+            currentUser: {
+                companyId: 7,
+                customerTrackingEnabled: true,
+                companyFeatureKeys: ['projects'],
+                pagePermissions: { adminProjects: 'VIEW' }
+            }
+        };
         apiMock.get.mockReset();
         apiMock.post.mockReset();
         apiMock.put.mockReset();
@@ -119,5 +127,51 @@ describe('ProjectProvider', () => {
             expect(latest.current.projects).toEqual([{ id: 1, name: 'New' }]);
             expect(latest.current.projectHierarchy).toEqual([{ id: 1, name: 'New', children: [] }]);
         });
+    });
+
+    it('does not issue project requests for a customer-only permission', async () => {
+        authState.currentUser.pagePermissions = { adminCustomers: 'VIEW' };
+
+        const { latest } = renderWithConsumer();
+
+        await waitFor(() => expect(latest.current.projectsLoading).toBe(false));
+        expect(apiMock.get).not.toHaveBeenCalled();
+        expect(latest.current.projects).toEqual([]);
+        expect(latest.current.projectHierarchy).toEqual([]);
+    });
+
+    it('clears previously loaded project data after an authorization failure', async () => {
+        apiMock.get.mockResolvedValueOnce({ data: [{ id: 1, name: 'Root' }] });
+        apiMock.get.mockResolvedValueOnce({ data: [{ id: 1, name: 'Root', children: [] }] });
+
+        const { latest } = renderWithConsumer();
+        await waitFor(() => expect(latest.current.projects).toHaveLength(1));
+
+        apiMock.get.mockRejectedValueOnce({ response: { status: 403 } });
+        apiMock.get.mockRejectedValueOnce({ response: { status: 403 } });
+        await act(async () => {
+            await latest.current.fetchProjects();
+        });
+
+        expect(latest.current.projects).toEqual([]);
+        expect(latest.current.projectHierarchy).toEqual([]);
+        expect(latest.current.projectsError).toMatch(/Berechtigung/);
+        expect(notifyMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the existing load toast for unexpected project failures', async () => {
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+        apiMock.get.mockRejectedValue({ response: { status: 500 } });
+
+        const { latest } = renderWithConsumer();
+
+        await waitFor(() => {
+            expect(latest.current.projectsError).toMatch(/geladen/);
+            expect(notifyMock).toHaveBeenCalledWith(
+                'Projekte konnten nicht vollständig geladen werden.',
+                'error'
+            );
+        });
+        consoleError.mockRestore();
     });
 });
