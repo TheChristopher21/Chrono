@@ -58,14 +58,15 @@ public class PayrollApprovalGuard {
                 throw new IllegalStateException("Korrekturläufe müssen vollständig und gemeinsam freigegeben werden.");
             if (members.stream().map(Payslip::getCorrectionOfId).distinct().count() != members.size()) throw new IllegalStateException("Doppelte Originalzuordnung im Korrekturlauf.");
             var first = members.stream().min(Comparator.comparing(Payslip::getPeriodStart)).orElseThrow();
-            var affected = payslips.findByUserAndApproved(first.getUser(), true).stream().filter(s -> !s.isCorrection()
+            // A normal SELECT could still see the snapshot from before the employee lock was acquired.
+            var affected = payslips.findApprovedForUpdate(first.getUser()).stream().filter(s -> !s.isCorrection()
                     && s.getPeriodStart().getYear() == first.getPeriodStart().getYear() && !s.getPeriodStart().isBefore(first.getPeriodStart())).map(Payslip::getId).sorted().toList();
             if (!affected.equals(members.stream().map(Payslip::getCorrectionOfId).sorted().toList())) throw new IllegalStateException("Weitere Folgemonate wurden freigegeben. Korrekturlauf neu erstellen.");
         }
         for (User user : lockedUsers.values()) {
             if (batch.stream().anyMatch(s -> !s.isApproved() && s.isPayoutOvertime() && Objects.equals(s.getUser().getId(), user.getId()))) tracking.rebuildUserBalance(user);
             List<Payslip> checked = new ArrayList<>(payslips.findApprovedForUpdate(user));
-            BigDecimal requestedMinutes = BigDecimal.ZERO;
+            Map<java.time.LocalDate, BigDecimal> requestedMinutesByAccount = new LinkedHashMap<>();
             Map<Long, Payslip> provisional = new LinkedHashMap<>();
             for (Payslip slip : batch.stream().sorted(Comparator.comparing(Payslip::getPeriodEnd, Comparator.nullsFirst(Comparator.naturalOrder()))).toList()) {
                 if (slip.isApproved() || !Objects.equals(slip.getUser().getId(), user.getId())) continue;
@@ -87,10 +88,13 @@ public class PayrollApprovalGuard {
                         throw new IllegalStateException("Die Überstundenauszahlung benötigt eine positive, endliche Stundenanzahl.");
                     }
                     int minutes = com.chrono.chrono.services.payroll.PayrollGrossCalculator.payoutMinutes(Math.abs(slip.getOvertimeHours())) * (slip.getOvertimeHours() < 0 ? -1 : 1);
-                    requestedMinutes = requestedMinutes.add(BigDecimal.valueOf(minutes));
+                    java.time.LocalDate accountStart = tracking.getPayrollOvertimeAccountStart(user, slip.getPeriodEnd());
+                    BigDecimal requestedMinutes = requestedMinutesByAccount.merge(accountStart, BigDecimal.valueOf(minutes), BigDecimal::add);
                     if (requestedMinutes.compareTo(BigDecimal.valueOf(Math.max(0, tracking.getPayrollOvertimeBalance(user, slip.getPeriodEnd())))) > 0) throw new IllegalStateException("Die gesammelten Auszahlungen übersteigen den bis zum jeweiligen Periodenende erarbeiteten Saldo.");
                 }
             }
+            BigDecimal requestedMinutes = requestedMinutesByAccount.getOrDefault(
+                    tracking.getPayrollOvertimeAccountStart(user, java.time.LocalDate.now(java.time.ZoneId.of("Europe/Zurich"))), BigDecimal.ZERO);
             if (requestedMinutes.signum() > 0 && (user.getTrackingBalanceInMinutes() == null
                     || requestedMinutes.compareTo(BigDecimal.valueOf(Math.max(0, user.getTrackingBalanceInMinutes()))) > 0)) {
                 throw new IllegalStateException("Die Überstundenauszahlung übersteigt den aktuell verfügbaren Saldo.");

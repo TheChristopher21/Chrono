@@ -33,6 +33,26 @@ class GermanPayrollTaxTest {
         assertEquals(50.0,result.getEmployer().get("U1")); assertFalse(result.getEmployer().containsKey("U1 · thirteenth"));
         assertEquals(0,new BigDecimal("60000").compareTo(result.getGermanBasis().projectedAnnualGross()));
     }
+    @Test void oneOffForecastUsesContractualCalendarProrationOfKnownFutureExitMonth() {
+        var t=PayrollTestTerms.change(PayrollTestTerms.german(),Map.of("entryDate","2026-01-01","contract",Map.of(
+                "exitDate","2026-07-15","salaryProration","CALENDAR_DAYS","pensionProration","FULL",
+                "thirteenthFrequency","SEMIANNUAL","germanPreviousEmploymentGross",0)));
+        var entries=new java.util.ArrayList<PayrollLedgerService.Entry>();
+        for(int month=1;month<=5;month++) {
+            var a=LocalDate.of(2026,month,1); var b=a.withDayOfMonth(a.lengthOfMonth());
+            var result=GermanPayrollTax.calculateRun(t,PayrollExtendedCalculationTest.gross("5000"),a,b,PayrollExtendedCalculationTest.history(entries));
+            entries.add(PayrollExtendedCalculationTest.entry(month,t,PayrollExtendedCalculationTest.gross("5000"),result));
+        }
+        var result=GermanPayrollTax.calculateRun(t,PayrollExtendedCalculationTest.gross("5000").withThirteenth(new BigDecimal("2500")),
+                LocalDate.of(2026,6,1),LocalDate.of(2026,6,30),PayrollExtendedCalculationTest.history(entries));
+        // Six full months plus 5,000 * 15/31 for July; the future exit settlement is not part of JRE4.
+        assertEquals(0,new BigDecimal("32419.35").compareTo(result.getGermanBasis().projectedAnnualGross()));
+        // Independently retrieved from the official BMF 2026Version1 test interface on 2026-10-20:
+        // LZZ=2, RE4=500000, JRE4=3241935, SONSTB=250000, STKL=1, KVZ=2.9, PVZ=1.
+        assertEquals(782.41,result.getEmployee().get("Income tax"));
+        assertEquals(532.0,result.getEmployee().get("Income tax · thirteenth"));
+        assertEquals(0.0,result.getEmployee().get("Solidarity surcharge · thirteenth"));
+    }
     @Test void mapsTheStandardEmployeeToTheIndependentBmfReference() {
         var result=GermanPayrollTax.calculate(PayrollTestTerms.german(),new BigDecimal("5000"),start,end);
         assertEquals(782.41,result.getEmployee().get("Income tax"));

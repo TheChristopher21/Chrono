@@ -70,4 +70,14 @@ class PayrollCalculationServiceTest {
         when(tracking.getPayrollOvertimeBalance(user,end)).thenReturn(600);
         assertEquals(60, service.calculate(user,start,end,1.0,true).gross().paidOvertimeMinutes());
     }
+    @Test void provisionalReversalCannotFundAnotherEmploymentModelTimeAccount() {
+        LocalDate february = LocalDate.of(2026, 2, 1), februaryEnd = LocalDate.of(2026, 2, 28);
+        user.setTrackingBalanceInMinutes(0);
+        when(terms.resolve(user, february, februaryEnd)).thenReturn(new PayrollTermsService.Resolved(1L, PayrollTestTerms.swiss()));
+        when(tracking.getUserPeriodSummary(user, february, februaryEnd)).thenReturn(new TimePeriodSummaryDTO("fixture", february, februaryEnd, 0, 0, 0, 0, 0, List.of()));
+        when(tracking.getPayrollOvertimeAccountStart(eq(user), any())).thenAnswer(i -> ((LocalDate) i.getArgument(1)).getMonthValue() == 1 ? start : february);
+        var reversal = new Payslip(); reversal.setPeriodEnd(end); reversal.setPayoutOvertime(true); reversal.setOvertimeHours(-1.5);
+        assertThrows(IllegalStateException.class, () -> service.calculate(user, february, februaryEnd, 1.0, true, Map.of(1L, reversal), 0));
+        verifyNoInteractions(tax);
+    }
 }

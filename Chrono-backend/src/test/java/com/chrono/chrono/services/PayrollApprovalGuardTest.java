@@ -104,4 +104,21 @@ class PayrollApprovalGuardTest {
         assertDoesNotThrow(() -> guard.validate(List.of(old)));
         assertEquals(-10.0, old.getNetSalary());
     }
+    @Test void reversalFromAnEarlierTimeAccountCannotFinanceAPayoutInTheNewAccount() {
+        Payslip correction = draft(1), next = draft(2), original = draft(99);
+        User user = next.getUser(); user.setTrackingBalanceInMinutes(0);
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
+        for (Payslip slip : List.of(correction, next, original)) slip.setUser(user);
+        correction.setPeriodStart(LocalDate.of(2026, 1, 1)); correction.setPeriodEnd(LocalDate.of(2026, 1, 31));
+        original.setPeriodStart(correction.getPeriodStart()); original.setPeriodEnd(correction.getPeriodEnd()); original.setApproved(true);
+        correction.setCorrectionOfId(99L); correction.setCorrectionBatch("old-account"); correction.setPayoutOvertime(true); correction.setOvertimeHours(-1.5);
+        next.setPeriodStart(LocalDate.of(2026, 2, 1)); next.setPeriodEnd(LocalDate.of(2026, 2, 28)); next.setPayoutOvertime(true); next.setOvertimeHours(1.0);
+        when(slips.findByCorrectionBatch("old-account")).thenReturn(List.of(correction));
+        when(slips.findApprovedForUpdate(user)).thenReturn(List.of(original));
+        when(tracking.getPayrollOvertimeAccountStart(eq(user), any())).thenAnswer(i -> ((LocalDate) i.getArgument(1)).getMonthValue() == 1
+                ? LocalDate.of(2026, 1, 1) : LocalDate.of(2026, 2, 1));
+        var error = assertThrows(IllegalStateException.class, () -> guard.validate(List.of(correction, next)));
+        assertTrue(error.getMessage().contains("gesammelten Auszahlungen"));
+        assertFalse(correction.isApproved()); assertFalse(next.isApproved());
+    }
 }

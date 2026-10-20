@@ -78,6 +78,8 @@ class TimeTrackingServiceTest {
     private PayslipRepository payslipRepository;
     @Mock
     private EmploymentModelHistoryService employmentModelHistoryService;
+    @Mock
+    private jakarta.persistence.EntityManager entities;
 
     @InjectMocks
     private TimeTrackingService timeTrackingService;
@@ -1031,6 +1033,55 @@ class TimeTrackingServiceTest {
         when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(start), eq(cutoff), any())).thenReturn(2256);
         var service = spy(timeTrackingService); doReturn(summaries).when(service).getUserHistory(user, start, cutoff);
         assertEquals(144, service.getPayrollOvertimeBalance(user, cutoff));
+    }
+
+    @Test
+    void lockedPayrollBalanceConsumesCurrentApprovedPayoutsInsteadOfTheOlderTransactionSnapshot() {
+        LocalDate cutoff = LocalDate.of(2026, 9, 1);
+        user.setIsHourly(false);
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(user, cutoff)).thenReturn(user);
+        when(employmentModelHistoryService.resolveOvertimeStreakStart(user, cutoff)).thenReturn(cutoff);
+        when(employmentModelHistoryService.resolveUserSnapshotsForRange(user, cutoff, cutoff)).thenReturn(new java.util.HashMap<>(java.util.Map.of(cutoff, user)));
+        var day = new DailyTimeSummaryDTO("alice", cutoff, 600, 0, List.of(), null, false, null); day.setDifferenceMinutes(120);
+        var service = spy(timeTrackingService); doReturn(List.of(day)).when(service).getUserHistory(user, cutoff, cutoff);
+        Payslip paid = new Payslip(); paid.setApproved(true); paid.setPayoutOvertime(true); paid.setOvertimeHours(1.5);
+        when(entities.contains(user)).thenReturn(true);
+        when(entities.getLockMode(user)).thenReturn(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        when(payslipRepository.findApprovedForUpdate(user)).thenReturn(List.of(paid));
+        org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(true);
+        try {
+            assertEquals(30, service.getPayrollOvertimeBalance(user, cutoff));
+            verify(payslipRepository, org.mockito.Mockito.never()).findByUser(user);
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(false);
+        }
+    }
+
+    @Test
+    void correctionChainsStayWithTheOriginalTimeAccountAcrossEmploymentModelRestarts() {
+        LocalDate oldAccount = LocalDate.of(2026, 1, 31), newAccount = LocalDate.of(2026, 6, 1);
+        user.setIsHourly(false);
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(eq(user), any())).thenReturn(user);
+        when(employmentModelHistoryService.resolveOvertimeStreakStart(eq(user), any())).thenAnswer(i ->
+                ((LocalDate) i.getArgument(1)).isBefore(newAccount) ? oldAccount : newAccount);
+        var service = spy(timeTrackingService);
+        for (LocalDate account : List.of(oldAccount, newAccount)) {
+            when(employmentModelHistoryService.resolveUserSnapshotsForRange(user, account, account)).thenReturn(new java.util.HashMap<>(java.util.Map.of(account, user)));
+            var day = new DailyTimeSummaryDTO("alice", account, 600, 0, List.of(), null, false, null); day.setDifferenceMinutes(120);
+            doReturn(List.of(day)).when(service).getUserHistory(user, account, account);
+        }
+        Payslip original = new Payslip(); original.setId(1L); original.setUser(user); original.setPeriodEnd(oldAccount); original.setPayoutDate(oldAccount); original.setOvertimeHours(1.5);
+        Payslip reversal = new Payslip(); reversal.setId(2L); reversal.setUser(user); reversal.setPeriodEnd(oldAccount); reversal.setCorrectionOfId(1L); reversal.setPayoutDate(newAccount.plusMonths(4)); reversal.setOvertimeHours(-1.5);
+        Payslip secondCorrection = new Payslip(); secondCorrection.setId(3L); secondCorrection.setUser(user); secondCorrection.setPeriodEnd(oldAccount); secondCorrection.setCorrectionOfId(1L); secondCorrection.setSupersedesCorrectionId(2L); secondCorrection.setPayoutDate(newAccount.plusMonths(4)); secondCorrection.setOvertimeHours(0.5);
+        Payslip newPayout = new Payslip(); newPayout.setId(4L); newPayout.setUser(user); newPayout.setPeriodEnd(newAccount); newPayout.setPayoutDate(newAccount.plusDays(29)); newPayout.setOvertimeHours(1.0);
+        List<Payslip> all = List.of(original, reversal, secondCorrection, newPayout);
+        all.forEach(p -> { p.setApproved(true); p.setPayoutOvertime(true); });
+        when(payslipRepository.findByUser(user)).thenReturn(all);
+        when(payslipRepository.findById(1L)).thenReturn(Optional.of(original));
+        assertEquals(60, service.getPayrollOvertimeBalance(user, newAccount));
+        assertEquals(90, service.getPayrollOvertimeBalance(user, oldAccount));
+        verify(payslipRepository, org.mockito.Mockito.never()).findById(2L);
+        assertEquals(-1.5, reversal.getOvertimeHours()); assertEquals(1.5, original.getOvertimeHours());
     }
 
     @Test

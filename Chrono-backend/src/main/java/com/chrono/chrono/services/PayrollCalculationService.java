@@ -11,7 +11,7 @@ import java.util.*;
 
 @Service
 public class PayrollCalculationService {
-    public static final String VERSION = "chrono-payroll-2026-v3";
+    public static final String VERSION = "chrono-payroll-2026-v4";
     private final PayrollTermsService terms;
     private final TimeTrackingService tracking;
     private final TaxCalculationService tax;
@@ -48,12 +48,19 @@ public class PayrollCalculationService {
         }
         var days = tracking.getUserPeriodSummary(user, timeStart, end).getDailySummaries();
         int earlierDeltaMinutes = 0;
-        for (Payslip delta : provisional.values()) if (delta.isPayoutOvertime() && delta.getOvertimeHours() != null)
+        LocalDate accountStart = payout ? tracking.getPayrollOvertimeAccountStart(user, end) : null;
+        for (Payslip delta : provisional.values()) if (delta.isPayoutOvertime() && delta.getOvertimeHours() != null
+                && Objects.equals(accountStart, tracking.getPayrollOvertimeAccountStart(user, delta.getPeriodEnd())))
             earlierDeltaMinutes = Math.addExact(earlierDeltaMinutes, (int) Math.round(delta.getOvertimeHours() * 60));
         // Already paid minutes may be retained even if later absences made the current balance negative.
         // Only an additional payout consumes available credit; earlier reversals first offset any debt.
-        Integer balance = payout ? Math.addExact(Math.max(0, Math.subtractExact(Math.min(tracking.getPayrollOvertimeBalance(user, end),
-                Objects.requireNonNullElse(user.getTrackingBalanceInMinutes(), 0)), earlierDeltaMinutes)), restoredMinutes) : null;
+        Integer balance = null;
+        if (payout) {
+            int available = tracking.getPayrollOvertimeBalance(user, end);
+            if (Objects.equals(accountStart, tracking.getPayrollOvertimeAccountStart(user, LocalDate.now(ZoneId.of("Europe/Zurich")))))
+                available = Math.min(available, Objects.requireNonNullElse(user.getTrackingBalanceInMinutes(), 0));
+            balance = Math.addExact(Math.max(0, Math.subtractExact(available, earlierDeltaMinutes)), restoredMinutes);
+        }
         var gross = PayrollGrossCalculator.calculate(resolved.terms(), start, end, days, hours, payout, balance);
         var history = ledger.before(user, resolved.terms(), start, provisional);
         gross = gross.withThirteenth(ledger.thirteenth(resolved.terms(), start, end, gross, history));

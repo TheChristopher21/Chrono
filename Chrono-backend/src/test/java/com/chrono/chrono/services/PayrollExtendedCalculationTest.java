@@ -98,6 +98,23 @@ class PayrollExtendedCalculationTest {
         var incomplete=new PayrollLedgerService.History(List.of(),List.of(),false);
         assertThrows(IllegalStateException.class,()->SwissPayrollSettlement.calculate(new SwissSourceTax(),coverage(),terms("VD","NONE"),LocalDate.of(2026,2,1),LocalDate.of(2026,2,28),gross("5000"),incomplete));
     }
+    @Test void removingThirteenthCannotEraseAnUnpaidHistoricalEntitlement() {
+        var ledger = new PayrollLedgerService(mock(com.chrono.chrono.repositories.PayslipRepository.class), new ObjectMapper());
+        var prior = entry(1, terms("ZH", "ANNUAL"), gross("5000"), new TaxCalculationService.Result(Map.of(), Map.of()));
+        var error = assertThrows(IllegalStateException.class, () -> ledger.thirteenth(terms("ZH", "NONE"),
+                LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28), gross("5000"), history(List.of(prior))));
+        assertTrue(error.getMessage().contains("noch nicht ausgeglichen"));
+        assertEquals(0, prior.calculation().gross().thirteenthAmount().signum());
+    }
+    @Test void removingFullySettledMonthlyThirteenthDoesNotAccrueAnotherInstallment() {
+        var ledger = new PayrollLedgerService(mock(com.chrono.chrono.repositories.PayslipRepository.class), new ObjectMapper());
+        var prior = entry(1, terms("ZH", "MONTHLY"), gross("5000").withThirteenth(n("416.65")),
+                new TaxCalculationService.Result(Map.of(), Map.of()));
+        assertEquals(0, ledger.thirteenth(terms("ZH", "NONE"), LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 2, 28), gross("5000"), history(List.of(prior))).signum());
+        assertThrows(IllegalStateException.class, () -> ledger.thirteenth(terms("ZH", "NONE"), LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 2, 28), gross("5000"), new PayrollLedgerService.History(List.of(prior), List.of(), false)));
+    }
     @Test void exitSettlesThirteenthAndUsesContractCycleForMonthlySourceTax() {
         var t=PayrollTestTerms.change(terms("ZH","SEMIANNUAL"),Map.of("amount","6000","contract",Map.of("exitDate","2026-06-15","salaryProration","THIRTY_DAYS","pensionProration","THIRTY_DAYS","thirteenthFrequency","SEMIANNUAL")));
         var ledger=new PayrollLedgerService(mock(com.chrono.chrono.repositories.PayslipRepository.class),new ObjectMapper());

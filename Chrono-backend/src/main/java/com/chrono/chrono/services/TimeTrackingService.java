@@ -32,6 +32,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 
 import java.io.InputStream;
 import java.time.*;
@@ -73,6 +77,22 @@ public class TimeTrackingService {
     private PayslipRepository payslipRepository;
     @Autowired
     private EmploymentModelHistoryService employmentModelHistoryService;
+    @PersistenceContext
+    private EntityManager entities;
+
+    private List<Payslip> approvedPayslipsForBalance(User user) {
+        // Payroll serializes on the employee before recalculating. A normal MySQL read can still
+        // omit a payout committed while that lock was awaited, even after the employee is refreshed.
+        // Keep this current read scoped to callers already holding that lock, preserving lock order.
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                && entities != null && entities.contains(user)
+                && (entities.getLockMode(user) == LockModeType.PESSIMISTIC_WRITE
+                    || entities.getLockMode(user) == LockModeType.PESSIMISTIC_FORCE_INCREMENT)) {
+            return payslipRepository.findApprovedForUpdate(user);
+        }
+        return payslipRepository.findByUser(user).stream().filter(Payslip::isApproved).toList();
+    }
 
     private User loadUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
@@ -779,8 +799,7 @@ public class TimeTrackingService {
                 }
             }
 
-            int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
-                    .filter(Payslip::isApproved)
+            int paidOvertimeMinutes = approvedPayslipsForBalance(freshUser).stream()
                     .filter(Payslip::isPayoutOvertime)
                     .filter(payslip -> isOvertimePayoutRelevantForBalance(
                             payslip,
@@ -895,8 +914,7 @@ public class TimeTrackingService {
                     currentBalanceDay = currentBalanceDay.plusDays(1);
                 }
             }
-            int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
-                    .filter(Payslip::isApproved)
+            int paidOvertimeMinutes = approvedPayslipsForBalance(freshUser).stream()
                     .filter(Payslip::isPayoutOvertime)
                     .filter(payslip -> isOvertimePayoutRelevantForBalance(
                             payslip,
@@ -928,6 +946,10 @@ public class TimeTrackingService {
     }
 
     /** Read-only payroll entitlement at period end; later earned time cannot fund an earlier payslip. */
+    public LocalDate getPayrollOvertimeAccountStart(User user, LocalDate cutoff) {
+        return employmentModelHistoryService.resolveOvertimeStreakStart(user, cutoff);
+    }
+
     @Transactional(readOnly = true)
     public int getPayrollOvertimeBalance(User user, LocalDate cutoff) {
         User effective = employmentModelHistoryService.resolveUserSnapshotForDate(user, cutoff);
@@ -965,8 +987,8 @@ public class TimeTrackingService {
             }
         }
         // All already approved payouts consume entitlement, including future payment dates.
-        for (Payslip slip : payslipRepository.findByUser(user)) {
-            if (slip.isApproved() && slip.isPayoutOvertime() && isOvertimePayoutRelevantForBalance(slip, start) && slip.getOvertimeHours() != null)
+        for (Payslip slip : approvedPayslipsForBalance(user)) {
+            if (slip.isPayoutOvertime() && isOvertimePayoutRelevantForBalance(slip, start) && slip.getOvertimeHours() != null)
                 balance = Math.subtractExact(balance, (int) Math.round(slip.getOvertimeHours() * 60));
         }
         for (var vacation : vacations) if (vacation.isUsesOvertime()) balance = Math.subtractExact(balance,
@@ -976,9 +998,19 @@ public class TimeTrackingService {
 
     private boolean isOvertimePayoutRelevantForBalance(Payslip payslip,
                                                         LocalDate balanceStart) {
-        LocalDate deductionDate = payslip.getPayoutDate() != null
-                ? payslip.getPayoutDate()
-                : payslip.getPeriodEnd();
+        Payslip original = payslip;
+        if (payslip.isCorrection()) {
+            // Every signed revision belongs to the original time account, including a correction
+            // of a correction. A later payment date must not credit a new employment-model streak.
+            original = payslipRepository.findById(payslip.getCorrectionOfId())
+                    .orElseThrow(() -> new IllegalStateException("Original der Überstundenkorrektur fehlt."));
+            if (original.isCorrection()) throw new IllegalStateException("Überstundenkorrektur verweist nicht auf einen Originalbeleg.");
+        }
+        if (balanceStart != null && original.getUser() != null && original.getPeriodEnd() != null) {
+            LocalDate originalAccount = getPayrollOvertimeAccountStart(original.getUser(), original.getPeriodEnd());
+            if (originalAccount != null) return originalAccount.equals(balanceStart);
+        }
+        LocalDate deductionDate = original.getPayoutDate() != null ? original.getPayoutDate() : original.getPeriodEnd();
         if (deductionDate == null) {
             return true;
         }

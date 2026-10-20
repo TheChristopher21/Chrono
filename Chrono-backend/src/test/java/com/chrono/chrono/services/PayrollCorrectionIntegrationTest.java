@@ -152,5 +152,36 @@ class PayrollCorrectionIntegrationTest {
         assertEquals(before,fingerprint(original));
         assertThrows(IllegalStateException.class,()->corrections.generate(original.getId(),new PayrollCorrectionService.Request("Mehr auszahlen",LocalDate.of(2026,10,16),2.0),"fixture"));
     }
+    @Test void changedGermanOneOffCannotBeRecalculatedForADifferentReceiptMonth() {
+        configureGermanExitWithThirteenth();
+        var original = approve(1); var before = fingerprint(original);
+        rules.put(1, PayrollTestTerms.change(rules.get(1), Map.of("amount", "6000")));
+        var error = assertThrows(IllegalStateException.class, () -> corrections.generate(original.getId(), request(), "fixture"));
+        assertTrue(error.getMessage().contains("Zuflussmonats"));
+        assertEquals(1, slips.count()); assertEquals(before, fingerprint(original));
+        var batch = corrections.generate(original.getId(), new PayrollCorrectionService.Request("Korrektur im Zuflussmonat", LocalDate.of(2026, 1, 31), null), "fixture");
+        assertTrue(batch.get(0).getEarnings().stream().anyMatch(p -> "Thirteenth salary".equals(p.getType()) && p.getAmount() > 0));
+        // A later date edit must not bypass the same validation at approval.
+        payroll.setPayoutDate(batch.get(0).getId(), LocalDate.of(2026, 2, 28));
+        var approvalError = assertThrows(IllegalStateException.class, () -> payroll.approveBatch(batch.stream().map(Payslip::getId).toList(), "different receipt month"));
+        assertTrue(approvalError.getMessage().contains("Zuflussmonats"));
+        assertFalse(batch.get(0).isApproved()); assertEquals(before, fingerprint(original));
+    }
+    @Test void unchangedGermanOneOffDoesNotPreventASeparateTaxCorrection() {
+        configureGermanExitWithThirteenth();
+        var original = approve(1); var before = fingerprint(original);
+        rules.put(1, PayrollTestTerms.change(rules.get(1), Map.of("taxClass", 2)));
+        var batch = corrections.generate(original.getId(), request(), "fixture");
+        assertEquals(0.0, batch.get(0).getGrossSalary());
+        assertTrue(batch.get(0).getEarnings().stream().noneMatch(p -> "Thirteenth salary".equals(p.getType())));
+        payroll.approveBatch(batch.stream().map(Payslip::getId).toList(), "tax correction");
+        assertTrue(batch.get(0).isApproved()); assertEquals(before, fingerprint(original));
+    }
+    private void configureGermanExitWithThirteenth() {
+        user.setCountry("DE"); users.saveAndFlush(user);
+        rules.put(1, PayrollTestTerms.change(PayrollTestTerms.german(), Map.of("entryDate", "2026-01-01", "contract", Map.of(
+                "exitDate", "2026-01-31", "salaryProration", "CALENDAR_DAYS", "pensionProration", "FULL",
+                "thirteenthFrequency", "ANNUAL", "germanPreviousEmploymentGross", 0))));
+    }
     private String fingerprint(Payslip p) { return p.getId()+":"+p.getVersion()+":"+p.getGrossSalary()+":"+p.getNetSalary()+":"+p.getDeductions()+":"+p.isApproved()+":"+p.getCalculationSnapshot()+":"+p.getPdfPath(); }
 }

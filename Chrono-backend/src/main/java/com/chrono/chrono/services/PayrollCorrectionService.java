@@ -58,6 +58,7 @@ public class PayrollCorrectionService {
             double hours = original.getId().equals(originalId) && input.replacementOvertimeHours() != null ? input.replacementOvertimeHours() : oldMinutes / 60.0;
             var calculation = calculations.calculate(user, original.getPeriodStart(), original.getPeriodEnd(), hours, hours > 0, provisional, oldMinutes)
                     .withCorrection(new PayrollCalculationService.Correction(ledger.reference(original, previous), input.reason().strip(), hours));
+            validateCorrectionPayment(calculation, original, previous, input.payoutDate(), ledger);
             String currency = original.getCurrency() != null ? original.getCurrency() : ("DE".equalsIgnoreCase(original.getUser().getCountry()) ? "EUR" : "CHF");
             if (!currency.equals(calculation.terms().currency())) throw new IllegalStateException("Eine Rückrechnung darf die Währung des Originalbelegs nicht ändern.");
             Payslip delta = new Payslip(); delta.setUser(user); delta.setPeriodStart(original.getPeriodStart()); delta.setPeriodEnd(original.getPeriodEnd());
@@ -114,6 +115,7 @@ public class PayrollCorrectionService {
         }
     }
     public static void validateDelta(Payslip slip, PayrollCalculationService.Calculation c, Payslip original, Payslip previous, PayrollLedgerService ledger) {
+        validateCorrectionPayment(c, original, previous, slip.getPayoutDate(), ledger);
         Payslip expected = new Payslip(); fillDelta(expected, c, original, previous, ledger);
         if (!Objects.equals(slip.getGrossSalary(), expected.getGrossSalary()) || !Objects.equals(slip.getDeductions(), expected.getDeductions())
                 || !Objects.equals(slip.getNetSalary(), expected.getNetSalary()) || !Objects.equals(slip.getEmployerContributions(), expected.getEmployerContributions())
@@ -124,6 +126,18 @@ public class PayrollCorrectionService {
                 : original.isPayoutOvertime() ? PayrollGrossCalculator.payoutMinutes(original.getOvertimeHours()) : 0;
         int deltaMinutes = c.gross().paidOvertimeMinutes() - oldMinutes;
         if (!Objects.equals(slip.getOvertimeHours(), deltaMinutes / 60.0) || slip.isPayoutOvertime() != (deltaMinutes != 0)) throw new IllegalStateException("Überstunden-Korrekturdifferenz stimmt nicht.");
+    }
+    private static void validateCorrectionPayment(PayrollCalculationService.Calculation current, Payslip original,
+            Payslip previous, LocalDate payoutDate, PayrollLedgerService ledger) {
+        if (!"DE".equals(current.terms().country()) || YearMonth.from(original.getPeriodEnd()).equals(YearMonth.from(payoutDate))) return;
+        var baseline = previous.getCalculationSnapshot() != null ? ledger.read(previous) : null;
+        boolean oneOff = current.terms().thirteenthMonths() > 1 || baseline != null && baseline.terms().thirteenthMonths() > 1;
+        BigDecimal oldThirteenth = baseline != null ? baseline.gross().thirteenthAmount()
+                : original.getEarnings().stream().filter(p -> "Thirteenth salary".equals(p.getType()))
+                    .map(p -> money(p.getAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (oneOff && current.gross().thirteenthAmount().compareTo(oldThirteenth) != 0) {
+            throw new IllegalStateException("Eine deutsche Rückrechnung mit geändertem einmaligem 13. Monatslohn und anderem Auszahlungsmonat benötigt die Steuer- und SV-Grundlagen des tatsächlichen Zuflussmonats. Diese Zuordnung wird noch nicht unterstützt.");
+        }
     }
     private static Map<String, Double> asMap(List<PayComponent> values) {
         Map<String, Double> result = new LinkedHashMap<>();

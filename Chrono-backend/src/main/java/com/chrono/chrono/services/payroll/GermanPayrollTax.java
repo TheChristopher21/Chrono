@@ -39,8 +39,15 @@ public final class GermanPayrollTax {
             if (end.getMonthValue() <= 3 && t.entryDate().isBefore(start.withDayOfYear(1)) && healthExtra.compareTo(oneOff) < 0)
                 throw new IllegalStateException("Märzklausel: Die Einmalzahlung benötigt SV-Grundlagen des Vorjahres; ohne diese wird sie nicht freigegeben.");
             LocalDate until = t.exitDate() != null && t.exitDate().getYear() == end.getYear() ? t.exitDate() : end.withMonth(12).withDayOfMonth(31);
-            int remaining = PayrollPeriod.swissDays(end.plusDays(1), until);
-            annual = annual.add(regularMonthly.multiply(BigDecimal.valueOf(remaining)).divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP));
+            // JRE4 includes the expected regular pay, including the contractual proration of a known exit month.
+            // Swiss 30/360 tax days would produce a different forecast from CALENDAR_DAYS salary payments.
+            for (LocalDate cursor = end.plusDays(1); !cursor.isAfter(until);) {
+                LocalDate monthEnd = cursor.withDayOfMonth(cursor.lengthOfMonth());
+                LocalDate forecastEnd = monthEnd.isBefore(until) ? monthEnd : until;
+                String proration = t.contract() == null ? null : t.contract().salaryProration();
+                annual = annual.add(PayrollPeriod.prorate(regularMonthly, cursor, forecastEnd, proration));
+                cursor = monthEnd.plusDays(1);
+            }
         }
         boolean surcharge = !t.parent() && !start.isBefore(t.birthDate().plusYears(23).withDayOfMonth(1).plusMonths(1));
         int discounts = t.parent() ? Math.min(4, Math.max(0, t.childrenUnder25() - 1)) : 0;

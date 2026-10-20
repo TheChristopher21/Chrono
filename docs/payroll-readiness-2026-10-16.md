@@ -1,5 +1,7 @@
 # Steuer- und Überstundenlogik – Prüfstand 16. Oktober 2026
 
+Historischer Zwischenstand (v2). Die anschließend umgesetzten Jahresmodelle, Teilmonate, 13. Monatslöhne und Rückrechnungen sowie die erneute Prüfung sind im [Prüfstand vom 20. Oktober 2026](payroll-readiness-2026-10-20.md) beschrieben. Die unten aufgeführten offenen Punkte und Testzahlen beziehen sich auf den damaligen Zwischenstand.
+
 Status: lokal umgesetzt und geprüft für den beschriebenen Standardfall; **keine vollständige fachliche Produktivfreigabe für alle Lohnfälle**. Kein Rollout und keine Änderung bestehender Live-Abrechnungen. Dieser Bericht aktualisiert den Stand vom 15. Oktober.
 
 ## Umgesetzt
