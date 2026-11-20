@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -151,4 +152,40 @@ class BillingServiceTest {
                 contains("Root Project"));
         verify(accountsReceivableService).recordProjectInvoice(eq(project), any(InvoiceSummaryDTO.class));
     }
+
+    @Test
+    void generateInvoice_withNoBillableAmount_skipsAccountingInvoiceCreation() {
+        Company company = new Company();
+        company.setId(1L);
+
+        Customer customer = new Customer();
+        customer.setName("ACME");
+        customer.setCompany(company);
+
+        Project project = new Project();
+        project.setId(10L);
+        project.setName("Root Project");
+        project.setCustomer(customer);
+        project.setHourlyRate(new BigDecimal("120.00"));
+
+        when(timeTrackingEntryRepository.findByProjectIdInAndEntryTimestampBetween(anyList(), any(), any()))
+                .thenReturn(List.of());
+
+        User actor = new User();
+        actor.setCompany(company);
+
+        InvoiceSummaryDTO summary = billingService.generateInvoice(
+                actor,
+                project,
+                LocalDate.of(2024, 1, 1),
+                LocalDate.of(2024, 1, 31),
+                false,
+                null,
+                "CHF"
+        );
+
+        assertEquals(new BigDecimal("0.00"), summary.getTotalAmount());
+        verify(accountsReceivableService, never()).recordProjectInvoice(any(Project.class), any(InvoiceSummaryDTO.class));
+    }
+
 }
