@@ -30,7 +30,7 @@
     }
 }
 
-@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     :root {
         --tabbar-height: 56px;
     }

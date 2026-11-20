@@ -6,6 +6,8 @@
 *.sql
 !Chrono-backend/src/main/resources/db/migration/*.sql
 !ops/audit/payroll-readonly.sql
+!ops/audit/security-ownership-readonly.sql
+!ops/maintenance/repair-payslip-94-rounding.sql
 compose-log.txt
 
 data/
@@ -30,4 +32,5 @@ tmp/
 .playwright-cli/
 /output/playwright/
 /output/mysql-tax-20261016/
+/output/pdf/v8-*
 

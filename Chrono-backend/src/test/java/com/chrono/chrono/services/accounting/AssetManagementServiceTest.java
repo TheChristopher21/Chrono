@@ -1,9 +1,12 @@
 package com.chrono.chrono.services.accounting;
 
 import com.chrono.chrono.entities.accounting.Asset;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.entities.accounting.AssetStatus;
 import com.chrono.chrono.services.accounting.AccountingService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
@@ -22,6 +25,10 @@ class AssetManagementServiceTest {
     @Autowired
     private AssetManagementService assetManagementService;
 
+    @Autowired private CompanyRepository companies;
+    private Company company;
+    @BeforeEach void company() { company = companies.save(new Company("Praxis")); }
+
     @Test
     void registerAssetPostsAcquisitionEntry() {
         Asset asset = new Asset();
@@ -31,7 +38,7 @@ class AssetManagementServiceTest {
         asset.setUsefulLifeMonths(60);
         asset.setResidualValue(new BigDecimal("1000.00"));
 
-        Asset saved = assetManagementService.registerAsset(asset);
+        Asset saved = assetManagementService.registerAsset(company, asset);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getAcquisitionEntry()).isNotNull();
@@ -47,10 +54,10 @@ class AssetManagementServiceTest {
         asset.setUsefulLifeMonths(36);
         asset.setResidualValue(BigDecimal.ZERO);
 
-        Asset saved = assetManagementService.registerAsset(asset);
+        Asset saved = assetManagementService.registerAsset(company, asset);
         BigDecimal initial = saved.getAccumulatedDepreciation();
 
-        Asset depreciated = assetManagementService.runMonthlyDepreciation(saved);
+        Asset depreciated = assetManagementService.runMonthlyDepreciation(company, saved);
 
         assertThat(depreciated.getAccumulatedDepreciation())
                 .isGreaterThan(initial)
@@ -61,7 +68,7 @@ class AssetManagementServiceTest {
         // Run until fully depreciated
         Asset current = depreciated;
         for (int i = 0; i < 40; i++) {
-            current = assetManagementService.runMonthlyDepreciation(current);
+            current = assetManagementService.runMonthlyDepreciation(company, current);
         }
         assertThat(current.getStatus()).isIn(AssetStatus.ACTIVE, AssetStatus.FULLY_DEPRECIATED);
         assertThat(current.getAccumulatedDepreciation())

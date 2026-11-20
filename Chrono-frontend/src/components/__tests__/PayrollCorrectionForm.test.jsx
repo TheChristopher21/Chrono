@@ -27,4 +27,16 @@ describe('payroll corrections', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Jahresgrundlagen fehlen');
     expect(screen.getByLabelText('Korrekturgrund')).toHaveValue('Steuertarif korrigieren');
   });
+  it('requires an explicit original-year assignment before a following-year correction', async () => {
+    api.post.mockResolvedValue({ data: [] });
+    render(<PayrollCorrectionForm original={original} onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Korrekturgrund'), { target: { value: 'Falscher Steuerabzug berichtigen' } });
+    fireEvent.change(screen.getByLabelText('Auszahlungs-/Verrechnungsdatum der Differenz'), { target: { value: '2027-01-31' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Korrekturlauf als Entwurf erstellen' }));
+    expect(api.post).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('checkbox', { name: /Berichtigung bereits in den jeweiligen Originalperioden/ }));
+    fireEvent.change(screen.getByLabelText('Nachweis der ursprünglichen Lohnzahlung / Jahreszuordnung'), { target: { value: 'Bankbelege 2026' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Korrekturlauf als Entwurf erstellen' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/api/payslips/31/corrections', expect.objectContaining({ yearAssignment: { source: 'Bankbelege 2026', originalGrossAlreadyPaid: true, germanCertificateNotTransmitted: false, germanAnnualAdjustmentPermitted: false } })));
+  });
 });

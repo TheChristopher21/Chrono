@@ -9,13 +9,22 @@ import java.util.*;
 /** Minutes are integral; monetary components are rounded once, at the end of each component. */
 public final class PayrollGrossCalculator {
     private PayrollGrossCalculator() {}
-    public record Result(BigDecimal base, BigDecimal premium, BigDecimal payout, BigDecimal total, int paidOvertimeMinutes, BigDecimal thirteenth) {
-        public Result(BigDecimal base, BigDecimal premium, BigDecimal payout, BigDecimal total, int minutes) { this(base, premium, payout, total, minutes, BigDecimal.ZERO); }
+    public record Result(BigDecimal base, BigDecimal premium, BigDecimal payout, BigDecimal total, int paidOvertimeMinutes, BigDecimal thirteenth,
+            Map<String,BigDecimal> additionalEarnings, BigDecimal thirteenthEligibleBase) {
+        public Result(BigDecimal base, BigDecimal premium, BigDecimal payout, BigDecimal total, int minutes) { this(base, premium, payout, total, minutes, BigDecimal.ZERO,null,null); }
+        public Result(BigDecimal base, BigDecimal premium, BigDecimal payout, BigDecimal total, int minutes,BigDecimal thirteenth) { this(base,premium,payout,total,minutes,thirteenth,null,null); }
         public BigDecimal thirteenthAmount() { return thirteenth == null ? BigDecimal.ZERO : thirteenth; }
-        public Result withThirteenth(BigDecimal amount) { return new Result(base, premium, payout, base.add(premium).add(payout).add(amount), paidOvertimeMinutes, amount); }
+        public Map<String,BigDecimal> extraEarnings() { return additionalEarnings==null?Map.of():additionalEarnings; }
+        public BigDecimal eligibleThirteenthBase() { return thirteenthEligibleBase==null?base:thirteenthEligibleBase; }
+        public BigDecimal periodicBase() { return base.add(extraEarnings().values().stream().reduce(BigDecimal.ZERO,BigDecimal::add)); }
+        public Result withThirteenth(BigDecimal amount) { return new Result(base, premium, payout, periodicBase().add(premium).add(payout).add(amount), paidOvertimeMinutes, amount,additionalEarnings,thirteenthEligibleBase); }
     }
     public static Result calculate(PayrollTerms terms, LocalDate start, LocalDate end,
             List<DailyTimeSummaryDTO> days, Double requestedHours, boolean payout, Integer balanceMinutes) {
+        return calculate(terms,start,end,days,requestedHours,payout,balanceMinutes,null);
+    }
+    public static Result calculate(PayrollTerms terms, LocalDate start, LocalDate end,
+            List<DailyTimeSummaryDTO> days, Double requestedHours, boolean payout, Integer balanceMinutes,PayrollPeriodData periodData) {
         Map<LocalDate, Integer> weekMinutes = new HashMap<>();
         int worked = 0, overtime = 0;
         Set<LocalDate> seen = new HashSet<>();
@@ -30,8 +39,10 @@ public final class PayrollGrossCalculator {
             weekMinutes.put(monday, next);
             if (day.getDate().isBefore(start)) continue;
             worked = Math.addExact(worked, day.getWorkedMinutes());
-            int contract = terms.weeklyHours().multiply(BigDecimal.valueOf(60)).intValueExact();
-            overtime += Math.max(0, next - contract) - Math.max(0, previous - contract);
+            if (terms.hourly()) {
+                int contract = terms.weeklyHours().multiply(BigDecimal.valueOf(60)).intValueExact();
+                overtime = Math.addExact(overtime, Math.max(0, next - contract) - Math.max(0, previous - contract));
+            }
             if (terms.hourly() && "CH".equals(terms.country()) && next > terms.weeklyLimit() * 60
                     && terms.overtimePremiumRate().compareTo(new BigDecimal("0.25")) < 0) throw new IllegalStateException("Gesetzliche Überzeit: Ein Zuschlag unter 25 % ist ohne gesonderte Prüfung nicht abrechenbar.");
         }
@@ -47,7 +58,51 @@ public final class PayrollGrossCalculator {
             if ("CH".equals(terms.country()) && terms.overtimePremiumRate().compareTo(new BigDecimal("0.25")) < 0) throw new IllegalStateException("Der historische Saldo trennt Überstunden und Überzeit noch nicht. Eine Auszahlung mit weniger als 25 % Zuschlag benötigt eine gesonderte Zuordnung.");
             additional = minutesPay(paidMinutes, terms.overtimeHourlyRate().multiply(BigDecimal.ONE.add(terms.overtimePremiumRate())), terms.country());
         }
-        return new Result(base, premium, additional, base.add(premium).add(additional), paidMinutes);
+        var result=new Result(base, premium, additional, base.add(premium).add(additional), paidMinutes);
+        return compensateAbsencesAndAllowances(result,terms,start,end,days,periodData);
+    }
+    private static Result compensateAbsencesAndAllowances(Result result,PayrollTerms terms,LocalDate start,LocalDate end,
+            List<DailyTimeSummaryDTO> days,PayrollPeriodData data) {
+        var contract=terms.hourlyAllowance();
+        if(data!=null) com.chrono.chrono.services.PayrollPeriodInputService.validate(data,terms,start,end);
+        if(contract==null) return result;
+        Map<String,BigDecimal> earnings=new LinkedHashMap<>(); BigDecimal paidAbsences=BigDecimal.ZERO;
+        Map<LocalDate,Integer> minutes=new HashMap<>();
+        days.stream().filter(d -> !d.getDate().isBefore(start)&&!d.getDate().isAfter(end)).forEach(d -> minutes.put(d.getDate(),d.getWorkedMinutes()));
+        if(data!=null) for(var absence:data.absencePayments()) {
+            if(minutes.merge(absence.date(),absence.minutes(),Math::addExact)>1440) throw new IllegalStateException("Arbeits- und Abwesenheitsminuten übersteigen einen Kalendertag.");
+            String label=switch(absence.type()){case "VACATION"->"Paid vacation";case "HOLIDAY"->"Paid public holidays";default->"Employer sick pay";};
+            // Sum unrounded amounts per component, then round once, like other earnings.
+            BigDecimal value=absence.hourlyRate().multiply(absence.payRate()).multiply(BigDecimal.valueOf(absence.minutes()));
+            earnings.merge(label,value,BigDecimal::add);
+        }
+        earnings.replaceAll((k,v)->{
+            BigDecimal step=new BigDecimal("CH".equals(terms.country())?"0.05":"0.01");
+            return v.divide(BigDecimal.valueOf(60).multiply(step),0,RoundingMode.HALF_UP).multiply(step);
+        });
+        paidAbsences=earnings.values().stream().reduce(BigDecimal.ZERO,BigDecimal::add);
+        BigDecimal allowanceBase=result.base().add("BASE_AND_PREMIUM".equals(contract.allowanceBase())?result.premium():BigDecimal.ZERO);
+        BigDecimal vacation=roundPay(allowanceBase.multiply(contract.vacationRate()),terms.country());
+        BigDecimal holiday=roundPay(allowanceBase.multiply(contract.holidayRate()),terms.country());
+        if(vacation.signum()!=0) earnings.put("Vacation allowance",vacation);
+        if(holiday.signum()!=0) earnings.put("Holiday allowance",holiday);
+        BigDecimal eligible=result.base();
+        if(Boolean.TRUE.equals(contract.paidAbsencesInThirteenth())) eligible=eligible.add(paidAbsences);
+        if(Boolean.TRUE.equals(contract.allowancesInThirteenth())) eligible=eligible.add(vacation).add(holiday);
+        BigDecimal total=result.total().add(earnings.values().stream().reduce(BigDecimal.ZERO,BigDecimal::add));
+        return new Result(result.base(),result.premium(),result.payout(),total,result.paidOvertimeMinutes(),result.thirteenthAmount(),Collections.unmodifiableMap(earnings),eligible);
+    }
+    private static BigDecimal roundPay(BigDecimal value,String country) {
+        BigDecimal step=new BigDecimal("CH".equals(country)?"0.05":"0.01");
+        return value.divide(step,0,RoundingMode.HALF_UP).multiply(step);
+    }
+    public static Map<String,Double> earnings(Result gross) {
+        Map<String,Double> result=new LinkedHashMap<>(); result.put("Base salary",gross.base().doubleValue());
+        if(gross.premium().signum()!=0) result.put("Overtime premium",gross.premium().doubleValue());
+        if(gross.payout().signum()!=0) result.put("Overtime payout",gross.payout().doubleValue());
+        if(gross.thirteenthAmount().signum()!=0) result.put("Thirteenth salary",gross.thirteenthAmount().doubleValue());
+        gross.extraEarnings().forEach((k,v)->{if(v.signum()!=0)result.put(k,v.doubleValue());});
+        return result;
     }
     public static int payoutMinutes(double hours) {
         if (!Double.isFinite(hours) || hours <= 0) throw new IllegalArgumentException("Positive Überstundenanzahl erforderlich.");

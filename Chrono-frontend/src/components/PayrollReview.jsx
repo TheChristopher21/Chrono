@@ -4,7 +4,7 @@ import api from '../utils/api';
 const minutes = value => Number.isFinite(value)
   ? `${value < 0 ? '−' : ''}${Math.floor(Math.abs(value) / 60)}:${String(Math.abs(value) % 60).padStart(2, '0')}` : '–';
 
-export default function PayrollReview({ userId, start, end, t }) {
+export default function PayrollReview({ userId, start, end, t, onResult }) {
   const key = `${userId}:${start}:${end}`;
   const valid = Boolean(userId && start && end && start <= end);
   const [result, setResult] = useState(null);
@@ -14,11 +14,11 @@ export default function PayrollReview({ userId, start, end, t }) {
     api.get('/api/payslips/admin/review', { params: { userId, start, end } })
       .then(({ data }) => {
         if (!Array.isArray(data?.issues) || !Array.isArray(data?.days)) throw new Error('Invalid review');
-        if (active) setResult({ key, data });
+        if (active) { const value={ key, data }; setResult(value); onResult?.(value); }
       })
-      .catch(() => { if (active) setResult({ key, error: true }); });
+      .catch(() => { if (active) { const value={ key, error: true }; setResult(value); onResult?.(value); } });
     return () => { active = false; };
-  }, [key, valid, userId, start, end]);
+  }, [key, valid, userId, start, end, onResult]);
 
   if (!valid) return <p role="alert">{t('payrollReview.choosePeriod', 'Bitte Mitarbeitende und einen gültigen Zeitraum auswählen.')}</p>;
   if (result?.key !== key) return <p role="status">{t('payrollReview.loading', 'Zeitdaten und Abrechnungsgrundlagen werden geprüft …')}</p>;

@@ -720,7 +720,9 @@ const AdminPayslipsPage = () => {
                       <button type="button" className="employee-link" onClick={() => setDetailSlip(slip)}>
                         <strong>{getEmployeeName(slip)}</strong>
                         {slip.correctionOfId && <span>Differenzbeleg zu #{slip.correctionOfId}</span>}
-                        <span>{t('adminPayslips.billedOvertime', '{{hours}} abgerechnete Ueberstunden', { hours: formatBilledOvertime(slip) })}</span>
+                        <span>{slip.payoutOvertime || Number(slip.overtimeHours)
+                          ? t('adminPayslips.billedOvertime', '{{hours}} abgerechnete Ueberstunden', { hours: formatBilledOvertime(slip) })
+                          : t('adminPayslips.financialPayroll', 'Lohnabrechnung')}</span>
                       </button>
                     </td>
                     <td data-label={t('period', 'Zeitraum')}>{formatDate(slip.periodStart)} - {formatDate(slip.periodEnd)}</td>
@@ -987,7 +989,11 @@ const CreatePayslipSection = ({
   onClose,
   formatCurrency,
   t
-}) => (
+}) => {
+  const [review,setReview]=useState(null);
+  const [reviewAttempt,setReviewAttempt]=useState(0);
+  const reviewBlocked=wizardPreview&&(review?.key!==`${form.userId}:${form.start}:${form.end}`||review?.data?.ready!==true);
+  return (
     <section className="payroll-create-section" id="create-payslip-section" aria-labelledby="create-payslip-title">
       <div className="modal-head">
         <div>
@@ -1072,18 +1078,19 @@ const CreatePayslipSection = ({
         </div>
       )}
 
-      {wizardPreview && <PayrollReview userId={form.userId} start={form.start} end={form.end} t={t} />}
+      {wizardPreview && <PayrollReview key={reviewAttempt} userId={form.userId} start={form.start} end={form.end} t={t} onResult={setReview} />}
 
       {error && <div className="payroll-action-error" role="alert">{error}</div>}
       <div className="modal-actions">
-        <button type="button" onClick={() => setWizardPreview(true)}>{t('adminPayslips.calculatePreview', 'Vorschau berechnen')}</button>
+        <button type="button" onClick={() => { setReview(null);setReviewAttempt(v=>v+1);setWizardPreview(true); }}>{t('adminPayslips.calculatePreview', 'Vorschau berechnen')}</button>
         <button type="button" onClick={onClose}>{t('cancel', 'Abbrechen')}</button>
-        <button type="button" className="primary-btn" onClick={onCreate} disabled={!form.userId || !form.start || !form.end || form.start > form.end}>
+        <button type="button" className="primary-btn" onClick={onCreate} disabled={reviewBlocked || !form.userId || !form.start || !form.end || form.start > form.end}>
           {t('adminPayslips.createRunButton', 'Abrechnung erstellen')}
         </button>
       </div>
     </section>
-);
+  );
+};
 
 const DocumentSettingsModal = ({ logoFile, setLogoFile, onSave, onClose, t }) => (
   <div className="modal-layer" role="presentation">

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import useModalOpen from '../utils/useModalOpen';
 
@@ -10,7 +10,36 @@ const ModalOverlay = ({
   onClick,
   ...props
 }) => {
+  const overlayRef = useRef(null);
   useModalOpen(visible);
+
+  // iOS shrinks the visual viewport for the keyboard, not the layout viewport.
+  // Keep mobile sheets in the visible area; leave pinch zoom to the browser.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const overlay = overlayRef.current;
+    if (!visible || !viewport || !overlay) return undefined;
+    const update = () => {
+      if (Math.abs(viewport.scale - 1) > 0.01) {
+        overlay.style.removeProperty('--modal-viewport-height');
+        overlay.style.removeProperty('--modal-viewport-top');
+        return;
+      }
+      overlay.style.setProperty('--modal-viewport-height', `${viewport.height}px`);
+      overlay.style.setProperty('--modal-viewport-top', `${viewport.offsetTop}px`);
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      overlay.style.removeProperty('--modal-viewport-height');
+      overlay.style.removeProperty('--modal-viewport-top');
+    };
+  }, [visible]);
 
   useEffect(() => {
     if (!visible || !onClose) return undefined;
@@ -42,6 +71,7 @@ const ModalOverlay = ({
 
   return (
     <div
+      ref={overlayRef}
       className={`modal-overlay ${className}`}
       onClick={handleOverlayClick}
       {...props}

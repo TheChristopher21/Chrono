@@ -42,7 +42,7 @@ class PmsBeds24ServiceTest {
         var transactions = mock(PlatformTransactionManager.class);
         when(transactions.getTransaction(any())).thenAnswer(i -> new SimpleTransactionStatus());
         service = new PmsBeds24Service(settings, jobs, properties, rates, overrides, rooms, reservations, blocks, groups,
-                references, client, mapper, transactions, mock(PmsAuditWriter.class), true);
+                references, client, mapper, transactions, mock(PmsAuditWriter.class), true, new PmsBeds24BindingPolicy("1|2|env:HOTEL_BEDS24|41"));
         var company = new Company("Hotel"); company.setId(1L);
         hotel = new HotelProperty(); ReflectionTestUtils.setField(hotel, "id", 2L); hotel.setCompany(company); hotel.setCurrencyCode("CHF"); hotel.setTimezone("Europe/Zurich");
         type = new RoomType(); ReflectionTestUtils.setField(type, "id", 4L);
@@ -167,6 +167,46 @@ class PmsBeds24ServiceTest {
         when(references.findByReservation_Id(80L)).thenReturn(Optional.of(previous));
         assertThatThrownBy(() -> service.link(1L, 2L, 101L, new PmsBeds24Service.Link(80L), "staff")).hasMessageContaining("andere Anbieterreferenz");
         verify(references, never()).saveAndFlush(any());
+    }
+
+    @Test void serverBindingDeniesTenantSelectedTokensAndExternalHotelsBeforeAnyProviderCall() {
+        config.setEnabled(false);
+        ReflectionTestUtils.setField(service, "bindings", new PmsBeds24BindingPolicy(""));
+        assertThatThrownBy(() -> service.save(1L, 2L, new PmsBeds24Service.Save(41L, "env:HOTEL_BEDS24", true, mappings, 0L), "staff")).hasMessageContaining("Serverfreigabe");
+        assertThatThrownBy(() -> service.save(1L, 2L, new PmsBeds24Service.Save(41L, "env:HOTEL_BEDS24", false, mappings, 0L), "staff")).hasMessageContaining("Serverfreigabe");
+        assertThatThrownBy(() -> service.reconcile(1L, 2L, from, from.plusDays(2))).hasMessageContaining("Serverfreigabe");
+        config.setEnabled(true);
+        when(reservations.findByIdAndProperty_Company_Id(80L, 1L)).thenReturn(Optional.of(stay()));
+        assertThatThrownBy(() -> service.link(1L, 2L, 101L, new PmsBeds24Service.Link(80L), "staff")).hasMessageContaining("Serverfreigabe");
+        assertThatThrownBy(this::queue).hasMessageContaining("Serverfreigabe");
+        verifyNoInteractions(client);
+        verify(jobs, never()).saveAndFlush(any());
+    }
+
+    @Test void aReachableMultiHotelTokenDoesNotAuthorizeAnotherExternalHotel() {
+        config.setExternalPropertyId(42L);
+        assertThatThrownBy(() -> service.reconcile(1L, 2L, from, from.plusDays(2))).hasMessageContaining("Serverfreigabe");
+        assertThatThrownBy(this::queue).hasMessageContaining("Serverfreigabe");
+        verifyNoInteractions(client);
+    }
+
+    @Test void revokedBindingStopsPersistedJobsAndRetriesWithoutChangingTheirSnapshot() {
+        queue();
+        var original = saved.getPayload();
+        ReflectionTestUtils.setField(service, "bindings", new PmsBeds24BindingPolicy(""));
+        service.process(9L);
+        assertThat(saved.getStatus()).isEqualTo("FAILED");
+        assertThat(saved.getLastError()).contains("APP_PMS_BEDS24_BINDINGS");
+        assertThat(saved.getPayload()).isEqualTo(original);
+        assertThatThrownBy(() -> service.retry(1L, 2L, 9L, false, "staff")).hasMessageContaining("Serverfreigabe");
+        assertThat(service.retry(1L, 2L, 9L, true, "staff").status()).isEqualTo("CANCELLED");
+        verifyNoInteractions(client);
+    }
+
+    @Test void disabledSettingsStopTheWorkerBeforeTokenVerification() {
+        queue(); config.setEnabled(false); service.process(9L);
+        assertThat(saved.getStatus()).isEqualTo("FAILED");
+        verifyNoInteractions(client);
     }
 
     private void queue() { service.publish(1L, 2L, new PmsBeds24Service.Publish("calendar-one", from, from.plusDays(2)), "staff"); }

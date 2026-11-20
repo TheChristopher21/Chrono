@@ -6,6 +6,7 @@ import HelpLabel from "./HelpLabel.jsx";
 import HelpTextList from "./HelpTextList.jsx";
 import ReceivingAssistant from "./ReceivingAssistant.jsx";
 import OrderComposer from "./OrderComposer.jsx";
+import { csvRow } from "../../../utils/csv.js";
 
 const PAGE_SIZE = 10;
 
@@ -106,8 +107,8 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
     };
 
     const exportCsv = () => {
-        const header = visibleColumns.map((column) => column.label).join(",");
-        const lines = sortedRows.map((row) => visibleColumns.map((column) => `"${String(row[column.key] ?? "").replaceAll('"', '""')}"`).join(","));
+        const header = csvRow(visibleColumns.map((column) => column.label));
+        const lines = sortedRows.map((row) => csvRow(visibleColumns.map((column) => row[column.key])));
         const csv = [header, ...lines].join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");

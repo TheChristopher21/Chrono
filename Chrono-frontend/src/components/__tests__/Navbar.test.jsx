@@ -32,6 +32,39 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 };
 
 describe('Navbar', () => {
+    it('opens the mobile menu from the keyboard and restores focus on Escape', async () => {
+        renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');
+        // jsdom does not apply the mobile media query.
+        const toggle = screen.getByLabelText('Menü umschalten');
+        toggle.style.display = 'flex';
+        expect(toggle.tagName).toBe('BUTTON');
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(document.getElementById(toggle.getAttribute('aria-controls'))).toContainElement(
+            screen.getByRole('link', { name: 'Demo anfragen' })
+        );
+        toggle.focus();
+        await userEvent.keyboard('{Enter}');
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        screen.getByRole('link', { name: 'Demo anfragen' }).focus();
+        await userEvent.keyboard('{Escape}');
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(toggle).toHaveFocus();
+        await userEvent.click(toggle);
+        toggle.blur();
+        await userEvent.keyboard('{Escape}');
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(toggle).toHaveFocus();
+    });
+
+    it('closes the mobile menu when navigating to another page', async () => {
+        renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');
+        const toggle = screen.getByLabelText('Menü umschalten');
+        toggle.style.display = 'flex';
+        await userEvent.click(toggle);
+        await userEvent.click(screen.getByRole('link', { name: 'Demo anfragen' }));
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+
     it('offers the new dashboard to superadmins while retaining the classic dashboard link', async () => {
         renderNavbar({
             authToken: 'token', logout: vi.fn(),

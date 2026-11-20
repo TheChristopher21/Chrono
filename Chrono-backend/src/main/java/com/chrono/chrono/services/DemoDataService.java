@@ -6,6 +6,8 @@ import com.chrono.chrono.entities.inventory.*;
 import com.chrono.chrono.repositories.*;
 import com.chrono.chrono.repositories.inventory.*;
 import com.chrono.chrono.services.inventory.SupplyChainService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -116,6 +118,9 @@ public class DemoDataService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private static final int DEMO_DATA_REFRESH_INTERVAL_DAYS = 7;
 
@@ -404,6 +409,25 @@ public class DemoDataService {
         Long companyId = company.getId();
         List<User> teamMembers = userRepository.findByCompany_Id(companyId);
         resetDemoSupplyChainData(companyId);
+
+        // Only this already-guarded expired demo tenant's owned accounting graph.
+        // Legacy/global rows and every other company's history remain untouched.
+        entityManager.createQuery("delete from CustomerInvoice invoice where invoice.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("delete from VendorInvoice invoice where invoice.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("delete from Asset asset where asset.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("delete from JournalEntryLine line where line.journalEntry.id in "
+                        + "(select entry.id from JournalEntry entry where entry.company.id = :companyId)")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("delete from JournalEntry entry where entry.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("update Account account set account.parent = null where account.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+        entityManager.createQuery("delete from Account account where account.company.id = :companyId")
+                .setParameter("companyId", companyId).executeUpdate();
+
         teamMembers.forEach(member -> {
             userAuditRepository.deleteByUser(member);
             deletePayrollData(member);
@@ -421,6 +445,7 @@ public class DemoDataService {
         projectRepository.deleteByCustomerCompanyId(companyId);
         customerRepository.deleteByCompanyId(companyId);
         userRepository.deleteAll(teamMembers);
+        scheduleRuleRepository.deleteAll(scheduleRuleRepository.findByCompany_IdOrderByStartTime(companyId));
         companyRepository.delete(company);
     }
 
@@ -558,9 +583,10 @@ public class DemoDataService {
     }
 
     private void seedDemoScheduleData(List<User> teamMembers, LocalDate today) {
-        ensureShiftRule("EARLY", "Fruehschicht", "07:00", "15:00");
-        ensureShiftRule("LATE", "Spaetschicht", "12:00", "20:00");
-        ensureShiftRule("FULFILLMENT", "Fulfillment", "09:00", "17:30");
+        Company company = teamMembers.get(0).getCompany();
+        ensureShiftRule(company, "EARLY", "Fruehschicht", "07:00", "15:00");
+        ensureShiftRule(company, "LATE", "Spaetschicht", "12:00", "20:00");
+        ensureShiftRule(company, "FULFILLMENT", "Fulfillment", "09:00", "17:30");
 
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         User demoAdmin = teamMembers.get(0);
@@ -590,8 +616,13 @@ public class DemoDataService {
         createScheduleEntry(carla, weekStart.plusDays(4), "LATE", "Speditionsfenster");
     }
 
-    private void ensureShiftRule(String shiftKey, String label, String startTime, String endTime) {
-        ScheduleRule rule = scheduleRuleRepository.findByShiftKey(shiftKey).orElseGet(ScheduleRule::new);
+    private void ensureShiftRule(Company company, String shiftKey, String label, String startTime, String endTime) {
+        if (company == null || company.getId() == null) {
+            throw new IllegalStateException("Demo shift definitions require a company");
+        }
+        ScheduleRule rule = scheduleRuleRepository.findByCompany_IdAndShiftKey(company.getId(), shiftKey).orElseGet(ScheduleRule::new);
+        rule.setCompany(company);
+        rule.setSuppressed(false);
         if (rule.getId() == null) {
             rule.setShiftKey(shiftKey);
         }

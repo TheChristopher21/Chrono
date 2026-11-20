@@ -93,10 +93,19 @@ public class AccountingController {
         }
     }
 
+    public record MigrationStatus(boolean legacyReviewRequired) {}
+
+    @GetMapping("/migration-status")
+    public MigrationStatus migrationStatus(Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
+        requireCompany(principal);
+        return new MigrationStatus(accountingService.hasUnassignedHistory() || assetRepository.existsByCompanyIsNull());
+    }
+
     @GetMapping("/accounts")
     public ResponseEntity<List<AccountDTO>> listAccounts(Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
-        List<AccountDTO> accounts = accountingService.listAccounts().stream()
+        List<AccountDTO> accounts = accountingService.listAccounts(requireCompany(principal)).stream()
                 .map(AccountDTO::from)
                 .toList();
         return ResponseEntity.ok(accounts);
@@ -105,7 +114,7 @@ public class AccountingController {
     @PostMapping("/accounts")
     public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request, Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
-        Account saved = accountingService.saveAccount(request.toEntity());
+        Account saved = accountingService.saveAccount(requireCompany(principal), request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/accounts/" + saved.getId()))
                 .body(AccountDTO.from(saved));
     }
@@ -116,7 +125,7 @@ public class AccountingController {
                                                              Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<JournalEntryDTO> entries = accountingService.listEntries(pageable)
+        Page<JournalEntryDTO> entries = accountingService.listEntries(requireCompany(principal), pageable)
                 .map(JournalEntryDTO::from);
         return ResponseEntity.ok(entries);
     }
@@ -124,7 +133,7 @@ public class AccountingController {
     @GetMapping("/assets")
     public ResponseEntity<List<AssetDTO>> listAssets(Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
-        List<AssetDTO> assets = assetManagementService.listAssets().stream()
+        List<AssetDTO> assets = assetManagementService.listAssets(requireCompany(principal)).stream()
                 .map(AssetDTO::from)
                 .toList();
         return ResponseEntity.ok(assets);
@@ -134,18 +143,18 @@ public class AccountingController {
     public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request,
                                                               Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireCompany(principal);
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
         entry.setDescription(request.getDescription());
-        entry.setSource(request.getSource());
+        entry.setSource("MANUAL");
         entry.setDocumentReference(request.getDocumentReference());
         List<JournalEntryLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
                 .map(line -> {
                     if (line.getAccountId() == null) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account is required");
                     }
-                    Account account = accountRepository.findById(line.getAccountId())
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+                    Account account = accountingService.requireAccount(company, line.getAccountId());
                     BigDecimal debit = line.getDebit() == null ? BigDecimal.ZERO : line.getDebit();
                     BigDecimal credit = line.getCredit() == null ? BigDecimal.ZERO : line.getCredit();
                     if (debit.compareTo(BigDecimal.ZERO) > 0 && credit.compareTo(BigDecimal.ZERO) > 0) {
@@ -162,7 +171,7 @@ public class AccountingController {
                     return jel;
                 }).toList();
         entry.setLines(lines);
-        JournalEntry saved = accountingService.postEntry(entry);
+        JournalEntry saved = accountingService.postEntry(company, entry);
         return ResponseEntity.created(URI.create("/api/accounting/journal/" + saved.getId()))
                 .body(JournalEntryDTO.from(saved));
     }
@@ -192,7 +201,7 @@ public class AccountingController {
     @PostMapping("/assets")
     public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request, Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
-        Asset saved = assetManagementService.registerAsset(request.toEntity());
+        Asset saved = assetManagementService.registerAsset(requireCompany(principal), request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/assets/" + saved.getId()))
                 .body(AssetDTO.from(saved));
     }
@@ -200,8 +209,9 @@ public class AccountingController {
     @PostMapping("/assets/{id}/depreciate")
     public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id, Principal principal) {
         requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
-        return assetRepository.findById(id)
-                .map(assetManagementService::runMonthlyDepreciation)
+        Company company = requireCompany(principal);
+        return assetRepository.findByIdAndCompany_Id(id, company.getId())
+                .map(asset -> assetManagementService.runMonthlyDepreciation(company, asset))
                 .map(AssetDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

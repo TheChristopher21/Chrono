@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -88,6 +89,59 @@ class AuthControllerTest {
         assertEquals(200, response.getStatusCode().value());
         verify(loginAttemptService).recordSuccess("john@127.0.0.1");
         verify(loginAttemptService, never()).recordFailure(anyString());
+    }
+
+    @Test
+    void login_rejectsLongAndMissingUsernamesBeforeAccountStateOrDatabaseAccess() {
+        for (String username : new String[]{null, "", "x".repeat(256), "😀".repeat(256)}) {
+            assertThrows(InvalidCredentialsException.class,
+                    () -> controller.login(new AuthRequest(username, "wrong"), servletRequest));
+        }
+
+        verifyNoInteractions(authService);
+        verify(loginAttemptService, never()).isBlocked(anyString());
+        verify(loginAttemptService, never()).recordFailure(anyString());
+        verify(loginAttemptService, times(4)).isRequestRateLimited("127.0.0.1");
+    }
+
+    @Test
+    void login_preservesExistingUsernamesAtTheStorageLimitIncludingUnicode() {
+        for (String username : new String[]{"X".repeat(255), "😀".repeat(255), " Exact Name "}) {
+            AuthRequest request = new AuthRequest(username, "secret");
+            when(authService.login(request)).thenReturn(new AuthResponse("jwt-token"));
+
+            assertEquals(200, controller.login(request, servletRequest).getStatusCode().value());
+
+            verify(authService).login(request);
+            assertEquals(username, request.getUsername());
+        }
+    }
+
+    @Test
+    void login_requestLimiterRunsBeforeUsernameStateAndAuthentication() {
+        when(loginAttemptService.isRequestRateLimited("127.0.0.1")).thenReturn(true);
+
+        ResponseEntity<?> response = controller.login(new AuthRequest("rotating", "wrong"), servletRequest);
+
+        assertEquals(429, response.getStatusCode().value());
+        verify(loginAttemptService, never()).isBlocked(anyString());
+        verify(loginAttemptService, never()).recordFailure(anyString());
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    void login_rotatingUsernamesReachTheIpLimitBeforeMoreDatabaseAttempts() {
+        LoginAttemptService actualAttempts = new LoginAttemptService();
+        AuthController actualController = new AuthController(authService, jwtUtil, userService, actualAttempts, demoLoginRateLimiter);
+        when(authService.login(any())).thenThrow(new InvalidCredentialsException("Benutzername oder Passwort ist falsch."));
+        for (int i = 0; i < 120; i++) {
+            AuthRequest request = new AuthRequest("random-" + i, "wrong");
+            assertThrows(InvalidCredentialsException.class, () -> actualController.login(request, servletRequest));
+        }
+
+        assertEquals(429, actualController.login(new AuthRequest("another-user", "wrong"), servletRequest).getStatusCode().value());
+        verify(authService, times(120)).login(any());
+        assertFalse(((java.util.Map<?, ?>) ReflectionTestUtils.getField(actualAttempts, "attempts")).containsKey("another-user@127.0.0.1"));
     }
 
     @Test

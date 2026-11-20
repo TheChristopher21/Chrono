@@ -1,0 +1,128 @@
+{
+  "retrieved": "2026-11-06",
+  "cases": [
+    {
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "92125",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3908700",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      },
+      "inputs": {
+        "LZZ": 2,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 550000
+      }
+    },
+    {
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "78241",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "27200",
+        "VFRB": "123000",
+        "VFRBS1": "123000",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "3429600",
+        "WVFRBM": "3509400"
+      },
+      "inputs": {
+        "LZZ": 2,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 500000,
+        "JRE4": 6000000,
+        "SONSTB": 100000
+      }
+    },
+    {
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "0",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "0",
+        "VFRBS1": "123000",
+        "VFRBS2": "0",
+        "WVFRB": "0",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      },
+      "inputs": {
+        "LZZ": 2,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 0,
+        "JRE4": 500000,
+        "SONSTB": 50000
+      }
+    },
+    {
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "0",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "0",
+        "VFRBS1": "123000",
+        "VFRBS2": "0",
+        "WVFRB": "0",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      },
+      "inputs": {
+        "LZZ": 4,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 0,
+        "JRE4": 250000,
+        "SONSTB": 50000
+      }
+    }
+  ],
+  "source": "Official BMF 2026Version1 program-test interface"
+}

@@ -11,6 +11,8 @@ import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.accounting.AccountingService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -101,6 +103,7 @@ class PayrollServiceTest {
         Payslip ps = new Payslip();
         ps.setId(42L);
         ps.setUser(user);
+        ps.setCalculationVersion(PayrollCalculationService.VERSION);
         ps.setPayoutOvertime(true);
         ps.setOvertimeHours(2.0);
 
@@ -254,5 +257,45 @@ class PayrollServiceTest {
             assertTrue(ps.isApproved());
             verify(payslipRepository, times(1)).saveAndFlush(ps);
         } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+    }
+    private Payslip currentFinancialSlip(boolean paysOvertime) {
+        User user=new User();user.setId(101L);user.setTrackingBalanceInMinutes(-45);
+        Payslip slip=new Payslip();slip.setId(501L);slip.setUser(user);slip.setPeriodStart(LocalDate.of(2026,3,1));slip.setPeriodEnd(LocalDate.of(2026,3,31));
+        slip.setCalculationVersion(PayrollCalculationService.VERSION);slip.setPayoutOvertime(paysOvertime);if(paysOvertime)slip.setOvertimeHours(1.5);
+        return slip;
+    }
+    private void approveThrough(String route,Payslip slip) {
+        switch(route) {
+            case "single" -> {when(payslipRepository.findById(slip.getId())).thenReturn(Optional.of(slip));payrollService.approvePayslip(slip.getId(),"Financial regression");}
+            case "batch" -> {when(payslipRepository.findAllById(List.of(slip.getId()))).thenReturn(List.of(slip));payrollService.approveBatch(List.of(slip.getId()),"Financial regression");}
+            case "users" -> {when(userRepository.findById(slip.getUser().getId())).thenReturn(Optional.of(slip.getUser()));when(payslipRepository.findByUser(slip.getUser())).thenReturn(List.of(slip));payrollService.approveForUsers(List.of(slip.getUser().getId()),"Financial regression");}
+            case "allForUser" -> {when(userRepository.findById(slip.getUser().getId())).thenReturn(Optional.of(slip.getUser()));when(payslipRepository.findByUser(slip.getUser())).thenReturn(List.of(slip));payrollService.approveAllForUser(slip.getUser().getId(),"Financial regression");}
+            case "all" -> {when(payslipRepository.findAll()).thenReturn(List.of(slip));payrollService.approveAll("Financial regression");}
+            default -> throw new AssertionError(route);
+        }
+    }
+    @ParameterizedTest @ValueSource(strings={"single","batch","users","allForUser","all"})
+    void currentCashOnlyApprovalPreservesTheStoredTimeAccountAcrossEveryApprovalRoute(String route) {
+        var slip=currentFinancialSlip(false);approveThrough(route,slip);
+        assertTrue(slip.isApproved());assertEquals(-45,slip.getUser().getTrackingBalanceInMinutes());verifyNoInteractions(timeTrackingService);
+        verify(pdfService).generatePayslipPdf(slip);verify(accountingService).recordPayrollPosting(slip);
+    }
+    @ParameterizedTest @ValueSource(strings={"single","batch","users","allForUser","all"})
+    void repeatedCurrentCashOnlyApprovalNeverRebuildsTheTimeAccountOrCreatesSideEffects(String route) {
+        var slip=currentFinancialSlip(false);slip.setApproved(true);slip.setLocked(true);slip.setPdfPath("saved-current.pdf");approveThrough(route,slip);
+        assertEquals(-45,slip.getUser().getTrackingBalanceInMinutes());assertEquals("saved-current.pdf",slip.getPdfPath());
+        verifyNoInteractions(timeTrackingService,pdfService,accountingService,emailService,payslipAuditRepository);
+        verify(payslipRepository,never()).saveAndFlush(any());verify(payslipRepository,never()).saveAllAndFlush(any());
+    }
+    @ParameterizedTest @ValueSource(strings={"single","batch","users","allForUser","all"})
+    void currentOvertimePayoutStillRebuildsTheTimeAccountAcrossEveryApprovalRoute(String route) {
+        var slip=currentFinancialSlip(true);approveThrough(route,slip);assertTrue(slip.isApproved());verify(timeTrackingService).rebuildUserBalance(slip.getUser());
+    }
+    @Test void previousFinancialCalculationVersionsRetainTheirLegacyBalanceRebuild() {
+        var slip=currentFinancialSlip(false);slip.setCalculationVersion("chrono-payroll-2026-v7");approveThrough("single",slip);verify(timeTrackingService).rebuildUserBalance(slip.getUser());
+    }
+    @Test void reopeningACurrentUnapprovedMoneyDraftLeavesTheTimeAccountUntouched() {
+        var slip=currentFinancialSlip(false);when(payslipRepository.findById(slip.getId())).thenReturn(Optional.of(slip));payrollService.reopenPayslip(slip.getId());
+        verifyNoInteractions(timeTrackingService);assertEquals(-45,slip.getUser().getTrackingBalanceInMinutes());verify(payslipRepository).saveAndFlush(slip);
     }
 }

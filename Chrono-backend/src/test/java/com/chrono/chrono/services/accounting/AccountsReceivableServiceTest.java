@@ -2,6 +2,9 @@ package com.chrono.chrono.services.accounting;
 
 import com.chrono.chrono.dto.InvoiceSummaryDTO;
 import com.chrono.chrono.entities.Project;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.Customer;
+import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.entities.accounting.CustomerInvoice;
 import com.chrono.chrono.repositories.accounting.CustomerInvoiceRepository;
 import com.chrono.chrono.services.accounting.AccountingService;
@@ -27,10 +30,15 @@ class AccountsReceivableServiceTest {
     @Autowired
     private CustomerInvoiceRepository customerInvoiceRepository;
 
+    @Autowired private CompanyRepository companies;
+
     @Test
     void recordProjectInvoiceCreatesReceivableAndJournalEntry() {
         Project project = new Project();
         project.setId(99L);
+        Customer customer = new Customer();
+        customer.setCompany(companies.save(new Company("Praxis")));
+        project.setCustomer(customer);
 
         InvoiceSummaryDTO summary = new InvoiceSummaryDTO();
         summary.setCustomerName("Client GmbH");

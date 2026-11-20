@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateCustomerRequest;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.CustomerService;
@@ -102,12 +103,13 @@ public class CustomerController {
      * GEÄNDERT: Stellt sicher, dass der neue Kunde der Firma des Erstellers zugeordnet wird.
      */
     @PostMapping
-    public ResponseEntity<Customer> create(@RequestBody Customer customer, Principal principal) {
+    public ResponseEntity<Customer> create(@RequestBody CreateCustomerRequest request, Principal principal) {
         User user = getPrincipalUser(principal);
         if (!featureEnabled(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        // WICHTIG: Setzt die Firma für den neuen Kunden
+        Customer customer = new Customer();
+        customer.setName(request.getName());
         customer.setCompany(CompanyScope.companyFor(user));
         Customer savedCustomer = customerService.save(customer);
         return new ResponseEntity<>(savedCustomer, HttpStatus.CREATED);

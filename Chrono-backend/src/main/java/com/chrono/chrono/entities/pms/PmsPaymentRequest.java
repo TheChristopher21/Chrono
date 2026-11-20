@@ -5,11 +5,19 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 @Entity @Getter @Setter
-@Table(name = "pms_payment_requests", uniqueConstraints = @UniqueConstraint(name = "uk_pms_payment_request_key", columnNames = "request_key"))
+@Table(name = "pms_payment_requests", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_pms_payment_request_key", columnNames = "request_key"),
+        @UniqueConstraint(name = "uk_pms_payment_client_scope", columnNames = {"folio_id", "request_source", "client_request_key"})})
 public class PmsPaymentRequest {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "folio_id", nullable = false) private Folio folio;
-    @Column(name = "request_key", nullable = false, length = 80) private String requestKey;
+    // Historical provider identity: never rekey a committed request, including an uncertain provider call.
+    @Column(name = "request_key", nullable = false, length = 80, updatable = false) private String requestKey;
+    @Column(name = "client_request_key", length = 80, updatable = false) private String clientRequestKey;
+    @Column(name = "request_source", length = 24, updatable = false) private String requestSource = "CLIENT";
+    @Column(name = "automatic_reservation_id", unique = true, updatable = false) private Long automaticReservationId;
+
+    public String clientKey() { return clientRequestKey == null ? requestKey : clientRequestKey; }
     @Column(nullable = false, length = 20) private String kind;
     @Column(nullable = false, length = 32) private String status = "REQUESTED";
     @Column(nullable = false, precision = 19, scale = 4) private BigDecimal amount;

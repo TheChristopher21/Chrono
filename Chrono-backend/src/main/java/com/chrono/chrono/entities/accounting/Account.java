@@ -1,19 +1,25 @@
 package com.chrono.chrono.entities.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Objects;
 
 @Entity
-@Table(name = "gl_accounts")
+@Table(name = "gl_accounts", uniqueConstraints = @UniqueConstraint(name = "uk_gl_account_company_code", columnNames = {"company_id", "code"}))
 public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 32)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
+
+    @Column(nullable = false, length = 32)
     private String code;
 
     @Column(nullable = false)
@@ -50,6 +56,9 @@ public class Account {
     public void setId(Long id) {
         this.id = id;
     }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 
     public String getCode() {
         return code;

@@ -1,7 +1,8 @@
 package com.chrono.chrono.repositories;
 
 import com.chrono.chrono.entities.PayrollTermsVersion;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.*;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -9,4 +10,7 @@ import java.util.Optional;
 public interface PayrollTermsRepository extends JpaRepository<PayrollTermsVersion, Long> {
     List<PayrollTermsVersion> findByCompanyIdOrderByEffectiveFromDescIdDesc(Long companyId);
     Optional<PayrollTermsVersion> findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(Long companyId, Long userId, LocalDate date);
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select v from PayrollTermsVersion v where v.companyId=:companyId and v.userId=:userId and v.effectiveFrom<=:date order by v.effectiveFrom desc,v.id desc")
+    List<PayrollTermsVersion> currentVersions(Long companyId,Long userId,LocalDate date);
 }

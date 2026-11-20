@@ -16,6 +16,7 @@ class PmsFlywayMySqlIntegrationTest {
         String url = System.getProperty("chrono.test.mysql.url");
         String username = System.getProperty("chrono.test.mysql.username");
         String password = System.getProperty("chrono.test.mysql.password");
+        LegacySecurityOwnershipFixture legacySecurity;
 
         assertThat(url)
                 .as("The migration integration test may only target local MySQL")
@@ -28,6 +29,7 @@ class PmsFlywayMySqlIntegrationTest {
             statement.execute("create table payslips (id bigint primary key, gross_salary double, net_salary double, approved bit)");
             statement.execute("insert into payslips values (1, 5000.01, 4321.09, 1)");
             LegacyCorrectionMigrationFixture.create(statement);
+            legacySecurity = LegacySecurityOwnershipFixture.create(statement);
             statement.execute("""
                     create table legacy_marker (
                         id bigint primary key,
@@ -55,6 +57,7 @@ class PmsFlywayMySqlIntegrationTest {
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
             LegacyCorrectionMigrationFixture.assertOriginalsPreserved(connection);
+            legacySecurity.assertOriginalsPreserved(connection);
             try (var payroll = statement.executeQuery("select gross_salary, net_salary, approved, calculation_version, calculation_snapshot from payslips where id=1")) {
                 assertThat(payroll.next()).isTrue();
                 assertThat(payroll.getBigDecimal(1)).isEqualByComparingTo("5000.01");

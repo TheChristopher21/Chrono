@@ -45,6 +45,7 @@ public class AccountsReceivableService {
         if (project != null && project.getCustomer() != null) {
             invoice.setCompany(project.getCustomer().getCompany());
         }
+        AccountingService.requireCompany(invoice.getCompany());
         CustomerInvoice saved = customerInvoiceRepository.save(invoice);
         postRevenueEntry(saved);
         return saved;
@@ -56,8 +57,8 @@ public class AccountsReceivableService {
     }
 
     private void postRevenueEntry(CustomerInvoice invoice) {
-        Account receivable = accountingService.ensureAccount("1100", "Forderungen aus Lieferungen", AccountType.ASSET);
-        Account revenue = accountingService.ensureAccount("3200", "Dienstleistungserlöse", AccountType.REVENUE);
+        Account receivable = accountingService.ensureAccount(invoice.getCompany(), "1100", "Forderungen aus Lieferungen", AccountType.ASSET);
+        Account revenue = accountingService.ensureAccount(invoice.getCompany(), "3200", "Dienstleistungserlöse", AccountType.REVENUE);
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(invoice.getInvoiceDate() != null ? invoice.getInvoiceDate() : LocalDate.now());
@@ -78,7 +79,7 @@ public class AccountsReceivableService {
         credit.setMemo("Revenue " + invoice.getInvoiceNumber());
 
         entry.setLines(List.of(debit, credit));
-        JournalEntry posted = accountingService.postEntry(entry);
+        JournalEntry posted = accountingService.postEntry(invoice.getCompany(), entry);
         invoice.setJournalEntry(posted);
         customerInvoiceRepository.save(invoice);
     }
@@ -114,8 +115,8 @@ public class AccountsReceivableService {
                 : customerInvoiceRepository.findById(invoiceId)
                     .orElseThrow(() -> new IllegalArgumentException("Invoice not found: " + invoiceId));
 
-        Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
-        Account receivable = accountingService.ensureAccount("1100", "Forderungen aus Lieferungen", AccountType.ASSET);
+        Account bank = accountingService.ensureAccount(invoice.getCompany(), "1000", "Bank", AccountType.ASSET);
+        Account receivable = accountingService.ensureAccount(invoice.getCompany(), "1100", "Forderungen aus Lieferungen", AccountType.ASSET);
 
         JournalEntry entry = new JournalEntry();
         LocalDate postingDate = paymentDate != null ? paymentDate : LocalDate.now();
@@ -137,7 +138,7 @@ public class AccountsReceivableService {
         credit.setMemo(memo != null && !memo.isBlank() ? memo : "Customer payment");
 
         entry.setLines(List.of(debit, credit));
-        accountingService.postEntry(entry);
+        accountingService.postEntry(invoice.getCompany(), entry);
 
         BigDecimal newPaid = invoice.getAmountPaid().add(amount);
         if (newPaid.compareTo(invoice.getAmount()) >= 0) {

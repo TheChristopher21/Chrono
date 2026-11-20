@@ -23,6 +23,12 @@ public class NfcCommand {
     // Status: "pending" oder "done"
     private String status;
 
+    // Legacy commands intentionally remain ownerless and cannot be polled.
+    private Long companyId;
+    private Long targetUserId;
+    @Column(length = 100)
+    private String deviceId;
+
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
 
@@ -49,4 +55,10 @@ public class NfcCommand {
 
     public LocalDateTime getProcessedAt() { return processedAt; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public Long getTargetUserId() { return targetUserId; }
+    public void setTargetUserId(Long targetUserId) { this.targetUserId = targetUserId; }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 }

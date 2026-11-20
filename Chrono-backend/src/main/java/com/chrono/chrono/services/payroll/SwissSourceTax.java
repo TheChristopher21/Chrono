@@ -13,6 +13,7 @@ import java.util.zip.*;
 @Component
 public class SwissSourceTax {
     public static final String SHA256 = "619b53e364545ffcd32e01669983326f79e5dea82c520de5e158c4e9e10943d6";
+    public static final String SHA256_2025="89e1edac469749e954a6902c150e3558eb60edc3cc62591bf7560e87072ffaf4";
     private static final Set<String> ANNUAL = Set.of("FR", "GE", "TI", "VD", "VS");
     private final Map<String, List<Band>> cache = new ConcurrentHashMap<>();
     private record Band(BigDecimal from, BigDecimal step, BigDecimal minimum, BigDecimal rate) {}
@@ -28,10 +29,10 @@ public class SwissSourceTax {
         return lookup(year, canton, code, taxable, rateIncome, false);
     }
     private Result lookup(int year, String canton, String code, BigDecimal taxable, BigDecimal rateIncome, boolean annual) {
-        if (year != 2026) throw new IllegalStateException("Für dieses Jahr ist kein geprüfter Quellensteuertarif installiert.");
+        if (year != 2026&&year!=2025) throw new IllegalStateException("Für dieses Jahr ist kein geprüfter Quellensteuertarif installiert.");
         if (canton == null || !canton.matches("[A-Z]{2}") || code == null || !code.matches("[ABCHLMNPRSTU][0-9][NY]")) throw new IllegalStateException("Kanton oder Quellensteuertarif fehlt.");
         if (taxable.signum() < 0 || rateIncome.signum() < 0) throw new IllegalArgumentException("Negative Quellensteuergrundlage.");
-        var bands = cache.computeIfAbsent(canton + ":" + code, key -> load(canton, code));
+        var bands = cache.computeIfAbsent(year+":"+canton + ":" + code, key -> load(year,canton, code));
         // ESTV FAQ KS45 #4: 4,000.99 remains in the band ending at 4,000.
         BigDecimal whole = rateIncome.setScale(0, RoundingMode.DOWN).max(BigDecimal.ONE);
         // Annual table bounds are e.g. 59,401–60,000, corresponding to monthly 4,951–5,000.
@@ -45,23 +46,23 @@ public class SwissSourceTax {
         BigDecimal raw = taxable.signum() == 0 ? BigDecimal.ZERO : taxable.multiply(selected.rate).max(selected.minimum);
         // ESTV FAQ KS45 #5: round the final tax commercially to CHF 0.05.
         BigDecimal amount = raw.divide(new BigDecimal("0.05"), 0, RoundingMode.HALF_UP).multiply(new BigDecimal("0.05"));
-        return new Result(amount, selected.rate, "ESTV 2026/04.03 " + canton + " " + code + "; " + SHA256);
+        return new Result(amount, selected.rate, "ESTV "+year+" " + canton + " " + code + "; " + (year==2025?SHA256_2025:SHA256));
     }
-    private List<Band> load(String canton, String code) {
-        try (InputStream source = getClass().getResourceAsStream("/payroll/ch/tar2026txt.zip")) {
+    private List<Band> load(int year,String canton, String code) {
+        try (InputStream source = getClass().getResourceAsStream("/payroll/ch/tar"+year+"txt.zip")) {
             if (source == null) throw new IllegalStateException("Amtliche Quellensteuerdatei fehlt.");
             byte[] archive = source.readAllBytes();
-            if (!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(archive)).equals(SHA256)) throw new IllegalStateException("Die Prüfsumme der Quellensteuerdatei stimmt nicht.");
+            if (!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(archive)).equals(year==2025?SHA256_2025:SHA256)) throw new IllegalStateException("Die Prüfsumme der Quellensteuerdatei stimmt nicht.");
             try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
                 ZipEntry entry;
                 while ((entry = zip.getNextEntry()) != null) {
-                    if (!entry.getName().equalsIgnoreCase("tar26" + canton + ".txt")) continue;
+                    if (!entry.getName().equalsIgnoreCase("tar"+(year%100) + canton + ".txt")) continue;
                     List<Band> result = new ArrayList<>();
                     var reader = new BufferedReader(new InputStreamReader(zip, StandardCharsets.ISO_8859_1));
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (!line.startsWith("06") || !line.substring(6, 16).trim().equals(code)) continue;
-                        if (line.length() < 59 || !line.substring(2, 4).equals("01") || !line.substring(4, 6).equals(canton) || !line.substring(16, 24).equals("20260101")) throw new IllegalStateException("Unerwartetes Quellensteuer-Recordformat.");
+                        if (line.length() < 59 || !line.substring(2, 4).equals("01") || !line.substring(4, 6).equals(canton) || !line.substring(16, 24).equals(year+"0101")) throw new IllegalStateException("Unerwartetes Quellensteuer-Recordformat.");
                         result.add(new Band(decimal(line, 24, 33, 2), decimal(line, 33, 42, 2), decimal(line, 45, 54, 2), decimal(line, 54, 59, 4)));
                     }
                     if (result.isEmpty()) throw new IllegalStateException("Der persönliche Tarif ist in der amtlichen Datei nicht enthalten.");

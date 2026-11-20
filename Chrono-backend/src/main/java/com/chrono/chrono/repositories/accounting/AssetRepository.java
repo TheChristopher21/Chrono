@@ -8,4 +8,8 @@ import java.util.List;
 
 public interface AssetRepository extends JpaRepository<Asset, Long> {
     List<Asset> findByStatus(AssetStatus status);
+    List<Asset> findByCompany_IdOrderByIdAsc(Long companyId);
+    java.util.Optional<Asset> findByIdAndCompany_Id(Long id, Long companyId);
+    List<Asset> findByCompanyIsNullOrderByIdAsc();
+    boolean existsByCompanyIsNull();
 }

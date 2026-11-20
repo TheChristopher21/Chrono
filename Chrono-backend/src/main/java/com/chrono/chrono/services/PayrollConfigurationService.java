@@ -15,11 +15,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
+import com.chrono.chrono.services.payroll.PayrollKtgPool;
+import com.chrono.chrono.services.payroll.PayrollInsurancePool;
 
 @Service
 public class PayrollConfigurationService {
     private final PayrollConfigurationRepository versions;
     private final UserRepository users;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entities;
 
     public PayrollConfigurationService(PayrollConfigurationRepository versions, UserRepository users) {
         this.versions = versions;
@@ -28,13 +31,23 @@ public class PayrollConfigurationService {
 
     public record InsuranceInput(LocalDate effectiveFrom, String source, BigDecimal uvgBuRate,
             BigDecimal uvgNbuRate, BigDecimal ktgRateEmployee, BigDecimal ktgRateEmployer, BigDecimal fakRate,
-            BigDecimal fakEmployeeRate, BigDecimal ahvAdminRate, BigDecimal ktgAnnualSalaryCap) {}
+            BigDecimal fakEmployeeRate, BigDecimal ahvAdminRate, BigDecimal ktgAnnualSalaryCap,PayrollKtgPool ktgPool,PayrollInsurancePool uvgPool) {
+        public InsuranceInput(LocalDate date,String source,BigDecimal bu,BigDecimal nbu,BigDecimal ktgEmployee,BigDecimal ktgEmployer,BigDecimal fak,BigDecimal fakEmployee,BigDecimal admin,BigDecimal cap,PayrollKtgPool ktg) {
+            this(date,source,bu,nbu,ktgEmployee,ktgEmployer,fak,fakEmployee,admin,cap,ktg,null);
+        }
+        public InsuranceInput(LocalDate effectiveFrom,String source,BigDecimal uvgBuRate,BigDecimal uvgNbuRate,
+                BigDecimal ktgRateEmployee,BigDecimal ktgRateEmployer,BigDecimal fakRate,BigDecimal fakEmployeeRate,
+                BigDecimal ahvAdminRate,BigDecimal ktgAnnualSalaryCap) {
+            this(effectiveFrom,source,uvgBuRate,uvgNbuRate,ktgRateEmployee,ktgRateEmployer,fakRate,fakEmployeeRate,ahvAdminRate,ktgAnnualSalaryCap,null,null);
+        }
+    }
     public record PensionInput(Long userId, LocalDate effectiveFrom, String source,
             BigDecimal bvgEmployee, BigDecimal bvgEmployer) {}
     public record Employee(Long id, String name) {}
     public record Configuration(List<PayrollConfigurationVersion> versions, List<Employee> employees) {}
     public record Coverage(PayrollConfigurationVersion insurance, PayrollConfigurationVersion pension,
-            boolean insuranceChangesWithinPeriod, boolean pensionChangesWithinPeriod) {
+            boolean insuranceChangesWithinPeriod, boolean pensionChangesWithinPeriod,List<CoverageSlice> slices) {
+        public Coverage(PayrollConfigurationVersion insurance,PayrollConfigurationVersion pension,boolean insuranceChanges,boolean pensionChanges) {this(insurance,pension,insuranceChanges,pensionChanges,List.of());}
         public boolean insuranceComplete() {
             return insurance != null && insurance.getUvgBuRate() != null && insurance.getUvgNbuRate() != null
                     && insurance.getKtgRateEmployee() != null && insurance.getKtgRateEmployer() != null
@@ -45,6 +58,7 @@ public class PayrollConfigurationService {
             return pension != null && pension.getBvgEmployee() != null && pension.getBvgEmployer() != null;
         }
     }
+    public record CoverageSlice(LocalDate from,LocalDate through,PayrollConfigurationVersion insurance,PayrollConfigurationVersion pension) {}
 
     @Transactional(readOnly = true)
     public Configuration list(Long companyId) {
@@ -70,6 +84,18 @@ public class PayrollConfigurationService {
         version.setFakRate(input.fakRate());
         version.setFakEmployeeRate(input.fakEmployeeRate()); version.setAhvAdminRate(input.ahvAdminRate());
         version.setKtgAnnualSalaryCap(input.ktgAnnualSalaryCap());
+        if(input.ktgPool()!=null) {
+            var p=input.ktgPool();
+            if(p.key()==null || p.key().isBlank() || p.key().strip().length()>100 || p.from()==null || p.through()==null
+                    || p.from().isAfter(p.through()) || p.from().getYear()!=p.through().getYear()
+                    || input.effectiveFrom().isBefore(p.from()) || input.effectiveFrom().isAfter(p.through())) throw bad("KTG-Abrechnungskreis, Vertragsbeginn/-ende und Gültigkeitsdatum sind widersprüchlich.");
+            version.setKtgPoolKey(p.key().strip()); version.setKtgPoolFrom(p.from()); version.setKtgPoolThrough(p.through());
+        }
+        if(input.uvgPool()!=null) {
+            var p=input.uvgPool();
+            if(p.key()==null||p.key().isBlank()||p.key().strip().length()>100||p.from()==null||p.through()==null||p.from().isAfter(p.through())||p.from().getYear()!=p.through().getYear()||input.effectiveFrom().isBefore(p.from())||input.effectiveFrom().isAfter(p.through()))throw bad("UVG-Versicherer-/Codekreis, Deckungsdaten und Gültigkeitsdatum sind widersprüchlich.");
+            version.setUvgPoolKey(p.key().strip());version.setUvgPoolFrom(p.from());version.setUvgPoolThrough(p.through());
+        }
         return versions.save(version);
     }
 
@@ -79,6 +105,7 @@ public class PayrollConfigurationService {
         // Lock and re-read membership so a concurrent company transfer cannot mix tenant records.
         User user = users.findByIdForUpdate(input.userId()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Mitarbeitende nicht gefunden."));
+        if(entities!=null)entities.refresh(user,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         if (user.getCompany() == null || !Objects.equals(user.getCompany().getId(), companyId) || user.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mitarbeitende nicht gefunden.");
         }
@@ -94,11 +121,23 @@ public class PayrollConfigurationService {
         PayrollReviewService.validatePeriod(start, end);
         if (user.getCompany() == null) return new Coverage(null, null, false, false);
         Long companyId = user.getCompany().getId();
-        var insurance = versions.findFirstByCompanyIdAndUserIdIsNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, start).orElse(null);
-        var insuranceEnd = versions.findFirstByCompanyIdAndUserIdIsNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, end).orElse(null);
-        var pension = versions.findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, user.getId(), start).orElse(null);
-        var pensionEnd = versions.findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, user.getId(), end).orElse(null);
-        return new Coverage(insurance, pension, !sameVersion(insurance, insuranceEnd), !sameVersion(pension, pensionEnd));
+        boolean writing=org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
+                && !org.springframework.transaction.support.TransactionSynchronizationManager.isCurrentTransactionReadOnly();
+        var insurance = writing?versions.currentInsurance(companyId,start).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdIsNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, start).orElse(null);
+        var insuranceEnd = writing?versions.currentInsurance(companyId,end).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdIsNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, end).orElse(null);
+        var pension = writing?versions.currentPension(companyId,user.getId(),start).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, user.getId(), start).orElse(null);
+        var pensionEnd = writing?versions.currentPension(companyId,user.getId(),end).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId, user.getId(), end).orElse(null);
+        boolean insuranceChanges=!sameVersion(insurance,insuranceEnd),pensionChanges=!sameVersion(pension,pensionEnd);
+        if(!insuranceChanges&&!pensionChanges)return new Coverage(insurance,pension,false,false);
+        var slices=new java.util.ArrayList<CoverageSlice>();LocalDate cursor=start;
+        var currentInsurance=insurance;var currentPension=pension;
+        for(LocalDate day=start.plusDays(1);!day.isAfter(end);day=day.plusDays(1)) {
+            var i=writing?versions.currentInsurance(companyId,day).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdIsNullAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId,day).orElse(null);
+            var p=writing?versions.currentPension(companyId,user.getId(),day).stream().findFirst().orElse(null):versions.findFirstByCompanyIdAndUserIdAndEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(companyId,user.getId(),day).orElse(null);
+            if(!sameVersion(i,currentInsurance)||!sameVersion(p,currentPension)) {slices.add(new CoverageSlice(cursor,day.minusDays(1),currentInsurance,currentPension));cursor=day;currentInsurance=i;currentPension=p;}
+        }
+        slices.add(new CoverageSlice(cursor,end,currentInsurance,currentPension));
+        return new Coverage(insurance,pension,insuranceChanges,pensionChanges,List.copyOf(slices));
     }
 
     private static boolean sameVersion(PayrollConfigurationVersion a, PayrollConfigurationVersion b) {

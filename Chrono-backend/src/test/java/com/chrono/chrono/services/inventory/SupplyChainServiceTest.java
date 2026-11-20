@@ -54,13 +54,16 @@ class SupplyChainServiceTest {
 
     @Test
     void receivePurchaseOrderUpdatesStockAndCreatesInvoice() {
+        Company company = companyRepository.save(new Company("Praxis"));
         Product product = new Product();
+        product.setCompany(company);
         product.setSku("SKU-1");
         product.setName("Widget");
         product.setUnitCost(new BigDecimal("20.00"));
         product = supplyChainService.saveProduct(product);
 
         Warehouse warehouse = new Warehouse();
+        warehouse.setCompany(company);
         warehouse.setCode("MAIN");
         warehouse.setName("Main Warehouse");
         warehouse = supplyChainService.saveWarehouse(warehouse);
@@ -73,6 +76,7 @@ class SupplyChainServiceTest {
                 .isEqualTo(new BigDecimal("10"));
 
         PurchaseOrder order = new PurchaseOrder();
+        order.setCompany(company);
         order.setOrderNumber("PO-1000");
         order.setVendorName("Supply AG");
 
@@ -304,17 +308,19 @@ class SupplyChainServiceTest {
 
     @Test
     void receivesPurchaseOrderInPartialQuantitiesAndInvoicesOnlyWhenComplete() {
+        Company company = createCompany("Partial Receipt AG");
         Product product = new Product();
         product.setSku("SKU-PARTIAL");
         product.setName("Partial Receipt");
-        product = supplyChainService.saveProduct(product);
+        product = supplyChainService.saveProduct(product, company);
         Warehouse warehouse = new Warehouse();
         warehouse.setCode("PARTIAL");
         warehouse.setName("Inbound Warehouse");
-        warehouse = supplyChainService.saveWarehouse(warehouse);
+        warehouse = supplyChainService.saveWarehouse(warehouse, company);
 
         PurchaseOrder order = new PurchaseOrder();
         order.setOrderNumber("PO-PARTIAL");
+        order.setCompany(company);
         order.setVendorName("Vendor");
         PurchaseOrderLine line = new PurchaseOrderLine();
         line.setProduct(product);

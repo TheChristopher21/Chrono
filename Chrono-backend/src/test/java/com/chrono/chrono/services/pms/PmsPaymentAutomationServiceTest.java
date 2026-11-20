@@ -52,13 +52,40 @@ class PmsPaymentAutomationServiceTest {
         config.setAutomaticDepositLinks(false);service.queueDeposit(2L,3L);config.setAutomaticDepositLinks(true);reservation.setStatus(ReservationStatus.CANCELLED);service.queueDeposit(2L,3L);
         verifyNoInteractions(checkout,delivery);
     }
+    @Test void depositDiscoveryNeverConsultsAGlobalClientKey() {
+        var view=new PmsPaymentRequestView(5L,"deposit-reservation-3",4L,"PAYMENT","OPEN",new BigDecimal("100"),null,"CHF","https://checkout.stripe.com/example","cs_example",null,"open",LocalDateTime.now(),LocalDateTime.now());
+        when(checkout.createAutomaticDeposit(eq(1L),eq(2L),eq(4L),eq(3L),any())).thenReturn(view);
+        service.queueDeposit(2L,3L);
+        verify(requests).findByAutomaticReservationIdAndFolio_Reservation_Property_IdAndFolio_Reservation_Property_Company_Id(3L,2L,1L);
+        verify(requests,never()).findByProviderRequestKey(anyString());
+        verify(checkout).createAutomaticDeposit(eq(1L),eq(2L),eq(4L),eq(3L),any());
+    }
+
+    @Test void webhookFallbackUsesPreservedProviderIdentityForLegacyRequests() {
+        event.setObjectId("cs_after_uncertain_response"); event.setRequestKey("deposit-reservation-3");
+        when(requests.findByProviderRequestKey("deposit-reservation-3")).thenReturn(Optional.of(request));
+        service.processEvent(6L);
+        assertThat(event.getStatus()).isEqualTo("PROCESSED");
+        verify(checkout).reconcile(1L,2L,5L,"payment-automation");
+        verify(requests,never()).findByFolio_IdAndRequestSourceAndClientRequestKey(anyLong(),anyString(),anyString());
+    }
+
+    @Test void webhookFallbackNeverUsesTheOriginalClientKeyOfANewRequest() {
+        request.setRequestKey("chrono-pms-request-abcdef");
+        request.setClientRequestKey("same-client-key");
+        event.setObjectId("cs_unknown"); event.setRequestKey("same-client-key");
+        service.processEvent(6L);
+        assertThat(event.getStatus()).isEqualTo("IGNORED");
+        verifyNoInteractions(checkout);
+    }
+
     @Test void dueDepositUsesStableRequestIdentityAndOnlyQueuesAGuestConfirmedPaymentLink(){
         var view=new PmsPaymentRequestView(5L,"deposit-reservation-3",4L,"PAYMENT","OPEN",new BigDecimal("100"),null,"CHF","https://checkout.stripe.com/example","cs_example","pi_example","open",LocalDateTime.now(),LocalDateTime.now());
         when(checkout.createAutomaticDeposit(eq(1L),eq(2L),eq(4L),eq(3L),any())).thenReturn(view);
         service.queueDeposit(2L,3L);
         verify(checkout).createAutomaticDeposit(1L,2L,4L,3L,new CreatePmsPaymentRequest("deposit-reservation-3",new BigDecimal("100"),"PAYMENT"));
         verify(delivery).queuePaymentLink(1L,2L,3L,"deposit-reservation-3","https://checkout.stripe.com/example",new BigDecimal("100"),"CHF");
-        when(requests.findByRequestKey("deposit-reservation-3")).thenReturn(Optional.of(request));when(checkout.reconcile(1L,2L,5L,"deposit-automation")).thenReturn(view);
+        when(requests.findByAutomaticReservationIdAndFolio_Reservation_Property_IdAndFolio_Reservation_Property_Company_Id(3L,2L,1L)).thenReturn(Optional.of(request));when(checkout.reconcile(1L,2L,5L,"deposit-automation")).thenReturn(view);
         service.queueDeposit(2L,3L);verify(checkout,times(1)).createAutomaticDeposit(anyLong(),anyLong(),anyLong(),anyLong(),any());
         verify(delivery,times(2)).queuePaymentLink(1L,2L,3L,"deposit-reservation-3","https://checkout.stripe.com/example",new BigDecimal("100"),"CHF");
         verify(checkout,never()).capture(anyLong(),anyLong(),anyLong(),any(),anyString());

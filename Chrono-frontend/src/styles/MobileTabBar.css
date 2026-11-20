@@ -67,10 +67,10 @@
 }
 
 @media (max-width: 768px),
-       (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+       (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     .mobile-tab-bar {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--mobile-tab-count, 4), minmax(0, 1fr));
         padding-right: max(clamp(0.35rem, 3vw, 1rem), env(safe-area-inset-right, 0px));
         padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
         padding-left: max(clamp(0.35rem, 3vw, 1rem), env(safe-area-inset-left, 0px));
@@ -122,7 +122,7 @@
     }
 }
 
-@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     .mobile-tab-bar {
         padding-top: 0.2rem;
         padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
@@ -148,7 +148,7 @@
     }
 }
 
-@media (min-width: 933px),
+@media (min-width: 1025px),
        (min-width: 769px) and (min-height: 501px) {
     .mobile-tab-spacer {
         display: none;

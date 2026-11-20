@@ -4,6 +4,7 @@ import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
+import { csvRow } from "../../utils/csv.js";
 import "../../styles/AdminAccountingPageScoped.css";
 
 const initialAccount = {
@@ -42,6 +43,7 @@ const AdminAccountingPage = () => {
     const [receivables, setReceivables] = useState([]);
     const [payables, setPayables] = useState([]);
     const [assets, setAssets] = useState([]);
+    const [legacyReviewRequired, setLegacyReviewRequired] = useState(false);
     const [loading, setLoading] = useState(true);
     const [accountForm, setAccountForm] = useState(initialAccount);
     const [refreshFlag, setRefreshFlag] = useState(0);
@@ -113,12 +115,13 @@ const AdminAccountingPage = () => {
         const load = async () => {
             setLoading(true);
             try {
-                const [accRes, journalRes, recvRes, payRes, assetRes] = await Promise.all([
+                const [accRes, journalRes, recvRes, payRes, assetRes, migrationRes] = await Promise.all([
                     api.get("/api/accounting/accounts"),
                     api.get("/api/accounting/journal", { params: { page: journalPage, size: journalPageSize } }),
                     api.get("/api/accounting/receivables/open", { params: { page: receivablePage, size: receivablePageSize } }),
                     api.get("/api/accounting/payables/open", { params: { page: payablePage, size: payablePageSize } }),
-                    api.get("/api/accounting/assets")
+                    api.get("/api/accounting/assets"),
+                    api.get("/api/accounting/migration-status")
                 ]);
                 setAccounts(accRes.data ?? []);
                 const journal = journalRes.data?.content ?? journalRes.data ?? [];
@@ -140,6 +143,7 @@ const AdminAccountingPage = () => {
                     totalElements: payRes.data?.totalElements ?? payableData.length
                 });
                 setAssets(assetRes.data ?? []);
+                setLegacyReviewRequired(Boolean(migrationRes.data?.legacyReviewRequired));
             } catch (error) {
                 console.error("Failed to load accounting data", error);
                 notify(t("accounting.loadError", "Finanzdaten konnten nicht geladen werden."), "error");
@@ -536,8 +540,8 @@ const AdminAccountingPage = () => {
             return;
         }
         const header = Object.keys(rows[0]);
-        const csv = [header.join(",")]
-            .concat(rows.map((row) => header.map((key) => `"${String(row[key] ?? "").replace(/"/g, '""')}"`).join(",")))
+        const csv = [csvRow(header)]
+            .concat(rows.map((row) => csvRow(header.map((key) => row[key]))))
             .join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -616,6 +620,11 @@ const AdminAccountingPage = () => {
         <div className="admin-page accounting-page">
             <Navbar />
             <main className="admin-content">
+                {legacyReviewRequired && (
+                    <p className="card" role="status">
+                        {t("accounting.legacyReview", "Frühere Buchhaltungsdaten bleiben erhalten. Daten ohne eindeutige Firmenzuordnung sind bis zur Prüfung durch den Betreiber gesperrt. Lohnabrechnungen, Zeitbuchungen und Überstundensalden bleiben unverändert.")}
+                    </p>
+                )}
                 <header className="admin-header">
                     <div>
                         <h1>{t("accounting.title", "Finanzbuchhaltung")}</h1>

@@ -53,6 +53,9 @@ public class PayrollService {
 
     @Autowired
     private PayrollCalculationService calculations;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entities;
+    @Autowired(required=false) private PayrollOpeningService openings;
 
     private void audit(Payslip ps, String action, String author, String comment) {
         PayslipAudit log = new PayslipAudit(ps, action, author, comment);
@@ -87,7 +90,12 @@ public class PayrollService {
         if (payoutOvertime && (overtimeHours == null || !Double.isFinite(overtimeHours) || overtimeHours <= 0)) {
             throw new IllegalArgumentException("Bitte eine positive, endliche Anzahl Überstunden angeben.");
         }
-        User user = userRepository.findById(userId).orElseThrow();
+        User user;
+        if(entities!=null) {
+            // Same lock order as opening/period-input edits and approval: employee, then histories.
+            user=userRepository.findByIdForUpdate(userId).orElseThrow();
+            entities.refresh(user,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        } else user=userRepository.findById(userId).orElseThrow();
         var calculation = calculations.calculate(user, start, end, overtimeHours, payoutOvertime);
         double basePay = calculation.gross().base().doubleValue();
         double overtimePay = calculation.gross().premium().doubleValue();
@@ -123,6 +131,7 @@ public class PayrollService {
             ps.setOvertimeHours(paidOvertimeHours);
             ps.setPayoutOvertime(true);
         }
+        calculation.gross().extraEarnings().forEach((label,amount) -> { if(amount.signum()!=0) ps.getEarnings().add(new PayComponent(label,amount.doubleValue())); });
         for (Map.Entry<String, Double> entry : res.getEmployee().entrySet()) {
             ps.getDeductionsList().add(new PayComponent(entry.getKey(), entry.getValue()));
         }
@@ -177,6 +186,7 @@ public class PayrollService {
         List<Payslip> batch = payslipRepository.findAllById(uniqueIds);
         if (batch.size() != uniqueIds.size()) throw new IllegalArgumentException("Mindestens eine Abrechnung wurde nicht gefunden.");
         approvalGuard.validate(batch);
+        activateOpenings(batch);
         for (Payslip slip : batch.stream().sorted(java.util.Comparator.comparing(Payslip::getPeriodStart)).toList()) approveValidated(slip, comment);
     }
 
@@ -186,6 +196,7 @@ public class PayrollService {
                 .flatMap(id -> payslipRepository.findByUser(userRepository.findById(id).orElseThrow()).stream())
                 .filter(slip -> !slip.isApproved()).toList();
         approvalGuard.validate(batch);
+        activateOpenings(batch);
         for (Payslip slip : batch.stream().sorted(java.util.Comparator.comparing(Payslip::getPeriodStart)).toList()) approveValidated(slip, comment);
     }
 
@@ -193,11 +204,12 @@ public class PayrollService {
     public void approvePayslip(Long id, String comment) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
         approvalGuard.validate(List.of(ps));
+        activateOpenings(List.of(ps));
         approveValidated(ps, comment);
     }
     private void approveValidated(Payslip ps, String comment) {
         if (ps.isApproved()) {
-            timeTrackingService.rebuildUserBalance(ps.getUser());
+            if (affectsTimeAccount(ps)) timeTrackingService.rebuildUserBalance(ps.getUser());
             return;
         }
         ps.setApproved(true);
@@ -205,11 +217,16 @@ public class PayrollService {
         String pdf = pdfService.generatePayslipPdf(ps);
         ps.setPdfPath(pdf);
         payslipRepository.saveAndFlush(ps);
-        timeTrackingService.rebuildUserBalance(ps.getUser());
+        if (affectsTimeAccount(ps)) timeTrackingService.rebuildUserBalance(ps.getUser());
         accountingService.recordPayrollPosting(ps);
         audit(ps, "APPROVED", "ADMIN", comment);
         afterCommit(() -> emailService.sendPayslipApprovedMail(ps.getUser(), ps));
     }
+    private static boolean affectsTimeAccount(Payslip ps) {
+        // Cash/tax/SV-only documents do not change paid overtime. Preserve legacy approval behavior.
+        return ps.isPayoutOvertime() || !PayrollCalculationService.VERSION.equals(ps.getCalculationVersion());
+    }
+    private void activateOpenings(List<Payslip> batch) {if(openings!=null)batch.stream().filter(p->!p.isApproved()).forEach(openings::activateFor);}
 
     @Transactional
     public void approveAllForUser(Long userId, String comment) {
@@ -231,7 +248,7 @@ public class PayrollService {
         if (!slips.isEmpty()) {
             payslipRepository.saveAllAndFlush(slips);
         }
-        timeTrackingService.rebuildUserBalance(user);
+        if (slips.stream().anyMatch(PayrollService::affectsTimeAccount)) timeTrackingService.rebuildUserBalance(user);
     }
 
     @Transactional
@@ -256,6 +273,7 @@ public class PayrollService {
 
         Set<Long> rebuiltUserIds = new HashSet<>();
         slips.stream()
+                .filter(PayrollService::affectsTimeAccount)
                 .map(Payslip::getUser)
                 .filter(user -> user != null && rebuiltUserIds.add(user.getId()))
                 .forEach(timeTrackingService::rebuildUserBalance);
@@ -280,7 +298,7 @@ public class PayrollService {
         ps.setLocked(false);
         ps.setPdfPath(null);
         payslipRepository.saveAndFlush(ps);
-        timeTrackingService.rebuildUserBalance(ps.getUser());
+        if (affectsTimeAccount(ps)) timeTrackingService.rebuildUserBalance(ps.getUser());
         audit(ps, "REOPENED", "ADMIN", null);
     }
 

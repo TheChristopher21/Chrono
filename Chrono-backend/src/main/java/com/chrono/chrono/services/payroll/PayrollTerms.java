@@ -27,5 +27,7 @@ public record PayrollTerms(String country, String payType, BigDecimal amount, Bi
     public int thirteenthMonths() { return contract == null ? 0 : contract.paymentMonths(); }
     public LocalDate exitDate() { return contract == null ? null : contract.exitDate(); }
     public boolean hourly() { return "HOURLY".equals(payType); }
+    public PayrollMultipleEmployment multipleEmployment() { return contract==null?null:contract.multipleEmployment(); }
+    public PayrollHourlyAllowance hourlyAllowance() { return contract==null?null:contract.hourlyAllowance(); }
     public String currency() { return "CH".equals(country) ? "CHF" : "EUR"; }
 }

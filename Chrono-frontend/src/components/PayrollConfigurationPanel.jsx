@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import api from '../utils/api';
 import PayrollTermsPanel from './PayrollTermsPanel';
+import PayrollOpeningPanel from './PayrollOpeningPanel';
+import PayrollPeriodInputPanel from './PayrollPeriodInputPanel';
 import '../styles/PayrollConfigurationPanel.css';
 
 const endpoint = '/api/admin/company/payroll-configuration';
@@ -9,7 +11,7 @@ const rateFields = [
     ['ktgRateEmployee', 'KTG · Arbeitnehmer'], ['ktgRateEmployer', 'KTG · Arbeitgeber'], ['fakRate', 'FAK · Arbeitgeber'],
     ['fakEmployeeRate', 'FAK · Arbeitnehmer'], ['ahvAdminRate', 'AHV-Verwaltungskosten (auf AHV/IV/EO-Gesamtbeitrag)'],
 ];
-const blankInsurance = () => Object.fromEntries([...rateFields.map(([key]) => [key, '']), ['ktgAnnualSalaryCap', ''], ['effectiveFrom', ''], ['source', '']]);
+const blankInsurance = () => Object.fromEntries([...rateFields.map(([key]) => [key, '']), ['ktgAnnualSalaryCap', ''], ['effectiveFrom', ''], ['source', ''], ['ktgPoolKey', ''], ['ktgPoolFrom', ''], ['ktgPoolThrough', ''], ['uvgPoolKey', ''], ['uvgPoolFrom', ''], ['uvgPoolThrough', '']]);
 const blankPension = () => ({ userId: '', effectiveFrom: '', source: '', bvgEmployee: '', bvgEmployer: '' });
 const number = (value, percent = false) => value === '' ? null : (percent ? (Number(value) / 100).toFixed(8) : value);
 const money = value => value == null ? 'offen' : `${Number(value).toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CHF`;
@@ -33,6 +35,8 @@ export default function PayrollConfigurationPanel() {
     const [saving, setSaving] = useState(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [showOpening, setShowOpening] = useState(false);
+    const [showPeriodInputs, setShowPeriodInputs] = useState(false);
     useEffect(() => {
         let active = true;
         setLoadError(false);
@@ -53,7 +57,13 @@ export default function PayrollConfigurationPanel() {
         }
         const payload = { ...input, source: input.source.trim() };
         fields.forEach(key => { payload[key] = number(input[key], kind === 'insurance'); });
-        if (kind === 'insurance') payload.ktgAnnualSalaryCap = number(input.ktgAnnualSalaryCap);
+        if (kind === 'insurance') {
+            payload.ktgAnnualSalaryCap = number(input.ktgAnnualSalaryCap);
+            payload.ktgPool = input.ktgPoolKey.trim() ? { key: input.ktgPoolKey.trim(), from: input.ktgPoolFrom, through: input.ktgPoolThrough } : null;
+            delete payload.ktgPoolKey; delete payload.ktgPoolFrom; delete payload.ktgPoolThrough;
+            if (input.uvgPoolKey.trim()) payload.uvgPool = { key: input.uvgPoolKey.trim(), from: input.uvgPoolFrom, through: input.uvgPoolThrough };
+            delete payload.uvgPoolKey; delete payload.uvgPoolFrom; delete payload.uvgPoolThrough;
+        }
         if (kind === 'pension') payload.userId = Number(input.userId);
         setSaving(kind); setError(''); setMessage('');
         try {
@@ -83,6 +93,20 @@ export default function PayrollConfigurationPanel() {
                         </React.Fragment>)}
                         <label htmlFor="insurance-ktg-cap">KTG-Jahreslohngrenze (CHF; 0 = vertraglich unbeschränkt)</label>
                         <input id="insurance-ktg-cap" type="number" min="0" step="0.01" value={insurance.ktgAnnualSalaryCap} onChange={e => setInsurance({ ...insurance, ktgAnnualSalaryCap: e.target.value })} />
+                        <label htmlFor="insurance-ktg-pool">KTG-Abrechnungskreis bei getrenntem Vertrag (optional)</label>
+                        <input id="insurance-ktg-pool" maxLength={100} value={insurance.ktgPoolKey} onChange={e => setInsurance({ ...insurance, ktgPoolKey: e.target.value })} />
+                        <label htmlFor="insurance-uvg-pool">UVG-Versicherer-/Codekreis bei getrenntem Vertrag (optional)</label>
+                        <input id="insurance-uvg-pool" maxLength={100} value={insurance.uvgPoolKey} onChange={e => setInsurance({ ...insurance, uvgPoolKey: e.target.value })} />
+                        {insurance.uvgPoolKey && <>
+                            <p>Bei Versichererwechsel einen neuen Kreis mit tatsächlichem Deckungsbeginn anlegen. Höchstlöhne werden nicht zwischen Versicherern übertragen. Reine Beitragsänderungen innerhalb desselben Vertrags behalten denselben Kreis.</p>
+                            <label htmlFor="insurance-uvg-from">UVG-Deckungsbeginn</label><input id="insurance-uvg-from" type="date" required value={insurance.uvgPoolFrom} onChange={e => setInsurance({ ...insurance, uvgPoolFrom: e.target.value })} />
+                            <label htmlFor="insurance-uvg-through">UVG-Deckungsende</label><input id="insurance-uvg-through" type="date" required value={insurance.uvgPoolThrough} onChange={e => setInsurance({ ...insurance, uvgPoolThrough: e.target.value })} />
+                        </>}
+                        {insurance.ktgPoolKey && <>
+                            <p>Für dieselbe Police denselben Kreis und Zeitraum verwenden. Bei neuer Lohngrenze/Police einen neuen Kreis ab Vertragswechsel erfassen. Die Jahreslohngrenze wird auf die versicherten Tage dieses Kreises begrenzt.</p>
+                            <label htmlFor="insurance-ktg-from">KTG-Vertragsbeginn</label><input id="insurance-ktg-from" type="date" required value={insurance.ktgPoolFrom} onChange={e => setInsurance({ ...insurance, ktgPoolFrom: e.target.value })} />
+                            <label htmlFor="insurance-ktg-through">KTG-Vertragsende</label><input id="insurance-ktg-through" type="date" required value={insurance.ktgPoolThrough} onChange={e => setInsurance({ ...insurance, ktgPoolThrough: e.target.value })} />
+                        </>}
                         <button type="submit" className="primary-btn">{saving === 'insurance' ? 'Wird gespeichert …' : 'Versicherungsversion anlegen'}</button>
                     </fieldset>
                 </form>
@@ -105,6 +129,10 @@ export default function PayrollConfigurationPanel() {
                 </form>
             </div>
             <PayrollTermsPanel employees={data.employees} />
+            <button type="button" aria-expanded={showOpening} onClick={() => setShowOpening(v => !v)}>Eröffnungswerte erfassen / anzeigen</button>
+            {showOpening && <PayrollOpeningPanel employees={data.employees} />}
+            <button type="button" aria-expanded={showPeriodInputs} onClick={() => setShowPeriodInputs(v => !v)}>Zusätzliche Monatsgrundlagen erfassen / anzeigen</button>
+            {showPeriodInputs && <PayrollPeriodInputPanel employees={data.employees} />}
             <h4>Gespeicherte Versicherungsversionen</h4>
             {data.versions.length === 0 ? <p>Noch keine zeitlich gültigen Vertragswerte hinterlegt.</p> : <div className="payroll-configuration-history">
                 <table><thead><tr><th>Gültig ab</th><th>Geltungsbereich</th><th>Werte</th><th>Grundlage</th><th>Version</th></tr></thead>
@@ -112,7 +140,7 @@ export default function PayrollConfigurationPanel() {
                         <td>{version.effectiveFrom}</td>
                         <td>{version.userId == null ? 'Firma' : data.employees.find(employee => employee.id === version.userId)?.name || `Mitarbeitende #${version.userId}`}</td>
                         <td>{version.userId == null ? <>{rateFields.map(([key, label]) => <div key={key}>{label}: {percent(version[key])}</div>)}<div>KTG-Jahreslohngrenze: {version.ktgAnnualSalaryCap != null && Number(version.ktgAnnualSalaryCap) === 0 ? 'Unbeschränkt' : money(version.ktgAnnualSalaryCap)}</div></> : <>AN: {money(version.bvgEmployee)}<br />AG: {money(version.bvgEmployer)}</>}</td>
-                        <td>{version.source}</td><td>#{version.id}</td>
+                        <td>{version.source}{version.ktgPoolKey && <div>KTG-Kreis {version.ktgPoolKey}: {version.ktgPoolFrom} – {version.ktgPoolThrough}</div>}{version.uvgPoolKey && <div>UVG-Kreis {version.uvgPoolKey}: {version.uvgPoolFrom} – {version.uvgPoolThrough}</div>}</td><td>#{version.id}</td>
                     </tr>)}</tbody>
                 </table>
             </div>}

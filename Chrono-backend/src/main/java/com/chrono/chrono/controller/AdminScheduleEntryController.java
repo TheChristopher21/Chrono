@@ -4,7 +4,7 @@ import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.repositories.ScheduleEntryRepository;
 import com.chrono.chrono.repositories.ScheduleChangeLogRepository;
 import com.chrono.chrono.repositories.UserRepository;
-import com.chrono.chrono.repositories.ScheduleRuleRepository;
+import com.chrono.chrono.services.ShiftDefinitionService;
 import com.chrono.chrono.dto.ScheduleChangeLogDTO;
 import com.chrono.chrono.dto.ScheduleEntryDTO;
 import com.chrono.chrono.entities.ScheduleChangeLog;
@@ -41,7 +41,7 @@ public class AdminScheduleEntryController {
     @Autowired
     private UserRepository userRepo;
     @Autowired
-    private ScheduleRuleRepository ruleRepo;
+    private ShiftDefinitionService shiftDefinitionService;
     @Autowired
     private WorkScheduleService workScheduleService;
     @Autowired
@@ -111,8 +111,8 @@ public class AdminScheduleEntryController {
         scheduleChangeLogRepository.save(log);
     }
 
-    private int getShiftDurationMinutes(String shiftKey) {
-        return ruleRepo.findByShiftKey(shiftKey)
+    private int getShiftDurationMinutes(User user, String shiftKey) {
+        return shiftDefinitionService.resolveForUser(user, shiftKey)
                 .map(rule -> {
                     LocalTime start = LocalTime.parse(rule.getStartTime());
                     LocalTime end = LocalTime.parse(rule.getEndTime());
@@ -130,8 +130,8 @@ public class AdminScheduleEntryController {
         return (parsed.getHour() * 60) + parsed.getMinute();
     }
 
-    private List<int[]> getShiftIntervals(String shiftKey) {
-        Optional<ScheduleRule> ruleOpt = ruleRepo.findByShiftKey(shiftKey);
+    private List<int[]> getShiftIntervals(User user, String shiftKey) {
+        Optional<ScheduleRule> ruleOpt = shiftDefinitionService.resolveForUser(user, shiftKey);
         if (ruleOpt.isEmpty()) {
             return List.of();
         }
@@ -150,9 +150,9 @@ public class AdminScheduleEntryController {
         return List.of();
     }
 
-    private boolean shiftsOverlap(String leftShift, String rightShift) {
-        List<int[]> leftIntervals = getShiftIntervals(leftShift);
-        List<int[]> rightIntervals = getShiftIntervals(rightShift);
+    private boolean shiftsOverlap(User user, String leftShift, String rightShift) {
+        List<int[]> leftIntervals = getShiftIntervals(user, leftShift);
+        List<int[]> rightIntervals = getShiftIntervals(user, rightShift);
         for (int[] left : leftIntervals) {
             for (int[] right : rightIntervals) {
                 if (Math.max(left[0], right[0]) < Math.min(left[1], right[1])) {
@@ -169,7 +169,7 @@ public class AdminScheduleEntryController {
 
     private int sumShiftMinutes(List<ScheduleEntry> entries) {
         return entries.stream()
-                .mapToInt(entry -> getShiftDurationMinutes(entry.getShift()))
+                .mapToInt(entry -> getShiftDurationMinutes(entry.getUser(), entry.getShift()))
                 .sum();
     }
 
@@ -183,8 +183,8 @@ public class AdminScheduleEntryController {
         if (date == null || shiftKey == null || shiftKey.isBlank()) {
             return "Date and shift are required";
         }
-        int newEntryMinutes = getShiftDurationMinutes(shiftKey);
-        if (newEntryMinutes <= 0) {
+        int newEntryMinutes = getShiftDurationMinutes(user, shiftKey);
+        if (newEntryMinutes <= 0 || !shiftDefinitionService.isAssignable(user, shiftKey)) {
             return "Shift is invalid";
         }
         if (workScheduleService.isDayOff(user, date) || getExpectedDailyMinutes(user, date) <= 0) {
@@ -196,7 +196,7 @@ public class AdminScheduleEntryController {
         if (sameShiftExists) {
             return "User already scheduled for this shift";
         }
-        boolean overlaps = dayEntries.stream().anyMatch(entry -> shiftsOverlap(shiftKey, entry.getShift()));
+        boolean overlaps = dayEntries.stream().anyMatch(entry -> shiftsOverlap(user, shiftKey, entry.getShift()));
         if (overlaps) {
             return "Shift overlaps with another shift for this user";
         }
@@ -340,8 +340,8 @@ public class AdminScheduleEntryController {
                 continue;
             }
 
-            int newMinutes = getShiftDurationMinutes(dto.getShift());
-            if (newMinutes <= 0 || workScheduleService.isDayOff(user, dto.getDate()) || getExpectedDailyMinutes(user, dto.getDate()) <= 0) {
+            int newMinutes = getShiftDurationMinutes(user, dto.getShift());
+            if (newMinutes <= 0 || !shiftDefinitionService.isAssignable(user, dto.getShift()) || workScheduleService.isDayOff(user, dto.getDate()) || getExpectedDailyMinutes(user, dto.getDate()) <= 0) {
                 continue;
             }
 
@@ -352,7 +352,7 @@ public class AdminScheduleEntryController {
                             .collect(Collectors.toCollection(ArrayList::new))
             );
             boolean dayConflict = shiftKeysForDay.stream()
-                    .anyMatch(existingShift -> dto.getShift().equals(existingShift) || shiftsOverlap(dto.getShift(), existingShift));
+                    .anyMatch(existingShift -> dto.getShift().equals(existingShift) || shiftsOverlap(user, dto.getShift(), existingShift));
             if (dayConflict) {
                 continue;
             }

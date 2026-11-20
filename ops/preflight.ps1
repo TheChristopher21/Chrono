@@ -96,6 +96,24 @@ foreach ($secret in @(
     Require-Value $secret 24
 }
 
+# The existing live NFC token must have an explicit company/device owner.
+# This validates configuration shape only; the operator must confirm the ID
+# against the target database and the backend checks that it exists.
+[long]$nfcCompanyId = 0
+if (-not $values.ContainsKey("NFC_AGENT_COMPANY_ID") -or
+    $values["NFC_AGENT_COMPANY_ID"] -notmatch "^[0-9]+$" -or
+    -not [long]::TryParse($values["NFC_AGENT_COMPANY_ID"], [ref]$nfcCompanyId) -or
+    $nfcCompanyId -le 0) {
+    $errors.Add(
+        "NFC_AGENT_COMPANY_ID must be the positive, operator-confirmed ID of the existing NFC device's company " +
+        "(Praxis for this deployment). Do not guess or use the first company."
+    )
+}
+if (-not $values.ContainsKey("NFC_AGENT_DEVICE_ID") -or
+    $values["NFC_AGENT_DEVICE_ID"] -notmatch "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$") {
+    $errors.Add("NFC_AGENT_DEVICE_ID must be a stable device ID of 1-100 letters, digits, dots, underscores or hyphens, starting with a letter or digit (for example praxis-reader).")
+}
+
 if ($values.ContainsKey("MYSQL_USER") -and $values["MYSQL_USER"].ToLowerInvariant() -eq "root") {
     $errors.Add("MYSQL_USER must be a dedicated application account, not root.")
 }

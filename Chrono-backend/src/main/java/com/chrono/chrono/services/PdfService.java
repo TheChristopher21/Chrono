@@ -78,6 +78,11 @@ public class PdfService {
             java.util.Map<String, String> compTrans = new java.util.HashMap<>();
             compTrans.put("Base salary", en ? "Base salary" : "Grundlohn");
             compTrans.put("Thirteenth salary", en ? "Thirteenth salary" : "13. Monatslohn");
+            compTrans.put("Paid vacation", en ? "Paid vacation" : "Ferien-/Urlaubslohn");
+            compTrans.put("Paid public holidays", en ? "Paid public holidays" : "Bezahlte Feiertage");
+            compTrans.put("Employer sick pay", en ? "Employer sick pay" : "Arbeitgeber-Lohnfortzahlung Krankheit");
+            compTrans.put("Vacation allowance", en ? "Vacation allowance" : "Ferienzuschlag");
+            compTrans.put("Holiday allowance", en ? "Holiday allowance" : "Feiertagszuschlag");
             compTrans.put("Legacy net reconciliation", en ? "Legacy net reconciliation" : "Ausgleich Nettodifferenz Altbeleg");
             compTrans.put("Legacy deduction difference", en ? "Legacy deduction difference" : "Abzugsdifferenz Altbeleg");
             compTrans.put("Legacy earnings difference", en ? "Legacy earnings difference" : "Bruttodifferenz Altbeleg");
@@ -106,6 +111,15 @@ public class PdfService {
             compTrans.put("FAK", "FAK");
             for (String key : java.util.List.of("Income tax", "Solidarity surcharge", "Church tax", "Pension insurance", "Health insurance", "Nursing insurance", "Unemployment insurance", "Insolvency levy"))
                 compTrans.put(key + " · thirteenth", compTrans.get(key) + (en ? " · thirteenth salary" : " · 13. Monatslohn"));
+            compTrans.put("Arrears payment",en?"Arrears / supplementary payment":"Lohnnachzahlung / zusätzlicher Bezug");
+            compTrans.put("BVG · Nachzahlung",en?"BVG · supplementary contribution":"BVG · Nachzahlung");
+            for(String key:java.util.List.of("Income tax","Solidarity surcharge","Church tax","Pension insurance","Health insurance","Nursing insurance","Unemployment insurance","Insolvency levy")) {
+                compTrans.put(key+" · one-off remuneration",compTrans.get(key)+(en?" · one-off remuneration":" · sonstiger Bezug"));
+                compTrans.put(key+" · SV 2025",compTrans.get(key)+" · SV 2025");
+            }
+            for(var component:java.util.stream.Stream.of(ps.getDeductionsList(),ps.getEmployerContribList()).filter(java.util.Objects::nonNull).flatMap(java.util.Collection::stream).toList()) {
+                String type=component.getType();if(type==null)continue;int at=type.indexOf(" · Altperiode ");if(at>0){String key=type.substring(0,at);compTrans.put(type,compTrans.getOrDefault(key,key)+(en?" · original period ":" · Altperiode ")+type.substring(at+14));}
+            }
 
 
             // ---- Header mit Firmenlogo und Firmendaten ----
@@ -244,11 +258,81 @@ public class PdfService {
                 doc.add(new Paragraph((en ? "Original document #" : "Originalbeleg #") + ps.getCorrectionOfId()
                         + (ps.getSupersedesCorrectionId() == null ? "" : (en ? "; previous correction #" : "; vorherige Korrektur #") + ps.getSupersedesCorrectionId()), normalFont));
                 doc.add(new Paragraph(saved.path("correction").path("reason").asText(), normalFont));
+                if(!saved.path("correction").path("yearAssignment").isMissingNode()&&!saved.path("correction").path("yearAssignment").isNull()) {
+                    doc.add(new Paragraph((en?"Original-period payment evidence: ":"Nachweis der Originalperiodenzahlung: ")+saved.path("correction").path("yearAssignment").path("source").asText(),normalFont));
+                    if(ps.getPayoutDate()!=null&&ps.getPayoutDate().getYear()!=ps.getPeriodStart().getYear())doc.add(new Paragraph((en?"Tax/social-insurance correction for original year ":"Steuer-/SV-Berichtigung des Originaljahrs ")+ps.getPeriodStart().getYear()+(en?"; gross wages unchanged.":"; Bruttolohn unverändert."),normalFont));
+                }
                 var dto = new com.chrono.chrono.dto.PayslipDTO(ps);
                 doc.add(new Paragraph((en ? "Corrected monthly totals: gross " : "Korrigierter Monatsstand: Brutto ") + String.format(java.util.Locale.ROOT, "%.2f %s", dto.getCorrectedGrossSalary(), currency)
                         + (en ? ", net " : ", Netto ") + String.format(java.util.Locale.ROOT, "%.2f %s", dto.getCorrectedNetSalary(), currency), normalFont));
                 doc.add(new Paragraph(en ? "Only differences are shown. Negative net amounts are repayments/offsets; original documents remain valid."
                         : "Ausgewiesen sind ausschliesslich Differenzen. Negative Nettobeträge sind Rückforderungen/Verrechnungen; Originalbelege bleiben erhalten.", normalFont));
+            }
+            if(ps.getCalculationSnapshot()!=null) {
+                var snapshotJson=new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+                var saved=snapshotJson.readTree(ps.getCalculationSnapshot());
+                var remuneration=saved.path("remuneration");
+                if(remuneration.isObject()&&remuneration.path("applied").isArray()&&!remuneration.path("applied").isEmpty()) {
+                    doc.add(new Paragraph(en?"Allocation of supplementary payments":"Zuordnung der Nachzahlungen",labelFont));
+                    doc.add(new Paragraph(en?"The amounts below are calculation bases. The earnings/deduction tables show amounts charged or paid.":"Die folgenden Beträge sind Berechnungsgrundlagen. Ausbezahlte bzw. verrechnete Beträge stehen in den Bezüge-/Abzugstabellen.",normalFont));
+                    PdfPTable bases=new PdfPTable(new float[]{3,2});bases.setWidthPercentage(100);bases.setSpacingBefore(6);bases.setSpacingAfter(6);bases.setKeepTogether(true);
+                    for(String[] item:new String[][]{{en?"Gross cash in this period":"Bruttozufluss dieser Periode",saved.path("gross").path("total").asText()},{en?"Gross allocated for withholding":"Steuerlich zugeordnetes Brutto",remuneration.path("taxGross").path("total").asText()},{en?"Gross allocated for social insurance":"Der SV-Periode zugeordnetes Brutto",remuneration.path("socialGross").path("total").asText()}}) {
+                        bases.addCell(cell(item[0],normalFont,false));bases.addCell(cell(item[1]+" "+currency,normalFont,false));
+                    }
+                    doc.add(bases);java.util.Set<String> shown=new java.util.HashSet<>();
+                    for(var applied:remuneration.path("applied")) {
+                        var payment=applied.path("payment");if(!shown.add(payment.path("reference").asText()))continue;
+                        String from=snapshotJson.treeToValue(payment.path("earnedFrom"),java.time.LocalDate.class).toString(),through=snapshotJson.treeToValue(payment.path("earnedThrough"),java.time.LocalDate.class).toString();
+                        String received=snapshotJson.treeToValue(payment.path("receivedOn"),java.time.LocalDate.class).toString(),claim=snapshotJson.treeToValue(payment.path("claimEstablishedOn"),java.time.LocalDate.class).toString();
+                        doc.add(new Paragraph(payment.path("reference").asText()+": "+payment.path("gross").asText()+" "+currency+(en?"; work ":"; Arbeit ")+from+"–"+through+(en?"; entitlement ":"; Anspruch ")+claim+(en?"; received ":"; Zufluss ")+received,normalFont));
+                    }
+                }
+                var assessment=remuneration.path("assessment");
+                if(assessment.isObject()&&assessment.path("originalPeriods").isArray()&&!assessment.path("originalPeriods").isEmpty()) {
+                    doc.add(new Paragraph(en?"Settlement of original periods":"Differenzausgleich für Altperioden",labelFont));
+                    doc.add(new Paragraph(en?"Original payroll figures remain unchanged. Only the additional amounts in the deduction/contribution tables are settled in this document.":"Die Originalwerte bleiben unverändert. Nur die zusätzlichen Beträge der Abzugs-/Beitragstabellen werden mit diesem Beleg verrechnet.",normalFont));
+                    for(int n=0;n<assessment.path("originalPeriods").size();n++) {
+                        var original=assessment.path("originalPeriods").get(n);var revised=assessment.path("revisedPeriods").path(n);
+                        String date=snapshotJson.treeToValue(original.path("periodStart"),java.time.LocalDate.class).toString();
+                        var taxBase=revised.path("remuneration").path("taxGross").path("total");var socialBase=revised.path("remuneration").path("socialGross").path("total");
+                        boolean charged=java.util.stream.Stream.of(assessment.path("employee"),assessment.path("employer")).anyMatch(map->{var names=map.fieldNames();while(names.hasNext())if(names.next().contains(" · Altperiode "+date))return true;return false;});
+                        if(!charged&&taxBase.decimalValue().compareTo(original.path("gross").path("total").decimalValue())==0&&socialBase.decimalValue().compareTo(original.path("gross").path("total").decimalValue())==0)continue;
+                        PdfPTable historyTable=new PdfPTable(new float[]{3,2,2});historyTable.setWidthPercentage(100);historyTable.setSpacingBefore(6);historyTable.setSpacingAfter(6);historyTable.setKeepTogether(true);
+                        historyTable.addCell(headerCell(date));historyTable.addCell(headerCell(en?"Original":"Original"));historyTable.addCell(headerCell(en?"Revised basis":"Neue Grundlage"));
+                        java.util.List<String[]> rows=new java.util.ArrayList<>();
+                        String total=original.path("gross").path("total").asText();rows.add(new String[]{en?"Withholding gross":"Steuerbrutto",total,taxBase.asText()});rows.add(new String[]{en?"Social-insurance gross":"SV-Brutto",total,socialBase.asText()});
+                        if(original.path("germanBasis").isObject())for(String field:new String[]{"pensionBase","healthBase"})rows.add(new String[]{field.equals("pensionBase")?(en?"Pension / unemployment base":"RV-/ALV-Basis"):(en?"Health / care base":"KV-/PV-Basis"),original.path("germanBasis").path(field).asText(),revised.path("germanBasis").path(field).asText()});
+                        for(var row:rows){historyTable.addCell(cell(row[0],normalFont,false));historyTable.addCell(cell(row[1]+" "+currency,normalFont,false));historyTable.addCell(cell(row[2]+" "+currency,normalFont,false));}doc.add(historyTable);
+                    }
+                    if(ps.getNetSalary()!=null&&ps.getNetSalary()<0)doc.add(new Paragraph(en?"Negative balance: repayment / offset to be clarified separately. This is not a bank payment order.":"Negativer Saldo: Rückforderung / Verrechnung gesondert klären. Dieser Beleg löst keine Bankzahlung aus.",normalFont));
+                }
+                var prior=saved.path("germanBasis").path("priorYear");
+                if(prior.isObject())doc.add(new Paragraph((en?"March clause: social insurance allocated to ":"Märzklausel: SV-Zuordnung zum ")+snapshotJson.treeToValue(prior.path("assignmentDate"),java.time.LocalDate.class)+(en?"; pension base ":"; RV-/ALV-Basis ")+prior.path("pensionBase").asText()+" "+currency+(en?"; health base ":"; KV-/PV-Basis ")+prior.path("healthBase").asText()+" "+currency+"; "+prior.path("source").asText(),normalFont));
+                var insurance=saved.path("swissBasis").path("insuranceSlices");
+                if(insurance.isArray()&&!insurance.isEmpty()) {
+                    doc.add(new Paragraph(en?"Insurance by coverage period":"Versicherung nach Deckungsabschnitt",labelFont));
+                    PdfPTable split=new PdfPTable(new float[]{3,2,2,2});split.setWidthPercentage(100);split.setSpacingBefore(6);split.setSpacingAfter(6);split.setHeaderRows(1);
+                    for(String columnTitle:new String[]{en?"Coverage":"Deckung",en?"UVG base":"UVG-Basis",en?"KTG base":"KTG-Basis","BVG AN / AG"})split.addCell(headerCell(columnTitle));
+                    for(var row:insurance) {
+                        split.addCell(cell(snapshotJson.treeToValue(row.path("from"),java.time.LocalDate.class)+"–"+snapshotJson.treeToValue(row.path("through"),java.time.LocalDate.class),normalFont,false));
+                        split.addCell(cell(row.path("uvgBase").asText(),normalFont,false));split.addCell(cell(row.path("ktgBase").asText(),normalFont,false));split.addCell(cell(row.path("pensionEmployee").asText()+" / "+row.path("pensionEmployer").asText(),normalFont,false));
+                    }
+                    doc.add(split);
+                }
+                var allocations=snapshotJson.readTree(ps.getCalculationSnapshot()).path("swissBasis").path("withholdingAllocations");
+                if(allocations.isArray()&&!allocations.isEmpty()) {
+                    doc.add(new Paragraph(ps.isCorrection()?(en?"Withholding allocation of corrected monthly totals":"Quellensteuerzuordnung des korrigierten Monatsstands"):(en?"Withholding allocation by canton period":"Quellensteuer nach Kantonsabschnitt"),labelFont));
+                    if(ps.isCorrection())doc.add(new Paragraph(en?"This allocation shows the recalculated monthly amounts. Only the differences in the deduction table below are charged or refunded.":"Diese Zuordnung zeigt die neu berechneten Monatsbeträge. Verrechnet werden nur die Differenzen in der nachfolgenden Abzugstabelle.",normalFont));
+                    PdfPTable allocationTable=new PdfPTable(new float[]{1,2,2});allocationTable.setWidthPercentage(100);allocationTable.setSpacingBefore(6f);
+                    allocationTable.addCell(headerCell(en?"Canton":"Kanton"));allocationTable.addCell(headerCell(en?"Period from":"Abschnitt ab"));allocationTable.addCell(headerCell(en?"Deduction / refund":"Abzug / Erstattung"));
+                    for(var allocation:allocations) {
+                        allocationTable.addCell(cell(allocation.path("canton").asText(),normalFont,false));
+                        String from=snapshotJson.treeToValue(allocation.path("from"),java.time.LocalDate.class).toString();
+                        allocationTable.addCell(cell(from,normalFont,false));
+                        allocationTable.addCell(cell(String.format(java.util.Locale.ROOT,"%.2f %s",allocation.path("amount").asDouble(),currency),normalFont,false));
+                    }
+                    doc.add(allocationTable);
+                }
             }
 
             doc.add(new Paragraph(" "));
@@ -257,6 +341,8 @@ public class PdfService {
             PdfPTable earningsTable = new PdfPTable(new float[]{4, 2, 2});
             earningsTable.setWidthPercentage(70);
             earningsTable.setSpacingAfter(10);
+            earningsTable.setKeepTogether(true);
+            earningsTable.setHeaderRows(1);
             earningsTable.addCell(headerCell(earningsHeader));
             earningsTable.addCell(headerCell(amountHeader));
             earningsTable.addCell(headerCell(currencyHeader));
@@ -270,12 +356,14 @@ public class PdfService {
                 earningsTable.addCell(cell(currency, normalFont, false));
 
             }
-            doc.add(earningsTable);
+            if(!ps.getEarnings().isEmpty())doc.add(earningsTable);
 
             // ---- Abzüge (Deductions) ----
             PdfPTable dedTable = new PdfPTable(new float[]{4, 2, 2});
             dedTable.setWidthPercentage(70);
             dedTable.setSpacingAfter(10);
+            dedTable.setKeepTogether(true);
+            dedTable.setHeaderRows(1);
             dedTable.addCell(headerCell(deductionsHeader));
             dedTable.addCell(headerCell(amountHeader));
             dedTable.addCell(headerCell(currencyHeader));
@@ -296,6 +384,8 @@ public class PdfService {
                 PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
                 empTable.setWidthPercentage(70);
                 empTable.setSpacingAfter(10);
+                empTable.setKeepTogether(true);
+                empTable.setHeaderRows(1);
                 empTable.addCell(headerCell(employerHeader));
                 empTable.addCell(headerCell(amountHeader));
                 empTable.addCell(headerCell(currencyHeader));
@@ -320,6 +410,8 @@ public class PdfService {
                 PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
                 empTable.setWidthPercentage(70);
                 empTable.setSpacingAfter(10);
+                empTable.setKeepTogether(true);
+                empTable.setHeaderRows(1);
                 empTable.addCell(headerCell(employerHeader));
                 empTable.addCell(headerCell(amountHeader));
                 empTable.addCell(headerCell(currencyHeader));
@@ -365,6 +457,7 @@ public class PdfService {
             // ---- Summenblock ----
             PdfPTable totals = new PdfPTable(3);
             totals.setWidthPercentage(70);
+            totals.setKeepTogether(true);
             totals.setSpacingAfter(15);
             totals.addCell(headerCell(totalsHeader, BaseColor.LIGHT_GRAY));
             totals.addCell(headerCell(amountHeader, BaseColor.LIGHT_GRAY));
@@ -399,12 +492,10 @@ public class PdfService {
                     FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
             legal.setAlignment(Element.ALIGN_LEFT);
             legal.setSpacingAfter(6);
-            doc.add(legal);
 
             Paragraph contact = new Paragraph(contactText,
                     FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
             contact.setAlignment(Element.ALIGN_LEFT);
-            doc.add(contact);
 
             BarcodeQRCode barcode = new BarcodeQRCode("payslip-" + ps.getId(), 100, 100, null);
             Image qrImage = barcode.getImage();
@@ -421,7 +512,10 @@ public class PdfService {
             qrCell.setBorder(Rectangle.NO_BORDER);
             qrCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             signatures.addCell(qrCell);
-            doc.add(signatures);
+            PdfPTable footer=new PdfPTable(1);footer.setWidthPercentage(100);footer.setKeepTogether(true);
+            PdfPCell footerCell=new PdfPCell();footerCell.setBorder(Rectangle.NO_BORDER);footerCell.setPadding(0);
+            footerCell.addElement(legal);footerCell.addElement(contact);footerCell.addElement(signatures);
+            footer.addCell(footerCell);doc.add(footer);
 
             doc.close();
             return baos.toByteArray();

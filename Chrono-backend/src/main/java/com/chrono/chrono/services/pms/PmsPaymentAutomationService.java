@@ -30,7 +30,7 @@ public class PmsPaymentAutomationService {
         properties.findByIdAndCompany_Id(propertyId,companyId).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,"Hotel nicht gefunden."));
         var config=settings.findById(propertyId).orElse(new PmsPaymentSettings());
         return new Status(enabled,config.getLastAutomationAt(),config.getLastAutomationError(),requests.findTop100ByFolio_Reservation_Property_IdOrderByCreatedAtDesc(propertyId).stream()
-                .map(r -> new RequestStatus(r.getId(),r.getFolio().getId(),r.getRequestKey(),r.getStatus(),r.getMerchantContext(),r.getAutomationError(),r.getLastCheckedAt())).toList(),
+                .map(r -> new RequestStatus(r.getId(),r.getFolio().getId(),r.clientKey(),r.getStatus(),r.getMerchantContext(),r.getAutomationError(),r.getLastCheckedAt())).toList(),
                 payments.findTop100ByFolio_Reservation_Property_IdAndMethodAndKindAndMerchantContextIsNullOrderByIdDesc(propertyId,PaymentMethod.CARD,PaymentKind.PAYMENT).stream().map(p -> new LegacyPayment(p.getId(),p.getFolio().getId(),p.getAmount())).toList());
     });}
     public void run(){
@@ -52,7 +52,7 @@ public class PmsPaymentAutomationService {
         try {
             Long requestId=tx.execute(s -> {
                 PmsPaymentRequest request=event.getObjectId().startsWith("cs_")?requests.findByProviderSessionId(event.getObjectId()).orElse(null):requests.findByProviderPaymentIntentId(event.getObjectId()).orElse(null);
-                if(request==null && event.getRequestKey()!=null) request=requests.findByRequestKey(event.getRequestKey()).orElse(null);
+                if(request==null && event.getRequestKey()!=null) request=requests.findByProviderRequestKey(event.getRequestKey()).orElse(null);
                 if(request==null)return null;
                 if(!PmsStripeWebhookService.owns(request.getMerchantContext(),event.getAccountId()))throw new IllegalArgumentException("Händlerkontext stimmt nicht überein.");
                 return request.getId();
@@ -86,7 +86,7 @@ public class PmsPaymentAutomationService {
             return new Deposit(r.getProperty().getCompany().getId(),folio.getId(),policy.depositOutstandingAmount(),"deposit-reservation-"+reservationId);
         });
         if(deposit==null)return;
-        Long existing=requests.findByRequestKey(deposit.key()).map(PmsPaymentRequest::getId).orElse(null);
+        Long existing=requests.findByAutomaticReservationIdAndFolio_Reservation_Property_IdAndFolio_Reservation_Property_Company_Id(reservationId,propertyId,deposit.companyId()).map(PmsPaymentRequest::getId).orElse(null);
         PmsPaymentRequestView request=existing==null?checkout.createAutomaticDeposit(deposit.companyId(),propertyId,deposit.folioId(),reservationId,new CreatePmsPaymentRequest(deposit.key(),deposit.amount(),"PAYMENT")):
                 checkout.reconcile(deposit.companyId(),propertyId,existing,"deposit-automation");
         if("OPEN".equals(request.status())&&request.checkoutUrl()!=null)delivery.queuePaymentLink(deposit.companyId(),propertyId,reservationId,deposit.key(),request.checkoutUrl(),request.amount(),request.currencyCode());

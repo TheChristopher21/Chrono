@@ -58,9 +58,12 @@ public class PayrollApprovalGuard {
                 throw new IllegalStateException("Korrekturläufe müssen vollständig und gemeinsam freigegeben werden.");
             if (members.stream().map(Payslip::getCorrectionOfId).distinct().count() != members.size()) throw new IllegalStateException("Doppelte Originalzuordnung im Korrekturlauf.");
             var first = members.stream().min(Comparator.comparing(Payslip::getPeriodStart)).orElseThrow();
+            var calculation=calculations.savedCalculation(first);
+            boolean openingCorrection=calculation!=null&&calculation.correction()!=null&&(calculation.correction().openingVersionId()!=null||Boolean.TRUE.equals(calculation.correction().financialOnly()));
             // A normal SELECT could still see the snapshot from before the employee lock was acquired.
             var affected = payslips.findApprovedForUpdate(first.getUser()).stream().filter(s -> !s.isCorrection()
-                    && s.getPeriodStart().getYear() == first.getPeriodStart().getYear() && !s.getPeriodStart().isBefore(first.getPeriodStart())).map(Payslip::getId).sorted().toList();
+                    && s.getPeriodStart().getYear() == first.getPeriodStart().getYear() && !s.getPeriodStart().isBefore(first.getPeriodStart()))
+                    .filter(s -> !openingCorrection||calculations.financialOriginal(s)).map(Payslip::getId).sorted().toList();
             if (!affected.equals(members.stream().map(Payslip::getCorrectionOfId).sorted().toList())) throw new IllegalStateException("Weitere Folgemonate wurden freigegeben. Korrekturlauf neu erstellen.");
         }
         for (User user : lockedUsers.values()) {
@@ -107,11 +110,20 @@ public class PayrollApprovalGuard {
         BigDecimal deductions = money(slip.getDeductions(), "Abzüge");
         BigDecimal net = money(slip.getNetSalary(), "Nettolohn");
         BigDecimal employer = money(slip.getEmployerContributions(), "Arbeitgeberbeiträge");
-        if (!slip.isCorrection() && (gross.signum() < 0 || net.signum() < 0)) throw new IllegalStateException("Negativer Brutto-/Nettolohn benötigt einen ausdrücklich zugeordneten Korrekturbeleg.");
+        if (!slip.isCorrection() && (gross.signum() < 0 || net.signum() < 0&&!historicalBalance(slip,net))) throw new IllegalStateException("Negativer Brutto-/Nettolohn benötigt einen ausdrücklich zugeordneten Korrekturbeleg oder einen belegten historischen Differenzausgleich.");
         if (gross.subtract(deductions).compareTo(net) != 0) throw new IllegalStateException("Brutto minus Abzüge stimmt nicht mit dem Nettolohn überein.");
         checkComponents(slip.getEarnings(), gross, "Lohnbestandteile");
         checkComponents(slip.getDeductionsList(), deductions, "Abzugspositionen");
         checkComponents(slip.getEmployerContribList(), employer, "Arbeitgeberpositionen");
+    }
+    private static boolean historicalBalance(Payslip slip,BigDecimal net){
+        if(!PayrollCalculationService.VERSION.equals(slip.getCalculationVersion())||slip.getCalculationSnapshot()==null)return false;
+        try{
+            var a=new com.fasterxml.jackson.databind.ObjectMapper().readTree(slip.getCalculationSnapshot()).path("remuneration").path("assessment");
+            if(!a.path("fingerprint").asText().matches("[0-9a-f]{64}")||!a.path("originalPeriods").isArray()||a.path("originalPeriods").isEmpty()||!a.path("employee").isObject())return false;
+            BigDecimal charges=BigDecimal.ZERO;var values=a.path("employee").elements();while(values.hasNext()){var value=values.next();if(!value.isNumber())return false;charges=charges.add(value.decimalValue());}
+            return charges.signum()>0&&net.add(charges).signum()>=0;
+        }catch(Exception invalid){return false;}
     }
 
     private static BigDecimal money(Double value, String name) {

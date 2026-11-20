@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.NfcCommandRequest;
 import com.chrono.chrono.entities.NfcCommand;
 import com.chrono.chrono.services.NfcAgentAuthService;
 import com.chrono.chrono.services.NfcCommandService;
+import com.chrono.chrono.services.AccessControlService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/nfc")
@@ -25,10 +27,13 @@ public class NfcCommandController {
     @Autowired
     private NfcAgentAuthService nfcAgentAuthService;
 
+    @Autowired
+    private AccessControlService accessControlService;
+
     @GetMapping("/command/status/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public ResponseEntity<?> getCommandStatus(@PathVariable Long id) {
-        Optional<NfcCommand> commandOpt = nfcCommandService.getCommandById(id);
+    public ResponseEntity<?> getCommandStatus(@PathVariable Long id, Principal principal) {
+        Optional<NfcCommand> commandOpt = nfcCommandService.getCommandById(accessControlService.requireAuthenticatedUser(principal), id);
         if (commandOpt.isPresent()) {
             return ResponseEntity.ok(commandOpt.get());
         } else {
@@ -39,8 +44,8 @@ public class NfcCommandController {
 
     @PostMapping("/command")
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public ResponseEntity<?> createCommand(@RequestBody NfcCommandRequest request) {
-        NfcCommand command = nfcCommandService.createCommand(request.getType(), request.getData());
+    public ResponseEntity<?> createCommand(@RequestBody NfcCommandRequest request, Principal principal) {
+        NfcCommand command = nfcCommandService.createCommand(accessControlService.requireAuthenticatedUser(principal), request.getType(), request.getData());
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("id", command.getId());
         responseMap.put("status", "success");
@@ -55,8 +60,8 @@ public class NfcCommandController {
             @RequestHeader(value = "X-Agent-Token", required = false) String token,
             @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
             HttpServletRequest httpRequest) {
-        nfcAgentAuthService.requireAgent(token, legacyHeader, httpRequest);
-        return nfcCommandService.getPendingCommand().map(command -> {
+        NfcAgentAuthService.AgentIdentity agent = nfcAgentAuthService.requireAgent(token, legacyHeader, httpRequest);
+        return nfcCommandService.getPendingCommand(agent).map(command -> {
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("id", command.getId());
             responseMap.put("status", command.getStatus());
@@ -76,18 +81,12 @@ public class NfcCommandController {
             @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
             HttpServletRequest httpRequest) {
 
-        // Vergleiche mit trim() (entfernt zufällige Leerzeichen)
-        if (!nfcAgentAuthService.isAgentRequest(token, legacyHeader, httpRequest)) {
-            Map<String, Object> responseMap = new HashMap<>();
-            responseMap.put("status", "error");
-            responseMap.put("message", "Unauthorized: Invalid or missing agent token");
-            return ResponseEntity.status(403).body(responseMap);
-        }
+        NfcAgentAuthService.AgentIdentity agent = nfcAgentAuthService.requireAgent(token, legacyHeader, httpRequest);
 
         if (!status.equalsIgnoreCase("done")) {
             return ResponseEntity.badRequest().build();
         }
-        NfcCommand command = nfcCommandService.markCommandDone(id);
+        NfcCommand command = nfcCommandService.markCommandDone(agent, id);
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("id", command.getId());
         responseMap.put("status", command.getStatus());

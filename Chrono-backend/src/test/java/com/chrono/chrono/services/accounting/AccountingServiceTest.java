@@ -1,6 +1,7 @@
 package com.chrono.chrono.services.accounting;
 
 import com.chrono.chrono.entities.Payslip;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.accounting.Account;
 import com.chrono.chrono.entities.accounting.AccountType;
@@ -8,6 +9,7 @@ import com.chrono.chrono.entities.accounting.JournalEntry;
 import com.chrono.chrono.entities.accounting.JournalEntryLine;
 import com.chrono.chrono.repositories.accounting.AccountRepository;
 import com.chrono.chrono.repositories.accounting.JournalEntryRepository;
+import com.chrono.chrono.repositories.CompanyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,14 +38,20 @@ class AccountingServiceTest {
     @Autowired
     private JournalEntryRepository journalEntryRepository;
 
+    @Autowired
+    private CompanyRepository companyRepository;
+
+    private Company company;
+
     @BeforeEach
     void cleanEntries() {
         journalEntryRepository.deleteAll();
+        company = companyRepository.save(new Company("Praxis"));
     }
 
     @Test
-    void ensureSeedAccountsAreCreatedOnStartup() {
-        List<Account> accounts = accountRepository.findAll();
+    void seedAccountsAreCreatedForTheRequestedCompany() {
+        List<Account> accounts = accountingService.listAccounts(company);
         assertThat(accounts)
                 .extracting(Account::getCode)
                 .contains("1000", "1100", "2000", "3200", "5000");
@@ -51,8 +59,8 @@ class AccountingServiceTest {
 
     @Test
     void postEntryRejectsUnbalancedJournal() {
-        Account debitAccount = accountingService.ensureAccount("9990", "Temp Debit", AccountType.ASSET);
-        Account creditAccount = accountingService.ensureAccount("9991", "Temp Credit", AccountType.LIABILITY);
+        Account debitAccount = accountingService.ensureAccount(company, "9990", "Temp Debit", AccountType.ASSET);
+        Account creditAccount = accountingService.ensureAccount(company, "9991", "Temp Credit", AccountType.LIABILITY);
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(LocalDate.now());
@@ -73,7 +81,7 @@ class AccountingServiceTest {
 
         entry.setLines(List.of(debit, credit));
 
-        assertThatThrownBy(() -> accountingService.postEntry(entry))
+        assertThatThrownBy(() -> accountingService.postEntry(company, entry))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not balanced");
     }
@@ -89,6 +97,7 @@ class AccountingServiceTest {
 
         User user = new User();
         user.setUsername("jane.doe");
+        user.setCompany(company);
         user.setPassword("secret");
         user.setCountry("CH");
         user.setPersonnelNumber("EMP-1");
@@ -118,6 +127,7 @@ class AccountingServiceTest {
 
         User user = new User();
         user.setUsername("mirjam.burkhardt");
+        user.setCompany(company);
         user.setPassword("secret");
         user.setCountry("CH");
         user.setPersonnelNumber("EMP-2");
@@ -142,6 +152,52 @@ class AccountingServiceTest {
     }
 
     @Test
+    void legacyHalfCentRoundingCannotSilentlyCreateAnUnbalancedPosting() {
+        Payslip payslip = legacyHalfCentPayslip();
+
+        // The legacy generator subtracted doubles before rounding. Java rounds
+        // gross to 18.78 but this stored net to 17.47: a one-cent imbalance.
+        assertThatThrownBy(() -> accountingService.recordPayrollPosting(payslip))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Journal entry not balanced");
+        assertThat(journalEntryRepository.count()).isZero();
+    }
+
+    @Test
+    void explicitlyCorrectedLegacyRoundingPostsWithoutChangingOvertimeOrApproving() {
+        Payslip payslip = legacyHalfCentPayslip();
+        payslip.setGrossSalary(18.78);
+        payslip.setNetSalary(17.48);
+
+        JournalEntry entry = accountingService.recordPayrollPosting(payslip);
+
+        assertThat(entry.getLines().stream().map(JournalEntryLine::getDebit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("20.60");
+        assertThat(entry.getLines().stream().map(JournalEntryLine::getCredit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("20.60");
+        assertThat(entry.getLines()).filteredOn(line -> "Net payout".equals(line.getMemo()))
+                .singleElement().satisfies(line -> assertThat(line.getCredit()).isEqualByComparingTo("17.48"));
+        assertThat(payslip.getOvertimeHours()).isEqualTo(17.0 / 60);
+        assertThat(payslip.isApproved()).isFalse();
+    }
+
+    private Payslip legacyHalfCentPayslip() {
+        Payslip payslip = new Payslip();
+        payslip.setId(94L);
+        payslip.setGrossSalary(18.775);
+        payslip.setDeductions(1.30);
+        payslip.setNetSalary(17.474999999999998);
+        payslip.setEmployerContributions(1.82);
+        payslip.setOvertimeHours(17.0 / 60);
+        payslip.setPayoutOvertime(true);
+        User user = new User();
+        user.setUsername("rounding.regression");
+        user.setCompany(company);
+        payslip.setUser(user);
+        return payslip;
+    }
+
+    @Test
     void recordPayrollPostingIsIdempotentForTheSamePayslip() {
         Payslip payslip = new Payslip();
         payslip.setId(99L);
@@ -153,6 +209,7 @@ class AccountingServiceTest {
 
         User user = new User();
         user.setUsername("hourly.employee");
+        user.setCompany(company);
         payslip.setUser(user);
 
         JournalEntry first = accountingService.recordPayrollPosting(payslip);

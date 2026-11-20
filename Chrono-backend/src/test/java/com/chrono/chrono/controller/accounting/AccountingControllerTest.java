@@ -27,6 +27,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,9 +66,9 @@ class AccountingControllerTest {
     void accountingViewPermissionCanReadAccountingSetupEndpoints() {
         User user = accountingAdmin(UserPermissionService.ACCESS_VIEW);
         when(userRepository.findByUsernameWithPermissionContext("admin")).thenReturn(Optional.of(user));
-        when(accountingService.listAccounts()).thenReturn(List.of());
-        when(accountingService.listEntries(any(Pageable.class))).thenReturn(Page.empty());
-        when(assetManagementService.listAssets()).thenReturn(List.of());
+        when(accountingService.listAccounts(user.getCompany())).thenReturn(List.of());
+        when(accountingService.listEntries(eq(user.getCompany()), any(Pageable.class))).thenReturn(Page.empty());
+        when(assetManagementService.listAssets(user.getCompany())).thenReturn(List.of());
 
         ResponseEntity<?> accounts = controller.listAccounts(principal("admin"));
         ResponseEntity<?> journal = controller.listJournal(0, 5, principal("admin"));
@@ -76,9 +77,9 @@ class AccountingControllerTest {
         assertEquals(200, accounts.getStatusCode().value());
         assertEquals(200, journal.getStatusCode().value());
         assertEquals(200, assets.getStatusCode().value());
-        verify(accountingService).listAccounts();
-        verify(accountingService).listEntries(any(Pageable.class));
-        verify(assetManagementService).listAssets();
+        verify(accountingService).listAccounts(user.getCompany());
+        verify(accountingService).listEntries(eq(user.getCompany()), any(Pageable.class));
+        verify(assetManagementService).listAssets(user.getCompany());
     }
 
     @Test
@@ -96,6 +97,7 @@ class AccountingControllerTest {
 
     private User accountingAdmin(String accessLevel) {
         Company company = new Company("Demo Company");
+        company.setId(1L);
         company.setEnabledFeatures(Set.of("accounting"));
 
         User user = new User();

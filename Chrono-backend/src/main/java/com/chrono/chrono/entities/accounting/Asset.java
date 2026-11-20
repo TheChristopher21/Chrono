@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -13,6 +14,11 @@ public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
 
     @Column(nullable = false)
     private String assetName;
@@ -50,6 +56,9 @@ public class Asset {
     public void setId(Long id) {
         this.id = id;
     }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 
     public String getAssetName() {
         return assetName;

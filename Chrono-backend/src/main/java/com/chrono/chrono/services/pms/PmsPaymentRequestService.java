@@ -66,12 +66,19 @@ public class PmsPaymentRequestService {
                 if(!settings.isAutomaticDepositLinks() || settings.getVerifiedAt()==null || !automaticReservationId.equals(reservation.getId()) || reservation.getStatus()!=ReservationStatus.CONFIRMED
                         || !policy.depositOverdue() || policy.depositOutstandingAmount().compareTo(amount)!=0 || !"PAYMENT".equals(input.kind()))throw error(HttpStatus.CONFLICT,"Anzahlungsauftrag entspricht nicht mehr den aktuellen Bedingungen.");
             }
-            PmsPaymentRequest existing = requests.findByRequestKey(input.requestId()).orElse(null);
+            String source = automaticReservationId == null ? "CLIENT" : "AUTOMATIC_DEPOSIT";
+            if (automaticReservationId != null && !input.requestId().equals("deposit-reservation-" + automaticReservationId))
+                throw error(HttpStatus.BAD_REQUEST, "Ungültige automatische Anzahlungs-ID.");
+            PmsPaymentRequest existing = automaticReservationId == null
+                    ? requests.findByFolio_IdAndRequestSourceAndClientRequestKey(folioId, source, input.requestId()).orElse(null)
+                    : requests.findByAutomaticReservationIdAndFolio_Reservation_Property_IdAndFolio_Reservation_Property_Company_Id(automaticReservationId, propertyId, companyId).orElse(null);
             if (existing != null) {
                 if (!existing.getFolio().getId().equals(folioId) || !existing.getKind().equals(input.kind()) || existing.getAmount().compareTo(amount) != 0)
                     throw error(HttpStatus.CONFLICT, "Die Vorgangs-ID gehört zu einer anderen Zahlungsanforderung.");
                 return existing.getId();
             }
+            if (automaticReservationId == null && input.requestId().toLowerCase(java.util.Locale.ROOT).matches("(deposit|chrono)[._:-].*"))
+                throw error(HttpStatus.BAD_REQUEST, "Diese Vorgangs-ID ist für serverseitige Zahlungsautomatik reserviert.");
             if (folio.getStatus() != FolioStatus.OPEN) throw error(HttpStatus.CONFLICT, "Das Gastkonto ist geschlossen.");
             periods.assertPostingOpen(property, periods.currentBusinessDate(property));
             if ("PAYMENT".equals(input.kind())) {
@@ -80,7 +87,9 @@ public class PmsPaymentRequestService {
                 if (amount.add(reserved).compareTo(balance(folioId)) > 0) throw error(HttpStatus.CONFLICT, "Der Betrag überschreitet das offene Guthaben unter Berücksichtigung offener Zahlungslinks.");
             }
             PmsPaymentRequest row = new PmsPaymentRequest(); row.setFolio(folio); row.setAmount(amount);
-            row.setCurrencyCode(property.getCurrencyCode()); row.setKind(input.kind()); row.setRequestKey(input.requestId()); row.setCreatedBy(username);
+            row.setCurrencyCode(property.getCurrencyCode()); row.setKind(input.kind());
+            row.setRequestKey("chrono-pms-request-" + java.util.UUID.randomUUID());
+            row.setClientRequestKey(input.requestId()); row.setRequestSource(source); row.setAutomaticReservationId(automaticReservationId); row.setCreatedBy(username);
             row.setMerchantContext(gateway().merchantContext(property));
             requests.saveAndFlush(row);
             audit.append(property, "payment_request.created", "payment_request", row.getId().toString(), "{}");
@@ -229,6 +238,6 @@ public class PmsPaymentRequestService {
                 && r.getFolio().getReservation().getProperty().getCompany().getId().equals(companyId))
                 .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "Zahlungsvorgang nicht gefunden."));
     }
-    private PmsPaymentRequestView view(PmsPaymentRequest r) { return new PmsPaymentRequestView(r.getId(), r.getRequestKey(), r.getFolio().getId(), r.getKind(), r.getStatus(), r.getAmount(), r.getCaptureAmount(), r.getCurrencyCode(), r.getCheckoutUrl(), r.getProviderSessionId(), r.getProviderPaymentIntentId(), r.getProviderStatus(), r.getCreatedAt(), r.getUpdatedAt()); }
+    private PmsPaymentRequestView view(PmsPaymentRequest r) { return new PmsPaymentRequestView(r.getId(), r.clientKey(), r.getFolio().getId(), r.getKind(), r.getStatus(), r.getAmount(), r.getCaptureAmount(), r.getCurrencyCode(), r.getCheckoutUrl(), r.getProviderSessionId(), r.getProviderPaymentIntentId(), r.getProviderStatus(), r.getCreatedAt(), r.getUpdatedAt()); }
     private ResponseStatusException error(HttpStatus status, String message) { return new ResponseStatusException(status, message); }
 }

@@ -28,6 +28,7 @@ public class AccountsPayableService {
 
     @Transactional
     public VendorInvoice recordVendorInvoice(VendorInvoice invoice) {
+        AccountingService.requireCompany(invoice.getCompany());
         if (invoice.getInvoiceNumber() == null) {
             invoice.setInvoiceNumber("SUP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
@@ -43,8 +44,8 @@ public class AccountsPayableService {
     }
 
     private void postExpenseEntry(VendorInvoice invoice) {
-        Account expense = accountingService.ensureAccount("4000", "Materialaufwand", AccountType.EXPENSE);
-        Account liability = accountingService.ensureAccount("2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);
+        Account expense = accountingService.ensureAccount(invoice.getCompany(), "4000", "Materialaufwand", AccountType.EXPENSE);
+        Account liability = accountingService.ensureAccount(invoice.getCompany(), "2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(invoice.getInvoiceDate() != null ? invoice.getInvoiceDate() : LocalDate.now());
@@ -65,7 +66,7 @@ public class AccountsPayableService {
         credit.setMemo(invoice.getVendorName());
 
         entry.setLines(List.of(debit, credit));
-        JournalEntry posted = accountingService.postEntry(entry);
+        JournalEntry posted = accountingService.postEntry(invoice.getCompany(), entry);
         invoice.setJournalEntry(posted);
         vendorInvoiceRepository.save(invoice);
     }
@@ -101,8 +102,8 @@ public class AccountsPayableService {
                 : vendorInvoiceRepository.findById(invoiceId)
                     .orElseThrow(() -> new IllegalArgumentException("Vendor invoice not found: " + invoiceId));
 
-        Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
-        Account liability = accountingService.ensureAccount("2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);
+        Account bank = accountingService.ensureAccount(invoice.getCompany(), "1000", "Bank", AccountType.ASSET);
+        Account liability = accountingService.ensureAccount(invoice.getCompany(), "2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);
 
         JournalEntry entry = new JournalEntry();
         LocalDate postingDate = paymentDate != null ? paymentDate : LocalDate.now();
@@ -124,7 +125,7 @@ public class AccountsPayableService {
         credit.setMemo(memo != null && !memo.isBlank() ? memo : "Vendor payment");
 
         entry.setLines(List.of(debit, credit));
-        accountingService.postEntry(entry);
+        accountingService.postEntry(invoice.getCompany(), entry);
 
         BigDecimal newPaid = invoice.getAmountPaid().add(amount);
         if (newPaid.compareTo(invoice.getAmount()) >= 0) {

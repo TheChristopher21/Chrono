@@ -4,7 +4,7 @@
  * pixelgleich zu den bisherigen seitenbezogenen Styles bleibt.
  */
 @media screen and (max-width: 768px),
-       screen and (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+       screen and (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     :root {
         --mobile-page-gutter: clamp(12px, 4vw, 20px);
         --mobile-control-height: 48px;
@@ -54,9 +54,14 @@
         -webkit-tap-highlight-color: transparent;
     }
 
+    :where(button, input, select, textarea) {
+        font-family: inherit;
+    }
+
     :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
         select, textarea) {
         max-width: 100%;
+        min-width: 0;
         min-height: var(--mobile-control-height) !important;
         font-size: 16px !important;
         line-height: 1.35;
@@ -77,27 +82,41 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    :where(.modal-overlay) {
+    /* Outrank legacy page styles that also declare unscoped modal classes. */
+    :root .modal-overlay {
+        top: var(--modal-viewport-top, 0px);
+        bottom: auto;
+        height: 100vh;
+        height: min(var(--modal-viewport-height, 100dvh), 100dvh);
         align-items: flex-end;
+        box-sizing: border-box;
         padding-top: max(12px, env(safe-area-inset-top, 0px));
         padding-right: max(10px, env(safe-area-inset-right, 0px));
         padding-bottom: env(safe-area-inset-bottom, 0px);
         padding-left: max(10px, env(safe-area-inset-left, 0px));
+        z-index: 10000;
     }
 
-    :where(.modal-content) {
+    :root .modal-overlay .modal-content {
         width: 100%;
-        max-width: 100%;
-        max-height: calc(100vh - max(12px, env(safe-area-inset-top, 0px)));
-        max-height: calc(100dvh - max(12px, env(safe-area-inset-top, 0px)));
+        min-width: 0;
+        max-width: 600px;
+        max-height: 100%;
         margin: 0;
         padding: clamp(16px, 4vw, 22px);
         border-radius: 20px 20px 0 0;
+        background: var(--modal-surface, #fff);
+        color: var(--modal-text, #0f172a);
+        border: 1px solid var(--modal-border, #e5e7eb);
+        box-shadow: var(--modal-shadow);
+        overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
     }
 
-    :where(.modal-content .modal-buttons) {
+    :root .modal-content .modal-buttons,
+    :root .modal-content .modal-footer {
+        display: flex;
         position: sticky;
         bottom: calc(-1 * clamp(16px, 4vw, 22px));
         z-index: 2;
@@ -111,10 +130,51 @@
         border-top: 1px solid var(--modal-border, #e5e7eb);
     }
 
-    :where(.modal-content .modal-buttons > button,
-        .modal-content .modal-buttons > a) {
+    :root .modal-content :is(.modal-buttons, .modal-footer) > :is(button, a) {
         flex: 1 1 140px;
         min-height: 48px;
+    }
+
+    :root .modal-content :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    :root .modal-content[data-context^="correction-"] .entry-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    :root .modal-content[data-context^="correction-"] .remove-entry-btn {
+        width: 44px;
+        min-height: 44px;
+        margin: 0;
+        padding: 0;
+    }
+
+    :root .modal-content[data-context^="correction-"] .add-correction-entry {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .mobile-tab-bar {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Keep everyday screens clear of the camera cutout in landscape. */
+    :is(.user-dashboard, .hourly-dashboard, .percentage-dashboard, .user-payslips-page).scoped-dashboard,
+    .personal-data-page.scoped-personal-data {
+        padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px));
+        padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px));
+    }
+
+    .scoped-login .login-hero {
+        max-width: calc(100% - max(12px, env(safe-area-inset-left, 0px)) - max(12px, env(safe-area-inset-right, 0px)));
     }
 
     .scoped-floating-buttons.floating-buttons-container {
@@ -136,7 +196,8 @@
     /* Persönliche Daten */
     .personal-data-page.scoped-personal-data {
         min-height: 100dvh;
-        padding: var(--mobile-page-gutter);
+        padding-top: var(--mobile-page-gutter);
+        padding-bottom: var(--mobile-page-gutter);
     }
 
     .personal-data-page.scoped-personal-data .page-header,
@@ -619,13 +680,8 @@
     }
 }
 
-@media screen and (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+@media screen and (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     html {
         scroll-padding-top: calc(60px + env(safe-area-inset-top, 0px));
-    }
-
-    :where(.modal-content) {
-        max-height: 100dvh;
-        border-radius: 16px 16px 0 0;
     }
 }

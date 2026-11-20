@@ -6,17 +6,22 @@ Only the published PAP grammar is accepted; unknown nodes fail the build step.
 from pathlib import Path
 import hashlib
 import xml.etree.ElementTree as ET
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--year', type=int, choices=(2025, 2026), default=2026)
+year = parser.parse_args().year
 
 root = Path(__file__).resolve().parents[2]
-source = root / 'Chrono-backend/src/main/resources/payroll/de/Lohnsteuer2026.xml'
-target = root / 'Chrono-backend/src/main/java/com/chrono/chrono/services/payroll/BmfLohnsteuer2026.java'
+source = root / f'Chrono-backend/src/main/resources/payroll/de/Lohnsteuer{year}.xml'
+target = root / f'Chrono-backend/src/main/java/com/chrono/chrono/services/payroll/BmfLohnsteuer{year}.java'
 pap = ET.fromstring(source.read_bytes())
 lines = [
     'package com.chrono.chrono.services.payroll;', '', 'import java.math.BigDecimal;', '',
     '/** Generated from the official BMF PAP. Do not edit; run tools/payroll/generate_bmf.py.',
-    ' * Source: https://www.bmf-steuerrechner.de/javax.faces.resource/daten/xmls/Lohnsteuer2026.xml.xhtml',
+    f' * Source: https://www.bmf-steuerrechner.de/javax.faces.resource/daten/xmls/Lohnsteuer{year}.xml.xhtml',
     ' * SHA-256: ' + hashlib.sha256(source.read_bytes()).hexdigest(), ' */',
-    '@SuppressWarnings("deprecation")', 'public final class BmfLohnsteuer2026 {'
+    '@SuppressWarnings("deprecation")', f'public final class BmfLohnsteuer{year} {{'
 ]
 for group in pap.find('VARIABLES'):
     for field in group:

@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateCompanyKnowledgeRequest;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.CompanyKnowledge;
 import com.chrono.chrono.entities.User;
@@ -44,11 +45,11 @@ public class AdminKnowledgeController {
     }
 
     @PostMapping
-    public ResponseEntity<CompanyKnowledge> create(@RequestBody CompanyKnowledge doc,
+    public ResponseEntity<CompanyKnowledge> create(@RequestBody CreateCompanyKnowledgeRequest request,
                                                    Principal principal) {
         Company c = getCompany(principal);
         if (c == null) return ResponseEntity.badRequest().build();
-        doc.setCompany(c);
+        CompanyKnowledge doc = new CompanyKnowledge(c, request.getTitle(), request.getContent(), request.getAccessLevel());
         return ResponseEntity.ok(knowledgeService.save(doc));
     }
 

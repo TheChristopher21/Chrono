@@ -12,6 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import com.chrono.chrono.services.PayrollOpeningService;
+import com.chrono.chrono.entities.PayrollOpeningVersion;
+import com.chrono.chrono.services.PayrollPeriodInputService;
+import com.chrono.chrono.entities.PayrollPeriodInputVersion;
+import com.chrono.chrono.services.PayrollOpeningCorrectionService;
 import java.security.Principal;
 
 @RestController
@@ -21,8 +26,30 @@ public class PayrollConfigurationController {
     private final UserRepository users;
     private final PayrollConfigurationService configuration;
     private final PayrollTermsService terms;
-    public PayrollConfigurationController(UserRepository users, PayrollConfigurationService configuration, PayrollTermsService terms) {
-        this.users = users; this.configuration = configuration; this.terms = terms;
+    private final PayrollOpeningService openings;
+    private final PayrollPeriodInputService periodInputs;
+    private final PayrollOpeningCorrectionService openingCorrections;
+    public PayrollConfigurationController(UserRepository users, PayrollConfigurationService configuration, PayrollTermsService terms, PayrollOpeningService openings,PayrollPeriodInputService periodInputs,PayrollOpeningCorrectionService openingCorrections) {
+        this.users = users; this.configuration = configuration; this.terms = terms; this.openings=openings; this.periodInputs=periodInputs;this.openingCorrections=openingCorrections;
+    }
+    @GetMapping("/openings")
+    public List<PayrollOpeningVersion> openings(Principal principal) { return openings.list(companyId(actor(principal))); }
+    @PostMapping("/openings")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PayrollOpeningVersion addOpening(@RequestBody PayrollOpeningService.Input input, Principal principal) {
+        User actor=actor(principal); return openings.add(companyId(actor),actor.getId(),input);
+    }
+    @PostMapping("/openings/corrections")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PayrollOpeningCorrectionService.Result correctOpening(@RequestBody PayrollOpeningCorrectionService.Input input,Principal principal) {
+        User actor=actor(principal);return openingCorrections.stage(companyId(actor),actor.getId(),input,actor.getUsername());
+    }
+    @GetMapping("/period-inputs")
+    public List<PayrollPeriodInputVersion> periodInputs(Principal principal) {return periodInputs.list(companyId(actor(principal)));}
+    @PostMapping("/period-inputs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PayrollPeriodInputVersion addPeriodInput(@RequestBody PayrollPeriodInputService.Input input,Principal principal) {
+        User actor=actor(principal);return periodInputs.add(companyId(actor),actor.getId(),input);
     }
     @GetMapping("/terms")
     public List<PayrollTermsVersion> terms(Principal principal) { return terms.list(companyId(actor(principal))); }

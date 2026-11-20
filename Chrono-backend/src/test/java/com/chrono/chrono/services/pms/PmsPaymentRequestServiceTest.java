@@ -19,11 +19,11 @@ import static org.mockito.Mockito.*;
 class PmsPaymentRequestServiceTest {
     PmsPaymentRequestRepository requests; FolioRepository folios; FolioItemRepository items;
     PaymentRepository payments; PmsPaymentGateway gateway; PlatformTransactionManager transactions;
-    PmsPaymentRequestService service; Map<Long,PmsPaymentRequest> rows; List<Payment> ledger; HotelProperty hotel; Folio folio;
+    HotelPropertyRepository properties; PmsPaymentRequestService service; Map<Long,PmsPaymentRequest> rows; List<Payment> ledger; HotelProperty hotel; Folio folio;
     @BeforeEach void setup() throws Exception {
         requests=mock(PmsPaymentRequestRepository.class); folios=mock(FolioRepository.class); items=mock(FolioItemRepository.class);
         payments=mock(PaymentRepository.class); gateway=mock(PmsPaymentGateway.class); transactions=mock(PlatformTransactionManager.class);
-        HotelPropertyRepository properties=mock(HotelPropertyRepository.class); PmsFinancialPeriodService periods=mock(PmsFinancialPeriodService.class);
+        properties=mock(HotelPropertyRepository.class); PmsFinancialPeriodService periods=mock(PmsFinancialPeriodService.class);
         Company company=new Company("Hotel"); company.setId(1L); hotel=new HotelProperty(); ReflectionTestUtils.setField(hotel,"id",2L); hotel.setCompany(company); hotel.setCurrencyCode("CHF");
         Reservation stay=new Reservation(); stay.setId(3L); stay.setProperty(hotel); stay.setGuaranteeStatus(ReservationGuaranteeStatus.UNGUARANTEED);
         folio=new Folio(); folio.setId(4L); folio.setReservation(stay); folio.setStatus(FolioStatus.OPEN);
@@ -34,8 +34,9 @@ class PmsPaymentRequestServiceTest {
         when(folios.findByIdAndReservation_Property_Company_Id(4L,1L)).thenReturn(Optional.of(folio));
         when(folios.findAllByReservation_IdOrderByIdAsc(3L)).thenReturn(List.of(folio));
         when(requests.findById(anyLong())).thenAnswer(i->Optional.ofNullable(rows.get(i.getArgument(0))));
-        when(requests.findByRequestKey(anyString())).thenAnswer(i->rows.values().stream().filter(r->r.getRequestKey().equals(i.getArgument(0))).findFirst());
-        when(requests.findAllByFolio_IdOrderByCreatedAtDesc(4L)).thenAnswer(i->new ArrayList<>(rows.values()));
+        when(requests.findByFolio_IdAndRequestSourceAndClientRequestKey(anyLong(),anyString(),anyString())).thenAnswer(i->rows.values().stream().filter(r->r.getFolio().getId().equals(i.getArgument(0)) && r.getRequestSource().equals(i.getArgument(1)) && r.clientKey().equals(i.getArgument(2))).findFirst());
+        when(requests.findByAutomaticReservationIdAndFolio_Reservation_Property_IdAndFolio_Reservation_Property_Company_Id(anyLong(),anyLong(),anyLong())).thenAnswer(i->rows.values().stream().filter(r->Objects.equals(r.getAutomaticReservationId(), i.getArgument(0)) && r.getFolio().getReservation().getProperty().getId().equals(i.getArgument(1)) && r.getFolio().getReservation().getProperty().getCompany().getId().equals(i.getArgument(2))).findFirst());
+        when(requests.findAllByFolio_IdOrderByCreatedAtDesc(anyLong())).thenAnswer(i->rows.values().stream().filter(r->r.getFolio().getId().equals(i.getArgument(0))).toList());
         when(requests.saveAndFlush(any())).thenAnswer(i->{PmsPaymentRequest row=i.getArgument(0);row.setId(100L+rows.size());row.setCreatedAt(LocalDateTime.now());rows.put(row.getId(),row);return row;});
         when(requests.save(any())).thenAnswer(i->i.getArgument(0));
         FolioItem line=new FolioItem();line.setTotalAmount(new BigDecimal("200"));
@@ -57,7 +58,9 @@ class PmsPaymentRequestServiceTest {
         var view=service.create(1L,2L,4L,payment(),"Alice");
         assertThat(view.status()).isEqualTo("OPEN");assertThat(ledger).isEmpty();
         var order=inOrder(transactions,gateway);order.verify(transactions).commit(any());
-        order.verify(gateway).createCheckout(hotel,folio,new BigDecimal("100.00"),false,"https://hotel.example/pms-payment-return","payment-one","CONNECT:acct_original");
+        order.verify(gateway).createCheckout(hotel,folio,new BigDecimal("100.00"),false,"https://hotel.example/pms-payment-return",rows.get(view.id()).getRequestKey(),"CONNECT:acct_original");
+        assertThat(view.requestId()).isEqualTo("payment-one");
+        assertThat(rows.get(view.id()).getRequestKey()).startsWith("chrono-pms-request-").isNotEqualTo(view.requestId());
         when(gateway.inspectCheckout("cs_test","CONNECT:acct_original")).thenReturn(result("succeeded","100","0"));
         assertThat(service.reconcile(1L,2L,view.id(),"Alice").status()).isEqualTo("PAID");
         service.create(1L,2L,4L,payment(),"Alice");
@@ -70,7 +73,7 @@ class PmsPaymentRequestServiceTest {
         assertThat(rows).hasSize(1);assertThat(ledger).isEmpty();
         doReturn(result("open","0","0")).when(gateway).createCheckout(any(),any(),any(),anyBoolean(),anyString(),anyString(),anyString());
         service.create(1L,2L,4L,payment(),"Alice");assertThat(rows).hasSize(1);
-        verify(gateway,times(2)).createCheckout(any(),any(),any(),anyBoolean(),anyString(),eq("payment-one"),eq("CONNECT:acct_original"));
+        verify(gateway,times(2)).createCheckout(any(),any(),any(),anyBoolean(),anyString(),eq(rows.values().iterator().next().getRequestKey()),eq("CONNECT:acct_original"));
     }
     @Test void requestIdentityCannotBeReusedForAnotherAmountAndOpenLinksReserveTheBalance() {
         service.create(1L,2L,4L,payment(),"Alice");
@@ -85,7 +88,7 @@ class PmsPaymentRequestServiceTest {
         assertThat(service.capture(1L,2L,view.id(),new BigDecimal("60"),"Alice").status()).isEqualTo("PAID");
         service.capture(1L,2L,view.id(),new BigDecimal("60"),"Alice");
         assertThat(ledger).hasSize(1);assertThat(ledger.get(0).getAmount()).isEqualByComparingTo("60");
-        verify(gateway,times(1)).captureAuthorization("pi_test",new BigDecimal("60.00"),"CHF","guarantee-one","CONNECT:acct_original");
+        verify(gateway,times(1)).captureAuthorization("pi_test",new BigDecimal("60.00"),"CHF",rows.get(view.id()).getRequestKey(),"CONNECT:acct_original");
     }
     @Test void releaseReconcilesProviderStatusAndRemovesOnlyTheCardGuarantee() throws Exception {
         when(gateway.createCheckout(any(),any(),any(),anyBoolean(),anyString(),anyString(),anyString())).thenReturn(result("requires_capture","0","100"));
@@ -110,6 +113,76 @@ class PmsPaymentRequestServiceTest {
         assertThat(ledger.get(0).getMerchantContext()).isEqualTo("CONNECT:acct_original");
         verify(gateway,never()).inspectCheckout(anyString(),eq("CONNECT:acct_replacement"));
     }
+    @Test void twoCompaniesCanReuseAClientKeyWithoutSharingProviderIdentityOrBlockingEachOther() throws Exception {
+        var otherCompany=new Company("Other"); otherCompany.setId(9L);
+        var otherHotel=new HotelProperty(); ReflectionTestUtils.setField(otherHotel,"id",20L); otherHotel.setCompany(otherCompany); otherHotel.setCurrencyCode("CHF");
+        var otherStay=new Reservation(); otherStay.setId(30L); otherStay.setProperty(otherHotel);
+        var otherFolio=new Folio(); otherFolio.setId(40L); otherFolio.setReservation(otherStay); otherFolio.setStatus(FolioStatus.OPEN);
+        when(properties.findByIdAndCompany_IdForUpdate(20L,9L)).thenReturn(Optional.of(otherHotel));
+        when(folios.findByIdAndReservation_Property_Company_Id(40L,9L)).thenReturn(Optional.of(otherFolio));
+        when(gateway.merchantContext(otherHotel)).thenReturn("CONNECT:acct_other");
+        var line=new FolioItem(); line.setTotalAmount(new BigDecimal("200"));
+        when(items.findAllByFolio_IdOrderByServiceDateAscIdAsc(40L)).thenReturn(List.of(line));
+        when(gateway.createCheckout(any(),any(),any(),anyBoolean(),anyString(),anyString(),anyString())).thenAnswer(i -> {
+            HotelProperty p=i.getArgument(0); Folio f=i.getArgument(1);
+            return new PmsPaymentGateway.CheckoutResult("cs_"+f.getId(),"https://checkout.stripe.com/example",null,"open",BigDecimal.ZERO,BigDecimal.ZERO,"CHF",p.getId().toString(),f.getId().toString());
+        });
+        var first=service.create(1L,2L,4L,payment(),"Alice");
+        var second=service.create(9L,20L,40L,payment(),"Bob");
+        assertThat(first.requestId()).isEqualTo(second.requestId());
+        assertThat(first.id()).isNotEqualTo(second.id());
+        assertThat(rows.get(first.id()).getRequestKey()).isNotEqualTo(rows.get(second.id()).getRequestKey());
+        assertThat(service.list(1L,2L,4L)).extracting(PmsPaymentRequestView::id).containsExactly(first.id());
+    }
+
+    @Test void automationNamespacesCannotBePreemptedThroughAlternateClientPrefixes() {
+        for(String key:List.of("deposit-reservation-3","DEPOSIT:RESERVATION:3","deposit_reservation_3","chrono.pms.request.3")) {
+            assertThatThrownBy(() -> service.create(1L,2L,4L,new CreatePmsPaymentRequest(key,new BigDecimal("100"),"PAYMENT"),"Alice")).hasMessageContaining("reserviert");
+        }
+        assertThat(rows).isEmpty();
+        verifyNoInteractions(payments);
+    }
+
+    @Test void aLegacyCommittedIntentKeepsItsProviderKeyForUncertainCheckoutAndCaptureRetries() throws Exception {
+        var legacy=new PmsPaymentRequest(); legacy.setId(200L); legacy.setFolio(folio); legacy.setKind("AUTHORIZATION"); legacy.setAmount(new BigDecimal("100"));
+        legacy.setCurrencyCode("CHF"); legacy.setRequestKey("guarantee-one"); legacy.setClientRequestKey("guarantee-one");
+        legacy.setMerchantContext("CONNECT:acct_original"); legacy.setCreatedAt(LocalDateTime.now()); rows.put(200L,legacy);
+        when(gateway.createCheckout(any(),any(),any(),anyBoolean(),anyString(),anyString(),anyString())).thenReturn(result("requires_capture","0","100"));
+        var view=service.create(1L,2L,4L,authorization(),"Alice");
+        assertThat(view.id()).isEqualTo(200L); assertThat(view.requestId()).isEqualTo("guarantee-one");
+        when(gateway.inspectCheckout("cs_test","CONNECT:acct_original")).thenReturn(result("requires_capture","0","100"),result("succeeded","60","0"));
+        service.capture(1L,2L,200L,new BigDecimal("60"),"Alice");
+        assertThat(legacy.getRequestKey()).isEqualTo("guarantee-one");
+        verify(gateway).createCheckout(hotel,folio,new BigDecimal("100"),true,"https://hotel.example/pms-payment-return","guarantee-one","CONNECT:acct_original");
+        verify(gateway).captureAuthorization("pi_test",new BigDecimal("60.00"),"CHF","guarantee-one","CONNECT:acct_original");
+        assertThat(rows).hasSize(1);
+    }
+
+    @Test void aLegacyManualReservedKeyCanStillRetryOnlyWithinItsOriginalFolio() throws Exception {
+        var legacy=new PmsPaymentRequest(); legacy.setId(200L); legacy.setFolio(folio); legacy.setKind("PAYMENT"); legacy.setAmount(new BigDecimal("100"));
+        legacy.setCurrencyCode("CHF"); legacy.setRequestKey("deposit-reservation-999"); legacy.setClientRequestKey("deposit-reservation-999");
+        legacy.setMerchantContext("CONNECT:acct_original"); legacy.setCreatedAt(LocalDateTime.now()); rows.put(200L,legacy);
+        var view=service.create(1L,2L,4L,new CreatePmsPaymentRequest("deposit-reservation-999",new BigDecimal("100"),"PAYMENT"),"Alice");
+        assertThat(view.id()).isEqualTo(200L); assertThat(view.requestId()).isEqualTo("deposit-reservation-999"); assertThat(rows).hasSize(1);
+        verify(gateway).createCheckout(hotel,folio,new BigDecimal("100"),false,"https://hotel.example/pms-payment-return","deposit-reservation-999","CONNECT:acct_original");
+    }
+
+    @Test void aForeignLegacyDepositKeyCannotOccupyTheActualReservationAutomationIdentity() {
+        var foreign=new PmsPaymentRequest(); foreign.setId(99L); foreign.setRequestKey("deposit-reservation-3"); foreign.setClientRequestKey("deposit-reservation-3");
+        var foreignFolio=new Folio(); foreignFolio.setId(88L); foreign.setFolio(foreignFolio); rows.put(99L,foreign);
+        var settings=mock(PmsPaymentSettingsRepository.class); var policies=mock(PmsReservationPolicyService.class);
+        ReflectionTestUtils.setField(service,"automationSettings",settings); ReflectionTestUtils.setField(service,"reservationPolicies",policies);
+        var config=new PmsPaymentSettings(); config.setPropertyId(2L); config.setVerifiedAt(LocalDateTime.now()); config.setAutomaticDepositLinks(true);
+        when(settings.findById(2L)).thenReturn(Optional.of(config));
+        folio.getReservation().setStatus(ReservationStatus.CONFIRMED);
+        when(policies.view(folio.getReservation())).thenReturn(new ReservationPolicyView(3L,LocalDateTime.now(),new BigDecimal("50"),new BigDecimal("100"),BigDecimal.ZERO,new BigDecimal("100"),LocalDate.now(),true,null,BigDecimal.ZERO,BigDecimal.ZERO,BigDecimal.ZERO,false));
+        var view=service.createAutomaticDeposit(1L,2L,4L,3L,new CreatePmsPaymentRequest("deposit-reservation-3",new BigDecimal("100"),"PAYMENT"));
+        var automatic=rows.get(view.id());
+        assertThat(automatic.getAutomaticReservationId()).isEqualTo(3L); assertThat(automatic.getRequestSource()).isEqualTo("AUTOMATIC_DEPOSIT");
+        assertThat(automatic.getRequestKey()).startsWith("chrono-pms-request-").isNotEqualTo(foreign.getRequestKey());
+        assertThat(view.requestId()).isEqualTo("deposit-reservation-3"); assertThat(rows).hasSize(2);
+    }
+
     @Test void automaticDepositRechecksOptInAndReservationStateUnderTheHotelLock() {
         var settings=mock(PmsPaymentSettingsRepository.class);var policies=mock(PmsReservationPolicyService.class);
         ReflectionTestUtils.setField(service,"automationSettings",settings);ReflectionTestUtils.setField(service,"reservationPolicies",policies);

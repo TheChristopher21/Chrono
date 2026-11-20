@@ -24,7 +24,7 @@ const MobileTabBar = () => {
     return (
         <>
             <div className="mobile-tab-spacer" aria-hidden="true" />
-            <nav className="mobile-tab-bar" aria-label={t("mobileTabBar.ariaLabel", "Mobile Navigation")}>
+            <nav className="mobile-tab-bar" style={{ '--mobile-tab-count': navItems.length }} aria-label={t("mobileTabBar.ariaLabel", "Mobile Navigation")}>
                 {navItems.map((item) => (
                     <WorkspaceLink
                         key={item.key}

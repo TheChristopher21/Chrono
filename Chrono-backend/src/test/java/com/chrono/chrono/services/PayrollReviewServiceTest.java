@@ -43,4 +43,13 @@ class PayrollReviewServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.review(new User(),start,start.plusDays(366)));
         verifyNoInteractions(tracking,slips);
     }
+    @Test void confirmedPaymentAfterExitDoesNotRequireWorkStampsOutsideEmployment() {
+        User user=new User();user.setId(1L);user.setUsername("payment-only");
+        var calculation=mock(PayrollCalculationService.Calculation.class);
+        when(calculation.remuneration()).thenReturn(new com.chrono.chrono.services.payroll.PayrollRemuneration(null,null,List.of(),List.of(),true));
+        when(calculations.calculate(user,start,end,null,false)).thenReturn(calculation);
+        var result=service.review(user,start,end);
+        assertTrue(result.ready());assertEquals(0,result.expectedMinutes());assertTrue(result.days().isEmpty());
+        verifyNoInteractions(tracking);verify(slips,never()).save(any());
+    }
 }

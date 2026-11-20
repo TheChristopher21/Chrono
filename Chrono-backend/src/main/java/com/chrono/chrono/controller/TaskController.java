@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateTaskRequest;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.User;
@@ -52,17 +53,21 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task, Principal principal) {
+    public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (task.getProject() == null || task.getProject().getId() == null) {
+        if (request.getProject() == null || request.getProject().getId() == null) {
             return ResponseEntity.badRequest().build();
         }
-        Project project = projectService.findById(task.getProject().getId()).orElse(null);
+        Project project = projectService.findById(request.getProject().getId()).orElse(null);
         if (project == null || project.getCustomer() == null ||
             !project.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
+        Task task = new Task();
+        task.setName(request.getName());
+        task.setBillable(request.getBillable());
+        task.setBudgetMinutes(request.getBudgetMinutes());
         task.setProject(project);
         return ResponseEntity.ok(taskService.save(task));
     }

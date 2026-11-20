@@ -40,8 +40,10 @@ public class PayrollReviewService {
     public PayrollReviewDTO review(User user, LocalDate start, LocalDate end) {
         validatePeriod(start, end);
         List<PayrollReviewDTO.Issue> issues = new ArrayList<>();
+        boolean cashOnly=false;
         try {
-            calculations.calculate(user, start, end, null, false);
+            var calculation=calculations.calculate(user, start, end, null, false);
+            cashOnly=calculation!=null&&calculation.remuneration()!=null&&calculation.remuneration().cashOnly();
             add(issues, "CALCULATION_AVAILABLE", "WARNING", "Die Berechnung mit datierten Regeln ist verfügbar. Vertragswerte, Sonderleistungen und die Steuerpflicht müssen zur Person passen; die Freigabe prüft den Entwurf erneut.", null, null);
         } catch (IllegalArgumentException | IllegalStateException | org.springframework.web.server.ResponseStatusException exception) {
             String reason = exception instanceof org.springframework.web.server.ResponseStatusException response ? response.getReason() : exception.getMessage();
@@ -52,7 +54,7 @@ public class PayrollReviewService {
         }
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
         if (!end.isBefore(today)) add(issues, "FUTURE_PERIOD", "BLOCKER", "Der Zeitraum enthält noch nicht abgeschlossene Tage.", null, null);
-        var summary = tracking.getUserPeriodSummary(user, start, end);
+        var summary = cashOnly?new com.chrono.chrono.dto.TimePeriodSummaryDTO(user.getUsername(),start,end,0,0,0,0,0,List.of()):tracking.getUserPeriodSummary(user, start, end);
         for (DailyTimeSummaryDTO day : summary.getDailySummaries()) {
             if (day.getDate().isAfter(today)) continue;
             if (day.isNeedsCorrection()) add(issues, "CORRECTION_REQUIRED", "BLOCKER", "Automatisch beendete Arbeitszeit muss geprüft werden.", day.getDate(), null);

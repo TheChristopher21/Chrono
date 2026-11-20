@@ -6,8 +6,8 @@ custom gateway translating Chrono envelopes into Beds24 requests.
 
 ## Implemented capabilities
 
-- Hotel-owned Beds24 property and server refresh-token reference, with external
-  property, currency and room ownership verification before activation.
+- Operator-bound company, local hotel, exact server refresh-token reference and
+  external Beds24 property, with currency and room verification before activation.
 - Explicit mapping of a Chrono public rate to a Beds24 room and daily price slot
   1–16. One Chrono category corresponds to one external room category, preventing
   the same capacity from being published into several external inventories.
@@ -31,8 +31,14 @@ custom gateway translating Chrono envelopes into Beds24 requests.
    bookings and inventory. Configure the intended daily-price occupancy, taxes,
    price rules and OTA/channel assignments in Beds24.
 2. Store the refresh token in a server environment variable such as
-   `HOTEL_42_BEDS24`. In the PMS master settings enter only
-   `env:HOTEL_42_BEDS24`, the external property ID and room/rate mappings.
+   `HOTEL_42_BEDS24`. Independently approve the company/local hotel/external hotel
+   relationship and configure `APP_PMS_BEDS24_BINDINGS` on the server. The syntax
+   is `companyId|localPropertyId|exactEnvReference|externalPropertyId`, with `;`
+   between tuples, for example `7|42|env:HOTEL_42_BEDS24|9876`. IDs are positive
+   integers; references are case-sensitive `env:...` names. No wildcard, trailing
+   semicolon or token value belongs here. If a refresh token covers several
+   hotels, list each approved tuple separately. In PMS master settings enter the
+   matching `env:HOTEL_42_BEDS24`, external property ID and room/rate mappings.
 3. Enable and save the connection. This performs a read-only provider check.
 4. Set `APP_PMS_BEDS24_WORKER_ENABLED=true` when the publication queue should be
    processed. The default is false. The fixed official endpoint is
@@ -56,6 +62,41 @@ blocked while an older pending, processing or failed job remains unresolved.
 Provider failures retry with a bounded delay, respecting Beds24's credit reset
 header, and become failed after eight attempts. An in-flight claim has a
 ten-minute recovery lease; ordinary HTTP requests time out after twenty seconds.
+
+## Existing-company rollout and operator inventory
+
+Existing settings, verified timestamps, publication IDs, payload snapshots and
+links remain intact. They do not grant authority to use a server token. An empty,
+malformed or mismatched binding configuration denies Beds24 save/verification,
+reconciliation (including disabled settings), linking, publication and retries
+before provider traffic. Other application features start normally. A queued job
+with a missing binding becomes `FAILED` with an operator configuration message;
+its original snapshot remains available. Discarding such a job remains possible.
+
+Before a manual deployment, keep the Beds24 worker disabled and collect this
+read-only, non-secret inventory against the intended database:
+
+```sql
+SELECT p.company_id, s.property_id, s.secret_reference, s.external_property_id,
+       s.enabled, s.verified_at
+FROM pms_beds24_settings s JOIN pms_properties p ON p.id = s.property_id
+ORDER BY p.company_id, s.property_id;
+
+SELECT p.company_id, j.property_id, j.id, j.status, j.secret_reference,
+       j.external_property_id, j.from_date, j.to_date
+FROM pms_beds24_publications j JOIN pms_properties p ON p.id = j.property_id
+WHERE j.status IN ('PENDING', 'PROCESSING', 'FAILED')
+ORDER BY p.company_id, j.property_id, j.id;
+```
+
+Use this inventory to identify records requiring review. Independently confirm
+each relationship with the operator's Beds24 account records before adding its
+tuple. Do not convert database rows or environment-variable naming conventions
+into an automatic allowlist. Keep refresh-token values out of inventory exports.
+Configure the exact approved tuples in the deployment environment, restart with
+the reviewed release, and verify the intended connection before enabling the
+worker. Review old pending/failed snapshots before retrying; changing settings
+does not rewrite them. Removing a tuple revokes future traffic after restart.
 
 ## Boundaries requiring explicit setup or further adapters
 

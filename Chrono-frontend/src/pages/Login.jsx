@@ -67,6 +67,10 @@ const Login = () => {
                             id="username"
                             name="username"
                             autoComplete="username"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            enterKeyHint="next"
                             required
                             value={form.username}
                             onChange={handleChange}
@@ -79,6 +83,7 @@ const Login = () => {
                             id="password"
                             name="password"
                             autoComplete="current-password"
+                            enterKeyHint="go"
                             required
                             value={form.password}
                             onChange={handleChange}

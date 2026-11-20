@@ -35,6 +35,14 @@ class PayrollGrossCalculatorTest {
         var result = PayrollGrossCalculator.calculate(PayrollTestTerms.swiss(),start,end,List.of(day(start,600)),null,false,9000);
         assertEquals(new BigDecimal("5000.00"),result.total()); assertEquals(0,result.paidOvertimeMinutes());
     }
+    @Test void fractionalMinuteWeeklyContractIsValidForSalaryButNotAnHourlyPremiumThreshold() {
+        var salary = PayrollTestTerms.change(PayrollTestTerms.swiss(),Map.of("weeklyHours","14.025"));
+        assertDoesNotThrow(() -> PayrollTermsService.validate(salary));
+        assertEquals(new BigDecimal("5000.00"), PayrollGrossCalculator.calculate(salary,start,end,
+                List.of(day(start,168)),null,false,null).total());
+        var hourly = PayrollTestTerms.change(salary,Map.of("payType","HOURLY","amount","30"));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> PayrollTermsService.validate(hourly));
+    }
     @Test void explicitPayoutUsesContractRateAndExactMinutes() {
         var result = PayrollGrossCalculator.calculate(PayrollTestTerms.swiss(),start,end,List.of(),1.5,true,90);
         assertEquals(new BigDecimal("56.25"),result.payout()); assertEquals(90,result.paidOvertimeMinutes());

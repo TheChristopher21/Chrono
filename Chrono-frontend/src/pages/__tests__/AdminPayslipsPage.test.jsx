@@ -133,6 +133,11 @@ describe('AdminPayslipsPage', () => {
     expect(screen.queryByText('Reto Pruefung')).not.toBeInTheDocument();
     expect(screen.queryByText('Bea Freigegeben')).not.toBeInTheDocument();
   });
+  it('does not describe a financial payment without hours as an overtime payout',async()=>{
+    render(<AdminPayslipsPage />);await screen.findByText('Anna Offen');
+    expect(within(rowFor('Anna Offen')).getByText('Lohnabrechnung')).toBeInTheDocument();
+    expect(within(rowFor('Anna Offen')).queryByText(/abgerechnete Ueberstunden/)).not.toBeInTheDocument();
+  });
 
   it('reviews signed corrections and approves the entire linked run', async () => {
     const user = userEvent.setup();
@@ -291,6 +296,35 @@ describe('AdminPayslipsPage', () => {
         }),
       })
     ));
+  });
+
+  it('blocks creation while the preview loads, when it rejects arrears, and after a failed refresh', async () => {
+    const previous=apiMock.get.getMockImplementation();let resolveReview;
+    apiMock.get.mockImplementation((url,...args)=>url==='/api/payslips/admin/review'
+      ? new Promise(resolve=>{resolveReview=resolve;}) : previous(url,...args));
+    const user=userEvent.setup();render(<AdminPayslipsPage />);
+    await screen.findByText('Anna Offen');await user.click(screen.getByRole('button',{name:'+ Neue Abrechnung'}));
+    const section=within(screen.getByRole('region',{name:'Neue Lohnabrechnung erstellen'}));
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'),'101');
+    await user.type(section.getByLabelText('Startdatum'),'2026-08-01');await user.type(section.getByLabelText('Enddatum'),'2026-08-31');
+    await user.click(section.getByRole('button',{name:'Vorschau berechnen'}));
+    const create=section.getByRole('button',{name:'Abrechnung erstellen'});expect(create).toBeDisabled();
+    await act(async()=>resolveReview({data:{ready:false,days:[],issues:[{code:'CALCULATION_BLOCKED',severity:'BLOCKER',message:'Zuerst Januar-Korrekturen freigeben.'}]}}));
+    expect(await section.findByText('Zuerst Januar-Korrekturen freigeben.')).toBeInTheDocument();expect(create).toBeDisabled();
+    apiMock.get.mockImplementation((url,...args)=>url==='/api/payslips/admin/review'?Promise.reject(new Error('offline')):previous(url,...args));
+    await user.click(section.getByRole('button',{name:'Vorschau berechnen'}));
+    expect(create).toBeDisabled();expect(await section.findByRole('alert')).toHaveTextContent('Prüfung konnte nicht geladen');
+    expect(create).toBeDisabled();expect(apiMock.post).not.toHaveBeenCalled();
+  });
+
+  it('allows creation after a successful preview despite a verification warning', async () => {
+    const previous=apiMock.get.getMockImplementation();
+    apiMock.get.mockImplementation((url,...args)=>url==='/api/payslips/admin/review'?Promise.resolve({data:{ready:true,days:[],issues:[{code:'CALCULATION_AVAILABLE',severity:'WARNING',message:'Grundlagen prüfen'}]}}):previous(url,...args));
+    const user=userEvent.setup();render(<AdminPayslipsPage />);await screen.findByText('Anna Offen');
+    await user.click(screen.getByRole('button',{name:'+ Neue Abrechnung'}));const section=within(screen.getByRole('region',{name:'Neue Lohnabrechnung erstellen'}));
+    await user.selectOptions(section.getByLabelText('Mitarbeiter'),'101');await user.type(section.getByLabelText('Startdatum'),'2026-08-01');await user.type(section.getByLabelText('Enddatum'),'2026-08-31');
+    await user.click(section.getByRole('button',{name:'Vorschau berechnen'}));await section.findByText('Grundlagen prüfen');
+    expect(section.getByRole('button',{name:'Abrechnung erstellen'})).toBeEnabled();
   });
 
   it('rejects an overtime entry whose minute part is invalid', async () => {

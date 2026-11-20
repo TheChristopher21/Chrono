@@ -82,10 +82,19 @@ public class TimeTrackingController {
         }
         
 
-        boolean isAllowed = requestingUser != null
-                ? accessControlService.canAccessUser(requestingUser, targetUser)
-                : punchSource == TimeTrackingEntry.PunchSource.NFC_SCAN
-                    && nfcAgentAuthService.isAgentRequest(nfcAgentToken, nfcAgentHeader, httpRequest);
+        boolean agentRequest = (nfcAgentToken != null && !nfcAgentToken.isBlank())
+                || "true".equalsIgnoreCase(nfcAgentHeader);
+        boolean isAllowed;
+        if (agentRequest || requestingUser == null) {
+            if (punchSource != TimeTrackingEntry.PunchSource.NFC_SCAN) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            NfcAgentAuthService.AgentIdentity agent = nfcAgentAuthService.requireAgent(nfcAgentToken, nfcAgentHeader, httpRequest);
+            nfcAgentAuthService.requireUserInCompany(agent, targetUser);
+            isAllowed = true;
+        } else {
+            isAllowed = accessControlService.canAccessUser(requestingUser, targetUser);
+        }
 
         if (!isAllowed) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);

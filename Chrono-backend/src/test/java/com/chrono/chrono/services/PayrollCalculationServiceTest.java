@@ -4,6 +4,8 @@ import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.entities.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import java.time.LocalDate;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,5 +81,33 @@ class PayrollCalculationServiceTest {
         var reversal = new Payslip(); reversal.setPeriodEnd(end); reversal.setPayoutOvertime(true); reversal.setOvertimeHours(-1.5);
         assertThrows(IllegalStateException.class, () -> service.calculate(user, february, februaryEnd, 1.0, true, Map.of(1L, reversal), 0));
         verifyNoInteractions(tax);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"100,42.5", "80,34", "33,14.025", "15,6.375"})
+    void percentagePayoutUsesTheTimeModelsContractual425HourBasis(int percent, String weeklyHours) {
+        draft(); user.setIsHourly(false); user.setIsPercentage(true); user.setWorkPercentage(percent);
+        user.setExpectedWorkDays(5); user.setTrackingBalanceInMinutes(600);
+        var rule = PayrollTestTerms.change(PayrollTestTerms.swiss(), Map.of("weeklyHours", weeklyHours));
+        assertDoesNotThrow(() -> PayrollTermsService.validate(rule));
+        when(terms.resolve(user,start,end)).thenReturn(new PayrollTermsService.Resolved(2L,rule));
+        when(history.resolveUserSnapshotsForRange(user,start,end)).thenReturn(Map.of(start,user));
+        when(tracking.getPayrollOvertimeBalance(user,end)).thenReturn(600);
+        when(tax.calculateRun(eq(user),any(),eq(start),eq(end),eq(rule),any()))
+                .thenReturn(new TaxCalculationService.Result(Map.of(),Map.of()));
+        var result = service.calculate(user,start,end,1.0,true);
+        assertEquals(60,result.gross().paidOvertimeMinutes());
+        assertEquals(new java.math.BigDecimal("37.50"),result.gross().payout());
+    }
+
+    @Test void percentagePayoutRejectsTheOld40HourAssumptionAndZeroPercentage() {
+        draft(); user.setIsHourly(false); user.setIsPercentage(true); user.setWorkPercentage(100);
+        user.setExpectedWorkDays(5); user.setTrackingBalanceInMinutes(600);
+        when(history.resolveUserSnapshotsForRange(user,start,end)).thenReturn(Map.of(start,user));
+        assertTrue(assertThrows(IllegalStateException.class, () -> service.calculate(user,start,end,1.0,true))
+                .getMessage().contains("Arbeitszeitmodell"));
+        user.setWorkPercentage(0);
+        assertTrue(assertThrows(IllegalStateException.class, () -> service.calculate(user,start,end,1.0,true))
+                .getMessage().contains("Arbeitspensum"));
     }
 }

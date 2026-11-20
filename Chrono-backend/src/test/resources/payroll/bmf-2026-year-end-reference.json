@@ -1,0 +1,122 @@
+{
+  "source": "Official BMF 2026Version1 program-test interface, annual LZZ=1",
+  "retrieved": "2026-11-03",
+  "cases": [
+    {
+      "inputs": {
+        "LZZ": 1,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 6000000
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "938900",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 1,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 6500000
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "1077200",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3828800",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 1,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1,
+        "RE4": 12000000
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "3159300",
+        "SOLZLZZ": "133791",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "8938700",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 1,
+        "STKL": 4,
+        "KVZ": "2.9",
+        "PVZ": 0,
+        "PVS": 0,
+        "PVA": 1,
+        "ZKF": "1.5",
+        "R": 1,
+        "af": 0,
+        "f": 1,
+        "RE4": 6500000
+      },
+      "outputs": {
+        "BK": "846100",
+        "BKS": "0",
+        "LSTLZZ": "1096800",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3884100",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    }
+  ]
+}

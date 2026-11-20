@@ -585,7 +585,7 @@
 }
 
 @media (max-width: 768px),
-       (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+       (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     html.workspace-launcher-open {
         overflow: hidden;
     }

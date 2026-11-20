@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -49,10 +50,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request, HttpServletRequest httpRequest) {
-        String attemptKey = buildAttemptKey(request, httpRequest);
+        String clientIp = resolveClientIp(httpRequest);
+        if (loginAttemptService.isRequestRateLimited(clientIp)) {
+            return tooManyLoginAttempts();
+        }
+        if (request == null || !request.hasValidUsernameLength()) {
+            throw new InvalidCredentialsException("Benutzername oder Passwort ist falsch.");
+        }
+        String attemptKey = request.getUsername().trim().toLowerCase(Locale.ROOT) + "@" + clientIp;
         if (loginAttemptService.isBlocked(attemptKey)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Zu viele fehlgeschlagene Anmeldeversuche. Bitte versuche es später erneut."));
+            return tooManyLoginAttempts();
         }
 
         try {
@@ -93,11 +100,9 @@ public class AuthController {
         return ResponseEntity.ok(userService.getUserProfileByUsername(username));
     }
 
-    private String buildAttemptKey(AuthRequest request, HttpServletRequest httpRequest) {
-        String username = request != null && request.getUsername() != null
-                ? request.getUsername().trim().toLowerCase()
-                : "anonymous";
-        return username + "@" + resolveClientIp(httpRequest);
+    private ResponseEntity<ErrorResponse> tooManyLoginAttempts() {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new ErrorResponse("Zu viele fehlgeschlagene Anmeldeversuche. Bitte versuche es später erneut."));
     }
 
     private String resolveClientIp(HttpServletRequest httpRequest) {
@@ -138,6 +143,9 @@ public class AuthController {
 
     private String cleanIpCandidate(String value) {
         if (value == null) {
+            return null;
+        }
+        if (value.length() > 64) {
             return null;
         }
         String candidate = value.trim();

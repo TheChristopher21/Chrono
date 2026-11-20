@@ -39,6 +39,12 @@ public class PayrollConfigurationVersion {
     private BigDecimal ahvAdminRate;
     @Column(precision = 12, scale = 2, updatable = false)
     private BigDecimal ktgAnnualSalaryCap;
+    @Column(length=100,updatable=false) private String ktgPoolKey;
+    @Column(updatable=false) private LocalDate ktgPoolFrom;
+    @Column(updatable=false) private LocalDate ktgPoolThrough;
+    @Column(length=100,updatable=false) private String uvgPoolKey;
+    @Column(updatable=false) private LocalDate uvgPoolFrom;
+    @Column(updatable=false) private LocalDate uvgPoolThrough;
     @Column(precision = 12, scale = 2, updatable = false)
     private BigDecimal bvgEmployee;
     @Column(precision = 12, scale = 2, updatable = false)
@@ -74,6 +80,12 @@ public class PayrollConfigurationVersion {
     public void setAhvAdminRate(BigDecimal v) { ahvAdminRate = v; }
     public BigDecimal getKtgAnnualSalaryCap() { return ktgAnnualSalaryCap; }
     public void setKtgAnnualSalaryCap(BigDecimal v) { ktgAnnualSalaryCap = v; }
+    public String getKtgPoolKey(){return ktgPoolKey;} public void setKtgPoolKey(String v){ktgPoolKey=v;}
+    public LocalDate getKtgPoolFrom(){return ktgPoolFrom;} public void setKtgPoolFrom(LocalDate v){ktgPoolFrom=v;}
+    public LocalDate getKtgPoolThrough(){return ktgPoolThrough;} public void setKtgPoolThrough(LocalDate v){ktgPoolThrough=v;}
+    public String getUvgPoolKey(){return uvgPoolKey;} public void setUvgPoolKey(String v){uvgPoolKey=v;}
+    public LocalDate getUvgPoolFrom(){return uvgPoolFrom;} public void setUvgPoolFrom(LocalDate v){uvgPoolFrom=v;}
+    public LocalDate getUvgPoolThrough(){return uvgPoolThrough;} public void setUvgPoolThrough(LocalDate v){uvgPoolThrough=v;}
     public void setBvgEmployee(BigDecimal value) { this.bvgEmployee = value; }
     public BigDecimal getBvgEmployer() { return bvgEmployer; }
     public void setBvgEmployer(BigDecimal value) { this.bvgEmployer = value; }

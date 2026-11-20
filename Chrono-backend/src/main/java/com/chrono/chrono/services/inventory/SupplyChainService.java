@@ -539,6 +539,7 @@ public class SupplyChainService {
 
     private void recordPurchaseOrderInvoice(PurchaseOrder order) {
         VendorInvoice invoice = new VendorInvoice();
+        invoice.setCompany(order.getCompany());
         invoice.setVendorName(order.getVendorName());
         invoice.setInvoiceNumber(order.getOrderNumber());
         invoice.setInvoiceDate(LocalDate.now());

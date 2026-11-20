@@ -8,20 +8,47 @@ import java.util.*;
 /** Regular, fully insured monthly employment. Other social-insurance statuses require separate rules. */
 public final class GermanPayrollTax {
     private GermanPayrollTax() {}
-    public record Basis(int insuranceDays, BigDecimal pensionBase, BigDecimal healthBase, BigDecimal projectedAnnualGross) {}
+    public record PriorYearBasis(int year,LocalDate assignmentDate,BigDecimal pensionBase,BigDecimal healthBase,String source) {}
+    public record Basis(int insuranceDays, BigDecimal pensionBase, BigDecimal healthBase, BigDecimal projectedAnnualGross,PriorYearBasis priorYear) {
+        public Basis(int days,BigDecimal pension,BigDecimal health,BigDecimal annual){this(days,pension,health,annual,null);}
+    }
     public static TaxCalculationService.Result calculateRun(PayrollTerms t, PayrollGrossCalculator.Result gross, LocalDate start, LocalDate end,
             com.chrono.chrono.services.PayrollLedgerService.History history) {
+        return calculateRun(t,gross,start,end,history,null);
+    }
+    public static TaxCalculationService.Result calculateRun(PayrollTerms t, PayrollGrossCalculator.Result gross, LocalDate start, LocalDate end,
+            com.chrono.chrono.services.PayrollLedgerService.History history,PayrollPeriodData periodData) {
+        return calculateRun(t,gross,start,end,history,periodData,null);
+    }
+    public static TaxCalculationService.Result calculateRun(PayrollTerms t,PayrollGrossCalculator.Result gross,LocalDate start,LocalDate end,
+            com.chrono.chrono.services.PayrollLedgerService.History history,PayrollPeriodData periodData,BigDecimal explicitOneOff) {
+        return calculateRun(t,gross,start,end,history,periodData,explicitOneOff,null);
+    }
+    public static TaxCalculationService.Result calculateRun(PayrollTerms t,PayrollGrossCalculator.Result gross,LocalDate start,LocalDate end,
+            com.chrono.chrono.services.PayrollLedgerService.History history,PayrollPeriodData periodData,BigDecimal explicitOneOff,LocalDate receivedOn) {
         if (start.getYear() != 2026) throw new IllegalStateException("Deutsche Jahresparameter sind nur für 2026 installiert.");
         boolean full = PayrollPeriod.fullMonth(start, end);
         int calendarDays = Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1);
         int svDays = full ? 30 : Math.min(30, calendarDays);
-        BigDecimal oneOff = t.thirteenthMonths() == 1 ? BigDecimal.ZERO : gross.thirteenthAmount();
+        BigDecimal oneOff = explicitOneOff!=null?explicitOneOff:t.thirteenthMonths() == 1 ? BigDecimal.ZERO : gross.thirteenthAmount();
         BigDecimal regular = gross.total().subtract(oneOff);
         BigDecimal regularMonthly = !t.hourly() ? t.amount() : regular.multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(svDays), 12, RoundingMode.HALF_UP);
-        if (regularMonthly.compareTo(new BigDecimal("2000")) <= 0) throw new IllegalStateException("Mini-/Midijobs benötigen eigene Sozialversicherungsregeln.");
+        var concurrent=periodData==null?null:periodData.germanConcurrentIncome();
+        if(t.multipleEmployment()!=null && (concurrent==null || !Boolean.TRUE.equals(concurrent.fundAllocationConfirmed()))) throw new IllegalStateException("Für Mehrfachbeschäftigung fehlen bestätigte SV-Grundlagen der Einzugsstelle für diesen Monat.");
+        BigDecimal combinedMonthly=regularMonthly;
+        if(concurrent!=null) {
+            com.chrono.chrono.services.PayrollPeriodInputService.validate(periodData,t,start,end);
+            if(concurrent.employments()==null||concurrent.employments().isEmpty())combinedMonthly=combinedMonthly.add(concurrent.otherPensionGross().multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(svDays),12,RoundingMode.HALF_UP));
+            else for(var other:concurrent.employments())if(!other.from().isAfter(end)&&!other.through().isBefore(start))combinedMonthly=combinedMonthly.add(other.pensionGross().multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(GermanConcurrentSettlement.days(other.from(),other.through())),12,RoundingMode.HALF_UP));
+        }
+        if (combinedMonthly.compareTo(new BigDecimal("2000")) <= 0) throw new IllegalStateException("Mini-/Midijobs benötigen eigene Sozialversicherungsregeln.");
         BigDecimal pensionRegular = regular.min(new BigDecimal("8450").multiply(BigDecimal.valueOf(svDays)).divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP));
         BigDecimal healthRegular = regular.min(new BigDecimal("5812.50").multiply(BigDecimal.valueOf(svDays)).divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP));
-        BigDecimal pensionExtra = BigDecimal.ZERO, healthExtra = BigDecimal.ZERO, annual = null;
+        if(concurrent!=null) {
+            var allocation=GermanConcurrentSettlement.calculate(regular,start,end,concurrent);
+            pensionRegular=allocation.pension();healthRegular=allocation.health();svDays=allocation.frameDays();
+        }
+        BigDecimal pensionExtra = BigDecimal.ZERO, healthExtra = BigDecimal.ZERO, annual = null;PriorYearBasis priorYear=null;
         if (oneOff.signum() > 0) {
             history.requireComplete();
             if (t.contract() == null || t.contract().germanPreviousEmploymentGross() == null) throw new IllegalStateException("Vorarbeitgeber-Jahresbrutto für sonstige Bezüge fehlt.");
@@ -36,8 +63,26 @@ public final class GermanPayrollTax {
             }
             pensionExtra = oneOff.min(new BigDecimal("101400").multiply(BigDecimal.valueOf(yearDays)).divide(BigDecimal.valueOf(360), 2, RoundingMode.HALF_UP).subtract(previousPension).subtract(pensionRegular).max(BigDecimal.ZERO));
             healthExtra = oneOff.min(new BigDecimal("69750").multiply(BigDecimal.valueOf(yearDays)).divide(BigDecimal.valueOf(360), 2, RoundingMode.HALF_UP).subtract(previousHealth).subtract(healthRegular).max(BigDecimal.ZERO));
-            if (end.getMonthValue() <= 3 && t.entryDate().isBefore(start.withDayOfYear(1)) && healthExtra.compareTo(oneOff) < 0)
-                throw new IllegalStateException("Märzklausel: Die Einmalzahlung benötigt SV-Grundlagen des Vorjahres; ohne diese wird sie nicht freigegeben.");
+            boolean march=(receivedOn==null?end:receivedOn).getMonthValue()<=3&&t.entryDate().isBefore(start.withDayOfYear(1))&&healthExtra.compareTo(oneOff)<0;
+            if(concurrent!=null&&!march) {
+                if(concurrent.pensionOneOffBase()==null || concurrent.healthOneOffBase()==null) throw new IllegalStateException("Die anteiligen SV-Basen der Einmalzahlung müssen von der Einzugsstelle bestätigt und als Monatsgrundlage erfasst sein.");
+                if(concurrent.pensionOneOffBase().compareTo(pensionExtra)>0 || concurrent.healthOneOffBase().compareTo(healthExtra)>0) throw new IllegalStateException("Die gemeldeten Einmalzahlungsbasen übersteigen die noch verfügbaren eigenen SV-Grenzen.");
+                pensionExtra=concurrent.pensionOneOffBase(); healthExtra=concurrent.healthOneOffBase();
+            }
+            if(march) {
+                var prior=periodData==null?null:periodData.germanPriorYearSocial();
+                if(prior==null)throw new IllegalStateException("Märzklausel: Die Einmalzahlung benötigt SV-Grundlagen des Vorjahres; ohne diese wird sie nicht freigegeben.");
+                com.chrono.chrono.services.PayrollPeriodInputService.validate(periodData,t,start,end);
+                BigDecimal pastRv=prior.pensionAssessed(),pastKv=prior.healthAssessed();
+                for(var e:history.entries())if(e.calculation().germanBasis()!=null&&e.calculation().germanBasis().priorYear()!=null){var b=e.calculation().germanBasis().priorYear();if(b.year()!=2025)throw new IllegalStateException("Vorjahres-SV-Zuordnung widerspricht 2025.");pastRv=pastRv.add(b.pensionBase());pastKv=pastKv.add(b.healthBase());}
+                var rvLimit=new BigDecimal("96600").multiply(BigDecimal.valueOf(prior.insuranceDays())).divide(BigDecimal.valueOf(360),2,RoundingMode.HALF_UP);
+                var kvLimit=new BigDecimal("66150").multiply(BigDecimal.valueOf(prior.insuranceDays())).divide(BigDecimal.valueOf(360),2,RoundingMode.HALF_UP);
+                if(pastRv.compareTo(rvLimit)>0||pastKv.compareTo(kvLimit)>0)throw new IllegalStateException("Bereits belegte Vorjahresbasen übersteigen die zeitanteiligen 2025-Grenzen.");
+                var rv=oneOff.min(rvLimit.subtract(pastRv));var kv=oneOff.min(kvLimit.subtract(pastKv));
+                if(prior.pensionAllocatedBase()!=null){if(prior.pensionAllocatedBase().compareTo(rv)>0)throw new IllegalStateException("Gemeldete Vorjahres-RV-Basis übersteigt den Restspielraum.");rv=prior.pensionAllocatedBase();}
+                if(prior.healthAllocatedBase()!=null){if(prior.healthAllocatedBase().compareTo(kv)>0)throw new IllegalStateException("Gemeldete Vorjahres-KV-Basis übersteigt den Restspielraum.");kv=prior.healthAllocatedBase();}
+                priorYear=new PriorYearBasis(2025,prior.assignmentDate(),rv,kv,prior.source());pensionExtra=BigDecimal.ZERO;healthExtra=BigDecimal.ZERO;
+            }
             LocalDate until = t.exitDate() != null && t.exitDate().getYear() == end.getYear() ? t.exitDate() : end.withMonth(12).withDayOfMonth(31);
             // JRE4 includes the expected regular pay, including the contractual proration of a known exit month.
             // Swiss 30/360 tax days would produce a different forecast from CALENDAR_DAYS salary payments.
@@ -79,11 +124,51 @@ public final class GermanPayrollTax {
             contributions(side, "", pensionRegular, healthRegular, kvRate, side == employee ? pvEmployee : pvEmployer);
             if (oneOff.signum() > 0) contributions(side, " · thirteenth", pensionExtra, healthExtra, kvRate, side == employee ? pvEmployee : pvEmployer);
         }
+        if(priorYear!=null) {
+            var p=periodData.germanPriorYearSocial();boolean priorSurcharge=!p.parent()&&!p.assignmentDate().isBefore(t.birthDate().plusYears(23).withDayOfMonth(1).plusMonths(1));
+            int priorDiscount=p.parent()?Math.min(4,Math.max(0,p.childrenUnder25()-1)):0;
+            BigDecimal priorKv=new BigDecimal("0.073").add(p.healthAdditionalRate().divide(BigDecimal.valueOf(2)));
+            BigDecimal priorEmployeePv=new BigDecimal(p.saxony()?"0.023":"0.018").add(priorSurcharge?new BigDecimal("0.006"):new BigDecimal("-0.0025").multiply(BigDecimal.valueOf(priorDiscount)));
+            contributions(employee," · SV 2025",priorYear.pensionBase(),priorYear.healthBase(),priorKv,priorEmployeePv);
+            contributions(employer," · SV 2025",priorYear.pensionBase(),priorYear.healthBase(),priorKv,new BigDecimal(p.saxony()?"0.013":"0.018"));
+            put(employer,"Insolvency levy · SV 2025",priorYear.pensionBase().multiply(new BigDecimal("0.0015")));
+        }
         put(employer, "U1", pensionRegular.multiply(t.u1Rate())); put(employer, "U2", pensionRegular.multiply(t.u2Rate()));
         put(employer, "Insolvency levy", pensionRegular.multiply(t.insolvencyRate()));
         if (oneOff.signum() > 0) put(employer, "Insolvency levy · thirteenth", pensionExtra.multiply(t.insolvencyRate()));
         return new TaxCalculationService.Result(employee, employer, "BMF PAP 2026 v1; Teilmonat/sonstiger Bezug; SV 2026")
-                .withGermanBasis(new Basis(svDays, pensionRegular.add(pensionExtra), healthRegular.add(healthExtra), annual));
+                .withGermanBasis(new Basis(svDays, pensionRegular.add(pensionExtra), healthRegular.add(healthExtra), annual,priorYear));
+    }
+    /** SGB IV §22(2): cap each overlapping income first, then allocate the shared ceiling. */
+    public static BigDecimal concurrentShare(BigDecimal own,BigDecimal other,BigDecimal monthlyCap,int days) {
+        BigDecimal cap=monthlyCap.multiply(BigDecimal.valueOf(days)).divide(BigDecimal.valueOf(30),2,RoundingMode.HALF_UP);
+        BigDecimal ownCapped=own.min(cap),otherCapped=other.min(cap),total=ownCapped.add(otherCapped);
+        return total.compareTo(cap)<=0?ownCapped:cap.multiply(ownCapped).divide(total,2,RoundingMode.HALF_UP);
+    }
+    /** Standalone withholding for a receipt; SV may legally belong to another period. */
+    public static Map<String,Double> taxes(PayrollTerms t,PayrollGrossCalculator.Result gross,LocalDate start,LocalDate end,
+            com.chrono.chrono.services.PayrollLedgerService.History history,BigDecimal oneOff) {
+        if(start.getYear()!=2026)throw new IllegalStateException("Nur BMF-Jahresregeln 2026 sind installiert.");
+        boolean full=PayrollPeriod.fullMonth(start,end);int calendarDays=(int)java.time.temporal.ChronoUnit.DAYS.between(start,end)+1;
+        BigDecimal regular=gross.total().subtract(oneOff),annual=null;
+        if(oneOff.signum()>0) {
+            history.requireComplete();if(t.contract()==null||t.contract().germanPreviousEmploymentGross()==null)throw new IllegalStateException("Für sonstige Bezüge fehlt das ausdrücklich belegte Vorarbeitgeber-Jahresbrutto (auch 0 ausdrücklich erfassen).");
+            annual=regular.add(t.contract().germanPreviousEmploymentGross());for(var e:history.entries())annual=annual.add(e.calculation().gross().total());
+            BigDecimal monthly=t.hourly()?regular.multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(full?30:Math.min(30,calendarDays)),12,RoundingMode.HALF_UP):t.amount();
+            LocalDate until=t.exitDate()!=null&&t.exitDate().isBefore(end.withMonth(12).withDayOfMonth(31))?t.exitDate():end.withMonth(12).withDayOfMonth(31);
+            for(LocalDate cursor=end.plusDays(1);!cursor.isAfter(until);) {var last=cursor.withDayOfMonth(cursor.lengthOfMonth());var through=last.isAfter(until)?until:last;annual=annual.add(PayrollPeriod.prorate(monthly,cursor,through,t.contract().salaryProration()));cursor=last.plusDays(1);}
+        }
+        var pap=new BmfLohnsteuer2026();pap.LZZ=full?2:4;pap.RE4=full?regular.movePointRight(2):regular.movePointRight(2).divide(BigDecimal.valueOf(calendarDays),0,RoundingMode.DOWN);
+        pap.STKL=t.taxClass();pap.af=t.taxFactor().compareTo(BigDecimal.ONE)==0?0:1;pap.f=t.taxFactor().doubleValue();pap.ZKF=t.childAllowance();pap.R=t.churchRate().signum()>0?1:0;
+        pap.KVZ=t.healthAdditionalRate().movePointRight(2);pap.PVS=t.saxony()?1:0;pap.PVZ=!t.parent()&&!start.isBefore(t.birthDate().plusYears(23).withDayOfMonth(1).plusMonths(1))?1:0;
+        pap.PVA=BigDecimal.valueOf(t.parent()?Math.min(4,Math.max(0,t.childrenUnder25()-1)):0);
+        pap.LZZFREIB=full?t.taxAllowance().movePointRight(2):t.taxAllowance().movePointRight(2).divide(BigDecimal.valueOf(30),0,RoundingMode.DOWN);
+        pap.LZZHINZU=full?t.taxAddition().movePointRight(2):t.taxAddition().movePointRight(2).divide(BigDecimal.valueOf(30),0,RoundingMode.DOWN);
+        if(oneOff.signum()>0){pap.SONSTB=oneOff.movePointRight(2);pap.JRE4=annual.movePointRight(2);pap.JFREIB=t.taxAllowance().multiply(BigDecimal.valueOf(1200));pap.JHINZU=t.taxAddition().multiply(BigDecimal.valueOf(1200));}
+        pap.calculate();var multiplier=BigDecimal.valueOf(full?1:calendarDays);Map<String,Double> result=new LinkedHashMap<>();
+        put(result,"Income tax",pap.LSTLZZ.multiply(multiplier).movePointLeft(2));put(result,"Solidarity surcharge",pap.SOLZLZZ.multiply(multiplier).movePointLeft(2));put(result,"Church tax",pap.BK.multiply(multiplier).movePointLeft(2).multiply(t.churchRate()));
+        if(oneOff.signum()>0){put(result,"Income tax · thirteenth",pap.STS.movePointLeft(2));put(result,"Solidarity surcharge · thirteenth",pap.SOLZS.movePointLeft(2));put(result,"Church tax · thirteenth",pap.BKS.movePointLeft(2).multiply(t.churchRate()));}
+        return result;
     }
     private static void contributions(Map<String, Double> target, String suffix, BigDecimal rv, BigDecimal kv, BigDecimal kvRate, BigDecimal pvRate) {
         put(target, "Pension insurance" + suffix, rv.multiply(new BigDecimal("0.093")));

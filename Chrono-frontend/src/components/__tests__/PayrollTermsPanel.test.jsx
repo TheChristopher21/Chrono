@@ -41,6 +41,18 @@ describe('dated personal payroll rules', () => {
     expect(q.getByLabelText('Vertrag / Steuergrundlage')).toHaveValue('Arbeitsvertrag 2026');
     expect(screen.getByText('Noch keine persönlichen Lohnregeln hinterlegt.')).toBeInTheDocument();
   });
+  it('accepts precise weekly contract hours for a percentage salary without rounding them', async () => {
+    api.post.mockImplementation((_url, input) => Promise.resolve({ data: { id: 10, ...input, parameters: JSON.stringify(input.terms) } }));
+    render(<PayrollTermsPanel employees={employees} />);
+    const q = await fillSwiss();
+    const hours = q.getByLabelText('Vertragliche Wochenstunden');
+    fireEvent.change(hours, { target: { value: '14.025' } });
+    expect(hours.checkValidity()).toBe(true);
+    await userEvent.click(q.getByRole('button', { name: 'Lohnregel als neue Version speichern' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      terms: expect.objectContaining({ weeklyHours: '14.025' }),
+    })));
+  });
   it('separates lifetime parent status from children under 25 and uses the full health rate', async () => {
     render(<PayrollTermsPanel employees={employees} />);
     const form = await screen.findByRole('form', { name: 'Lohn- und Steuerregeln' });
@@ -48,5 +60,15 @@ describe('dated personal payroll rules', () => {
     expect(screen.getByLabelText('Elterneigenschaft in der Pflegeversicherung')).toHaveValue('');
     expect(screen.getByLabelText('Berücksichtigungsfähige Kinder unter 25')).toHaveValue(null);
     expect(screen.getByLabelText('Voller Zusatzbeitrag der Krankenkasse (%)')).toHaveValue(null);
+  });
+  it('records a disclosed total work percentage and does not mark it as single employment', async () => {
+    api.post.mockImplementation((_url, input) => Promise.resolve({ data: { id: 11, ...input, parameters: JSON.stringify(input.terms) } }));
+    render(<PayrollTermsPanel employees={employees} />); const q = await fillSwiss();
+    await userEvent.selectOptions(q.getByLabelText('Weitere Erwerbs- oder Ersatzeinkünfte'), 'TOTAL_PERCENT');
+    fireEvent.change(q.getByLabelText('Eigenes Pensum für die Satzbestimmung (%)'), { target: { value: '50' } });
+    fireEvent.change(q.getByLabelText('Offengelegtes Gesamtpensum (%)'), { target: { value: '90' } });
+    await userEvent.click(q.getByRole('button', { name: 'Lohnregel als neue Version speichern' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ terms: expect.objectContaining({ monthlySingleEmployment: false,
+      contract: expect.objectContaining({ multipleEmployment: expect.objectContaining({ method: 'TOTAL_PERCENT', ownPercent: '50', totalPercent: '90' }) }) }) })));
   });
 });

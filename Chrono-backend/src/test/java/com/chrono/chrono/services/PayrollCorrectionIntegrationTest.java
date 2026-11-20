@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -37,6 +38,7 @@ class PayrollCorrectionIntegrationTest {
     @Autowired CompanyRepository companies;
     @Autowired UserRepository users;
     @Autowired ObjectMapper json;
+    @MockitoSpyBean PayrollCalculationService calculations;
     User user;
     Map<Integer,PayrollTerms> rules;
     @BeforeEach void setup() {
@@ -176,6 +178,51 @@ class PayrollCorrectionIntegrationTest {
         assertTrue(batch.get(0).getEarnings().stream().noneMatch(p -> "Thirteenth salary".equals(p.getType())));
         payroll.approveBatch(batch.stream().map(Payslip::getId).toList(), "tax correction");
         assertTrue(batch.get(0).isApproved()); assertEquals(before, fingerprint(original));
+    }
+    @Test void swissClosedEmploymentCanCorrectPriorYearWithholdingWithout2027TariffsOrChangesToOriginals() {
+        doReturn(LocalDate.of(2027,1,10)).when(calculations).payrollToday();
+        for(int month=1;month<=3;month++)rules.put(month,PayrollTestTerms.change(rules.get(month),Map.of("contract",Map.of(
+                "exitDate","2026-03-31","salaryProration","THIRTY_DAYS","pensionProration","FULL","thirteenthFrequency","ANNUAL"))));
+        var originals=List.of(approve(1),approve(2),approve(3));var before=originals.stream().map(this::fingerprint).toList();
+        for(int month=1;month<=3;month++)rules.put(month,PayrollTestTerms.change(rules.get(month),Map.of("tariffCode","B0N")));
+        var assignment=new PayrollYearAssignment("Bank payment records and corrected personal tariff 2026",true,false,false);
+        var batch=corrections.generate(originals.get(0).getId(),new PayrollCorrectionService.Request("Original-year tariff error",LocalDate.of(2027,1,31),null,assignment),"fixture");
+        assertEquals(3,batch.size());assertTrue(batch.stream().allMatch(p->p.getGrossSalary()==0.0));
+        payroll.approveBatch(batch.stream().map(Payslip::getId).toList(),"year assignment checked");
+        assertEquals(before,originals.stream().map(this::fingerprint).toList());assertTrue(batch.stream().allMatch(Payslip::isApproved));
+        assertTrue(batch.stream().mapToDouble(Payslip::getDeductions).sum()<0);
+        assertEquals(2026,ledger.read(batch.get(2)).periodStart().getYear());assertEquals(2027,batch.get(2).getPayoutDate().getYear());
+    }
+    @Test void germanPriorYearBatchUsesAnnualPAPAndPreservesAllTwelveOriginals() throws Exception {
+        doReturn(LocalDate.of(2027,1,10)).when(calculations).payrollToday();user.setCountry("DE");users.saveAndFlush(user);
+        for(int month=1;month<=12;month++)rules.put(month,PayrollTestTerms.change(PayrollTestTerms.german(),Map.of("entryDate","2026-01-01","amount",month==12?"10000":"5000")));
+        List<Payslip> originals=new ArrayList<>();for(int month=1;month<=12;month++)originals.add(approve(month));
+        var before=originals.stream().map(this::fingerprint).toList();
+        for(int month=1;month<=12;month++)rules.put(month,PayrollTestTerms.change(rules.get(month),Map.of("taxClass",4,"childAllowance","1.5","churchRate","0.09","parent",true,"childrenUnder25",2)));
+        var assignment=new PayrollYearAssignment("Original gross unchanged; complete year/certificate status verified",true,true,true);
+        var batch=corrections.generate(originals.get(0).getId(),new PayrollCorrectionService.Request("Correct 2026 ELStAM and insurance characteristics",LocalDate.of(2027,1,31),null,assignment),"fixture");
+        payroll.approveBatch(batch.stream().map(Payslip::getId).toList(),"annual adjustment checked");
+        assertEquals(before,originals.stream().map(this::fingerprint).toList());assertEquals(12,batch.size());assertTrue(batch.stream().allMatch(p->p.getGrossSalary()==0.0));
+        BigDecimal annualIncomeTax=BigDecimal.ZERO,annualSoli=BigDecimal.ZERO,annualChurch=BigDecimal.ZERO;
+        for(Payslip p:batch) {
+            var c=ledger.read(p);annualIncomeTax=annualIncomeTax.add(BigDecimal.valueOf(c.employee().getOrDefault("Income tax",0.0)));
+            annualSoli=annualSoli.add(BigDecimal.valueOf(c.employee().getOrDefault("Solidarity surcharge",0.0)));
+            annualChurch=annualChurch.add(BigDecimal.valueOf(c.employee().getOrDefault("Church tax",0.0)));
+        }
+        var reference=json.readTree(getClass().getResourceAsStream("/payroll/bmf-2026-year-end-reference.json")).path("cases").get(3).path("outputs");
+        assertEquals(0,new BigDecimal(reference.path("LSTLZZ").asText()).movePointLeft(2).compareTo(annualIncomeTax));
+        assertEquals(0,new BigDecimal(reference.path("SOLZLZZ").asText()).movePointLeft(2).compareTo(annualSoli));
+        assertEquals(0,new BigDecimal(reference.path("BK").asText()).movePointLeft(2).multiply(new BigDecimal("0.09")).setScale(2,java.math.RoundingMode.HALF_UP).compareTo(annualChurch));
+        assertTrue(ledger.read(batch.get(11)).taxReference().contains("Jahresausgleich"));
+    }
+    @Test void priorYearGrossChangeCannotBeSmuggledIntoAnOriginalYearTaxRepair() {
+        doReturn(LocalDate.of(2027,1,10)).when(calculations).payrollToday();
+        for(int month=1;month<=3;month++)rules.put(month,PayrollTestTerms.change(rules.get(month),Map.of("contract",Map.of(
+                "exitDate","2026-03-31","salaryProration","THIRTY_DAYS","pensionProration","FULL","thirteenthFrequency","ANNUAL"))));
+        var original=approve(1);approve(2);approve(3);var before=fingerprint(original);
+        rules.put(1,PayrollTestTerms.change(rules.get(1),Map.of("amount","6000")));
+        var error=assertThrows(IllegalStateException.class,()->corrections.generate(original.getId(),new PayrollCorrectionService.Request("Different wage",LocalDate.of(2027,1,31),null,new PayrollYearAssignment("Claim",true,false,false)),"fixture"));
+        assertTrue(error.getMessage().contains("Vorjahresbruttolohn"));assertEquals(before,fingerprint(original));
     }
     private void configureGermanExitWithThirteenth() {
         user.setCountry("DE"); users.saveAndFlush(user);

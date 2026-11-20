@@ -17,11 +17,16 @@ import java.util.*;
 public class PayrollLedgerService {
     private final PayslipRepository repository;
     private final ObjectMapper json;
-    public PayrollLedgerService(PayslipRepository repository, ObjectMapper json) { this.repository = repository; this.json = json; }
+    private final Optional<PayrollOpeningService> openings;
+    public PayrollLedgerService(PayslipRepository repository, ObjectMapper json) { this(repository,json,Optional.empty()); }
+    @org.springframework.beans.factory.annotation.Autowired
+    public PayrollLedgerService(PayslipRepository repository, ObjectMapper json, Optional<PayrollOpeningService> openings) {
+        this.repository = repository; this.json = json; this.openings=openings;
+    }
     public record Reference(Long originalId, Long revisionId, String hash) {}
     public record Entry(Payslip original, Payslip revision, PayrollCalculationService.Calculation calculation) {}
     public record History(List<Entry> entries, List<Reference> references, boolean complete) {
-        public void requireComplete() { if (!complete) throw new IllegalStateException("Für die Jahresberechnung fehlen lückenlose freigegebene Berechnungsgrundlagen seit Jahresbeginn/Eintritt. Fehlende Monate zuerst abrechnen; Altbelege chronologisch über Korrekturbelege übernehmen."); }
+        public void requireComplete() { if (!complete) throw new IllegalStateException("Für die Jahresberechnung fehlen lückenlose Grundlagen seit Jahresbeginn/Eintritt. Vorperioden als bestätigte Eröffnungswerte erfassen oder fehlende neue Lohnmonate abrechnen."); }
     }
     public List<Payslip> originals(User user) {
         return approved(user).stream().filter(p -> !p.isCorrection()).sorted(Comparator.comparing(Payslip::getPeriodStart).thenComparing(Payslip::getId)).toList();
@@ -51,23 +56,47 @@ public class PayrollLedgerService {
         } catch (Exception e) { throw new IllegalStateException(e); }
     }
     public History before(User user, PayrollTerms terms, LocalDate start, Map<Long, Payslip> provisional) {
+        return before(user,terms,start,provisional,null);
+    }
+    public History before(User user,PayrollTerms terms,LocalDate start,Map<Long,Payslip> provisional,Long openingVersionId) {
         LocalDate beginning = terms.entryDate().isAfter(start.withDayOfYear(1)) ? terms.entryDate() : start.withDayOfYear(1);
         LocalDate cursor = beginning;
         boolean complete = true;
         List<Entry> entries = new ArrayList<>(); List<Reference> refs = new ArrayList<>();
+        var opening=openings.flatMap(service -> service.year(user,start,openingVersionId));
+        if(openingVersionId!=null&&opening.isEmpty())throw new IllegalStateException("Eröffnungsberichtigung ist nicht verfügbar.");
+        if (opening.isPresent()) {
+            var imported=opening.get();
+            if (start.isBefore(imported.version().getPayrollStart())) throw new IllegalStateException("Dieser Zeitraum gehört zu den unveränderten Vorperioden vor dem neuen Lohnstart.");
+            int index=0;
+            for (var calculation:imported.periods()) {
+                if (!cursor.equals(calculation.periodStart()) || !Objects.equals(calculation.terms().country(),terms.country())) complete=false;
+                Payslip basis=new Payslip(); basis.setId(-Math.addExact(Math.multiplyExact(imported.version().getId(),16L),++index));
+                basis.setUser(user); basis.setApproved(true); basis.setPeriodStart(calculation.periodStart()); basis.setPeriodEnd(calculation.periodEnd());
+                basis.setGrossSalary(calculation.gross().total().doubleValue()); basis.setDeductions(calculation.employee().values().stream().mapToDouble(Double::doubleValue).sum());
+                basis.setNetSalary(BigDecimal.valueOf(basis.getGrossSalary()).subtract(BigDecimal.valueOf(basis.getDeductions())).doubleValue());
+                try { basis.setCalculationSnapshot(json.writeValueAsString(calculation)); } catch(Exception e) { throw new IllegalStateException(e); }
+                entries.add(new Entry(basis,basis,calculation)); refs.add(reference(basis,basis)); cursor=calculation.periodEnd().plusDays(1);
+            }
+            var openingEnd=terms.exitDate()!=null&&terms.exitDate().isBefore(imported.version().getPayrollStart())?terms.exitDate().plusDays(1):imported.version().getPayrollStart();
+            if (!cursor.equals(openingEnd)) complete=false;
+        }
         for (Payslip original : originals(user)) {
             if (original.getPeriodEnd().isBefore(beginning) || !original.getPeriodStart().isBefore(start)) continue;
-            if (!original.getPeriodStart().equals(cursor) || !original.getPeriodEnd().isBefore(start)) complete = false;
+            if (opening.isPresent() && original.getPeriodEnd().isBefore(opening.get().version().getPayrollStart())) continue;
             Payslip revision = provisional.getOrDefault(original.getId(), latest(original));
             refs.add(reference(original, revision));
             try {
                 var calculation = read(revision);
+                boolean cashOnly=calculation.remuneration()!=null&&calculation.remuneration().cashOnly();
+                if(!original.getPeriodEnd().isBefore(start)||!cashOnly&&!original.getPeriodStart().equals(cursor))complete=false;
+                if(!cashOnly)cursor=original.getPeriodEnd().plusDays(1);
                 if (!Objects.equals(calculation.terms().country(), terms.country())) complete = false;
                 entries.add(new Entry(original, revision, calculation));
             } catch (IllegalStateException missing) { complete = false; }
-            cursor = original.getPeriodEnd().plusDays(1);
         }
-        if (!cursor.equals(start)) complete = false;
+        LocalDate expected=terms.exitDate()!=null&&start.isAfter(terms.exitDate())?terms.exitDate().getYear()<start.getYear()?start.withDayOfYear(1):terms.exitDate().plusDays(1):start;
+        if (!cursor.equals(expected)) complete = false;
         return new History(List.copyOf(entries), List.copyOf(refs), complete);
     }
     public BigDecimal thirteenth(PayrollTerms terms, LocalDate start, LocalDate end, PayrollGrossCalculator.Result gross, History history) {
@@ -78,7 +107,7 @@ public class PayrollLedgerService {
             for (Entry entry : history.entries()) {
                 if (entry.calculation().terms().thirteenthMonths() > 0) {
                     previousEntitlement = true;
-                    earned = earned.add(entry.calculation().gross().base());
+                    earned = earned.add(entry.calculation().gross().eligibleThirteenthBase());
                 }
                 paid = paid.add(entry.calculation().gross().thirteenthAmount());
             }
@@ -93,9 +122,9 @@ public class PayrollLedgerService {
         history.requireComplete();
         boolean due = end.equals(terms.exitDate()) || end.getMonthValue() % months == 0 && end.getDayOfMonth() == end.lengthOfMonth();
         if (!due) return BigDecimal.ZERO;
-        BigDecimal eligible = gross.base(), paid = BigDecimal.ZERO;
+        BigDecimal eligible = gross.eligibleThirteenthBase(), paid = BigDecimal.ZERO;
         for (Entry entry : history.entries()) {
-            if (entry.calculation().terms().thirteenthMonths() > 0) eligible = eligible.add(entry.calculation().gross().base());
+            if (entry.calculation().terms().thirteenthMonths() > 0) eligible = eligible.add(entry.calculation().gross().eligibleThirteenthBase());
             paid = paid.add(entry.calculation().gross().thirteenthAmount());
         }
         BigDecimal step = new BigDecimal("CH".equals(terms.country()) ? "0.05" : "0.01");

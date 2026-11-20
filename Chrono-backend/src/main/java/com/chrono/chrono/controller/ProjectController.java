@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateProjectRequest;
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
@@ -80,24 +81,28 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<Project> create(@RequestBody Project project, Principal principal) {
+    public ResponseEntity<Project> create(@RequestBody CreateProjectRequest request, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (project.getCustomer() == null || project.getCustomer().getId() == null) {
+        if (request.getCustomer() == null || request.getCustomer().getId() == null) {
             return ResponseEntity.badRequest().build();
         }
-        Customer customer = customerService.findById(project.getCustomer().getId()).orElse(null);
+        Customer customer = customerService.findById(request.getCustomer().getId()).orElse(null);
         if (customer == null || !customer.getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         Project parent = null;
-        if (project.getParent() != null && project.getParent().getId() != null) {
-            parent = projectService.findById(project.getParent().getId()).orElse(null);
+        if (request.getParent() != null && request.getParent().getId() != null) {
+            parent = projectService.findById(request.getParent().getId()).orElse(null);
             if (parent == null || parent.getCustomer() == null ||
                     !parent.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
                 return ResponseEntity.status(403).build();
             }
         }
+        Project project = new Project();
+        project.setName(request.getName());
+        project.setBudgetMinutes(request.getBudgetMinutes());
+        project.setHourlyRate(request.getHourlyRate());
         project.setCustomer(customer);
         project.setParent(parent);
         Project saved = projectService.save(project);

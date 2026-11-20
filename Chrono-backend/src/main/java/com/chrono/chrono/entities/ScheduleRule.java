@@ -1,6 +1,7 @@
 package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "schedule_rules")
@@ -9,8 +10,18 @@ public class ScheduleRule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String shiftKey;
+
+    // Null ownership is reserved for immutable, pre-migration shared defaults.
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
+    @JsonIgnore
+    @Column(nullable = false)
+    private boolean suppressed;
 
     @Column(nullable = false)
     private String label;
@@ -36,4 +47,10 @@ public class ScheduleRule {
 
     public boolean getIsActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+    @JsonIgnore
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
+    @JsonIgnore
+    public boolean isSuppressed() { return suppressed; }
+    public void setSuppressed(boolean suppressed) { this.suppressed = suppressed; }
 }

@@ -9,82 +9,66 @@ import java.util.*;
 public final class SwissPayrollSettlement {
     private SwissPayrollSettlement() {}
     public record Basis(int insuranceDays, BigDecimal alvUvgBase, BigDecimal ktgBase,
-                        BigDecimal annualRateIncome, BigDecimal monthlyRateIncome, BigDecimal ktgAnnualSalaryCap) {
+                        BigDecimal annualRateIncome, BigDecimal monthlyRateIncome, BigDecimal ktgAnnualSalaryCap,PayrollKtgPool ktgPool,
+                        List<SwissWithholdingSettlement.Allocation> withholdingAllocations,List<SwissInsuranceSettlement.Slice> insuranceSlices) {
+        public Basis(int days,BigDecimal alv,BigDecimal ktg,BigDecimal annual,BigDecimal monthly,BigDecimal cap,PayrollKtgPool pool,List<SwissWithholdingSettlement.Allocation> allocations) {this(days,alv,ktg,annual,monthly,cap,pool,allocations,null);}
+        public Basis(int insuranceDays,BigDecimal alvUvgBase,BigDecimal ktgBase,BigDecimal annualRateIncome,BigDecimal monthlyRateIncome,BigDecimal ktgAnnualSalaryCap,PayrollKtgPool pool) {
+            this(insuranceDays,alvUvgBase,ktgBase,annualRateIncome,monthlyRateIncome,ktgAnnualSalaryCap,pool,null,null);
+        }
+        public Basis(int insuranceDays,BigDecimal alvUvgBase,BigDecimal ktgBase,BigDecimal annualRateIncome,BigDecimal monthlyRateIncome,BigDecimal ktgAnnualSalaryCap) {
+            this(insuranceDays,alvUvgBase,ktgBase,annualRateIncome,monthlyRateIncome,ktgAnnualSalaryCap,null,null,null);
+        }
         public Basis(int insuranceDays, BigDecimal alvUvgBase, BigDecimal ktgBase,
                 BigDecimal annualRateIncome, BigDecimal monthlyRateIncome) {
-            this(insuranceDays, alvUvgBase, ktgBase, annualRateIncome, monthlyRateIncome, null);
+            this(insuranceDays, alvUvgBase, ktgBase, annualRateIncome, monthlyRateIncome, null,null,null,null);
         }
     }
     public static TaxCalculationService.Result calculate(SwissSourceTax sourceTax, PayrollConfigurationService.Coverage coverage,
             PayrollTerms t, LocalDate start, LocalDate end, PayrollGrossCalculator.Result gross,
             PayrollLedgerService.History history) {
+        return calculate(sourceTax,coverage,t,start,end,gross,history,null);
+    }
+    public static TaxCalculationService.Result calculate(SwissSourceTax sourceTax, PayrollConfigurationService.Coverage coverage,
+            PayrollTerms t, LocalDate start, LocalDate end, PayrollGrossCalculator.Result gross,
+            PayrollLedgerService.History history,PayrollPeriodData data) {
+        return calculate(sourceTax,coverage,t,start,end,gross,history,data,true);
+    }
+    public static TaxCalculationService.Result calculate(SwissSourceTax sourceTax,PayrollConfigurationService.Coverage coverage,PayrollTerms t,LocalDate start,LocalDate end,
+            PayrollGrossCalculator.Result gross,PayrollLedgerService.History history,PayrollPeriodData data,boolean includeTax) {
         var insurance = coverage.insurance(); var pension = coverage.pension();
         BigDecimal total = gross.total();
         int days = PayrollPeriod.swissDays(start, end);
         BigDecimal ceiling = new BigDecimal("12350").multiply(BigDecimal.valueOf(days)).divide(BigDecimal.valueOf(30), 12, RoundingMode.HALF_UP);
         BigDecimal ktgAnnual = insurance.getKtgAnnualSalaryCap();
-        validateKtgHistory(history, ktgAnnual, insurance.getId());
+        PayrollKtgPool ktgPool=insurance.getKtgPoolKey()==null?null:new PayrollKtgPool(insurance.getKtgPoolKey(),insurance.getKtgPoolFrom(),insurance.getKtgPoolThrough());
+        if(ktgPool!=null && (ktgPool.from()==null || ktgPool.through()==null || start.isBefore(ktgPool.from()) || end.isAfter(ktgPool.through()))) throw new IllegalStateException("Die KTG-Police deckt den Abrechnungszeitraum nicht vollständig ab.");
         BigDecimal ktgCeiling = ktgAnnual.multiply(BigDecimal.valueOf(days)).divide(BigDecimal.valueOf(360), 12, RoundingMode.HALF_UP);
         BigDecimal insured = total.min(ceiling), ktg = ktgAnnual.signum() == 0 ? total : total.min(ktgCeiling);
         boolean ledgerAvailable = history.complete() && history.entries().stream().allMatch(e -> e.calculation().swissBasis() != null);
         if (ledgerAvailable) {
-            BigDecimal yearGross = total, previousInsured = BigDecimal.ZERO, previousKtg = BigDecimal.ZERO;
+            BigDecimal yearGross = total, previousInsured = BigDecimal.ZERO;
             int yearDays = days;
             for (var entry : history.entries()) {
                 var c = entry.calculation();
                 yearGross = yearGross.add(c.gross().total()); yearDays += c.swissBasis().insuranceDays();
                 previousInsured = previousInsured.add(c.swissBasis().alvUvgBase());
-                previousKtg = previousKtg.add(c.swissBasis().ktgBase());
             }
             insured = yearGross.min(new BigDecimal("148200").multiply(BigDecimal.valueOf(yearDays)).divide(BigDecimal.valueOf(360), 12, RoundingMode.HALF_UP)).subtract(previousInsured);
-            ktg = ktgAnnual.signum() == 0 ? total : yearGross.min(ktgAnnual.multiply(BigDecimal.valueOf(yearDays)).divide(BigDecimal.valueOf(360), 12, RoundingMode.HALF_UP)).subtract(previousKtg);
-            if (insured.signum() < 0 || ktg.signum() < 0) throw new IllegalStateException("Die bisherigen Versicherungsgrundlagen müssen zuerst chronologisch rückgerechnet werden.");
+            if (insured.signum() < 0) throw new IllegalStateException("Die bisherigen Versicherungsgrundlagen müssen zuerst chronologisch rückgerechnet werden.");
         } else if ((total.compareTo(ceiling) > 0 && (t.hourly() || gross.thirteenthAmount().signum() > 0 || gross.payout().signum() > 0))
                 || ktgAnnual.signum() > 0 && total.compareTo(ktgCeiling) > 0) {
             throw new IllegalStateException("Für die kumulativen Versicherungsgrenzen fehlen freigegebene Jahresgrundlagen. Frühere Monate zuerst rückrechnen.");
         }
+        ktg=ktgBase(history,ktgAnnual,ktgPool,insurance.getId(),start,end,total,days);
         boolean liable = start.getYear() > t.birthDate().getYear() + 17;
-        BigDecimal annualEquivalent = gross.base().multiply(BigDecimal.valueOf(360)).divide(BigDecimal.valueOf(days), 12, RoundingMode.HALF_UP);
+        BigDecimal annualEquivalent = gross.periodicBase().multiply(BigDecimal.valueOf(360)).divide(BigDecimal.valueOf(days), 12, RoundingMode.HALF_UP);
         if (liable && total.signum() > 0 && annualEquivalent.compareTo(new BigDecimal("2500")) <= 0) throw new IllegalStateException("Geringfügiger Jahreslohn: Beitragspflicht muss ausdrücklich geklärt werden.");
         Map<String, Double> employee = new LinkedHashMap<>(), employer = new LinkedHashMap<>();
-        String reference = "Versicherungsversion #" + insurance.getId() + "; BVG-Version #" + pension.getId() + "; CH 2026";
-        BigDecimal annualRate = null, monthlyRate = null;
-        if ("CH_SOURCE".equals(t.taxMode())) {
-            if (SwissSourceTax.annualModel(t.canton())) {
-                history.requireComplete();
-                annualRate = annualIncome(t, start, end, gross, history);
-                Map<String, BigDecimal> taxableByTariff = new LinkedHashMap<>();
-                taxableByTariff.put(t.tariffCode(), total);
-                BigDecimal previousWithholding = BigDecimal.ZERO;
-                for (var entry : history.entries()) {
-                    var previous = entry.calculation();
-                    if (!"CH_SOURCE".equals(previous.terms().taxMode()) || !t.canton().equals(previous.terms().canton())) throw new IllegalStateException("Wechsel des Quellensteuerkantons/-status benötigt eine getrennte Jahreszuordnung.");
-                    taxableByTariff.merge(previous.terms().tariffCode(), previous.gross().total(), BigDecimal::add);
-                    previousWithholding = previousWithholding.add(BigDecimal.valueOf(previous.employee().getOrDefault("Withholding tax", 0.0)));
-                }
-                // KS45 annual reconciliation applies each historical tariff to its entire taxable base.
-                // Rounding every former month again would carry monthly rounding residue into the year total.
-                BigDecimal due = previousWithholding.negate();
-                for (var group : taxableByTariff.entrySet())
-                    due = due.add(sourceTax.annual(start.getYear(), t.canton(), group.getKey(), group.getValue(), annualRate).amount());
-                put(employee, "Withholding tax", due);
-                reference += "; KS45 Jahresausgleich; Satzbasis Jahr " + annualRate.toPlainString();
-            } else {
-                monthlyRate = gross.base().multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(days), 12, RoundingMode.HALF_UP)
-                        .add(gross.premium()).add(gross.payout());
-                if (gross.thirteenthAmount().signum() > 0) {
-                    int eligibleDays = days;
-                    for (int i = history.entries().size() - 1; i >= 0; i--) {
-                        var previous = history.entries().get(i).calculation();
-                        if (previous.gross().thirteenthAmount().signum() > 0) break;
-                        if (previous.terms().thirteenthMonths() > 0) eligibleDays += PayrollPeriod.swissDays(previous.periodStart(), previous.periodEnd());
-                    }
-                    monthlyRate = monthlyRate.add(gross.thirteenthAmount().multiply(BigDecimal.valueOf(t.thirteenthMonths() * 30L)).divide(BigDecimal.valueOf(eligibleDays), 12, RoundingMode.HALF_UP));
-                }
-                var tax = sourceTax.monthly(start.getYear(), t.canton(), t.tariffCode(), total, monthlyRate);
-                put(employee, "Withholding tax", tax.amount()); reference += "; " + tax.reference();
-            }
-        }
+        String reference = "Versicherungsversion #" + insurance.getId() + "; BVG-Version #" + pension.getId() + "; CH "+start.getYear();
+        var withholding=includeTax?SwissWithholdingSettlement.calculate(sourceTax,t,start,end,gross,history,data):new SwissWithholdingSettlement.Result(BigDecimal.ZERO,null,null,List.of());
+        BigDecimal annualRate=withholding.annualRate(),monthlyRate=withholding.monthlyRate();
+        put(employee,"Withholding tax",withholding.amount());
+        for(var allocation:withholding.allocations()) reference+="; QST "+allocation.canton()+" ab "+allocation.from()+": "+allocation.amount().toPlainString()+"; Satzbasis "+allocation.rateIncome().toPlainString();
         BigDecimal ahv = liable ? total.multiply(new BigDecimal("0.053")) : BigDecimal.ZERO;
         BigDecimal alv = liable ? insured.multiply(new BigDecimal("0.011")) : BigDecimal.ZERO;
         put(employee, "AHV/IV/EO", ahv); put(employer, "AHV/IV/EO", ahv);
@@ -98,31 +82,14 @@ public final class SwissPayrollSettlement {
         put(employee, "FAK", (liable ? total : BigDecimal.ZERO).multiply(insurance.getFakEmployeeRate()));
         put(employer, "FAK", (liable ? total : BigDecimal.ZERO).multiply(insurance.getFakRate()));
         put(employer, "AHV administration", ahv.multiply(BigDecimal.valueOf(2)).multiply(insurance.getAhvAdminRate()));
-        return new TaxCalculationService.Result(employee, employer, reference, new Basis(days, insured, ktg, annualRate, monthlyRate, ktgAnnual));
+        if(ktgPool!=null) reference+="; KTG-Kreis "+ktgPool.key()+" ("+ktgPool.from()+"–"+ktgPool.through()+")";
+        return new TaxCalculationService.Result(employee, employer, reference, new Basis(days, insured, ktg, annualRate, monthlyRate, ktgAnnual,ktgPool,withholding.allocations()));
     }
     /** KS45 7.3: known salary forecast; 13th entitlement included from the outset, no artificial monthly payout. */
     public static BigDecimal annualIncome(PayrollTerms t, LocalDate start, LocalDate end, PayrollGrossCalculator.Result current, PayrollLedgerService.History history) {
-        BigDecimal periodic = current.base(), aperiodic = current.payout().add(current.premium());
-        BigDecimal thirteenthBase = t.thirteenthMonths() > 0 ? current.base() : BigDecimal.ZERO;
-        BigDecimal paidThirteenth = current.thirteenthAmount();
-        int elapsed = PayrollPeriod.swissDays(start, end);
-        for (var entry : history.entries()) {
-            var c = entry.calculation(); periodic = periodic.add(c.gross().base());
-            aperiodic = aperiodic.add(c.gross().payout()).add(c.gross().premium());
-            if (c.terms().thirteenthMonths() > 0) thirteenthBase = thirteenthBase.add(c.gross().base());
-            paidThirteenth = paidThirteenth.add(c.gross().thirteenthAmount());
-            elapsed += PayrollPeriod.swissDays(c.periodStart(), c.periodEnd());
-        }
-        LocalDate until = t.exitDate() != null && t.exitDate().getYear() == end.getYear() ? t.exitDate() : end.withMonth(12).withDayOfMonth(31);
-        int futureDays = PayrollPeriod.swissDays(end.plusDays(1), until);
-        BigDecimal forecast = t.hourly() ? periodic.multiply(BigDecimal.valueOf(futureDays)).divide(BigDecimal.valueOf(elapsed), 12, RoundingMode.HALF_UP)
-                : futureSalary(t, end.plusDays(1), until);
-        // At departure/year end the rate must use the actual rounded payments, not an unrounded entitlement.
-        BigDecimal thirteenth = futureDays == 0 ? paidThirteenth
-                : thirteenthBase.add(t.thirteenthMonths() > 0 ? forecast : BigDecimal.ZERO).divide(BigDecimal.valueOf(12), 12, RoundingMode.HALF_UP);
-        return periodic.add(forecast).add(thirteenth).multiply(BigDecimal.valueOf(360)).divide(BigDecimal.valueOf(elapsed + futureDays), 12, RoundingMode.HALF_UP).add(aperiodic);
+        return SwissWithholdingSettlement.annualIncome(t,start,end,current,history);
     }
-    private static BigDecimal futureSalary(PayrollTerms terms, LocalDate from, LocalDate until) {
+    static BigDecimal futureSalary(PayrollTerms terms, LocalDate from, LocalDate until) {
         BigDecimal total = BigDecimal.ZERO;
         for (LocalDate cursor = from; !cursor.isAfter(until);) {
             LocalDate end = cursor.withDayOfMonth(cursor.lengthOfMonth());
@@ -133,16 +100,29 @@ public final class SwissPayrollSettlement {
         }
         return total;
     }
-    private static void validateKtgHistory(PayrollLedgerService.History history, BigDecimal currentCap, Long insuranceId) {
+    private static BigDecimal ktgBase(PayrollLedgerService.History history, BigDecimal currentCap,PayrollKtgPool pool,
+            Long insuranceId,LocalDate start,LocalDate end,BigDecimal currentGross,int currentDays) {
+        BigDecimal gross=currentGross,previousBase=BigDecimal.ZERO; int days=currentDays;
         for (var entry : history.entries()) {
             var previous = entry.calculation();
+            if(pool!=null && previous.periodEnd().isBefore(pool.from())) continue;
+            if(pool!=null && previous.periodStart().isBefore(pool.from())) throw new IllegalStateException("Der KTG-Vertragsbeginn schneidet eine frühere Abrechnungsperiode. Diese Zuordnung muss aufgeteilt werden.");
+            PayrollKtgPool priorPool=previous.swissBasis()==null?null:previous.swissBasis().ktgPool();
+            if(priorPool!=null && !Objects.equals(pool,priorPool)) throw new IllegalStateException("KTG-Abrechnungskreis/-Zeitraum widerspricht früheren Monaten. Einen neuen Kreis ab dem Vertragswechsel erfassen.");
             BigDecimal previousCap = previous.swissBasis() == null ? null : previous.swissBasis().ktgAnnualSalaryCap();
             // Older snapshots identify the immutable insurance version but do not store the cap separately.
             if (previousCap == null && insuranceId != null && previous.taxReference() != null
                     && previous.taxReference().startsWith("Versicherungsversion #" + insuranceId + ";")) previousCap = currentCap;
             if (previousCap == null) throw new IllegalStateException("Für frühere Monate fehlt die gesicherte KTG-Jahreslohngrenze. Diese Monate zuerst chronologisch über Korrekturbelege übernehmen; bestehende Abrechnungen bleiben erhalten.");
-            if (previousCap.compareTo(currentCap) != 0) throw new IllegalStateException("Die KTG-Jahreslohngrenze ändert innerhalb des Abrechnungsjahres. Dieser Vertragswechsel benötigt eine getrennte Versicherungszuordnung und kann noch nicht automatisch abgerechnet werden.");
+            if (previousCap.compareTo(currentCap) != 0) throw new IllegalStateException("Die KTG-Jahreslohngrenze ändert im selben Abrechnungskreis. Für den neuen Vertrag einen getrennten Kreis mit Vertragsbeginn/-ende erfassen.");
+            if(previous.swissBasis()==null) throw new IllegalStateException("KTG-Vorperiodenbasis fehlt.");
+            gross=gross.add(previous.gross().total()); previousBase=previousBase.add(previous.swissBasis().ktgBase()); days+=previous.swissBasis().insuranceDays();
         }
+        if(currentCap.signum()==0) return currentGross;
+        BigDecimal limit=currentCap.multiply(BigDecimal.valueOf(days)).divide(BigDecimal.valueOf(360),12,RoundingMode.HALF_UP);
+        BigDecimal base=gross.min(limit).subtract(previousBase);
+        if(base.signum()<0) throw new IllegalStateException("Die bisherigen KTG-Basen dieses Kreises müssen zuerst chronologisch abgeglichen werden.");
+        return base;
     }
     private static void fixed(Map<String, Double> target, String name, BigDecimal value) { if (value.signum() != 0) target.put(name, value.doubleValue()); }
     private static void put(Map<String, Double> target, String name, BigDecimal value) { fixed(target, name, value.divide(new BigDecimal("0.05"), 0, RoundingMode.HALF_UP).multiply(new BigDecimal("0.05"))); }

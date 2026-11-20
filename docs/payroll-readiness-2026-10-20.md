@@ -1,5 +1,7 @@
 # Abrechnungslogik – Prüfstand 20. Oktober 2026
 
+Fortsetzung mit Praxis-Stundenvergleich und v5-Korrektur: [Prüfstand 2. November 2026](payroll-readiness-2026-11-02.md). Die folgenden Ergebnisse beschreiben den damaligen v4-Stand.
+
 Berechnungsversion `chrono-payroll-2026-v4`; begonnen am 20. Oktober, Abschlussprüfung in der Nacht zum 21. Oktober 2026. Die Arbeiten wurden nach dem Stopp lokal fortgesetzt. Es wurde nichts veröffentlicht und keine Live-Datenbank verändert. Dieser Bericht ersetzt den damaligen v2-Zwischenstand vom 16. Oktober; er ist keine Freigabe sämtlicher denkbarer Lohnfälle.
 
 ## Umgesetzter Umfang

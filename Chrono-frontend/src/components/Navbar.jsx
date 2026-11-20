@@ -1,7 +1,7 @@
 /****************************************
  * Navbar.jsx · kompakt mit Dropdowns & Icons (Aug 2025)
  ****************************************/
-import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo, useId } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Link from './workspace/WorkspaceLink.jsx';
 import { useWorkspacePaneActive } from './workspace/WorkspacePaneContext.jsx';
@@ -135,18 +135,44 @@ const NavbarContents = () => {
     const [openAdmin, setOpenAdmin] = useState(false);
     const [openUser, setOpenUser] = useState(false);
     const [openLang, setOpenLang] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const mobileNavId = useId();
 
     const adminRef = useRef(null);
     const userRef = useRef(null);
     const langRef = useRef(null);
     const navToggleRef = useRef(null);
+    const navRef = useRef(null);
 
     useClickOutside(adminRef, () => setOpenAdmin(false));
     useClickOutside(userRef, () => setOpenUser(false));
     useClickOutside(langRef, () => setOpenLang(false));
+    useClickOutside(navRef, () => setMobileNavOpen(false));
+
+    useEffect(() => {
+        setMobileNavOpen(false);
+        setOpenLang(false);
+        setOpenAdmin(false);
+        setOpenUser(false);
+    }, [location.pathname, location.search, location.hash]);
+
+    useEffect(() => {
+        if (!mobileNavOpen) return undefined;
+        const handleEscape = (event) => {
+            if (event.key !== 'Escape') return;
+            setMobileNavOpen(false);
+            setOpenLang(false);
+            setOpenAdmin(false);
+            setOpenUser(false);
+            navToggleRef.current?.focus();
+        };
+        // Safari does not focus a button on tap, so listen beyond the nav itself.
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [mobileNavOpen]);
 
     const closeMobileNav = () => {
-        if (navToggleRef.current) navToggleRef.current.checked = false;
+        setMobileNavOpen(false);
         setOpenLang(false);
         setOpenAdmin(false);
         setOpenUser(false);
@@ -371,7 +397,7 @@ const NavbarContents = () => {
 
     return (
         <div className={`${styles['scoped-navbar']} chrono-navbar-shell ${showWorkspaceTabs ? 'has-workspace-tabs' : ''}`}>
-            <nav className={styles.navbar} aria-label="Hauptnavigation">
+            <nav ref={navRef} className={styles.navbar} aria-label="Hauptnavigation">
                 <div className={styles['navbar-brand']}>
                     <Link to={isPmsArea ? '/pms' : '/'} className={styles['navbar-logo']} aria-label={isPmsArea ? 'Chrono PMS' : 'Chrono'}>
                         <img
@@ -382,18 +408,24 @@ const NavbarContents = () => {
                     </Link>
                 </div>
 
-                <input
-                    type="checkbox"
-                    id="nav-toggle"
-                    className={styles['nav-toggle']}
+                <button
+                    type="button"
+                    className={styles['nav-toggle-label']}
                     ref={navToggleRef}
-                    onChange={() => setOpenLang(false)}
-                />
-                <label htmlFor="nav-toggle" className={styles['nav-toggle-label']} aria-label="Menü umschalten">
-                    <span></span><span></span><span></span>
-                </label>
+                    aria-label={t('navbar.toggleMenu', 'Menü umschalten')}
+                    aria-expanded={mobileNavOpen}
+                    aria-controls={mobileNavId}
+                    onClick={() => {
+                        setMobileNavOpen((open) => !open);
+                        setOpenLang(false);
+                        setOpenAdmin(false);
+                        setOpenUser(false);
+                    }}
+                >
+                    <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+                </button>
 
-                <ul className={styles['navbar-links']}>
+                <ul id={mobileNavId} className={styles['navbar-links']}>
                     {!authToken || isPublicPage ? (
                         <>
                             {marketingSections.map((section) => (

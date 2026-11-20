@@ -185,9 +185,6 @@ public class WorkScheduleService {
             return 0;
         }
 
-        double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
-        double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
-
         int absenceMinutesToDeduct = 0;
         int expectedMinutesInRange = 0;
         LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -202,7 +199,7 @@ public class WorkScheduleService {
         List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, effectiveStart, effectiveEnd);
 
         int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, startOfWeek);
-        int dailyValueMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
+        int dailyValueMinutes = percentageDailyMinutes(user, modeledWorkDays);
 
         for (LocalDate d = effectiveStart; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
             final LocalDate currentDate = d;
@@ -302,6 +299,20 @@ public class WorkScheduleService {
         return dayIndex <= modeledWorkDays;
     }
 
+    /** Contractual hours before the time account rounds each modeled day to whole minutes. */
+    static java.math.BigDecimal percentageBaseWeeklyHours(User user) {
+        if (user.getWorkPercentage() == null || user.getWorkPercentage() <= 0 || user.getWorkPercentage() > 100) {
+            throw new IllegalStateException("Für die Überstundenauszahlung fehlt ein gültiges Arbeitspensum.");
+        }
+        return java.math.BigDecimal.valueOf(BASE_FULL_TIME_WEEKLY_HOURS)
+                .multiply(java.math.BigDecimal.valueOf(user.getWorkPercentage())).movePointLeft(2);
+    }
+
+    private static int percentageDailyMinutes(User user, int modeledWorkDays) {
+        double percentageWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS * (user.getWorkPercentage() / 100.0);
+        return (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
+    }
+
 
     public int computeExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacationsForUser) {
         if (isBeforeEntryDate(user, date)) {
@@ -357,15 +368,13 @@ public class WorkScheduleService {
             }
 
             // Wenn kein voller freier Tag (Feiertag/Urlaub/Krankheit), berechne den anteiligen Tageswert
-            double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
-            double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
             int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, date);
             boolean percentageHoliday = isHolidayForUser(user, date);
             boolean percentageHalfDayHoliday = isHalfDayHolidayForUser(user, date);
             if (!isModeledPercentageWorkDay(date, modeledWorkDays)) {
                 return 0;
             }
-            int dailyMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
+            int dailyMinutes = percentageDailyMinutes(user, modeledWorkDays);
 
             if (percentageHoliday) {
                 UserHolidayOption option = safeContext.holidayOptions.get(date);

@@ -27,9 +27,34 @@ Erstattungsereignisse können auch einen bereits beim Anbieter ausgeführten, lo
 
 Die Automatik berücksichtigt bestätigte Reservierungen mit gespeicherten Anzahlungsbedingungen. Fälligkeit und tatsächlicher offener Anzahlungsbetrag werden erneut ermittelt. Unmittelbar vor Anlage des Auftrags prüft der Finanzdienst unter Hotelsperre erneut Opt-in, Reservierungsstatus und Betrag. Stornierte Aufenthalte oder abgeschaltete Automatik erzeugen keinen neuen automatischen Auftrag.
 
-Die stabile Vorgangs-ID lautet `deposit-reservation-<Reservierungs-ID>`. Wiederholung verwendet denselben Checkout-Auftrag und dieselbe Versand-ID. Die Versandwarteschlange verschickt den Zahlungslink nach ihrer eigenen Freigabe-/Retry-Logik; das wiederholte Einreihen derselben ID verschickt keine zweite Nachricht. Die Automatik speichert **keine Karten für spätere Belastungen** und zieht **keine Zahlung ohne Bestätigung des Gastes** ein. Autorisierungen/Einzüge bleiben explizite Finanzaktionen.
+Die stabile fachliche Vorgangs-ID lautet `deposit-reservation-<Reservierungs-ID>`. Die Zahlungsautomatik sucht ihren Auftrag anhand der tatsächlichen Reservierungs-, Hotel- und Firmenzuordnung im eigenen Namensraum. Wiederholung verwendet denselben Checkout-Auftrag und dieselbe Versand-ID. Die Versandwarteschlange verschickt den Zahlungslink nach ihrer eigenen Freigabe-/Retry-Logik; das wiederholte Einreihen derselben ID verschickt keine zweite Nachricht. Die Automatik speichert **keine Karten für spätere Belastungen** und zieht **keine Zahlung ohne Bestätigung des Gastes** ein. Autorisierungen/Einzüge bleiben explizite Finanzaktionen.
 
 Pro Hotel wird ein begrenzter, fortgesetzter Scan ausgeführt, damit große Bestände nicht in einer einzigen unbeschränkten Abfrage geladen werden. Nach einem vollständigen Durchlauf beginnt der nächste bei der ersten Reservierung. Der Status zeigt blockierte Link-/Versandfälle. Eine nachträgliche Änderung eines bereits versandten Anzahlungsauftrags oder ein abgelaufener Link wird nicht durch einen zweiten automatischen Geldauftrag ersetzt; der gespeicherte Vorgang bleibt zur bewussten weiteren Bearbeitung verfügbar.
+
+## Vorgangsidentität und bestehende Daten beim Upgrade
+
+Neue manuelle Browser-IDs gelten nur für das autorisierte Gastkonto im Namensraum `CLIENT`. Zwei Firmen oder Gastkonten können denselben Text verwenden. Die API und die Automatikübersicht geben weiterhin die ursprüngliche Browser-/fachliche ID zurück, damit Wiederholung nach einer unklaren Antwort funktioniert. Neue manuelle IDs mit `deposit` oder `chrono` und anschließend `.`, `_`, `:` oder `-` sind unabhängig von Groß-/Kleinschreibung für Serverabläufe reserviert. Bereits gespeicherte manuelle IDs bleiben im eigenen Gastkonto wiederholbar.
+
+Neue Aufträge erhalten zusätzlich eine unveränderliche, serverseitig zufällig erzeugte Anbieteridentität (`chrono-pms-request-<UUID>`). Stripe-Metadaten sowie Checkout-, Capture- und Release-Idempotenz verwenden ausschließlich diese Identität. Webhook-Fallbacks suchen nur nach dieser gespeicherten Anbieteridentität; eine Browser-ID dient dort nicht als globale Zuordnung.
+
+Migration V58 ergänzt `client_request_key`, `request_source` und `automatic_reservation_id`. Sie verändert **keinen** bestehenden `request_key`, Anbieterbezug, Betrag, Status oder Händlerkontext und startet keine Zahlung. Auch ein noch unbekanntes Ergebnis eines alten Anbieteraufrufs wird mit seinem exakt ursprünglichen Schlüssel abgeglichen. Die Browser-ID wird für vorhandene Zeilen aus dem bisherigen Schlüssel übernommen.
+
+Ein alter Anzahlungsauftrag wird nur dem Automatiknamensraum zugeordnet, wenn sein bytegenauer Schlüssel `deposit-reservation-<ID der tatsächlichen Folio-Reservierung>` lautet, `created_by` exakt `deposit-automation` ist und die Art `PAYMENT` vorliegt. Die Eigentümerschaft folgt ausschließlich Folio → Reservierung → Hotel → Firma. Ein fremdes Gastkonto, das einen solchen Text vorweg belegt hat, behält seinen alten Anbieterauftrag im Namensraum `CLIENT` und blockiert die echte Reservierungsautomatik nicht. Sonderfälle ohne diese eindeutige historische Zuordnung bleiben sichtbar und müssen anhand der ursprünglichen Anbieterunterlagen geprüft werden; Schlüssel oder Anbieteraufträge dafür nicht umbenennen oder ersetzen.
+
+Vor der manuellen Live-Einführung den Zahlungsworker (`APP_PMS_PAYMENTS_AUTOMATION_ENABLED=false`) deaktiviert lassen, bestehende Hotel-Opt-ins inventarisieren, Datenbanksicherung prüfen und die folgenden nicht geheimen Bestandsdaten schreibgeschützt inventarisieren:
+
+```sql
+SELECT p.company_id, r.property_id, r.id AS reservation_id, pr.folio_id,
+       pr.id AS request_id, pr.request_key, pr.created_by, pr.kind, pr.status,
+       pr.provider_session_id, pr.provider_payment_intent_id
+FROM pms_payment_requests pr
+JOIN pms_folios f ON f.id = pr.folio_id
+JOIN pms_reservations r ON r.id = f.reservation_id
+JOIN pms_properties p ON p.id = r.property_id
+ORDER BY p.company_id, r.property_id, pr.id;
+```
+
+Für die Migration die alte Anwendung vollständig anhalten; alte und neue Version dürfen nicht gleichzeitig Zahlungsaufträge anlegen. Nach V58 denselben Bestand mit den drei neuen Spalten vergleichen: Anzahl, bestehende IDs und sämtliche Anbieteridentitäten müssen erhalten bleiben. Historische Automatikzuordnungen und offene/unklare Vorgänge prüfen, danach die freigegebenen Worker aktivieren. Eine Rückkehr zur alten Anwendung nach Anlage neuer Aufträge benötigt einen abgestimmten Rollback; die alte Anwendung kennt die getrennten Identitäten nicht. Keine Spalten löschen oder neue Provider-Schlüssel rückwirkend durch Browser-IDs ersetzen.
 
 ## Historische Händlerzuordnung
 
