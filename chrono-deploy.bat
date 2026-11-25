@@ -101,13 +101,8 @@ REM update.sh erstellt und prueft zuerst ein Datenbankbackup. Es aktualisiert
 REM ausschliesslich chrono-backend-1 und chrono-frontend-1. MySQL, Volumes,
 REM Proxy, Monitoring und andere Projekte bleiben unberuehrt.
 echo [5/5] Server: geschuetztes App-Update ausfuehren
-ssh -t %SSH_TARGET% "%REMOTE_UPDATE_CMD%"
-if errorlevel 1 goto :error_ssh
-
-echo.
-echo ==========================================
-echo [OK] Deploy fertig! (Fenster bleibt offen)
-echo ==========================================
+REM Der Server meldet den Erfolg erst nach allen Produktionspruefungen.
+ssh -t %SSH_TARGET% "%REMOTE_UPDATE_CMD%" || goto :error_ssh
 goto :end_pause
 
 :error_root
@@ -131,7 +126,7 @@ echo [FAIL] Docker Build/Push fehlgeschlagen.
 goto :end_pause
 
 :error_ssh
-echo [FAIL] SSH/Remote Update fehlgeschlagen.
+echo [FAIL] SSH/Remote Update fehlgeschlagen oder unterbrochen.
 goto :end_pause
 
 :end_pause
