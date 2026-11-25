@@ -9,9 +9,14 @@ The migration also tolerates older installations without either optional table.
 
 ## Existing live NFC device: Praxis
 
+If no reader is configured yet, the interactive production deploy looks up the
+exact company name `Praxis` and displays its ID. Confirm the ID only if the
+existing reader belongs to that company. The deploy saves the assignment with
+the existing token. For unattended deploys, configure the assignment in advance.
+
 Keep the existing live `NFC_AGENT_TOKEN` and existing agent request shape. Before
-deployment, the operator must resolve the actual company ID from the deployment
-database:
+deploying with a manual assignment, resolve the actual company ID from the
+deployment database:
 
 ```sql
 SELECT id, name FROM companies WHERE name = 'Praxis';

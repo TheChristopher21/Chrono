@@ -21,6 +21,9 @@ DEPLOY_STARTED=0
 ROLLBACK_RUNNING=0
 PROTECTED_SNAPSHOT=""
 CORE_COUNT_SNAPSHOT=""
+NFC_SETUP_REQUIRED=0
+EXPECTED_NFC_COMPANY_ID=""
+EXPECTED_NFC_DEVICE_ID=""
 
 fail() {
   echo "[FAIL] $*" >&2
@@ -54,7 +57,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for command in awk curl df docker git gzip sha256sum stat; do
+for command in awk curl df docker git gzip python3 sha256sum stat; do
   command -v "${command}" >/dev/null 2>&1 ||
     fail "Erforderliches Programm fehlt: ${command}"
 done
@@ -74,23 +77,27 @@ read_env_value() {
   ' "${ENV_FILE}"
 }
 
-set_env_value() {
-  local key="$1"
-  local value="$2"
+write_deploy_environment() {
   local temporary
 
   temporary="$(mktemp "${ENV_FILE}.tmp.XXXXXX")"
-  awk -v requested_key="${key}" -v requested_value="${value}" '
-    BEGIN { replaced = 0 }
-    index($0, requested_key "=") == 1 {
-      print requested_key "=" requested_value
-      replaced = 1
-      next
+  awk -v tag="${REQUESTED_IMAGE_TAG}" -v configure_nfc="${NFC_SETUP_REQUIRED}" \
+    -v company="${EXPECTED_NFC_COMPANY_ID}" -v device="${EXPECTED_NFC_DEVICE_ID}" '
+    function write_value(key, value) {
+      if (!(key in written)) {
+        print key "=" value
+        written[key] = 1
+      }
     }
+    /^CHRONO_IMAGE_TAG=/ { write_value("CHRONO_IMAGE_TAG", tag); next }
+    configure_nfc && /^NFC_AGENT_COMPANY_ID=/ { write_value("NFC_AGENT_COMPANY_ID", company); next }
+    configure_nfc && /^NFC_AGENT_DEVICE_ID=/ { write_value("NFC_AGENT_DEVICE_ID", device); next }
     { print }
     END {
-      if (!replaced) {
-        print requested_key "=" requested_value
+      write_value("CHRONO_IMAGE_TAG", tag)
+      if (configure_nfc) {
+        write_value("NFC_AGENT_COMPANY_ID", company)
+        write_value("NFC_AGENT_DEVICE_ID", device)
       }
     }
   ' "${ENV_FILE}" > "${temporary}"
@@ -127,6 +134,64 @@ mysql_query_root() {
     -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD_VALUE}" \
     "${MYSQL_CONTAINER}" \
     mysql --batch --skip-column-names -uroot -e "${query}"
+}
+
+read_nfc_deploy_environment() {
+  local settings
+  local -a fields
+  settings="$(
+    CHRONO_ENV_FILE="${ENV_FILE}" docker compose \
+      --file "${DEPLOY_COMPOSE}" --env-file "${ENV_FILE}" config --format json backend |
+      python3 -c '
+import json
+import re
+import sys
+
+env = json.load(sys.stdin)["services"]["backend"]["environment"]
+company = env.get("NFC_AGENT_COMPANY_ID") or ""
+device = env.get("NFC_AGENT_DEVICE_ID") or ""
+if company or device:
+    if not re.fullmatch(r"0*[1-9][0-9]{0,18}", company) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}", device):
+        sys.exit("[FAIL] NFC_AGENT_COMPANY_ID und NFC_AGENT_DEVICE_ID müssen gemeinsam gültig gesetzt sein.")
+try:
+    registry = json.loads((env.get("NFC_AGENT_REGISTRY_JSON") or "").strip() or "[]")
+    if not isinstance(registry, list):
+        raise ValueError()
+except ValueError:
+    sys.exit("[FAIL] NFC_AGENT_REGISTRY_JSON muss ein gültiges JSON-Array sein.")
+print(company, device, int(bool(registry)), sep="\n")
+'
+  )"
+  mapfile -t fields <<< "${settings}"
+  NFC_COMPANY_ID="${fields[0]}"
+  NFC_DEVICE_ID="${fields[1]}"
+  NFC_HAS_REGISTRY="${fields[2]}"
+}
+
+prepare_nfc_ownership() {
+  local company confirmation
+
+  read_nfc_deploy_environment
+  if [[ -z "${NFC_COMPANY_ID}" ]]; then
+    # An explicitly configured device registry does not need the legacy token mapping.
+    (( NFC_HAS_REGISTRY == 0 )) || return 0
+    [[ -t 0 ]] || fail "NFC-Zuordnung fehlt. Starte den Deploy interaktiv oder setze NFC_AGENT_COMPANY_ID und NFC_AGENT_DEVICE_ID in ${ENV_FILE}."
+    company="$(mysql_query_root "SELECT id FROM \`${MYSQL_DATABASE_VALUE}\`.companies WHERE BINARY name = 'Praxis' LIMIT 2;")"
+    [[ "${company}" =~ ^[1-9][0-9]{0,18}$ ]] ||
+      fail "Die Firma Praxis konnte nicht eindeutig ermittelt werden. Prüfe die Zuordnung in ${ENV_FILE}."
+    printf '[NFC] Gehört der vorhandene Leser zur Firma Praxis? Zur Bestätigung Firmen-ID %s eingeben: ' "${company}" >&2
+    IFS= read -r confirmation || fail "NFC-Zuordnung wurde nicht bestätigt."
+    [[ "${confirmation}" == "${company}" ]] || fail "NFC-Zuordnung wurde nicht bestätigt."
+    NFC_COMPANY_ID="${company}"
+    NFC_DEVICE_ID="praxis-reader"
+    NFC_SETUP_REQUIRED=1
+  else
+    company="$(mysql_query_root "SELECT id FROM \`${MYSQL_DATABASE_VALUE}\`.companies WHERE id = ${NFC_COMPANY_ID};")"
+    [[ -n "${company}" ]] || fail "Die konfigurierte NFC-Firma existiert nicht. Prüfe NFC_AGENT_COMPANY_ID in ${ENV_FILE}."
+  fi
+
+  EXPECTED_NFC_COMPANY_ID="${NFC_COMPANY_ID}"
+  EXPECTED_NFC_DEVICE_ID="${NFC_DEVICE_ID}"
 }
 
 snapshot_protected_containers() {
@@ -286,15 +351,17 @@ print_backend_start_diagnostics() {
 }
 
 rollback_application() {
+  local rollback_env_file="$1"
   [[ "${DEPLOY_STARTED}" -eq 1 ]] || return 0
   [[ -n "${ROLLBACK_TAG}" ]] || return 0
 
   ROLLBACK_RUNNING=1
   echo "[WARN] App-Deploy fehlgeschlagen. Stelle vorherige App-Images wieder her." >&2
   CHRONO_IMAGE_TAG="${ROLLBACK_TAG}" \
+    CHRONO_ENV_FILE="${rollback_env_file}" \
     docker compose \
       --file "${DEPLOY_COMPOSE}" \
-      --env-file "${ENV_FILE}" \
+      --env-file "${rollback_env_file}" \
       up -d --no-deps backend frontend || true
   docker exec "${PROXY_CONTAINER}" nginx -t >/dev/null 2>&1 &&
     docker exec "${PROXY_CONTAINER}" nginx -s reload >/dev/null 2>&1 || true
@@ -303,13 +370,18 @@ rollback_application() {
 
 handle_error() {
   local exit_code=$?
+  local rollback_env_file="${ENV_FILE}"
   trap - ERR
-  if [[ "${ROLLBACK_RUNNING}" -eq 0 ]]; then
-    rollback_application
-  fi
   if [[ -n "${ENV_BACKUP}" && -f "${ENV_BACKUP}" ]]; then
-    cp --preserve=mode "${ENV_BACKUP}" "${ENV_FILE}"
-    echo "[INFO] Vorherige .env wurde wiederhergestellt." >&2
+    if cp --preserve=mode "${ENV_BACKUP}" "${ENV_FILE}"; then
+      echo "[INFO] Vorherige .env wurde wiederhergestellt." >&2
+    else
+      echo "[FAIL] Vorherige .env konnte nicht wiederhergestellt werden. Rollback verwendet ${ENV_BACKUP}." >&2
+      rollback_env_file="${ENV_BACKUP}"
+    fi
+  fi
+  if [[ "${ROLLBACK_RUNNING}" -eq 0 ]]; then
+    rollback_application "${rollback_env_file}"
   fi
   if [[ -n "${PROTECTED_SNAPSHOT}" && -f "${PROTECTED_SNAPSHOT}" ]]; then
     assert_protected_containers_unchanged || true
@@ -414,6 +486,8 @@ docker exec \
     -u"${MYSQL_APP_USER_VALUE}" \
     -e "SELECT 1 FROM \`${MYSQL_DATABASE_VALUE}\`.companies LIMIT 1;" >/dev/null
 
+prepare_nfc_ownership
+
 AVAILABLE_KIB="$(df -Pk . | awk 'NR == 2 {print $4}')"
 [[ "${AVAILABLE_KIB}" =~ ^[0-9]+$ ]] ||
   fail "Freier Speicher konnte nicht ermittelt werden."
@@ -426,9 +500,16 @@ snapshot_core_counts
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 create_predeploy_backup "${TIMESTAMP}"
 
-ENV_BACKUP=".env.before-deploy-${TIMESTAMP}"
-cp --preserve=mode "${ENV_FILE}" "${ENV_BACKUP}"
-set_env_value CHRONO_IMAGE_TAG "${REQUESTED_IMAGE_TAG}"
+ENV_BACKUP_PATH=".env.before-deploy-${TIMESTAMP}"
+cp --preserve=mode "${ENV_FILE}" "${ENV_BACKUP_PATH}"
+ENV_BACKUP="${ENV_BACKUP_PATH}"
+write_deploy_environment
+if (( NFC_SETUP_REQUIRED )); then
+  read_nfc_deploy_environment
+  [[ "${NFC_COMPANY_ID}" == "${EXPECTED_NFC_COMPANY_ID}" && "${NFC_DEVICE_ID}" == "${EXPECTED_NFC_DEVICE_ID}" ]] ||
+    fail "Docker Compose übernimmt die bestätigte NFC-Zuordnung nicht. Prüfe die exportierten NFC-Variablen."
+  echo "[OK] NFC-Zuordnung für den Praxis-Leser gespeichert."
+fi
 
 BACKEND_IMAGE_REPOSITORY="$(read_env_value CHRONO_BACKEND_IMAGE)"
 BACKEND_IMAGE_REPOSITORY="${BACKEND_IMAGE_REPOSITORY:-chrisubuntu1/chrono-backend}"
