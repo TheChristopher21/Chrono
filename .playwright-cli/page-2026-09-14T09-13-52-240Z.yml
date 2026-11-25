@@ -1,0 +1,114 @@
+- generic [ref=f3e2]:
+  - generic [ref=f3e4]:
+    - navigation "Hauptnavigation" [ref=f3e6]:
+      - link "Chrono PMS" [ref=f3e8] [cursor=pointer]:
+        - /url: /pms
+        - img "Chrono" [ref=f3e9]
+      - list [ref=f3e10]:
+        - listitem [ref=f3e11]:
+          - link "Zu Chrono wechseln" [ref=f3e12] [cursor=pointer]:
+            - /url: /pms
+        - listitem [ref=f3e13]:
+          - button "Was ist neu?" [ref=f3e14] [cursor=pointer]
+        - listitem [ref=f3e18]:
+          - button "Dark Mode" [ref=f3e19] [cursor=pointer]
+        - listitem [ref=f3e23]:
+          - button "🌐" [ref=f3e24] [cursor=pointer]
+        - listitem [ref=f3e27]:
+          - button "Scroll Prüfung" [ref=f3e28] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f3e29]: S
+      - button "PMS-Bereiche" [ref=f3e34] [cursor=pointer]
+    - generic [ref=f3e37]:
+      - complementary "PMS-Navigation" [ref=f3e38]:
+        - button "Aktives Hotel Hotel wird geladen…" [ref=f3e39] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f3e40]: CH
+          - generic [ref=f3e41]:
+            - generic [ref=f3e42]: Aktives Hotel
+            - strong [ref=f3e43]: Hotel wird geladen…
+          - generic [aria-hidden] [ref=f3e44]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f3e45]:
+          - generic [ref=f3e46]:
+            - generic [ref=f3e47]: Rezeption
+            - button "Übersicht" [ref=f3e48] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e49]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f3e50] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e51]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f3e52] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e53]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f3e54] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e55]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f3e56] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e57]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f3e58] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e59]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f3e60]:
+            - generic [ref=f3e61]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f3e62] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e63]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f3e64] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e65]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f3e66] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e67]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f3e68] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e69]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f3e70]:
+            - generic [ref=f3e71]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f3e72] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e73]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f3e74] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e75]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f3e76] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e77]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f3e78]:
+            - generic [ref=f3e79]: Steuerung & System
+            - button "Hotelportfolio" [ref=f3e80] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e81]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f3e82] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e83]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f3e84] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e85]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f3e86] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e87]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f3e88] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f3e89]: SYS
+              - text: Schnittstellen
+        - generic [ref=f3e92]:
+          - strong [ref=f3e93]: PMS betriebsbereit
+          - generic [ref=f3e94]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f3e95]:
+        - generic [ref=f3e96]:
+          - generic [ref=f3e97]:
+            - generic [ref=f3e98]: Chrono Hotel-PMS
+            - heading "Guten Tag, Scroll Prüfung" [level=1] [ref=f3e99]
+            - paragraph [ref=f3e100]: Deine operative Übersicht für den aktuellen Hotelbetrieb.
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f3e102] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f3e103]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f3e104]: Ctrl K
+        - status [ref=f3e105]:
+          - generic [ref=f3e107]:
+            - heading "Hotel wird geladen …" [level=2] [ref=f3e108]
+            - paragraph [ref=f3e109]: Hotel und verfügbare Arbeitsbereiche werden geladen.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

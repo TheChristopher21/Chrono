@@ -2,6 +2,7 @@ package com.chrono.chrono.repositories;
 
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.TimeTrackingEntry;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CorrectionRequestRepository extends JpaRepository<CorrectionRequest, Long> {
+    List<CorrectionRequest> findByTargetEntryIn(List<TimeTrackingEntry> entries);
     @Query("SELECT cr FROM CorrectionRequest cr LEFT JOIN FETCH cr.targetEntry WHERE cr.approved = false AND cr.denied = false")
     List<CorrectionRequest> findAllWithOriginalTimes();
 

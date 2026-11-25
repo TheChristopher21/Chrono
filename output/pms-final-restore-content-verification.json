@@ -1,0 +1,1384 @@
+{
+  "sourceSchema": "chrono_migration_fresh_20260912_v48",
+  "restoreSchema": "chrono_restore_final_20260912",
+  "container": "chrono-pms-enterprise-mysql-qa",
+  "readOnly": true,
+  "syntheticDataOnly": true,
+  "backendStartedByVerification": false,
+  "verifiedAt": "2026-09-12T12:26:46.195540+00:00",
+  "tableInventory": {
+    "sourceCount": 152,
+    "restoreCount": 152,
+    "namesAndEnginesIdentical": true
+  },
+  "tables": [
+    {
+      "table": "analytics_events",
+      "sourceRows": 12,
+      "restoreRows": 12,
+      "sourceChecksum": "3576586364",
+      "restoreChecksum": "3576586364",
+      "passed": true
+    },
+    {
+      "table": "analytics_excluded_ips",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "ap_vendor_invoices",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "ar_customer_invoices",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "bank_accounts",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "bank_payment_batches",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "bank_payment_instructions",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "changelog",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "companies",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "2576690633",
+      "restoreChecksum": "2576690633",
+      "passed": true
+    },
+    {
+      "table": "company_enabled_features",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1514764697",
+      "restoreChecksum": "1514764697",
+      "passed": true
+    },
+    {
+      "table": "company_holiday_preferences",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "company_knowledge",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "compliance_audit_log",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "correction_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_activities",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_campaigns",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_customer_addresses",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_customer_contacts",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_documents",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_leads",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "crm_opportunities",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "customers",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "daily_notes",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "digital_signature_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "fa_assets",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "flyway_schema_history",
+      "sourceRows": 35,
+      "restoreRows": 35,
+      "sourceChecksum": "3761152839",
+      "restoreChecksum": "3761152839",
+      "passed": true
+    },
+    {
+      "table": "gl_accounts",
+      "sourceRows": 12,
+      "restoreRows": 12,
+      "sourceChecksum": "820477326",
+      "restoreChecksum": "820477326",
+      "passed": true
+    },
+    {
+      "table": "gl_journal_entries",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "gl_journal_entry_lines",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "integration_configs",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_cycle_counts",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_products",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_stock_levels",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_stock_movements",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_stock_reservations",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_warehouse_bins",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "inv_warehouses",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "mobile_app_feedback",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "nfc_commands",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslip_audit",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslip_deductions",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslip_earnings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslip_employer_contribs",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslip_schedules",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "payslips",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_access_credentials",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_accounting_accounts",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_accounting_export_runs",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1129888246",
+      "restoreChecksum": "1129888246",
+      "passed": true
+    },
+    {
+      "table": "pms_accounting_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_approval_policies",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_audit_events",
+      "sourceRows": 542,
+      "restoreRows": 542,
+      "sourceChecksum": "3064715655",
+      "restoreChecksum": "3064715655",
+      "passed": true
+    },
+    {
+      "table": "pms_bank_imports",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "4081365414",
+      "restoreChecksum": "4081365414",
+      "passed": true
+    },
+    {
+      "table": "pms_bank_transactions",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "488324578",
+      "restoreChecksum": "488324578",
+      "passed": true
+    },
+    {
+      "table": "pms_beds24_publications",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_beds24_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_billing_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_booking_engine_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_cash_shifts",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3468425600",
+      "restoreChecksum": "3468425600",
+      "passed": true
+    },
+    {
+      "table": "pms_channel_connections",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1890719525",
+      "restoreChecksum": "1890719525",
+      "passed": true
+    },
+    {
+      "table": "pms_channel_mappings",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1176623833",
+      "restoreChecksum": "1176623833",
+      "passed": true
+    },
+    {
+      "table": "pms_communication_templates",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "4263878291",
+      "restoreChecksum": "4263878291",
+      "passed": true
+    },
+    {
+      "table": "pms_credit_accounts",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3857453703",
+      "restoreChecksum": "3857453703",
+      "passed": true
+    },
+    {
+      "table": "pms_delivery_attachments",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_delivery_jobs",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_dunning_notices",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_event_offers",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_event_order_lines",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_event_orders",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_external_booking_references",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "2507117152",
+      "restoreChecksum": "2507117152",
+      "passed": true
+    },
+    {
+      "table": "pms_financial_approvals",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_financial_periods",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "2207070747",
+      "restoreChecksum": "2207070747",
+      "passed": true
+    },
+    {
+      "table": "pms_folio_items",
+      "sourceRows": 1522,
+      "restoreRows": 1522,
+      "sourceChecksum": "1885547892",
+      "restoreChecksum": "1885547892",
+      "passed": true
+    },
+    {
+      "table": "pms_folios",
+      "sourceRows": 510,
+      "restoreRows": 510,
+      "sourceChecksum": "509945930",
+      "restoreChecksum": "509945930",
+      "passed": true
+    },
+    {
+      "table": "pms_front_desk_booking_requests",
+      "sourceRows": 500,
+      "restoreRows": 500,
+      "sourceChecksum": "2883043494",
+      "restoreChecksum": "2883043494",
+      "passed": true
+    },
+    {
+      "table": "pms_group_allotments",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_group_bookings",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1519239747",
+      "restoreChecksum": "1519239747",
+      "passed": true
+    },
+    {
+      "table": "pms_guest_communications",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "349413222",
+      "restoreChecksum": "349413222",
+      "passed": true
+    },
+    {
+      "table": "pms_guest_registrations",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "4215632291",
+      "restoreChecksum": "4215632291",
+      "passed": true
+    },
+    {
+      "table": "pms_guests",
+      "sourceRows": 509,
+      "restoreRows": 509,
+      "sourceChecksum": "566306819",
+      "restoreChecksum": "566306819",
+      "passed": true
+    },
+    {
+      "table": "pms_hotel_resources",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "721513998",
+      "restoreChecksum": "721513998",
+      "passed": true
+    },
+    {
+      "table": "pms_housekeeping_commands",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3392477343",
+      "restoreChecksum": "3392477343",
+      "passed": true
+    },
+    {
+      "table": "pms_housekeeping_task_events",
+      "sourceRows": 3,
+      "restoreRows": 3,
+      "sourceChecksum": "1403816186",
+      "restoreChecksum": "1403816186",
+      "passed": true
+    },
+    {
+      "table": "pms_housekeeping_tasks",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "600608618",
+      "restoreChecksum": "600608618",
+      "passed": true
+    },
+    {
+      "table": "pms_integration_outbox",
+      "sourceRows": 526,
+      "restoreRows": 526,
+      "sourceChecksum": "168278656",
+      "restoreChecksum": "168278656",
+      "passed": true
+    },
+    {
+      "table": "pms_international_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_invoice_documents",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "2077657146",
+      "restoreChecksum": "2077657146",
+      "passed": true
+    },
+    {
+      "table": "pms_invoice_lines",
+      "sourceRows": 5,
+      "restoreRows": 5,
+      "sourceChecksum": "3686923446",
+      "restoreChecksum": "3686923446",
+      "passed": true
+    },
+    {
+      "table": "pms_invoices",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "326909841",
+      "restoreChecksum": "326909841",
+      "passed": true
+    },
+    {
+      "table": "pms_maintenance_work_orders",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3591254240",
+      "restoreChecksum": "3591254240",
+      "passed": true
+    },
+    {
+      "table": "pms_migration_batches",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_night_audits",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_organizations",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "3650931216",
+      "restoreChecksum": "3650931216",
+      "passed": true
+    },
+    {
+      "table": "pms_payment_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_payment_settings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_payments",
+      "sourceRows": 4,
+      "restoreRows": 4,
+      "sourceChecksum": "1451101888",
+      "restoreChecksum": "1451101888",
+      "passed": true
+    },
+    {
+      "table": "pms_pos_ticket_lines",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_pos_tickets",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_profile_documents",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_properties",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "2327593768",
+      "restoreChecksum": "2327593768",
+      "passed": true
+    },
+    {
+      "table": "pms_property_grants",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "2028792044",
+      "restoreChecksum": "2028792044",
+      "passed": true
+    },
+    {
+      "table": "pms_public_booking_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_public_booking_verifications",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_public_rate_limits",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_rate_inheritance",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_rate_overrides",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1041692638",
+      "restoreChecksum": "1041692638",
+      "passed": true
+    },
+    {
+      "table": "pms_rate_plans",
+      "sourceRows": 4,
+      "restoreRows": 4,
+      "sourceChecksum": "1413370898",
+      "restoreChecksum": "1413370898",
+      "passed": true
+    },
+    {
+      "table": "pms_receivable_settlements",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "2227673213",
+      "restoreChecksum": "2227673213",
+      "passed": true
+    },
+    {
+      "table": "pms_receivables",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1915250933",
+      "restoreChecksum": "1915250933",
+      "passed": true
+    },
+    {
+      "table": "pms_reservation_guests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_reservation_room_segments",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_reservation_status_history",
+      "sourceRows": 513,
+      "restoreRows": 513,
+      "sourceChecksum": "68680354",
+      "restoreChecksum": "68680354",
+      "passed": true
+    },
+    {
+      "table": "pms_reservations",
+      "sourceRows": 510,
+      "restoreRows": 510,
+      "sourceChecksum": "1650354382",
+      "restoreChecksum": "1650354382",
+      "passed": true
+    },
+    {
+      "table": "pms_resource_bookings",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "4118313527",
+      "restoreChecksum": "4118313527",
+      "passed": true
+    },
+    {
+      "table": "pms_revenue_automation",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_revenue_budgets",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_revenue_price_runs",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_revenue_snapshot_days",
+      "sourceRows": 732,
+      "restoreRows": 732,
+      "sourceChecksum": "1623168721",
+      "restoreChecksum": "1623168721",
+      "passed": true
+    },
+    {
+      "table": "pms_revenue_snapshots",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "1901375708",
+      "restoreChecksum": "1901375708",
+      "passed": true
+    },
+    {
+      "table": "pms_room_blocks",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3318820861",
+      "restoreChecksum": "3318820861",
+      "passed": true
+    },
+    {
+      "table": "pms_room_types",
+      "sourceRows": 4,
+      "restoreRows": 4,
+      "sourceChecksum": "550110143",
+      "restoreChecksum": "550110143",
+      "passed": true
+    },
+    {
+      "table": "pms_rooms",
+      "sourceRows": 1008,
+      "restoreRows": 1008,
+      "sourceChecksum": "659486431",
+      "restoreChecksum": "659486431",
+      "passed": true
+    },
+    {
+      "table": "pms_stripe_events",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_structured_invoices",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1502252830",
+      "restoreChecksum": "1502252830",
+      "passed": true
+    },
+    {
+      "table": "pms_tourism_tax_postings",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_tourism_tax_rules",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "pms_webhook_deliveries",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "projects",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "read_access_audit",
+      "sourceRows": 555,
+      "restoreRows": 555,
+      "sourceChecksum": "456363007",
+      "restoreChecksum": "456363007",
+      "passed": true
+    },
+    {
+      "table": "roles",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "3552734007",
+      "restoreChecksum": "3552734007",
+      "passed": true
+    },
+    {
+      "table": "schedule_change_logs",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "schedule_entries",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "schedule_rules",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_production_orders",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_purchase_order_lines",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_purchase_orders",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_sales_order_lines",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_sales_orders",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "scm_service_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "secure_messages",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "sick_leaves",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "tasks",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "time_tracking",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "time_tracking_entries",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "user_audit",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "user_employment_model_history",
+      "sourceRows": 2,
+      "restoreRows": 2,
+      "sourceChecksum": "2496932747",
+      "restoreChecksum": "2496932747",
+      "passed": true
+    },
+    {
+      "table": "user_holiday_options",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "user_roles",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "3013039868",
+      "restoreChecksum": "3013039868",
+      "passed": true
+    },
+    {
+      "table": "user_schedule_rules",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "user_ui_preferences",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "1189294414",
+      "restoreChecksum": "1189294414",
+      "passed": true
+    },
+    {
+      "table": "users",
+      "sourceRows": 1,
+      "restoreRows": 1,
+      "sourceChecksum": "673323875",
+      "restoreChecksum": "673323875",
+      "passed": true
+    },
+    {
+      "table": "vacation_requests",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    },
+    {
+      "table": "workday_swaps",
+      "sourceRows": 0,
+      "restoreRows": 0,
+      "sourceChecksum": "0",
+      "restoreChecksum": "0",
+      "passed": true
+    }
+  ],
+  "tableSummary": {
+    "tablesCompared": 152,
+    "allCountsMatch": true,
+    "allExtendedChecksumsMatch": true,
+    "totalSourceRows": 7551,
+    "totalRestoreRows": 7551
+  },
+  "immutableArtifacts": [
+    {
+      "table": "pms_invoice_documents",
+      "rows": [
+        {
+          "id": 2,
+          "bytes": 1720,
+          "computedSha256": "33465210a7ad45725a1a3ffbba88e563137ee8d9f307f1a0931b243a79ee580f",
+          "storedSha256": "33465210a7ad45725a1a3ffbba88e563137ee8d9f307f1a0931b243a79ee580f",
+          "storedHashMatches": true
+        }
+      ],
+      "restoreRows": 1,
+      "sourceAndRestoreHashesIdentical": true,
+      "directByteComparisonMismatches": 0,
+      "passed": true
+    },
+    {
+      "table": "pms_structured_invoices",
+      "rows": [
+        {
+          "id": 2,
+          "bytes": 5874,
+          "computedSha256": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2",
+          "storedSha256": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2",
+          "storedHashMatches": true
+        }
+      ],
+      "restoreRows": 1,
+      "sourceAndRestoreHashesIdentical": true,
+      "directByteComparisonMismatches": 0,
+      "passed": true
+    },
+    {
+      "table": "pms_accounting_export_runs",
+      "rows": [
+        {
+          "id": 1,
+          "bytes": 535,
+          "computedSha256": "a68d1262cbf5b5fcdac6b1b0863882e79e3edd70a2321e3ae33831ac3e353d82",
+          "storedSha256": "a68d1262cbf5b5fcdac6b1b0863882e79e3edd70a2321e3ae33831ac3e353d82",
+          "storedHashMatches": true
+        }
+      ],
+      "restoreRows": 1,
+      "sourceAndRestoreHashesIdentical": true,
+      "directByteComparisonMismatches": 0,
+      "passed": true
+    }
+  ],
+  "workflows": [
+    {
+      "table": "pms_bank_imports",
+      "rows": 1,
+      "recordsIdentical": true,
+      "records": [
+        {
+          "id": "1",
+          "propertyId": "2",
+          "fileHash": "beed5135fccefc8d0a552b817ad3492c1478ce5fa18e926e8d619a2fafda2948",
+          "rowCount": "1"
+        }
+      ]
+    },
+    {
+      "table": "pms_bank_transactions",
+      "rows": 1,
+      "recordsIdentical": true,
+      "records": [
+        {
+          "id": "1",
+          "propertyId": "2",
+          "importId": "1",
+          "status": "MATCHED",
+          "amount": "216.2000",
+          "currency": "CHF",
+          "receivableId": "1",
+          "matchedAt": "2026-09-12 14:01:25.599777"
+        }
+      ]
+    },
+    {
+      "table": "pms_receivable_settlements",
+      "rows": 1,
+      "recordsIdentical": true,
+      "records": [
+        {
+          "id": "1",
+          "propertyId": "2",
+          "receivableId": "1",
+          "amount": "216.2000",
+          "postingDate": "2026-09-12",
+          "requestIdSha256": "9eb8b004302e0768e513069256ff83961335af3280006cdd40193bd13e811871"
+        }
+      ]
+    },
+    {
+      "table": "pms_housekeeping_commands",
+      "rows": 1,
+      "recordsIdentical": true,
+      "records": [
+        {
+          "id": "1",
+          "propertyId": "1",
+          "commandId": "f7456d3b-ae7f-4bbf-860d-e27ac4553d6d",
+          "requestHash": "04f432064d47a0e23bfa415686dcc1b1ccdbedbef844eadc18bf135ec11fa268",
+          "resultBytes": "261",
+          "resultSha256": "2559a72153831a35364f724157fc2d9cff6ef07b87a783e7777b49df5fc9f9a7",
+          "validResultJson": "1",
+          "resultStatus": "NULL"
+        }
+      ]
+    }
+  ],
+  "matchesIndependentHttpDownloads": [
+    {
+      "table": "pms_invoice_documents",
+      "id": 2,
+      "httpArtifact": "pms-api-billing-invoice-first.pdf",
+      "httpSha256": "33465210a7ad45725a1a3ffbba88e563137ee8d9f307f1a0931b243a79ee580f",
+      "restoreMatchesHttpArtifact": true
+    },
+    {
+      "table": "pms_structured_invoices",
+      "id": 2,
+      "httpArtifact": "pms-api-billing-invoice.xml",
+      "httpSha256": "25f044646a577ed2e7c6bb06baaa59a8dc885b91a90281a86eb6a2909db3b1a2",
+      "restoreMatchesHttpArtifact": true
+    },
+    {
+      "table": "pms_accounting_export_runs",
+      "id": 1,
+      "httpArtifact": "pms-api-billing-accounting-export.csv",
+      "httpSha256": "a68d1262cbf5b5fcdac6b1b0863882e79e3edd70a2321e3ae33831ac3e353d82",
+      "restoreMatchesHttpArtifact": true
+    }
+  ],
+  "passed": true,
+  "method": {
+    "tables": "COUNT(*) and MySQL CHECKSUM TABLE EXTENDED for every base table; source backend remains stopped.",
+    "immutableBytes": "Direct binary comparison plus independent SHA-256 recomputation and stored-hash verification for every PDF/UBL/accounting export.",
+    "workflowRecords": "Bank import, bank reconciliation, receivable settlement, and server-acknowledged offline-command identifiers/statuses/results compared.",
+    "boundary": "Pending browser-only offline commands are not stored in MySQL and cannot be restored by a database backup."
+  },
+  "durationSeconds": 3.826
+}

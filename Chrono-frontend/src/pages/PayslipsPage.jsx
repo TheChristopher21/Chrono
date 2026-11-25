@@ -5,6 +5,7 @@ import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
+import { useRefreshOnMutation } from '../hooks/useRefreshOnMutation.js';
 
 // Styles
 import "../styles/UserPayslipsPageScoped.css"; // <— NEU
@@ -24,6 +25,15 @@ const PayslipsPage = () => {
     const [scheduleVisible, setScheduleVisible] = useState(false);
     const [isPendingExpanded, setIsPendingExpanded] = useState(true);
     const [isApprovedExpanded, setIsApprovedExpanded] = useState(true);
+    const [refreshTick, setRefreshTick] = useState(0);
+
+    useRefreshOnMutation(['payroll', 'people'], () => {
+        setRefreshTick((value) => value + 1);
+    }, {
+        refreshOnLocalMutation: false,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
 
     useEffect(() => {
         if (!currentUser) return;
@@ -35,7 +45,7 @@ const PayslipsPage = () => {
             // User-Ansicht
             api.get('/api/payslips/my', { params: filter }).then(res => setApprovedSlips(res.data || []));
         }
-    }, [currentUser, filter, isAdmin]);
+    }, [currentUser, filter, isAdmin, refreshTick]);
 
     // Admin-Funktionen...
     const approve = id => api.post(`/api/payslips/approve/${id}`).then(() => api.get('/api/payslips/admin/pending').then(res => setPendingSlips(res.data || [])));
@@ -204,7 +214,7 @@ const PayslipsPage = () => {
                                     {approvedSlips.map(ps => (
                                         <tr key={ps.id}>
                                             {isAdmin && <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td>}
-                                            <td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}</td>
+                                            <td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}{ps.correctionOfId && <div>Differenzbeleg zu #{ps.correctionOfId}{Number(ps.netSalary) < 0 ? ' · Rückforderung / Verrechnung' : ''}</div>}</td>
                                             <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
                                             <td data-label={t('payslips.payoutDate')}>{ps.payoutDate}</td>
                                             <td className="actions-col">

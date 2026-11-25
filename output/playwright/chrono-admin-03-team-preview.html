@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Chrono Admin 03 Team</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Chrono Admin 03 Team" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Chrono Admin 03 Team&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;chrono-team-concept&quot; data-layout=&quot;team&quot; aria-label=&quot;Chrono Entwurf 03 – Teamfokus&quot;&gt;
+  &lt;style&gt;
+    #chrono-team-concept{--ct-base:light-dark(#f4f3f8,#14131c);--ct-surface:light-dark(#fff,#211f2c);--ct-soft:light-dark(#f2eff9,#2b273b);--ct-text:light-dark(#252334,#eeeaf6);--ct-muted:light-dark(#6d697d,#a9a3ba);--ct-line:light-dark(#e8e5ef,#383244);--ct-primary:light-dark(#7052bb,#b79aff);--ct-onprimary:light-dark(#fff,#201531);--ct-active:light-dark(#eee8fc,#372d4c);--ct-green:light-dark(#28765a,#8cd6b8);--ct-greenbg:light-dark(#e7f3ec,#203c32);--ct-red:light-dark(#ad4b52,#ff9aa1);--ct-redbg:light-dark(#fbeded,#452b32);--ct-gold:light-dark(#946826,#e7c381);--ct-goldbg:light-dark(#fbf3df,#443b29);--ct-radius:13px;--ct-space:20px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,sans-serif;font-size:13px;line-height:1.45;background:var(--ct-base);color:var(--ct-text);border-radius:16px;overflow:clip;position:relative;isolation:isolate;min-width:0;color-scheme:light dark}
+    #chrono-team-concept *{box-sizing:border-box}#chrono-team-concept button,#chrono-team-concept input,#chrono-team-concept select,#chrono-team-concept textarea{font:inherit;color:inherit}#chrono-team-concept button{cursor:pointer;border:1px solid var(--ct-line);border-radius:8px;background:var(--ct-surface);padding:8px 11px;min-height:34px;white-space:normal}#chrono-team-concept button:hover{background:var(--ct-soft)}#chrono-team-concept button:disabled{opacity:.55;cursor:default}#chrono-team-concept button.ct-primary{background:var(--ct-primary);color:var(--ct-onprimary);border-color:var(--ct-primary)}#chrono-team-concept button.ct-quiet{border-color:transparent;background:transparent}#chrono-team-concept input,#chrono-team-concept select,#chrono-team-concept textarea{min-width:0;background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:8px;padding:9px 10px;width:100%}#chrono-team-concept input[type=checkbox]{width:auto;accent-color:var(--ct-primary)}#chrono-team-concept h1,#chrono-team-concept h2,#chrono-team-concept h3,#chrono-team-concept p{margin:0}#chrono-team-concept h1{font-size:28px;line-height:1.15;letter-spacing:-.8px;font-weight:650}#chrono-team-concept h2{font-size:17px;letter-spacing:-.35px;font-weight:600}#chrono-team-concept h3{font-size:14px;font-weight:600}#chrono-team-concept small{font-size:11px}#chrono-team-concept .ct-muted{color:var(--ct-muted)}#chrono-team-concept .ct-eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:650;color:var(--ct-muted)}#chrono-team-concept .ct-flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#chrono-team-concept .ct-between{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}#chrono-team-concept .ct-stack{display:grid;gap:12px}#chrono-team-concept .ct-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;background:var(--ct-soft);color:var(--ct-muted);border-radius:6px;font-size:11px;white-space:nowrap}#chrono-team-concept .ct-tag.green{background:var(--ct-greenbg);color:var(--ct-green)}#chrono-team-concept .ct-tag.red{background:var(--ct-redbg);color:var(--ct-red)}#chrono-team-concept .ct-tag.gold{background:var(--ct-goldbg);color:var(--ct-gold)}#chrono-team-concept .ct-topbar{background:var(--ct-surface);border-bottom:1px solid var(--ct-line);padding:11px 17px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}#chrono-team-concept .ct-brand{display:flex;align-items:center;gap:9px;font-size:18px;letter-spacing:-.6px;font-weight:650}#chrono-team-concept .ct-mark{height:28px;width:28px;border-radius:50%;display:grid;place-items:center;background:var(--ct-primary);color:var(--ct-onprimary);font-size:18px;font-weight:500}#chrono-team-concept .ct-topbar button{padding:5px 8px;min-height:30px;font-size:11px}#chrono-team-concept .ct-workspace{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:7px 15px;border-bottom:1px solid var(--ct-line);background:var(--ct-surface)}#chrono-team-concept .ct-workspace-item{display:flex;align-items:center;border-radius:7px;background:var(--ct-soft);max-width:100%;gap:2px;padding-left:9px;font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-workspace-item:first-child{color:var(--ct-primary);background:var(--ct-active)}#chrono-team-concept .ct-workspace-item button{border:0;background:transparent;font-size:11px;padding:3px 5px;min-height:24px}#chrono-team-concept .ct-workspace-label{max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#chrono-team-concept .ct-shell{display:grid;grid-template-columns:163px minmax(0,1fr);min-height:715px}#chrono-team-concept .ct-sidebar{padding:24px 12px;background:var(--ct-surface);border-right:1px solid var(--ct-line);display:flex;flex-direction:column;gap:22px}#chrono-team-concept .ct-nav{display:grid;gap:6px}#chrono-team-concept .ct-nav button{display:flex;align-items:center;gap:10px;background:transparent;border:0;border-radius:8px;padding:11px 12px;text-align:left;color:var(--ct-muted);font-size:12px}#chrono-team-concept .ct-nav button.active{background:var(--ct-active);color:var(--ct-primary);font-weight:600}#chrono-team-concept .ct-nav-symbol{font-size:16px;width:17px;display:inline-block}#chrono-team-concept .ct-nav-number{margin-left:auto;background:var(--ct-goldbg);color:var(--ct-gold);padding:1px 5px;border-radius:4px;font-size:11px}#chrono-team-concept .ct-sidebar-bottom{margin-top:auto;display:grid;gap:7px}#chrono-team-concept .ct-sidebar-bottom button{text-align:left;font-size:11px;padding:8px}#chrono-team-concept .ct-sync{font-size:11px;color:var(--ct-muted);padding:7px 5px}#chrono-team-concept .ct-sync span{color:var(--ct-green)}#chrono-team-concept .ct-main{padding:26px var(--ct-space) 20px;min-width:0}#chrono-team-concept .ct-heading{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:21px;flex-wrap:wrap}#chrono-team-concept .ct-heading h1{margin:6px 0 7px}#chrono-team-concept .ct-heading p{font-size:12px;color:var(--ct-muted)}#chrono-team-concept .ct-heading-actions{display:flex;gap:7px;flex-wrap:wrap}#chrono-team-concept .ct-heading-actions button{font-size:11px}#chrono-team-concept .ct-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--ct-line);border-radius:var(--ct-radius);overflow:hidden;margin-bottom:22px}#chrono-team-concept .ct-summary button{border:0;border-radius:0;display:grid;gap:7px;text-align:left;padding:17px 14px;background:var(--ct-surface)}#chrono-team-concept .ct-summary-label{font-size:11px;font-weight:500;color:var(--ct-muted)}#chrono-team-concept .ct-summary-value{font-size:24px;line-height:1;letter-spacing:-.5px;font-weight:600;color:var(--ct-text);font-variant-numeric:tabular-nums}#chrono-team-concept .ct-summary-detail{font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-team-grid{display:grid;grid-template-columns:minmax(0,1fr) 223px;gap:16px}#chrono-team-concept .ct-section{background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:var(--ct-radius);padding:16px;min-width:0}#chrono-team-concept .ct-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}#chrono-team-concept .ct-section-head h2{font-size:15px}#chrono-team-concept .ct-section-head button{font-size:11px;padding:5px 7px;min-height:27px}#chrono-team-concept .ct-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}#chrono-team-concept .ct-toolbar input{flex:1 1 150px;width:auto;font-size:12px}#chrono-team-concept .ct-toolbar select{width:auto;max-width:100%;font-size:11px}#chrono-team-concept .ct-toolbar button{font-size:11px}#chrono-team-concept .ct-person-header{display:grid;grid-template-columns:minmax(0,1fr) 100px 70px;gap:10px;font-size:11px;letter-spacing:.5px;color:var(--ct-muted);padding:4px 0 8px;border-bottom:1px solid var(--ct-line)}#chrono-team-concept .ct-person-row{display:grid;grid-template-columns:minmax(0,1fr) 100px 70px;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid var(--ct-line)}#chrono-team-concept .ct-person-row:last-child{border-bottom:0}#chrono-team-concept .ct-person-identity{display:flex;align-items:center;gap:10px;min-width:0}#chrono-team-concept .ct-avatar{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:10px;background:var(--ct-soft);color:var(--ct-primary);font-size:11px;font-weight:600}#chrono-team-concept .ct-person-link{background:none;border:0;padding:0!important;min-height:0!important;display:block;text-align:left;font-size:12px;font-weight:600;max-width:100%}#chrono-team-concept .ct-person-sub{font-size:11px;color:var(--ct-muted);margin-top:3px}#chrono-team-concept .ct-miniweek{display:flex;gap:4px;align-items:center}#chrono-team-concept .ct-miniday{width:16px;height:23px;border-radius:4px;background:var(--ct-greenbg);color:var(--ct-green);display:grid;place-items:center;font-size:11px}#chrono-team-concept .ct-miniday.gap{background:var(--ct-redbg);color:var(--ct-red)}#chrono-team-concept .ct-miniday.future{background:var(--ct-soft);color:var(--ct-muted)}#chrono-team-concept .ct-balance{font-size:11px;text-align:right;font-weight:550;white-space:nowrap;font-variant-numeric:tabular-nums}#chrono-team-concept .ct-balance.negative{color:var(--ct-red)}#chrono-team-concept .ct-profile{background:var(--ct-active);border-color:transparent;display:grid;align-content:start;gap:15px}#chrono-team-concept .ct-profile .ct-avatar{height:49px;width:49px;border-radius:15px;background:var(--ct-surface);font-size:17px}#chrono-team-concept .ct-profile h2{font-size:19px;line-height:1.2}#chrono-team-concept .ct-profile p{font-size:11px;color:var(--ct-muted);margin-top:4px}#chrono-team-concept .ct-profile-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px 0;border-top:1px solid var(--ct-line);border-bottom:1px solid var(--ct-line)}#chrono-team-concept .ct-profile-metrics span{font-size:11px;color:var(--ct-muted);display:block}#chrono-team-concept .ct-profile-metrics strong{display:block;font-size:16px;margin-top:3px;font-weight:600}#chrono-team-concept .ct-profile-actions{display:grid;gap:7px}#chrono-team-concept .ct-profile-actions button{font-size:11px}#chrono-team-concept .ct-lower-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}#chrono-team-concept .ct-list-item{padding:11px 0;border-top:1px solid var(--ct-line);display:flex;justify-content:space-between;align-items:center;gap:10px}#chrono-team-concept .ct-list-item button{font-size:11px;min-height:27px;padding:4px 7px}#chrono-team-concept .ct-list-item strong{font-size:11px;display:block;font-weight:600}#chrono-team-concept .ct-list-item small{font-size:11px;color:var(--ct-muted);display:block;margin-top:3px}#chrono-team-concept .ct-module-shortcuts{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}#chrono-team-concept .ct-module-shortcuts button{font-size:11px;padding:5px 8px;min-height:28px}#chrono-team-concept .ct-footnote{font-size:11px;color:var(--ct-muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:17px}#chrono-team-concept .ct-empty{padding:24px 10px;color:var(--ct-muted);font-size:12px;text-align:center;background:var(--ct-base);border-radius:9px}#chrono-team-concept .ct-notice{padding:12px;border-radius:9px;background:var(--ct-greenbg);color:var(--ct-green);font-size:12px}#chrono-team-concept .ct-error{padding:9px;border-radius:8px;background:var(--ct-redbg);color:var(--ct-red);font-size:12px}#chrono-team-concept .ct-view-tabs{display:flex;gap:5px;margin:16px 0;flex-wrap:wrap}#chrono-team-concept .ct-view-tabs button{background:transparent;font-size:11px}#chrono-team-concept .ct-view-tabs button.active{background:var(--ct-active);color:var(--ct-primary);border-color:var(--ct-active)}#chrono-team-concept .ct-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}#chrono-team-concept .ct-fields label{display:grid;gap:5px;font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-fields .ct-span{grid-column:1/-1}#chrono-team-concept .ct-dialog-host:empty{display:none}#chrono-team-concept .ct-dialog-host{position:absolute;inset:0;background:light-dark(#25233466,#08050bb3);z-index:20;padding:76px 32px 30px;display:flex;align-items:flex-start;justify-content:center}#chrono-team-concept.ct-dialog-open{min-height:1050px}#chrono-team-concept .ct-dialog{background:var(--ct-surface);color:var(--ct-text);width:100%;max-width:690px;border-radius:18px;box-shadow:0 22px 90px #10051b33;padding:25px;display:grid;gap:17px}#chrono-team-concept .ct-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:15px}#chrono-team-concept .ct-dialog-head h2{font-size:21px}#chrono-team-concept .ct-dialog-head button{background:var(--ct-soft);border:0;min-width:30px;padding:5px 8px}#chrono-team-concept .ct-dialog-description{font-size:12px;color:var(--ct-muted);margin-top:-10px}#chrono-team-concept .ct-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;border-top:1px solid var(--ct-line);padding-top:15px}#chrono-team-concept .ct-request{padding:17px 0;border-bottom:1px solid var(--ct-line)}#chrono-team-concept .ct-request-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}#chrono-team-concept .ct-request h3{font-size:13px}#chrono-team-concept .ct-request p{font-size:11px;color:var(--ct-muted);margin-top:6px}#chrono-team-concept .ct-request-diff{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--ct-base);padding:10px;border-radius:8px;margin:12px 0;font-size:11px}#chrono-team-concept .ct-request-diff strong{display:block;margin:4px 0;font-weight:550}#chrono-team-concept .ct-request-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}#chrono-team-concept .ct-request-actions input{flex:1 1 100px;font-size:11px;width:auto}#chrono-team-concept .ct-request-actions button{font-size:11px;padding:6px 8px}#chrono-team-concept .ct-filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 15px}#chrono-team-concept .ct-filter-chips button{font-size:11px;padding:5px 8px;min-height:27px}#chrono-team-concept .ct-filter-chips button.active{background:var(--ct-active);color:var(--ct-primary)}#chrono-team-concept .ct-review-row{display:grid;grid-template-columns:minmax(0,1.6fr) 1fr 1fr auto;gap:12px;padding:13px 0;align-items:center;border-top:1px solid var(--ct-line);font-size:11px}#chrono-team-concept .ct-review-row button{font-size:11px;padding:5px 8px;min-height:28px}#chrono-team-concept .ct-review-row strong{display:block;font-size:12px;font-weight:600}#chrono-team-concept .ct-review-row small{font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-day-row{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--ct-line);font-size:11px;align-items:center}#chrono-team-concept .ct-day-row button{font-size:11px;padding:4px 7px;min-height:27px}#chrono-team-concept .ct-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}#chrono-team-concept .ct-calendar-label{font-size:11px;color:var(--ct-muted);text-align:center;padding:6px}#chrono-team-concept .ct-calendar-day{min-height:72px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;font-size:12px;background:var(--ct-base);padding:8px;border-radius:8px}#chrono-team-concept .ct-calendar-day.muted{opacity:.4}#chrono-team-concept .ct-calendar-day.today{border-color:var(--ct-primary);color:var(--ct-primary)}#chrono-team-concept .ct-calendar-day .ct-calendar-event{font-size:11px;display:block;width:100%;padding:3px;border-radius:4px;background:var(--ct-greenbg);color:var(--ct-green);overflow:hidden;text-overflow:ellipsis}#chrono-team-concept .ct-queue{display:grid;gap:7px}#chrono-team-concept .ct-queue-item{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--ct-line);border-radius:8px;padding:9px 11px;font-size:11px}#chrono-team-concept .ct-queue-item button{font-size:11px;padding:3px 6px;min-height:24px}#chrono-team-concept .ct-module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#chrono-team-concept .ct-module{display:flex;flex-direction:column;align-items:flex-start;gap:14px;text-align:left;min-height:95px;padding:13px;background:var(--ct-surface)}#chrono-team-concept .ct-module span{font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-module strong{font-size:12px;font-weight:550}#chrono-team-concept .ct-feature-group{border-top:1px solid var(--ct-line);padding-top:12px}#chrono-team-concept .ct-feature-group h3{margin-bottom:8px}#chrono-team-concept .ct-feature-group .ct-flex button{font-size:11px}#chrono-team-concept .ct-settings-row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--ct-line)}#chrono-team-concept .ct-settings-row label{display:flex;gap:7px;align-items:center;font-size:12px}#chrono-team-concept .ct-settings-row button{font-size:11px;min-height:27px;padding:4px 6px}#chrono-team-concept .ct-settings-row select{font-size:11px;max-width:100px;padding:6px}#chrono-team-concept .ct-command-results{display:grid;gap:6px}#chrono-team-concept .ct-command-results button{text-align:left;display:flex;justify-content:space-between;gap:10px}#chrono-team-concept .ct-toast{position:absolute;bottom:17px;right:17px;left:17px;max-width:510px;margin-left:auto;padding:11px 16px;background:var(--ct-text);color:var(--ct-surface);border-radius:9px;z-index:30;font-size:12px;box-shadow:0 5px 20px #0002}#chrono-team-concept .ct-toast:empty{display:none}
+    #chrono-team-concept[data-layout=plan]{--ct-base:light-dark(#eef3f3,#101d1e);--ct-surface:light-dark(#fff,#19292b);--ct-soft:light-dark(#edf3f2,#243638);--ct-text:light-dark(#203c3c,#e5f0ef);--ct-muted:light-dark(#667d7b,#a2b9b6);--ct-line:light-dark(#dfe9e7,#344b4b);--ct-primary:light-dark(#137d73,#78d8c9);--ct-onprimary:light-dark(#fff,#133b36);--ct-active:light-dark(#dff1ec,#24463e);--ct-radius:10px}
+    #chrono-team-concept[data-layout=plan] .ct-shell{display:block;min-height:720px}#chrono-team-concept[data-layout=plan] .ct-sidebar{padding:0 20px;border-right:0;border-bottom:1px solid var(--ct-line);display:flex;flex-direction:row;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}#chrono-team-concept[data-layout=plan] .ct-sidebar&gt;.ct-eyebrow{display:none}#chrono-team-concept[data-layout=plan] .ct-nav{display:flex;flex-wrap:wrap;gap:4px}#chrono-team-concept[data-layout=plan] .ct-nav button{border-radius:0;padding:14px 9px;font-size:11px;border-bottom:2px solid transparent}#chrono-team-concept[data-layout=plan] .ct-nav button.active{background:none;border-bottom-color:var(--ct-primary)}#chrono-team-concept[data-layout=plan] .ct-nav-symbol{display:none}#chrono-team-concept[data-layout=plan] .ct-sidebar-bottom{display:flex;align-items:center;gap:5px;margin:0}#chrono-team-concept[data-layout=plan] .ct-sidebar-bottom .ct-secondary-nav{display:none}#chrono-team-concept[data-layout=plan] .ct-sidebar-bottom button{border:0}#chrono-team-concept[data-layout=plan] .ct-sync{display:none}#chrono-team-concept[data-layout=plan] .ct-main{padding:24px}#chrono-team-concept[data-layout=plan] .ct-heading{margin-bottom:19px}#chrono-team-concept[data-layout=plan] .ct-heading h1{font-size:29px}#chrono-team-concept .ct-planning-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}#chrono-team-concept .ct-planning-summary button{display:flex;align-items:center;gap:12px;padding:13px;text-align:left;border:0;background:var(--ct-surface);border-radius:10px}#chrono-team-concept .ct-planning-summary strong{font-size:20px;font-weight:600;letter-spacing:-.7px}#chrono-team-concept .ct-planning-summary span{font-size:11px;color:var(--ct-muted);display:block}#chrono-team-concept .ct-planning-grid{display:grid;grid-template-columns:minmax(0,1fr) 218px;gap:17px}#chrono-team-concept .ct-schedule{display:grid;grid-template-columns:125px repeat(7,minmax(0,1fr));background:var(--ct-line);gap:1px;border:1px solid var(--ct-line);border-radius:10px;overflow:hidden;margin-top:12px}#chrono-team-concept .ct-schedule-header{background:var(--ct-soft);padding:11px 4px;text-align:center;font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-schedule-header strong{display:block;margin-top:3px;font-size:14px;font-weight:600;color:var(--ct-text)}#chrono-team-concept .ct-schedule-header.today{background:var(--ct-active)}#chrono-team-concept .ct-schedule-person{background:var(--ct-surface);padding:13px 9px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:72px}#chrono-team-concept .ct-schedule-person button{font-size:11px;font-weight:600;border:0;background:none;padding:0;min-height:0;text-align:left}#chrono-team-concept .ct-schedule-person small{font-size:11px;color:var(--ct-muted)}#chrono-team-concept .ct-schedule-cell{background:var(--ct-surface);padding:7px 3px;display:flex;align-items:center}#chrono-team-concept .ct-schedule-cell.weekend{background:var(--ct-base)}#chrono-team-concept .ct-schedule-cell button{width:100%;border:0;padding:7px 1px;border-radius:5px;font-size:11px;line-height:1.25;background:var(--ct-soft);color:var(--ct-muted);min-height:36px}#chrono-team-concept .ct-schedule-cell button.vacation{background:var(--ct-greenbg);color:var(--ct-green)}#chrono-team-concept .ct-schedule-cell button.issue{background:var(--ct-goldbg);color:var(--ct-gold)}#chrono-team-concept .ct-schedule-cell button.empty{background:transparent}#chrono-team-concept .ct-schedule-legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--ct-muted);margin:12px 0 0}#chrono-team-concept .ct-schedule-legend span{display:flex;align-items:center;gap:5px}#chrono-team-concept .ct-swatch{width:8px;height:8px;border-radius:2px;background:var(--ct-soft)}#chrono-team-concept .ct-swatch.vacation{background:var(--ct-green)}#chrono-team-concept .ct-swatch.issue{background:var(--ct-gold)}#chrono-team-concept .ct-agenda{padding:17px;background:var(--ct-surface);border-radius:var(--ct-radius);border:1px solid var(--ct-line)}#chrono-team-concept .ct-agenda-date{font-size:32px;letter-spacing:-1px;font-weight:550;color:var(--ct-primary);margin:12px 0 2px}#chrono-team-concept .ct-agenda-item{padding:13px 0;border-top:1px solid var(--ct-line);font-size:11px}#chrono-team-concept .ct-agenda-item strong{font-size:12px;display:block;font-weight:600;margin-bottom:3px}#chrono-team-concept .ct-agenda-item button{font-size:11px;padding:4px 7px;min-height:28px;margin-top:9px}#chrono-team-concept .ct-plan-bottom{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:15px;margin-top:16px}#chrono-team-concept .ct-plan-bottom .ct-section{padding:14px}#chrono-team-concept .ct-plan-bottom h2{font-size:13px}
+    @media(max-width:850px){#chrono-team-concept .ct-shell{grid-template-columns:132px minmax(0,1fr)}#chrono-team-concept .ct-sidebar{padding:22px 8px}#chrono-team-concept .ct-nav button{padding:10px 8px;font-size:11px;gap:6px}#chrono-team-concept .ct-main{padding:22px 16px}#chrono-team-concept .ct-team-grid{grid-template-columns:minmax(0,1fr)}#chrono-team-concept .ct-profile{grid-template-columns:auto 1fr;gap:12px;align-items:center}#chrono-team-concept .ct-profile&gt;div:first-child{display:contents}#chrono-team-concept .ct-profile-metrics{grid-column:1/-1;grid-template-columns:repeat(2,1fr);padding:9px 0}#chrono-team-concept .ct-profile-actions{grid-column:1/-1;grid-template-columns:1fr 1fr}#chrono-team-concept .ct-profile&gt;small{grid-column:1/-1}#chrono-team-concept .ct-planning-grid{grid-template-columns:minmax(0,1fr)}#chrono-team-concept .ct-agenda{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;align-items:start}#chrono-team-concept .ct-agenda&gt;button{grid-column:1/-1}#chrono-team-concept .ct-agenda-item{border-top:0;padding:2px 0}#chrono-team-concept .ct-plan-bottom{grid-template-columns:1fr 1fr}#chrono-team-concept .ct-plan-bottom&gt;:last-child{grid-column:1/-1}}
+    @media(max-width:600px){#chrono-team-concept{border-radius:10px}#chrono-team-concept .ct-topbar{padding:10px}#chrono-team-concept .ct-brand{font-size:16px}#chrono-team-concept .ct-topbar .ct-brand small{font-size:11px}#chrono-team-concept .ct-topbar-actions{gap:3px}#chrono-team-concept .ct-topbar-actions .ct-desktop{display:none}#chrono-team-concept .ct-workspace{padding:6px 9px}#chrono-team-concept .ct-workspace-item{font-size:11px}#chrono-team-concept .ct-workspace-label{max-width:112px}#chrono-team-concept .ct-shell{display:block}#chrono-team-concept .ct-sidebar{display:block;padding:6px;border-right:0;border-bottom:1px solid var(--ct-line)}#chrono-team-concept .ct-sidebar&gt;.ct-eyebrow,#chrono-team-concept .ct-sidebar-bottom{display:none}#chrono-team-concept .ct-nav{display:flex;justify-content:space-between;gap:0;flex-wrap:wrap}#chrono-team-concept .ct-nav button{font-size:11px;padding:8px 6px;gap:4px}#chrono-team-concept .ct-nav-symbol{display:none}#chrono-team-concept .ct-nav-number{font-size:11px}#chrono-team-concept .ct-main,#chrono-team-concept[data-layout=plan] .ct-main{padding:20px 12px}#chrono-team-concept h1,#chrono-team-concept[data-layout=plan] .ct-heading h1{font-size:26px}#chrono-team-concept .ct-heading-actions{width:100%}#chrono-team-concept .ct-summary{grid-template-columns:1fr 1fr}#chrono-team-concept .ct-summary button{padding:14px}#chrono-team-concept .ct-summary-value{font-size:22px}#chrono-team-concept .ct-team-grid{gap:12px}#chrono-team-concept .ct-section{padding:13px}#chrono-team-concept .ct-person-header,#chrono-team-concept .ct-person-row{grid-template-columns:minmax(0,1fr) 77px 61px;gap:6px}#chrono-team-concept .ct-person-row{padding:12px 0}#chrono-team-concept .ct-person-identity{gap:7px}#chrono-team-concept .ct-avatar{width:25px;height:29px;font-size:11px;border-radius:7px}#chrono-team-concept .ct-person-link{font-size:11px}#chrono-team-concept .ct-person-sub{font-size:11px}#chrono-team-concept .ct-miniweek{gap:3px}#chrono-team-concept .ct-miniday{width:13px;font-size:11px;height:20px}#chrono-team-concept .ct-balance{font-size:11px}#chrono-team-concept .ct-lower-grid{grid-template-columns:1fr}#chrono-team-concept .ct-review-row{grid-template-columns:1.5fr 1fr;gap:6px}#chrono-team-concept .ct-review-row button{text-align:left}#chrono-team-concept .ct-calendar{gap:2px}#chrono-team-concept .ct-calendar-day{min-height:62px;padding:5px;font-size:11px}#chrono-team-concept .ct-calendar-day .ct-calendar-event{font-size:11px;padding:2px}#chrono-team-concept .ct-module-grid{grid-template-columns:1fr 1fr}#chrono-team-concept .ct-dialog-host{padding:32px 8px 25px}#chrono-team-concept .ct-dialog{padding:17px 13px;border-radius:12px}#chrono-team-concept .ct-dialog-head h2{font-size:19px}#chrono-team-concept .ct-fields{gap:10px}#chrono-team-concept .ct-fields input,#chrono-team-concept .ct-fields select,#chrono-team-concept .ct-fields textarea{font-size:16px;padding:8px;max-width:100%}#chrono-team-concept .ct-settings-row{grid-template-columns:1fr auto auto}#chrono-team-concept .ct-settings-row select{grid-column:1/-1;max-width:100%}#chrono-team-concept .ct-planning-summary{grid-template-columns:1fr 1fr;gap:7px}#chrono-team-concept .ct-planning-summary button{padding:12px;gap:9px}#chrono-team-concept[data-layout=plan] .ct-sidebar{padding:0 7px}#chrono-team-concept[data-layout=plan] .ct-nav{width:100%}#chrono-team-concept[data-layout=plan] .ct-nav button{font-size:11px;padding:12px 5px}#chrono-team-concept[data-layout=plan] .ct-sidebar-bottom{display:none}#chrono-team-concept .ct-schedule{grid-template-columns:90px repeat(7,minmax(0,1fr))}#chrono-team-concept .ct-schedule-person{padding:9px 5px;min-height:64px}#chrono-team-concept .ct-schedule-person button{font-size:11px;overflow-wrap:anywhere}#chrono-team-concept .ct-schedule-person small{font-size:11px}#chrono-team-concept .ct-schedule-header{font-size:11px;padding:8px 1px}#chrono-team-concept .ct-schedule-header strong{font-size:12px}#chrono-team-concept .ct-schedule-cell{padding:4px 1px}#chrono-team-concept .ct-schedule-cell button{font-size:11px;padding:5px 0;min-height:33px;overflow-wrap:anywhere}#chrono-team-concept .ct-agenda{grid-template-columns:1fr;gap:7px}#chrono-team-concept .ct-agenda&gt;div:first-child{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#chrono-team-concept .ct-agenda-date{font-size:25px;margin:0}#chrono-team-concept .ct-agenda-item{border-top:1px solid var(--ct-line);padding:9px 0}#chrono-team-concept .ct-plan-bottom{grid-template-columns:1fr}#chrono-team-concept .ct-plan-bottom&gt;:last-child{grid-column:auto}}
+    @media(pointer:coarse){#chrono-team-concept button{min-height:42px}#chrono-team-concept input,#chrono-team-concept select,#chrono-team-concept textarea{font-size:16px}#chrono-team-concept .ct-nav button{min-height:44px}}
+    #chrono-team-concept [hidden]{display:none!important}#chrono-team-concept .ct-schedule-row{display:contents}#chrono-team-concept .ct-schedule-person{min-height:58px}#chrono-team-concept .ct-person-row{padding:10px 0}#chrono-team-concept .ct-plan-bottom .ct-list-item:nth-of-type(n+3){display:none}#chrono-team-concept .ct-plan-bottom .ct-empty{padding:16px 8px}#chrono-team-concept .ct-summary-value{font-size:23px}
+    @media(max-width:560px){#chrono-team-concept .ct-schedule{display:block;background:transparent;border:0;overflow:visible;margin-top:10px}#chrono-team-concept .ct-schedule-header{display:none}#chrono-team-concept .ct-schedule-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:10px 0;border-top:1px solid var(--ct-line)}#chrono-team-concept .ct-schedule-person{grid-column:1/-1;min-height:0;padding:1px 0 5px;display:flex;flex-direction:row;justify-content:space-between;gap:8px;align-items:center}#chrono-team-concept .ct-schedule-person button{font-size:12px}#chrono-team-concept .ct-schedule-person small{font-size:11px}#chrono-team-concept .ct-schedule-cell{display:block;padding:0;text-align:center}#chrono-team-concept .ct-schedule-cell::before{content:attr(data-dayname);display:block;font-size:11px;color:var(--ct-muted);margin-bottom:4px}#chrono-team-concept .ct-schedule-cell button{font-size:11px;min-height:39px;padding:6px 1px;overflow-wrap:normal}#chrono-team-concept .ct-schedule-cell.weekend{display:none}#chrono-team-concept .ct-person-header,#chrono-team-concept .ct-person-row{grid-template-columns:minmax(0,1fr) 70px;gap:8px}#chrono-team-concept .ct-person-header&gt;span:nth-child(2),#chrono-team-concept .ct-miniweek{display:none}#chrono-team-concept .ct-person-link{font-size:12px}#chrono-team-concept .ct-person-sub,#chrono-team-concept .ct-balance{font-size:11px}#chrono-team-concept .ct-module-shortcuts button{font-size:11px}#chrono-team-concept .ct-fields{grid-template-columns:1fr}#chrono-team-concept .ct-fields .ct-span{grid-column:auto}#chrono-team-concept.ct-dialog-open{min-height:1320px}}
+  &lt;/style&gt;
+  &lt;header class=&quot;ct-topbar&quot;&gt;
+    &lt;div class=&quot;ct-brand&quot;&gt;&lt;span class=&quot;ct-mark&quot;&gt;c&lt;/span&gt; chrono &lt;small class=&quot;ct-tag&quot;&gt;Entwurf · Beispieldaten&lt;/small&gt;&lt;/div&gt;
+    &lt;div class=&quot;ct-flex ct-topbar-actions&quot;&gt;&lt;button data-action=&quot;platform&quot;&gt;Plattform ▾&lt;/button&gt;&lt;button class=&quot;ct-desktop&quot; data-action=&quot;commands&quot;&gt;Suchen &lt;span class=&quot;ct-muted&quot;&gt;⌘ K&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;notifications&quot; aria-label=&quot;Benachrichtigungen&quot;&gt;○ &lt;span class=&quot;ct-tag gold&quot; data-count&gt;10&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;theme&quot; aria-label=&quot;Farbschema wechseln&quot;&gt;◐&lt;/button&gt;&lt;button class=&quot;ct-desktop&quot; data-action=&quot;language&quot;&gt;DE ▾&lt;/button&gt;&lt;button data-action=&quot;account&quot;&gt;SA · Admin ▾&lt;/button&gt;&lt;/div&gt;
+  &lt;/header&gt;
+  &lt;div class=&quot;ct-workspace&quot; aria-label=&quot;Arbeitsbereiche&quot;&gt;&lt;div class=&quot;ct-workspace-item&quot;&gt;&lt;span class=&quot;ct-workspace-label&quot;&gt;Admin · Übersicht&lt;/span&gt;&lt;button data-action=&quot;pin-tab&quot; aria-label=&quot;Übersicht anheften&quot;&gt;⌖&lt;/button&gt;&lt;button data-action=&quot;close-tab&quot; aria-label=&quot;Übersicht schliessen&quot;&gt;×&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-workspace-item&quot;&gt;&lt;span class=&quot;ct-workspace-label&quot;&gt;Mirjam Burkart&lt;/span&gt;&lt;button data-action=&quot;pin-tab&quot; aria-label=&quot;Mitarbeiter anheften&quot;&gt;⌖&lt;/button&gt;&lt;button data-action=&quot;close-tab&quot; aria-label=&quot;Mitarbeiter schliessen&quot;&gt;×&lt;/button&gt;&lt;/div&gt;&lt;button data-action=&quot;add-tab&quot; aria-label=&quot;Arbeitsbereich hinzufügen&quot;&gt;＋&lt;/button&gt;&lt;/div&gt;
+  &lt;div class=&quot;ct-shell&quot;&gt;
+    &lt;aside class=&quot;ct-sidebar&quot;&gt;&lt;div class=&quot;ct-eyebrow&quot;&gt;Arbeitszentrale&lt;/div&gt;&lt;nav class=&quot;ct-nav&quot; aria-label=&quot;Hauptnavigation&quot;&gt;&lt;button data-view=&quot;overview&quot; class=&quot;active&quot;&gt;&lt;span class=&quot;ct-nav-symbol&quot;&gt;◫&lt;/span&gt; Übersicht&lt;/button&gt;&lt;button data-view=&quot;time&quot;&gt;&lt;span class=&quot;ct-nav-symbol&quot;&gt;◷&lt;/span&gt; Zeitprüfung&lt;/button&gt;&lt;button data-view=&quot;requests&quot;&gt;&lt;span class=&quot;ct-nav-symbol&quot;&gt;▤&lt;/span&gt; Anträge &lt;span class=&quot;ct-nav-number&quot; data-count&gt;10&lt;/span&gt;&lt;/button&gt;&lt;button data-view=&quot;calendar&quot;&gt;&lt;span class=&quot;ct-nav-symbol&quot;&gt;▦&lt;/span&gt; Kalender&lt;/button&gt;&lt;button data-view=&quot;modules&quot;&gt;&lt;span class=&quot;ct-nav-symbol&quot;&gt;▧&lt;/span&gt; Module&lt;/button&gt;&lt;/nav&gt;&lt;div class=&quot;ct-sidebar-bottom&quot;&gt;&lt;button class=&quot;ct-secondary-nav ct-quiet&quot; data-action=&quot;stamp&quot;&gt;◷ Eigene Zeiterfassung&lt;/button&gt;&lt;button class=&quot;ct-secondary-nav ct-quiet&quot; data-action=&quot;features&quot;&gt;Alle Funktionen&lt;/button&gt;&lt;button class=&quot;ct-quiet&quot; data-action=&quot;customize&quot;&gt;◌ Ansicht anpassen&lt;/button&gt;&lt;div class=&quot;ct-sync&quot;&gt;&lt;span&gt;●&lt;/span&gt; Mit Konto synchronisiert&lt;/div&gt;&lt;/div&gt;&lt;/aside&gt;
+    &lt;main class=&quot;ct-main&quot; aria-live=&quot;polite&quot;&gt;&lt;/main&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;ct-dialog-host&quot;&gt;&lt;/div&gt;&lt;div class=&quot;ct-toast&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+  &lt;script&gt;
+  (()=&gt;{
+    const root=document.getElementById(&#x27;chrono-team-concept&#x27;);
+    const main=root.querySelector(&#x27;.ct-main&#x27;), host=root.querySelector(&#x27;.ct-dialog-host&#x27;);
+    const isPlan=root.dataset.layout===&#x27;plan&#x27;;
+    const people=[{name:&#x27;Mirjam Burkart&#x27;,initials:&#x27;MB&#x27;,role:&#x27;Administration · 80 %&#x27;,balance:&#x27;−12h 15m&#x27;,issue:&#x27;Unvollständig&#x27;,pattern:&#x27;ggfff&#x27;},{name:&#x27;Gabriela Tschopp&#x27;,initials:&#x27;GT&#x27;,role:&#x27;Administration · 100 %&#x27;,balance:&#x27;+30h 49m&#x27;,issue:&#x27;Vollständig&#x27;,pattern:&#x27;ggfff&#x27;},{name:&#x27;Milka Otten&#x27;,initials:&#x27;MO&#x27;,role:&#x27;Service · 100 %&#x27;,balance:&#x27;−1744h 00m&#x27;,issue:&#x27;Fehlende Zeit&#x27;,pattern:&#x27;rgfff&#x27;},{name:&#x27;Anna Fischer&#x27;,initials:&#x27;AF&#x27;,role:&#x27;Service · 80 %&#x27;,balance:&#x27;−444h 00m&#x27;,issue:&#x27;Fehlende Zeit&#x27;,pattern:&#x27;rrfff&#x27;},{name:&#x27;Demo Manager&#x27;,initials:&#x27;DM&#x27;,role:&#x27;Management · 100 %&#x27;,balance:&#x27;−399h 00m&#x27;,issue:&#x27;Auto-geschlossen&#x27;,pattern:&#x27;rgfff&#x27;},{name:&#x27;Ben Keller&#x27;,initials:&#x27;BK&#x27;,role:&#x27;Logistik · 100 %&#x27;,balance:&#x27;−315h 00m&#x27;,issue:&#x27;Fehlende Zeit&#x27;,pattern:&#x27;rrfff&#x27;}];
+    const modules=[&#x27;Benutzerverwaltung&#x27;,&#x27;Payroll&#x27;,&#x27;Dienstplan&#x27;,&#x27;Schichtregeln&#x27;,&#x27;Analytics&#x27;,&#x27;Kunden&#x27;,&#x27;Projekte&#x27;,&#x27;Aufgaben&#x27;,&#x27;Projektbericht&#x27;,&#x27;Finanzbuchhaltung&#x27;,&#x27;Chrono 2.0&#x27;,&#x27;CRM&#x27;,&#x27;Supply Chain&#x27;,&#x27;PMS&#x27;,&#x27;Zahlungsverkehr&#x27;,&#x27;Firmenwissen&#x27;,&#x27;Firmeneinstellungen&#x27;,&#x27;Import&#x27;,&#x27;Firmenverwaltung&#x27;,&#x27;Admin-Passwort&#x27;];
+    const state={view:&#x27;overview&#x27;,team:&#x27;Alle Teams&#x27;,employee:&#x27;Mirjam Burkart&#x27;,query:&#x27;&#x27;,filter:&#x27;Alle&#x27;,month:8,year:2026,weekOffset:0,requests:10,requestType:&#x27;Korrekturen&#x27;,history:false,decisions:[],queue:[],absences:[],hidden:false,theme:&#x27;Automatisch&#x27;,compact:false,radius:isPlan?10:13,widgets:[{id:&#x27;priorities&#x27;,label:&#x27;Prioritäten&#x27;,visible:true,size:&#x27;Normal&#x27;},{id:&#x27;team&#x27;,label:isPlan?&#x27;Wochenplanung&#x27;:&#x27;Mitarbeitende&#x27;,visible:true,size:&#x27;Breit&#x27;},{id:&#x27;absences&#x27;,label:&#x27;Abwesenheiten&#x27;,visible:true,size:&#x27;Normal&#x27;},{id:&#x27;requests&#x27;,label:&#x27;Offene Anträge&#x27;,visible:true,size:&#x27;Normal&#x27;},{id:&#x27;modules&#x27;,label:&#x27;Module&#x27;,visible:true,size:&#x27;Normal&#x27;}]};
+    const esc=s=&gt;String(s).replace(/[&amp;&lt;&gt;&quot;&#x27;]/g,c=&gt;({&#x27;&amp;&#x27;:&#x27;&amp;amp;&#x27;,&#x27;&lt;&#x27;:&#x27;&amp;lt;&#x27;,&#x27;&gt;&#x27;:&#x27;&amp;gt;&#x27;,&#x27;&quot;&#x27;:&#x27;&amp;quot;&#x27;,&quot;&#x27;&quot;:&#x27;&amp;#39;&#x27;}[c]));
+    const fmt=d=&gt;new Date(d+&#x27;T12:00:00&#x27;).toLocaleDateString(&#x27;de-CH&#x27;,{day:&#x27;2-digit&#x27;,month:&#x27;2-digit&#x27;,year:&#x27;numeric&#x27;});
+    const person=()=&gt;people.find(p=&gt;p.name===state.employee)||people[0];
+    function toast(t){const el=root.querySelector(&#x27;.ct-toast&#x27;);el.textContent=t;clearTimeout(toast.timer);toast.timer=setTimeout(()=&gt;el.textContent=&#x27;&#x27;,4500)}
+    function closeDialog(){host.innerHTML=&#x27;&#x27;;root.classList.remove(&#x27;ct-dialog-open&#x27;)}
+    function dialog(title,content,footer=&#x27;&#x27;){root.classList.add(&#x27;ct-dialog-open&#x27;);host.innerHTML=`&lt;section class=&quot;ct-dialog&quot; role=&quot;dialog&quot; aria-modal=&quot;true&quot; aria-label=&quot;${esc(title)}&quot;&gt;&lt;div class=&quot;ct-dialog-head&quot;&gt;&lt;h2&gt;${title}&lt;/h2&gt;&lt;button data-action=&quot;close-dialog&quot; aria-label=&quot;Dialog schliessen&quot;&gt;×&lt;/button&gt;&lt;/div&gt;${content}${footer?`&lt;div class=&quot;ct-dialog-actions&quot;&gt;${footer}&lt;/div&gt;`:&#x27;&#x27;}&lt;/section&gt;`;const f=host.querySelector(&#x27;input:not([type=checkbox]),select&#x27;);if(f)f.focus({preventScroll:true})}
+    function visible(id){return state.widgets.find(w=&gt;w.id===id)?.visible!==false}
+    function heading(title,sub,actions=&#x27;&#x27;){return `&lt;div class=&quot;ct-heading&quot;&gt;&lt;div&gt;&lt;div class=&quot;ct-eyebrow&quot;&gt;${isPlan?&#x27;Planungsraum&#x27;:&#x27;Menschen im Mittelpunkt&#x27;} · 14. September 2026&lt;/div&gt;&lt;h1&gt;${title}&lt;/h1&gt;&lt;p&gt;${sub}&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ct-heading-actions&quot;&gt;${actions}&lt;/div&gt;&lt;/div&gt;`}
+    function toolbar(){return `&lt;div class=&quot;ct-toolbar&quot;&gt;&lt;input aria-label=&quot;Mitarbeitende suchen&quot; placeholder=&quot;Mitarbeitende suchen …&quot; data-input=&quot;employee-search&quot; value=&quot;${esc(state.query)}&quot;&gt;&lt;select aria-label=&quot;Team auswählen&quot; data-input=&quot;team-filter&quot;&gt;&lt;option&gt;Alle Teams&lt;/option&gt;&lt;option&gt;Administration&lt;/option&gt;&lt;option&gt;Service&lt;/option&gt;&lt;option&gt;Logistik&lt;/option&gt;&lt;/select&gt;&lt;button data-action=&quot;customize&quot;&gt;Anpassen&lt;/button&gt;&lt;/div&gt;`}
+    function summaries(){return `&lt;div class=&quot;ct-summary&quot; data-widget=&quot;priorities&quot;&gt;&lt;button data-view=&quot;requests&quot;&gt;&lt;span class=&quot;ct-summary-label&quot;&gt;ZUR ENTSCHEIDUNG&lt;/span&gt;&lt;span class=&quot;ct-summary-value&quot;&gt;${state.requests}&lt;/span&gt;&lt;span class=&quot;ct-summary-detail&quot;&gt;Anträge ansehen ↗&lt;/span&gt;&lt;/button&gt;&lt;button data-view=&quot;time&quot;&gt;&lt;span class=&quot;ct-summary-label&quot;&gt;ZEITEN PRÜFEN&lt;/span&gt;&lt;span class=&quot;ct-summary-value&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;ct-summary-detail&quot;&gt;6 fehlend · 1 unvollständig&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;analysis&quot;&gt;&lt;span class=&quot;ct-summary-label&quot;&gt;Ø TEAM-SALDO&lt;/span&gt;&lt;span class=&quot;ct-summary-value&quot; style=&quot;font-size:21px&quot;&gt;−402h 27m&lt;/span&gt;&lt;span class=&quot;ct-summary-detail&quot;&gt;8 negative Salden ↗&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;toplist&quot;&gt;&lt;span class=&quot;ct-summary-label&quot;&gt;TOP-SALDO&lt;/span&gt;&lt;span class=&quot;ct-summary-value&quot; style=&quot;font-size:21px&quot;&gt;30h 49m&lt;/span&gt;&lt;span class=&quot;ct-summary-detail&quot;&gt;Gabriela Tschopp ↗&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;`}
+    function peopleRows(){const ps=(state.view===&#x27;overview&#x27;?people.slice(0,4):people).filter(p=&gt;state.team===&#x27;Alle Teams&#x27;||p.role.includes(state.team)).filter(p=&gt;p.name.toLowerCase().includes(state.query.toLowerCase()));return ps.length?ps.map(p=&gt;`&lt;div class=&quot;ct-person-row&quot;&gt;&lt;div class=&quot;ct-person-identity&quot;&gt;&lt;span class=&quot;ct-avatar&quot;&gt;${p.initials}&lt;/span&gt;&lt;div&gt;&lt;button class=&quot;ct-person-link&quot; data-action=&quot;select-person&quot; data-person=&quot;${p.name}&quot;&gt;${p.name}&lt;/button&gt;&lt;div class=&quot;ct-person-sub&quot;&gt;${p.issue===&#x27;Vollständig&#x27;?&#x27;Zeiten vollständig&#x27;:p.issue}&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-miniweek&quot; aria-label=&quot;Wochentage Montag bis Freitag&quot;&gt;${[...p.pattern].map((v,i)=&gt;`&lt;span class=&quot;ct-miniday ${v===&#x27;r&#x27;?&#x27;gap&#x27;:v===&#x27;f&#x27;?&#x27;future&#x27;:&#x27;&#x27;}&quot;&gt;${[&#x27;M&#x27;,&#x27;D&#x27;,&#x27;M&#x27;,&#x27;D&#x27;,&#x27;F&#x27;][i]}&lt;/span&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;div class=&quot;ct-balance ${p.balance.startsWith(&#x27;−&#x27;)?&#x27;negative&#x27;:&#x27;&#x27;}&quot;&gt;${p.balance}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;):`&lt;div class=&quot;ct-empty&quot;&gt;Keine Mitarbeitenden gefunden.&lt;/div&gt;`}
+    function profile(){const p=person();return `&lt;section class=&quot;ct-section ct-profile&quot;&gt;&lt;div&gt;&lt;div class=&quot;ct-avatar&quot;&gt;${p.initials}&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div class=&quot;ct-eyebrow&quot;&gt;Ausgewählt&lt;/div&gt;&lt;h2&gt;${p.name}&lt;/h2&gt;&lt;p&gt;${p.role}&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ct-profile-metrics&quot;&gt;&lt;div&gt;&lt;span&gt;Zeitsaldo&lt;/span&gt;&lt;strong&gt;${p.balance}&lt;/strong&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;Resturlaub&lt;/span&gt;&lt;strong&gt;12 Tage&lt;/strong&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-profile-actions&quot;&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Urlaub eintragen&lt;/button&gt;&lt;button data-action=&quot;person-detail&quot;&gt;Zeitkonto öffnen ↗&lt;/button&gt;&lt;button data-action=&quot;sickness&quot;&gt;Krankheit / Abwesenheit&lt;/button&gt;&lt;/div&gt;&lt;small class=&quot;ct-muted&quot;&gt;Person ist in allen Aktionen vorausgewählt.&lt;/small&gt;&lt;/section&gt;`}
+    function absences(){return `&lt;section class=&quot;ct-section&quot; data-widget=&quot;absences&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;h2&gt;Abwesenheiten&lt;/h2&gt;&lt;button data-view=&quot;calendar&quot;&gt;Kalender ↗&lt;/button&gt;&lt;/div&gt;&lt;small class=&quot;ct-muted&quot;&gt;Heute und die nächsten 7 Tage&lt;/small&gt;${state.absences.length?state.absences.map(a=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${esc(a.person)}&lt;/strong&gt;&lt;small&gt;${fmt(a.start)} – ${fmt(a.end)} · ${esc(a.type)}&lt;/small&gt;&lt;/div&gt;&lt;button data-action=&quot;edit-absence&quot; data-id=&quot;${a.id}&quot;&gt;Öffnen&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;):`&lt;div class=&quot;ct-empty&quot; style=&quot;margin-top:12px&quot;&gt;Keine Abwesenheiten geplant.&lt;br&gt;Das gesamte Team ist verfügbar.&lt;/div&gt;`}&lt;/section&gt;`}
+    function requestsPreview(){return `&lt;section class=&quot;ct-section&quot; data-widget=&quot;requests&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;h2&gt;Offene Anträge &lt;span class=&quot;ct-tag gold&quot;&gt;${state.requests}&lt;/span&gt;&lt;/h2&gt;&lt;button data-view=&quot;requests&quot;&gt;Alle ansehen ↗&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;Milka Otten&lt;/strong&gt;&lt;small&gt;Zeitkorrektur · 12.08.2025&lt;/small&gt;&lt;/div&gt;&lt;button data-view=&quot;requests&quot;&gt;Prüfen&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;Milka Otten&lt;/strong&gt;&lt;small&gt;Zeitkorrektur · 13.08.2025&lt;/small&gt;&lt;/div&gt;&lt;button data-view=&quot;requests&quot;&gt;Prüfen&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;`}
+    function moduleShortcuts(){return `&lt;div class=&quot;ct-module-shortcuts&quot; data-widget=&quot;modules&quot;&gt;&lt;span class=&quot;ct-eyebrow&quot; style=&quot;align-self:center;margin-right:6px&quot;&gt;Schnellzugriff&lt;/span&gt;${[&#x27;Benutzerverwaltung&#x27;,&#x27;Payroll&#x27;,&#x27;Dienstplan&#x27;,&#x27;Analytics&#x27;].map(m=&gt;`&lt;button data-action=&quot;module&quot; data-module=&quot;${m}&quot;&gt;${m} ↗&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;button data-view=&quot;modules&quot;&gt;Alle Module&lt;/button&gt;&lt;/div&gt;`}
+    function overviewTeam(){return heading(&#x27;Dein Team. Alles im Blick.&#x27;,&#x27;Alle Teams · Diese Woche · 14.–20. September&#x27;,`&lt;button data-action=&quot;features&quot;&gt;Alle Funktionen&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Abwesenheit&lt;/button&gt;`)+(visible(&#x27;priorities&#x27;)?summaries():&#x27;&#x27;)+(visible(&#x27;team&#x27;)?`&lt;div class=&quot;ct-team-grid&quot; data-widget=&quot;team&quot;&gt;&lt;section class=&quot;ct-section&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;h2&gt;Mitarbeitende&lt;/h2&gt;&lt;span class=&quot;ct-tag&quot;&gt;Diese Woche&lt;/span&gt;&lt;/div&gt;${toolbar()}&lt;div class=&quot;ct-person-header&quot;&gt;&lt;span&gt;PERSON / STATUS&lt;/span&gt;&lt;span&gt;MO – FR&lt;/span&gt;&lt;span style=&quot;text-align:right&quot;&gt;SALDO&lt;/span&gt;&lt;/div&gt;&lt;div data-people-list&gt;${peopleRows()}&lt;/div&gt;&lt;div class=&quot;ct-between&quot; style=&quot;margin-top:12px&quot;&gt;&lt;small class=&quot;ct-muted&quot;&gt;4 von 12 Mitarbeitenden&lt;/small&gt;&lt;button class=&quot;ct-quiet&quot; data-view=&quot;time&quot; style=&quot;font-size:11px&quot;&gt;Alle Problemfälle öffnen ↗&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;${profile()}&lt;/div&gt;`:&#x27;&#x27;)+(visible(&#x27;absences&#x27;)?`&lt;section class=&quot;ct-section ct-between&quot; data-widget=&quot;absences&quot; style=&quot;margin-top:14px;padding:13px 16px&quot;&gt;&lt;div&gt;&lt;h3&gt;Heute und die nächsten 7 Tage&lt;/h3&gt;&lt;small class=&quot;ct-muted&quot;&gt;${state.absences.length?state.absences.length+&#x27; eingetragene Abwesenheiten&#x27;:&#x27;Keine Abwesenheiten · Das gesamte Team ist verfügbar.&#x27;}&lt;/small&gt;&lt;/div&gt;&lt;button data-view=&quot;calendar&quot; style=&quot;font-size:11px&quot;&gt;Kalender öffnen ↗&lt;/button&gt;&lt;/section&gt;`:&#x27;&#x27;)+(visible(&#x27;modules&#x27;)?moduleShortcuts():&#x27;&#x27;)}
+    function schedule(){return `&lt;div class=&quot;ct-schedule&quot;&gt;&lt;div class=&quot;ct-schedule-header&quot; style=&quot;text-align:left;padding-left:10px&quot;&gt;Mitarbeitende&lt;strong&gt;4 von 12&lt;/strong&gt;&lt;/div&gt;${[&#x27;Mo&#x27;,&#x27;Di&#x27;,&#x27;Mi&#x27;,&#x27;Do&#x27;,&#x27;Fr&#x27;,&#x27;Sa&#x27;,&#x27;So&#x27;].map((d,i)=&gt;`&lt;div class=&quot;ct-schedule-header ${i===0?&#x27;today&#x27;:&#x27;&#x27;}&quot;&gt;${d}&lt;strong&gt;${14+i+state.weekOffset*7}&lt;/strong&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}${people.filter(p=&gt;state.team===&#x27;Alle Teams&#x27;||p.role.includes(state.team)).slice(0,4).map((p,r)=&gt;`&lt;div class=&quot;ct-schedule-row&quot;&gt;&lt;div class=&quot;ct-schedule-person&quot;&gt;&lt;button data-action=&quot;select-person&quot; data-person=&quot;${p.name}&quot;&gt;${p.name}&lt;/button&gt;&lt;small&gt;${p.role.split(&#x27; · &#x27;)[0]}&lt;/small&gt;&lt;/div&gt;${Array.from({length:7},(_,d)=&gt;{const isAbsent=state.absences.find(a=&gt;a.person===p.name&amp;&amp;a.start&lt;=`2026-09-${String(14+d+state.weekOffset*7).padStart(2,&#x27;0&#x27;)}`&amp;&amp;a.end&gt;=`2026-09-${String(14+d+state.weekOffset*7).padStart(2,&#x27;0&#x27;)}`);return `&lt;div class=&quot;ct-schedule-cell ${d&gt;4?&#x27;weekend&#x27;:&#x27;&#x27;}&quot; data-dayname=&quot;${[&#x27;Mo&#x27;,&#x27;Di&#x27;,&#x27;Mi&#x27;,&#x27;Do&#x27;,&#x27;Fr&#x27;,&#x27;Sa&#x27;,&#x27;So&#x27;][d]}&quot;&gt;&lt;button data-action=&quot;schedule-day&quot; data-person=&quot;${p.name}&quot; data-day=&quot;${14+d+state.weekOffset*7}&quot; class=&quot;${isAbsent?&#x27;vacation&#x27;:d&gt;4?&#x27;empty&#x27;:d===0&amp;&amp;r&gt;1?&#x27;issue&#x27;:&#x27;&#x27;}&quot;&gt;${isAbsent?&#x27;Urlaub&#x27;:d&gt;4?&#x27;–&#x27;:d===0&amp;&amp;r&gt;1?&#x27;Prüfen&#x27;:&#x27;08–17&#x27;}&lt;/button&gt;&lt;/div&gt;`}).join(&#x27;&#x27;)}&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;div class=&quot;ct-schedule-legend&quot;&gt;&lt;span&gt;&lt;i class=&quot;ct-swatch&quot;&gt;&lt;/i&gt; Geplant / erfasst&lt;/span&gt;&lt;span&gt;&lt;i class=&quot;ct-swatch vacation&quot;&gt;&lt;/i&gt; Urlaub&lt;/span&gt;&lt;span&gt;&lt;i class=&quot;ct-swatch issue&quot;&gt;&lt;/i&gt; Zeitprüfung nötig&lt;/span&gt;&lt;/div&gt;`}
+    function overviewPlan(){return heading(&#x27;Eine Woche. Ein klarer Plan.&#x27;,&#x27;Teamplanung und Entscheidungen an einem Ort.&#x27;,`&lt;button data-action=&quot;print&quot;&gt;Zeiten drucken&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Abwesenheit planen&lt;/button&gt;`)+(visible(&#x27;priorities&#x27;)?`&lt;div class=&quot;ct-planning-summary&quot; data-widget=&quot;priorities&quot;&gt;&lt;button data-view=&quot;requests&quot;&gt;&lt;strong&gt;${state.requests}&lt;/strong&gt;&lt;span&gt;Anträge&lt;br&gt;Entscheidung offen ↗&lt;/span&gt;&lt;/button&gt;&lt;button data-view=&quot;time&quot;&gt;&lt;strong&gt;7&lt;/strong&gt;&lt;span&gt;Zeitprobleme&lt;br&gt;Jetzt prüfen ↗&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;analysis&quot;&gt;&lt;strong style=&quot;font-size:17px&quot;&gt;−402h&lt;/strong&gt;&lt;span&gt;Ø Team-Saldo&lt;br&gt;27 Minuten ↗&lt;/span&gt;&lt;/button&gt;&lt;button data-action=&quot;toplist&quot;&gt;&lt;strong style=&quot;font-size:17px&quot;&gt;+30h 49&lt;/strong&gt;&lt;span&gt;Top-Saldo&lt;br&gt;Gabriela Tschopp ↗&lt;/span&gt;&lt;/button&gt;&lt;/div&gt;`:&#x27;&#x27;)+(visible(&#x27;team&#x27;)?`&lt;div class=&quot;ct-planning-grid&quot; data-widget=&quot;team&quot;&gt;&lt;section class=&quot;ct-section&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;div&gt;&lt;div class=&quot;ct-eyebrow&quot;&gt;Teamkalender&lt;/div&gt;&lt;h2 style=&quot;margin-top:4px&quot;&gt;September 2026&lt;/h2&gt;&lt;/div&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;week-prev&quot; aria-label=&quot;Vorherige Woche&quot;&gt;←&lt;/button&gt;&lt;button data-action=&quot;week-today&quot;&gt;KW ${38+state.weekOffset}&lt;/button&gt;&lt;button data-action=&quot;week-next&quot; aria-label=&quot;Nächste Woche&quot;&gt;→&lt;/button&gt;&lt;button data-view=&quot;calendar&quot;&gt;Monat&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-toolbar&quot;&gt;&lt;select aria-label=&quot;Team auswählen&quot; data-input=&quot;team-filter&quot;&gt;&lt;option&gt;Alle Teams&lt;/option&gt;&lt;option&gt;Administration&lt;/option&gt;&lt;option&gt;Service&lt;/option&gt;&lt;/select&gt;&lt;button data-action=&quot;features&quot;&gt;Planungswerkzeuge&lt;/button&gt;&lt;button data-action=&quot;customize&quot;&gt;Anpassen&lt;/button&gt;&lt;/div&gt;${schedule()}&lt;/section&gt;&lt;aside class=&quot;ct-agenda&quot;&gt;&lt;div&gt;&lt;span class=&quot;ct-eyebrow&quot;&gt;Montag · Heute&lt;/span&gt;&lt;div class=&quot;ct-agenda-date&quot;&gt;14.09.&lt;/div&gt;&lt;p class=&quot;ct-muted&quot; style=&quot;font-size:11px&quot;&gt;September 2026&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ct-agenda-item&quot;&gt;&lt;span class=&quot;ct-tag green&quot;&gt;Team verfügbar&lt;/span&gt;&lt;strong style=&quot;margin-top:9px&quot;&gt;Keine Abwesenheiten&lt;/strong&gt;&lt;span class=&quot;ct-muted&quot;&gt;Heute und die nächsten 7 Tage&lt;/span&gt;&lt;button data-view=&quot;calendar&quot;&gt;Tagesdetails öffnen ↗&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-agenda-item&quot;&gt;&lt;strong&gt;Als Nächstes&lt;/strong&gt;&lt;span class=&quot;ct-muted&quot;&gt;7 Zeitprobleme warten auf Prüfung.&lt;/span&gt;&lt;button data-view=&quot;time&quot;&gt;Zeitprüfung öffnen ↗&lt;/button&gt;&lt;/div&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Zeitraum planen&lt;/button&gt;&lt;/aside&gt;&lt;/div&gt;`:&#x27;&#x27;)+`&lt;div class=&quot;ct-plan-bottom&quot;&gt;${visible(&#x27;requests&#x27;)?requestsPreview():&#x27;&#x27;}&lt;section class=&quot;ct-section&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;h2&gt;Kritische Mitarbeitende&lt;/h2&gt;&lt;button data-view=&quot;time&quot;&gt;Alle ↗&lt;/button&gt;&lt;/div&gt;${people.slice(2,5).map(p=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${p.name}&lt;/strong&gt;&lt;small&gt;${p.issue}&lt;/small&gt;&lt;/div&gt;&lt;button data-action=&quot;select-person&quot; data-person=&quot;${p.name}&quot;&gt;${p.balance}&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/section&gt;${visible(&#x27;absences&#x27;)?absences():&#x27;&#x27;}&lt;/div&gt;`+(visible(&#x27;modules&#x27;)?moduleShortcuts():&#x27;&#x27;)}
+    function timeView(){return heading(&#x27;Zeitprüfung&#x27;,&#x27;Abweichungen zuerst. Jede Buchung bleibt nachvollziehbar.&#x27;,`&lt;button data-action=&quot;print&quot;&gt;PDF / Zeiten drucken&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;batch-corrections&quot;&gt;Korrekturen ≤ 15 Min.&lt;/button&gt;`)+`&lt;section class=&quot;ct-section&quot;&gt;${toolbar()}&lt;div class=&quot;ct-toolbar&quot;&gt;&lt;select aria-label=&quot;Zeitraum&quot; data-input=&quot;period&quot;&gt;&lt;option&gt;Diese Woche&lt;/option&gt;&lt;option&gt;Dieser Monat&lt;/option&gt;&lt;option&gt;Eigener Zeitraum&lt;/option&gt;&lt;option&gt;Payroll-Monat&lt;/option&gt;&lt;/select&gt;&lt;button data-action=&quot;period&quot;&gt;14.–20. September 2026 ▾&lt;/button&gt;&lt;label class=&quot;ct-flex&quot; style=&quot;font-size:11px&quot;&gt;&lt;input type=&quot;checkbox&quot; data-input=&quot;show-hidden&quot; ${state.hidden?&#x27;checked&#x27;:&#x27;&#x27;}&gt; Ausgeblendete anzeigen&lt;/label&gt;&lt;/div&gt;&lt;div class=&quot;ct-filter-chips&quot;&gt;${[&#x27;Alle&#x27;,&#x27;Fehlend&#x27;,&#x27;Unvollständig&#x27;,&#x27;Auto-geschlossen&#x27;,&#x27;Feiertag&#x27;,&#x27;+ Abweichung&#x27;,&#x27;− Abweichung&#x27;].map(f=&gt;`&lt;button data-action=&quot;issue-filter&quot; data-filter=&quot;${f}&quot; class=&quot;${state.filter===f?&#x27;active&#x27;:&#x27;&#x27;}&quot;&gt;${f}&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;div data-review-list&gt;${reviewRows()}&lt;/div&gt;&lt;div class=&quot;ct-between&quot; style=&quot;margin-top:15px&quot;&gt;&lt;span class=&quot;ct-muted&quot; style=&quot;font-size:11px&quot;&gt;7 Zeitprobleme · 8 negative Salden&lt;/span&gt;&lt;button data-action=&quot;acknowledge&quot;&gt;Wochenabweichung bestätigen&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;`}
+    function reviewRows(){let ps=people.filter(p=&gt;state.team===&#x27;Alle Teams&#x27;||p.role.includes(state.team)).filter(p=&gt;p.name.toLowerCase().includes(state.query.toLowerCase()));if(state.filter===&#x27;Fehlend&#x27;)ps=ps.filter(p=&gt;p.issue===&#x27;Fehlende Zeit&#x27;);if(state.filter===&#x27;Unvollständig&#x27;)ps=ps.filter(p=&gt;p.issue===&#x27;Unvollständig&#x27;);if(state.filter===&#x27;Auto-geschlossen&#x27;)ps=ps.filter(p=&gt;p.issue===&#x27;Auto-geschlossen&#x27;);if(state.filter===&#x27;+ Abweichung&#x27;)ps=ps.filter(p=&gt;!p.balance.startsWith(&#x27;−&#x27;));if(state.filter===&#x27;− Abweichung&#x27;)ps=ps.filter(p=&gt;p.balance.startsWith(&#x27;−&#x27;));if(state.filter===&#x27;Feiertag&#x27;)return &#x27;&lt;div class=&quot;ct-empty&quot;&gt;Keine Feiertagsabweichungen in diesem Zeitraum.&lt;/div&gt;&#x27;;if(state.hidden)ps=[...ps,{name:&#x27;test test&#x27;,initials:&#x27;TT&#x27;,role:&#x27;Ausgeblendet&#x27;,balance:&#x27;−1769h 46m&#x27;,issue:&#x27;Ausgeblendet&#x27;}];return ps.map(p=&gt;`&lt;div class=&quot;ct-review-row&quot;&gt;&lt;div&gt;&lt;strong&gt;${p.name}&lt;/strong&gt;&lt;small&gt;${p.role}&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ct-tag ${p.issue===&#x27;Vollständig&#x27;?&#x27;green&#x27;:&#x27;gold&#x27;}&quot;&gt;${p.issue}&lt;/span&gt;&lt;span class=&quot;ct-balance ${p.balance.startsWith(&#x27;−&#x27;)?&#x27;negative&#x27;:&#x27;&#x27;}&quot;&gt;${p.balance}&lt;/span&gt;&lt;button data-action=&quot;person-detail&quot; data-person=&quot;${p.name}&quot;&gt;Zeitkonto öffnen ↗&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;)||&#x27;&lt;div class=&quot;ct-empty&quot;&gt;Keine passenden Mitarbeitenden.&lt;/div&gt;&#x27;}
+    function requestsView(){return heading(&#x27;Anträge entscheiden&#x27;,&#x27;Ein Posteingang für Korrekturen und Urlaub.&#x27;,`&lt;span class=&quot;ct-tag gold&quot;&gt;${state.requests} offen&lt;/span&gt;`)+`&lt;section class=&quot;ct-section&quot;&gt;&lt;div class=&quot;ct-between&quot;&gt;&lt;div class=&quot;ct-view-tabs&quot;&gt;${[&#x27;Korrekturen&#x27;,&#x27;Urlaub&#x27;].map(t=&gt;`&lt;button data-action=&quot;request-type&quot; data-type=&quot;${t}&quot; class=&quot;${state.requestType===t?&#x27;active&#x27;:&#x27;&#x27;}&quot;&gt;${t} ${t===&#x27;Korrekturen&#x27;?`(${state.requests})`:&#x27;(0)&#x27;}&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;request-history&quot; class=&quot;${state.history?&#x27;ct-primary&#x27;:&#x27;&#x27;}&quot;&gt;${state.history?&#x27;Verlauf aktiv&#x27;:&#x27;Verlauf&#x27;}&lt;/button&gt;&lt;button data-action=&quot;request-pending&quot;&gt;Offen&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;${state.history?(state.decisions.length?state.decisions.map(r=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${r.name}&lt;/strong&gt;&lt;small&gt;${r.date} · ${r.note||&#x27;Ohne Notiz&#x27;}&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ct-tag green&quot;&gt;${r.status}&lt;/span&gt;&lt;/div&gt;`).join(&#x27;&#x27;):&#x27;&lt;div class=&quot;ct-empty&quot;&gt;Im Entwurf wurden noch keine Anträge entschieden.&lt;/div&gt;&#x27;):state.requestType===&#x27;Urlaub&#x27;?&#x27;&lt;div class=&quot;ct-empty&quot;&gt;Keine offenen Urlaubsanträge.&lt;br&gt;&lt;button data-action=&quot;vacation&quot; style=&quot;margin-top:12px&quot;&gt;Urlaub direkt eintragen&lt;/button&gt;&lt;/div&gt;&#x27;:[0,1,2].filter(i=&gt;!state.decisions.some(d=&gt;d.id===i)).map(i=&gt;`&lt;article class=&quot;ct-request&quot;&gt;&lt;div class=&quot;ct-request-top&quot;&gt;&lt;div class=&quot;ct-person-identity&quot;&gt;&lt;span class=&quot;ct-avatar&quot;&gt;MO&lt;/span&gt;&lt;div&gt;&lt;h3&gt;Milka Otten&lt;/h3&gt;&lt;small class=&quot;ct-muted&quot;&gt;${12+i}.08.2025 · Zeitkorrektur&lt;/small&gt;&lt;/div&gt;&lt;/div&gt;&lt;span class=&quot;ct-tag gold&quot;&gt;Ausstehend&lt;/span&gt;&lt;/div&gt;&lt;p&gt;„Hallo, bitte meine Arbeitszeit korrigieren.“&lt;/p&gt;&lt;div class=&quot;ct-request-diff&quot;&gt;&lt;div&gt;&lt;span class=&quot;ct-muted&quot;&gt;Bisher&lt;/span&gt;&lt;strong&gt;08:00 – 16:30&lt;/strong&gt;&lt;span&gt;Pause 60 Min. · 7h 30m&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span class=&quot;ct-muted&quot;&gt;Beantragt&lt;/span&gt;&lt;strong&gt;07:45 – 17:00&lt;/strong&gt;&lt;span&gt;Pause 60 Min. · 8h 15m&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-request-actions&quot;&gt;&lt;input aria-label=&quot;Notiz zum Antrag ${i+1}&quot; placeholder=&quot;Interne Notiz …&quot; data-note=&quot;${i}&quot;&gt;&lt;button data-action=&quot;request-time&quot; data-person=&quot;Milka Otten&quot;&gt;Zeiten ↗&lt;/button&gt;&lt;button data-action=&quot;request-decide&quot; data-id=&quot;${i}&quot; data-status=&quot;Abgelehnt&quot;&gt;Ablehnen&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;request-decide&quot; data-id=&quot;${i}&quot; data-status=&quot;Genehmigt&quot;&gt;Genehmigen&lt;/button&gt;&lt;/div&gt;&lt;/article&gt;`).join(&#x27;&#x27;)}&lt;/section&gt;`}
+    function calendarGrid(){const first=new Date(state.year,state.month,1),offset=(first.getDay()+6)%7,days=new Date(state.year,state.month+1,0).getDate();return `&lt;div class=&quot;ct-calendar&quot;&gt;${[&#x27;Mo&#x27;,&#x27;Di&#x27;,&#x27;Mi&#x27;,&#x27;Do&#x27;,&#x27;Fr&#x27;,&#x27;Sa&#x27;,&#x27;So&#x27;].map(d=&gt;`&lt;div class=&quot;ct-calendar-label&quot;&gt;${d}&lt;/div&gt;`).join(&#x27;&#x27;)}${Array.from({length:Math.ceil((days+offset)/7)*7},(_,i)=&gt;{let d=i-offset+1;const active=d&gt;0&amp;&amp;d&lt;=days;let actual=active?d:d&lt;1?new Date(state.year,state.month,0).getDate()+d:d-days;const date=`${state.year}-${String(state.month+1).padStart(2,&#x27;0&#x27;)}-${String(actual).padStart(2,&#x27;0&#x27;)}`;const events=active?state.absences.filter(a=&gt;a.start&lt;=date&amp;&amp;a.end&gt;=date&amp;&amp;(a.person===state.employee||a.type===&#x27;Betriebsurlaub&#x27;)):[];return `&lt;button class=&quot;ct-calendar-day ${active?&#x27;&#x27;:&#x27;muted&#x27;} ${d===14&amp;&amp;state.month===8&amp;&amp;state.year===2026?&#x27;today&#x27;:&#x27;&#x27;}&quot; data-action=&quot;calendar-day&quot; data-date=&quot;${date}&quot; ${active?&#x27;&#x27;:&#x27;disabled&#x27;}&gt;${actual}${events.slice(0,2).map(a=&gt;`&lt;span class=&quot;ct-calendar-event&quot;&gt;${esc(a.person.split(&#x27; &#x27;)[0])} · ${esc(a.type)}&lt;/span&gt;`).join(&#x27;&#x27;)}&lt;/button&gt;`}).join(&#x27;&#x27;)}&lt;/div&gt;`}
+    function calendarView(){return heading(&#x27;Abwesenheiten planen&#x27;,&#x27;Person wählen, Zeiträume sammeln und direkt im Kalender sehen.&#x27;,`&lt;button data-action=&quot;sickness&quot;&gt;Krankheit / Kommentar&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Urlaub eintragen&lt;/button&gt;`)+`&lt;section class=&quot;ct-section&quot;&gt;&lt;div class=&quot;ct-section-head&quot;&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;month-prev&quot; aria-label=&quot;Vorheriger Monat&quot;&gt;←&lt;/button&gt;&lt;h2&gt;${new Date(state.year,state.month).toLocaleDateString(&#x27;de-CH&#x27;,{month:&#x27;long&#x27;,year:&#x27;numeric&#x27;})}&lt;/h2&gt;&lt;button data-action=&quot;month-next&quot; aria-label=&quot;Nächster Monat&quot;&gt;→&lt;/button&gt;&lt;/div&gt;&lt;select aria-label=&quot;Mitarbeiterkalender auswählen&quot; data-input=&quot;calendar-person&quot; style=&quot;width:auto;max-width:100%&quot;&gt;${people.map(p=&gt;`&lt;option ${p.name===state.employee?&#x27;selected&#x27;:&#x27;&#x27;}&gt;${p.name}&lt;/option&gt;`).join(&#x27;&#x27;)}&lt;/select&gt;&lt;/div&gt;${calendarGrid()}&lt;div class=&quot;ct-schedule-legend&quot;&gt;&lt;span&gt;&lt;i class=&quot;ct-swatch vacation&quot;&gt;&lt;/i&gt; Gespeicherte Abwesenheit&lt;/span&gt;&lt;span&gt;Tag anklicken für Details&lt;/span&gt;&lt;/div&gt;&lt;/section&gt;${state.absences.length?`&lt;div style=&quot;margin-top:15px&quot;&gt;${absences()}&lt;/div&gt;`:&#x27;&#x27;}`}
+    function modulesView(){return heading(&#x27;Alles für deine Organisation&#x27;,&#x27;Alle bestehenden Module, klar nach Aufgaben erreichbar.&#x27;,`&lt;button data-action=&quot;platform&quot;&gt;Plattform öffnen&lt;/button&gt;`)+`&lt;div class=&quot;ct-toolbar&quot;&gt;&lt;input placeholder=&quot;Modul suchen …&quot; aria-label=&quot;Module suchen&quot; data-input=&quot;module-search&quot;&gt;&lt;/div&gt;&lt;div class=&quot;ct-module-grid&quot;&gt;${modules.map((m,i)=&gt;`&lt;button class=&quot;ct-module&quot; data-action=&quot;module&quot; data-module=&quot;${m}&quot;&gt;&lt;span&gt;${i&lt;4?&#x27;TEAM &amp; ZEIT&#x27;:i&lt;10?&#x27;ARBEIT &amp; FINANZEN&#x27;:i&lt;16?&#x27;ORGANISATION&#x27;:&#x27;VERWALTUNG&#x27;}&lt;/span&gt;&lt;strong&gt;${m} ↗&lt;/strong&gt;&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;`}
+    function render(){root.querySelectorAll(&#x27;.ct-nav [data-view]&#x27;).forEach(n=&gt;{n.classList.toggle(&#x27;active&#x27;,n.dataset.view===state.view);n.setAttribute(&#x27;aria-current&#x27;,n.dataset.view===state.view?&#x27;page&#x27;:&#x27;false&#x27;)});root.querySelectorAll(&#x27;[data-count]&#x27;).forEach(n=&gt;n.textContent=state.requests);main.innerHTML=(state.view===&#x27;overview&#x27;?(isPlan?overviewPlan():overviewTeam()):state.view===&#x27;time&#x27;?timeView():state.view===&#x27;requests&#x27;?requestsView():state.view===&#x27;calendar&#x27;?calendarView():modulesView())+`&lt;div class=&quot;ct-footnote&quot;&gt;&lt;span&gt;Entwurf ${isPlan?&#x27;04 · Planungsfokus&#x27;:&#x27;03 · Teamfokus&#x27;} · Ausschliesslich lokale Beispieldaten&lt;/span&gt;&lt;button class=&quot;ct-quiet&quot; data-action=&quot;features&quot; style=&quot;padding:0;min-height:0;font-size:11px&quot;&gt;Alle Funktionen ↗&lt;/button&gt;&lt;span&gt;● Mit Konto synchronisiert&lt;/span&gt;&lt;/div&gt;`;if(state.view===&#x27;overview&#x27;){state.widgets.forEach(w=&gt;{const el=main.querySelector(`[data-widget=&quot;${w.id}&quot;]`);if(el)el.style.setProperty(&#x27;--ct-widget-size&#x27;,w.size);});}root.style.setProperty(&#x27;--ct-radius&#x27;,state.radius+&#x27;px&#x27;);root.style.setProperty(&#x27;--ct-space&#x27;,state.compact?&#x27;13px&#x27;:&#x27;20px&#x27;);root.style.colorScheme=state.theme===&#x27;Hell&#x27;?&#x27;light&#x27;:state.theme===&#x27;Dunkel&#x27;?&#x27;dark&#x27;:&#x27;light dark&#x27;;}
+    function vacation(editId){const edit=editId?state.absences.find(a=&gt;String(a.id)===String(editId)):null;state.editId=edit?.id||null;dialog(edit?&#x27;Abwesenheit bearbeiten&#x27;:&#x27;Urlaub für &#x27;+state.employee,`&lt;p class=&quot;ct-dialog-description&quot;&gt;Mehrere Zeiträume vormerken und zusammen speichern. Dieser Dialog bleibt geöffnet.&lt;/p&gt;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label class=&quot;ct-span&quot;&gt;Mitarbeitende&lt;select data-field=&quot;vac-person&quot;&gt;${people.map(p=&gt;`&lt;option ${(edit?.person||state.employee)===p.name?&#x27;selected&#x27;:&#x27;&#x27;}&gt;${p.name}&lt;/option&gt;`).join(&#x27;&#x27;)}&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Abwesenheitsart&lt;select data-field=&quot;vac-type&quot;&gt;${[&#x27;Urlaub&#x27;,&#x27;Halber Urlaubstag&#x27;,&#x27;Überstundenabbau&#x27;,&#x27;Prozentualer Stundenabzug&#x27;,&#x27;Betriebsurlaub&#x27;,&#x27;Krankheit&#x27;].map(t=&gt;`&lt;option ${edit?.type===t?&#x27;selected&#x27;:&#x27;&#x27;}&gt;${t}&lt;/option&gt;`).join(&#x27;&#x27;)}&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Abzug / Tageshälfte&lt;select data-field=&quot;vac-deduction&quot;&gt;&lt;option&gt;Ganzer Tag · Sollzeit&lt;/option&gt;&lt;option&gt;Vormittag · 50 %&lt;/option&gt;&lt;option&gt;Nachmittag · 50 %&lt;/option&gt;&lt;option&gt;25 % der Sollzeit&lt;/option&gt;&lt;option&gt;75 % der Sollzeit&lt;/option&gt;&lt;option&gt;Individuelle Stunden&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Von&lt;input type=&quot;date&quot; data-field=&quot;vac-start&quot; value=&quot;${edit?.start||`${state.year}-${String(state.month+1).padStart(2,&#x27;0&#x27;)}-21`}&quot;&gt;&lt;/label&gt;&lt;label&gt;Bis&lt;input type=&quot;date&quot; data-field=&quot;vac-end&quot; value=&quot;${edit?.end||`${state.year}-${String(state.month+1).padStart(2,&#x27;0&#x27;)}-25`}&quot;&gt;&lt;/label&gt;&lt;label&gt;Stunden / Prozent&lt;input type=&quot;number&quot; min=&quot;0&quot; max=&quot;100&quot; step=&quot;.5&quot; data-field=&quot;vac-amount&quot; placeholder=&quot;z. B. 4 Stunden oder 50 %&quot;&gt;&lt;/label&gt;&lt;label&gt;Betriebsurlaub gilt für&lt;select data-field=&quot;vac-team&quot;&gt;&lt;option&gt;Ausgewählte Person&lt;/option&gt;&lt;option&gt;Alle Teams&lt;/option&gt;&lt;option&gt;Administration&lt;/option&gt;&lt;option&gt;Service&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ct-span&quot;&gt;Kommentar&lt;textarea rows=&quot;2&quot; data-field=&quot;vac-comment&quot; placeholder=&quot;Optionaler Kommentar&quot;&gt;${esc(edit?.comment||&#x27;&#x27;)}&lt;/textarea&gt;&lt;/label&gt;&lt;/div&gt;&lt;div data-vac-error role=&quot;alert&quot;&gt;&lt;/div&gt;&lt;div class=&quot;ct-between&quot;&gt;&lt;h3&gt;Vorgemerkte Zeiträume&lt;/h3&gt;&lt;button data-action=&quot;queue-period&quot;&gt;＋ Zeitraum vormerken&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-queue&quot; data-queue&gt;${queueHTML()}&lt;/div&gt;&lt;div data-vac-success aria-live=&quot;polite&quot;&gt;&lt;/div&gt;`,`${edit?`&lt;button data-action=&quot;delete-absence&quot; data-id=&quot;${edit.id}&quot;&gt;Abwesenheit löschen&lt;/button&gt;`:&#x27;&#x27;}&lt;button data-action=&quot;close-dialog&quot;&gt;Fertig&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;save-vacation&quot;&gt;${edit?&#x27;Änderung speichern&#x27;:&#x27;Zeiträume speichern&#x27;}&lt;/button&gt;`)}
+    function queueHTML(){return state.queue.length?state.queue.map((a,i)=&gt;`&lt;div class=&quot;ct-queue-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${fmt(a.start)} – ${fmt(a.end)}&lt;/strong&gt;&lt;br&gt;&lt;span class=&quot;ct-muted&quot;&gt;${esc(a.person)} · ${esc(a.type)}&lt;/span&gt;&lt;/div&gt;&lt;button data-action=&quot;remove-queue&quot; data-id=&quot;${i}&quot;&gt;Entfernen&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;):&#x27;&lt;p class=&quot;ct-muted&quot; style=&quot;font-size:12px&quot;&gt;Noch kein Zeitraum vorgemerkt. Du kannst auch den aktuellen Zeitraum direkt speichern.&lt;/p&gt;&#x27;}
+    function readVacation(){const field=n=&gt;host.querySelector(`[data-field=&quot;${n}&quot;]`)?.value||&#x27;&#x27;;return {id:Date.now(),person:field(&#x27;vac-person&#x27;),type:field(&#x27;vac-type&#x27;),start:field(&#x27;vac-start&#x27;),end:field(&#x27;vac-end&#x27;),comment:field(&#x27;vac-comment&#x27;),deduction:field(&#x27;vac-deduction&#x27;),amount:field(&#x27;vac-amount&#x27;),team:field(&#x27;vac-team&#x27;)}}
+    function validateVacation(a){if(!a.start||!a.end||a.end&lt;a.start){host.querySelector(&#x27;[data-vac-error]&#x27;).innerHTML=&#x27;&lt;div class=&quot;ct-error&quot;&gt;Bitte ein gültiges Von- und Bis-Datum wählen.&lt;/div&gt;&#x27;;return false}host.querySelector(&#x27;[data-vac-error]&#x27;).innerHTML=&#x27;&#x27;;return true}
+    function personDetail(){const p=person();dialog(p.name+&#x27; · Zeitkonto&#x27;,`&lt;div class=&quot;ct-between&quot;&gt;&lt;span class=&quot;ct-tag&quot;&gt;${p.role}&lt;/span&gt;&lt;span class=&quot;ct-tag ${p.balance.startsWith(&#x27;−&#x27;)?&#x27;red&#x27;:&#x27;green&#x27;}&quot;&gt;Saldo ${p.balance}&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;period&quot;&gt;Diese Woche ▾&lt;/button&gt;&lt;button data-action=&quot;vacation&quot;&gt;Urlaub&lt;/button&gt;&lt;button data-action=&quot;sickness&quot;&gt;Krankheit&lt;/button&gt;&lt;button data-action=&quot;swap&quot;&gt;Arbeitstag tauschen&lt;/button&gt;&lt;/div&gt;&lt;div&gt;${[&#x27;Montag, 14.09.&#x27;,&#x27;Dienstag, 15.09.&#x27;,&#x27;Mittwoch, 16.09.&#x27;,&#x27;Donnerstag, 17.09.&#x27;,&#x27;Freitag, 18.09.&#x27;].map((d,i)=&gt;`&lt;div class=&quot;ct-day-row&quot;&gt;&lt;strong&gt;${d}&lt;/strong&gt;&lt;span&gt;${i===0?&#x27;08:00 – 16:30 · 60 Min. Pause&#x27;:&#x27;Noch keine Zeit erfasst&#x27;}&lt;/span&gt;&lt;button data-action=&quot;edit-day&quot; data-day=&quot;${14+i}&quot;&gt;${i===0?&#x27;Bearbeiten&#x27;:&#x27;＋ Hinzufügen&#x27;}&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;div class=&quot;ct-feature-group&quot;&gt;&lt;h3&gt;Weitere Aktionen&lt;/h3&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;standard-pause&quot;&gt;Standardpause übernehmen&lt;/button&gt;&lt;button data-action=&quot;holiday&quot;&gt;Feiertag anpassen&lt;/button&gt;&lt;button data-action=&quot;acknowledge&quot;&gt;Wochenabweichung bestätigen&lt;/button&gt;&lt;button data-action=&quot;hide-person&quot;&gt;Person ausblenden&lt;/button&gt;&lt;button data-action=&quot;print&quot;&gt;Zeiten drucken&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;close-dialog&quot;&gt;Schliessen&lt;/button&gt;&#x27;)}
+    function editDay(day){dialog(&#x27;Zeit bearbeiten · &#x27;+state.employee,`&lt;div class=&quot;ct-fields&quot;&gt;&lt;label class=&quot;ct-span&quot;&gt;Datum&lt;input type=&quot;date&quot; value=&quot;2026-09-${String(day||14).padStart(2,&#x27;0&#x27;)}&quot;&gt;&lt;/label&gt;&lt;label&gt;Beginn&lt;input type=&quot;time&quot; value=&quot;08:00&quot;&gt;&lt;/label&gt;&lt;label&gt;Ende&lt;input type=&quot;time&quot; value=&quot;16:30&quot;&gt;&lt;/label&gt;&lt;label&gt;Pause in Minuten&lt;input type=&quot;number&quot; value=&quot;60&quot; min=&quot;0&quot;&gt;&lt;/label&gt;&lt;label&gt;Buchungsart&lt;select&gt;&lt;option&gt;Arbeitszeit&lt;/option&gt;&lt;option&gt;Feiertag&lt;/option&gt;&lt;option&gt;Bezahlte Abwesenheit&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ct-span&quot;&gt;Begründung&lt;textarea rows=&quot;2&quot; placeholder=&quot;Korrektur dokumentieren …&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;/div&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;standard-pause&quot;&gt;Standardpause einsetzen&lt;/button&gt;&lt;button data-action=&quot;add-segment&quot;&gt;＋ Weiteres Zeitintervall&lt;/button&gt;&lt;/div&gt;&lt;div data-extra-segment&gt;&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;person-detail&quot;&gt;Zurück&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;save-day&quot;&gt;Änderung speichern&lt;/button&gt;&#x27;)}
+    function features(){dialog(&#x27;Alle Funktionen&#x27;,`&lt;div class=&quot;ct-feature-group&quot;&gt;&lt;h3&gt;Prüfen &amp; Entscheiden&lt;/h3&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-view=&quot;time&quot;&gt;Zeitprüfung &amp; Filter&lt;/button&gt;&lt;button data-view=&quot;requests&quot;&gt;Anträge &amp; Verlauf&lt;/button&gt;&lt;button data-action=&quot;batch-corrections&quot;&gt;Korrekturen ≤ 15 Min.&lt;/button&gt;&lt;button data-action=&quot;acknowledge&quot;&gt;Wochenabweichung&lt;/button&gt;&lt;button data-action=&quot;print&quot;&gt;PDF / Zeitraum drucken&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-feature-group&quot;&gt;&lt;h3&gt;Team &amp; Planung&lt;/h3&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;person-detail&quot;&gt;Mitarbeiterdetails&lt;/button&gt;&lt;button data-action=&quot;edit-day&quot;&gt;Zeiten bearbeiten / ergänzen&lt;/button&gt;&lt;button data-action=&quot;standard-pause&quot;&gt;Standardpause&lt;/button&gt;&lt;button data-action=&quot;vacation&quot;&gt;Urlaub &amp; mehrere Zeiträume&lt;/button&gt;&lt;button data-action=&quot;sickness&quot;&gt;Krankheit &amp; Kommentare&lt;/button&gt;&lt;button data-action=&quot;holiday&quot;&gt;Feiertage&lt;/button&gt;&lt;button data-action=&quot;swap&quot;&gt;Arbeitstage tauschen&lt;/button&gt;&lt;button data-view=&quot;calendar&quot;&gt;Kalender &amp; Tagesdetails&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ct-feature-group&quot;&gt;&lt;h3&gt;Arbeitsplatz&lt;/h3&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;customize&quot;&gt;Dashboard anpassen&lt;/button&gt;&lt;button data-action=&quot;stamp&quot;&gt;Eigene Zeiterfassung&lt;/button&gt;&lt;button data-action=&quot;commands&quot;&gt;Befehle / Strg+K&lt;/button&gt;&lt;button data-action=&quot;platform&quot;&gt;Plattformwechsel&lt;/button&gt;&lt;button data-action=&quot;language&quot;&gt;Sprache&lt;/button&gt;&lt;button data-action=&quot;account&quot;&gt;Konto&lt;/button&gt;&lt;button data-view=&quot;modules&quot;&gt;Alle 20 Module&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;close-dialog&quot;&gt;Schliessen&lt;/button&gt;&#x27;)}
+    function customize(){dialog(&#x27;Dein Dashboard&#x27;,`&lt;p class=&quot;ct-dialog-description&quot;&gt;Sichtbarkeit, Reihenfolge und Breite – mit deinem Konto synchronisiert.&lt;/p&gt;&lt;div&gt;${state.widgets.map((w,i)=&gt;`&lt;div class=&quot;ct-settings-row&quot;&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-input=&quot;widget-visible&quot; data-id=&quot;${w.id}&quot; ${w.visible?&#x27;checked&#x27;:&#x27;&#x27;}&gt;${w.label}&lt;/label&gt;&lt;button data-action=&quot;widget-up&quot; data-id=&quot;${w.id}&quot; ${i===0?&#x27;disabled&#x27;:&#x27;&#x27;} aria-label=&quot;${w.label} nach oben&quot;&gt;↑&lt;/button&gt;&lt;button data-action=&quot;widget-down&quot; data-id=&quot;${w.id}&quot; ${i===state.widgets.length-1?&#x27;disabled&#x27;:&#x27;&#x27;} aria-label=&quot;${w.label} nach unten&quot;&gt;↓&lt;/button&gt;&lt;select data-input=&quot;widget-size&quot; data-id=&quot;${w.id}&quot; aria-label=&quot;Breite ${w.label}&quot;&gt;&lt;option ${w.size===&#x27;Normal&#x27;?&#x27;selected&#x27;:&#x27;&#x27;}&gt;Normal&lt;/option&gt;&lt;option ${w.size===&#x27;Breit&#x27;?&#x27;selected&#x27;:&#x27;&#x27;}&gt;Breit&lt;/option&gt;&lt;option ${w.size===&#x27;Kompakt&#x27;?&#x27;selected&#x27;:&#x27;&#x27;}&gt;Kompakt&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;label class=&quot;ct-flex&quot;&gt;&lt;input type=&quot;checkbox&quot; data-input=&quot;compact&quot; ${state.compact?&#x27;checked&#x27;:&#x27;&#x27;}&gt; Kompakter Abstand&lt;/label&gt;&lt;span class=&quot;ct-tag green&quot;&gt;● Mit Benutzerkonto synchronisiert · Entwurf&lt;/span&gt;`,&#x27;&lt;button data-action=&quot;reset-layout&quot;&gt;Zurücksetzen&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;apply-layout&quot;&gt;Ansicht übernehmen&lt;/button&gt;&#x27;)}
+    function commands(){dialog(&#x27;Befehle&#x27;,`&lt;input data-input=&quot;command-search&quot; aria-label=&quot;Befehl suchen&quot; placeholder=&quot;Person, Modul oder Aktion suchen …&quot;&gt;&lt;div class=&quot;ct-command-results&quot;&gt;${[[&#x27;Urlaub eintragen&#x27;,&#x27;vacation&#x27;],[&#x27;Zeitkorrekturen bis 15 Minuten&#x27;,&#x27;batch-corrections&#x27;],[&#x27;Mitarbeiter-Zeitkonto&#x27;,&#x27;person-detail&#x27;],[&#x27;Zeiten als PDF drucken&#x27;,&#x27;print&#x27;],[&#x27;Dashboard anpassen&#x27;,&#x27;customize&#x27;],[&#x27;Arbeitstag tauschen&#x27;,&#x27;swap&#x27;]].map(([l,a])=&gt;`&lt;button data-action=&quot;${a}&quot;&gt;${l}&lt;span class=&quot;ct-muted&quot;&gt;↵&lt;/span&gt;&lt;/button&gt;`).join(&#x27;&#x27;)}${modules.map(m=&gt;`&lt;button data-action=&quot;module&quot; data-module=&quot;${m}&quot;&gt;${m}&lt;span class=&quot;ct-muted&quot;&gt;Modul ↗&lt;/span&gt;&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;`)}
+    root.addEventListener(&#x27;click&#x27;,e=&gt;{const b=e.target.closest(&#x27;button&#x27;);if(!b||!root.contains(b))return;if(b.dataset.view){state.view=b.dataset.view;state.query=&#x27;&#x27;;closeDialog();render();return}const a=b.dataset.action;if(!a)return;
+      if(a===&#x27;close-dialog&#x27;){closeDialog();return}if(a===&#x27;select-person&#x27;){state.employee=b.dataset.person;if(state.view===&#x27;overview&#x27;&amp;&amp;!isPlan){render();toast(state.employee+&#x27; ausgewählt&#x27;)}else personDetail();return}if(a===&#x27;person-detail&#x27;||a===&#x27;request-time&#x27;){if(b.dataset.person)state.employee=b.dataset.person;personDetail();return}
+      if(a===&#x27;vacation&#x27;){vacation();return}if(a===&#x27;queue-period&#x27;){const p=readVacation();if(validateVacation(p)){state.queue.push(p);host.querySelector(&#x27;[data-queue]&#x27;).innerHTML=queueHTML();host.querySelector(&#x27;[data-vac-success]&#x27;).innerHTML=&#x27;&lt;span class=&quot;ct-tag green&quot;&gt;Zeitraum vorgemerkt – nächster Monat möglich&lt;/span&gt;&#x27;}return}if(a===&#x27;remove-queue&#x27;){state.queue.splice(Number(b.dataset.id),1);host.querySelector(&#x27;[data-queue]&#x27;).innerHTML=queueHTML();return}
+      if(a===&#x27;save-vacation&#x27;){const current=readVacation();let items=state.queue.length?[...state.queue]:[current];if(!items.every(validateVacation))return;if(state.editId)state.absences=state.absences.filter(v=&gt;v.id!==state.editId);items=items.map((x,i)=&gt;({...x,id:Date.now()+i}));state.absences.push(...items);state.queue=[];state.editId=null;render();host.querySelector(&#x27;[data-queue]&#x27;).innerHTML=queueHTML();host.querySelector(&#x27;[data-vac-success]&#x27;).innerHTML=`&lt;div class=&quot;ct-notice&quot;&gt;✓ ${items.length} ${items.length===1?&#x27;Zeitraum&#x27;:&#x27;Zeiträume&#x27;} gespeichert. Kalender aktualisiert. Du kannst direkt weiterplanen.&lt;/div&gt;`;b.textContent=&#x27;Weitere Zeiträume speichern&#x27;;toast(&#x27;Lokal im Entwurf gespeichert. Kalender und Dialog bleiben erhalten.&#x27;);return}
+      if(a===&#x27;edit-absence&#x27;){vacation(b.dataset.id);return}if(a===&#x27;delete-absence&#x27;){state.absences=state.absences.filter(v=&gt;String(v.id)!==b.dataset.id);closeDialog();render();toast(&#x27;Abwesenheit im Entwurf entfernt&#x27;);return}if(a===&#x27;month-prev&#x27;||a===&#x27;month-next&#x27;){state.month+=a===&#x27;month-next&#x27;?1:-1;if(state.month&gt;11){state.month=0;state.year++}if(state.month&lt;0){state.month=11;state.year--}render();return}if(a===&#x27;week-prev&#x27;||a===&#x27;week-next&#x27;||a===&#x27;week-today&#x27;){state.weekOffset=a===&#x27;week-today&#x27;?0:state.weekOffset+(a===&#x27;week-next&#x27;?1:-1);render();return}
+      if(a===&#x27;calendar-day&#x27;){const date=b.dataset.date,abs=state.absences.filter(x=&gt;x.start&lt;=date&amp;&amp;x.end&gt;=date);dialog(&#x27;Tagesdetails · &#x27;+fmt(date),`&lt;p class=&quot;ct-dialog-description&quot;&gt;${esc(state.employee)} · alle Abwesenheiten an diesem Tag&lt;/p&gt;${abs.length?abs.map(x=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${esc(x.person)} · ${esc(x.type)}&lt;/strong&gt;&lt;small&gt;${fmt(x.start)} – ${fmt(x.end)}&lt;/small&gt;&lt;/div&gt;&lt;button data-action=&quot;edit-absence&quot; data-id=&quot;${x.id}&quot;&gt;Bearbeiten / Löschen&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;):&#x27;&lt;div class=&quot;ct-empty&quot;&gt;Keine Abwesenheit eingetragen.&lt;/div&gt;&#x27;}`,&#x27;&lt;button data-action=&quot;edit-day&quot;&gt;Arbeitszeit bearbeiten&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;vacation&quot;&gt;＋ Abwesenheit&lt;/button&gt;&#x27;);return}if(a===&#x27;schedule-day&#x27;){state.employee=b.dataset.person;editDay(Number(b.dataset.day));return}
+      if(a===&#x27;issue-filter&#x27;){state.filter=b.dataset.filter;render();return}if(a===&#x27;request-type&#x27;){state.requestType=b.dataset.type;state.history=false;render();return}if(a===&#x27;request-history&#x27;||a===&#x27;request-pending&#x27;){state.history=a===&#x27;request-history&#x27;;render();return}if(a===&#x27;request-decide&#x27;){const id=Number(b.dataset.id),note=root.querySelector(`[data-note=&quot;${id}&quot;]`)?.value||&#x27;&#x27;;state.decisions.push({id,name:&#x27;Milka Otten&#x27;,date:`${12+id}.08.2025`,note:esc(note),status:b.dataset.status});state.requests--;render();toast(&#x27;Antrag &#x27;+b.dataset.status.toLowerCase()+&#x27; · Beispieldaten aktualisiert&#x27;);return}
+      if(a===&#x27;customize&#x27;){customize();return}if(a===&#x27;widget-up&#x27;||a===&#x27;widget-down&#x27;){const i=state.widgets.findIndex(w=&gt;w.id===b.dataset.id),j=i+(a===&#x27;widget-up&#x27;?-1:1);if(j&gt;=0&amp;&amp;j&lt;state.widgets.length)[state.widgets[i],state.widgets[j]]=[state.widgets[j],state.widgets[i]];customize();return}if(a===&#x27;apply-layout&#x27;){closeDialog();render();const blocks=[...main.querySelectorAll(&#x27;[data-widget]&#x27;)];const moved=[];for(const w of state.widgets){const el=blocks.find(x=&gt;x.dataset.widget===w.id);if(el){if(w.size===&#x27;Breit&#x27;)el.style.gridColumn=&#x27;1 / -1&#x27;;if(w.size===&#x27;Kompakt&#x27;)el.style.padding=&#x27;10px&#x27;;moved.push(el)}}if(moved.length){const group=document.createElement(&#x27;div&#x27;);group.className=&#x27;ct-stack&#x27;;group.style.marginTop=&#x27;15px&#x27;;moved.forEach(x=&gt;group.append(x));const footer=main.querySelector(&#x27;.ct-footnote&#x27;);main.insertBefore(group,footer)}toast(&#x27;Ansicht übernommen · im Entwurf mit Konto synchronisiert&#x27;);return}if(a===&#x27;reset-layout&#x27;){state.widgets.forEach(w=&gt;{w.visible=true;w.size=&#x27;Normal&#x27;});state.widgets.sort((a,b)=&gt;[&#x27;priorities&#x27;,&#x27;team&#x27;,&#x27;absences&#x27;,&#x27;requests&#x27;,&#x27;modules&#x27;].indexOf(a.id)-[&#x27;priorities&#x27;,&#x27;team&#x27;,&#x27;absences&#x27;,&#x27;requests&#x27;,&#x27;modules&#x27;].indexOf(b.id));state.compact=false;customize();return}
+      if(a===&#x27;features&#x27;){features();return}if(a===&#x27;commands&#x27;){commands();return}if(a===&#x27;module&#x27;){dialog(b.dataset.module,`&lt;span class=&quot;ct-tag&quot;&gt;Modulvorschau · Beispieldaten&lt;/span&gt;&lt;div class=&quot;ct-empty&quot;&gt;${esc(b.dataset.module)} bleibt als vollständiges Chrono-Modul erreichbar.&lt;/div&gt;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label&gt;Suche&lt;input placeholder=&quot;Einträge durchsuchen …&quot;&gt;&lt;/label&gt;&lt;label&gt;Ansicht&lt;select&gt;&lt;option&gt;Übersicht&lt;/option&gt;&lt;option&gt;Verwaltung&lt;/option&gt;&lt;option&gt;Einstellungen&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;`,&#x27;&lt;button data-view=&quot;modules&quot;&gt;Alle Module&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;close-dialog&quot;&gt;Zurück zum Dashboard&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;edit-day&#x27;){editDay(Number(b.dataset.day)||14);return}if(a===&#x27;save-day&#x27;){personDetail();toast(&#x27;Zeitänderung lokal gespeichert · Zeitkonto aktualisiert&#x27;);return}if(a===&#x27;add-segment&#x27;){host.querySelector(&#x27;[data-extra-segment]&#x27;).innerHTML=&#x27;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label&gt;Weiterer Beginn&lt;input type=&quot;time&quot; value=&quot;17:00&quot;&gt;&lt;/label&gt;&lt;label&gt;Weiteres Ende&lt;input type=&quot;time&quot; value=&quot;18:00&quot;&gt;&lt;/label&gt;&lt;/div&gt;&#x27;;return}if(a===&#x27;standard-pause&#x27;){const n=host.querySelector(&#x27;input[type=number]&#x27;);if(n){n.value=&#x27;60&#x27;;toast(&#x27;Standardpause von 60 Minuten eingesetzt&#x27;)}else dialog(&#x27;Standardpause&#x27;,`&lt;p class=&quot;ct-dialog-description&quot;&gt;Für ${esc(state.employee)} im gewählten Zeitraum.&lt;/p&gt;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label&gt;Pause in Minuten&lt;input type=&quot;number&quot; value=&quot;60&quot; min=&quot;0&quot;&gt;&lt;/label&gt;&lt;label&gt;Zeitraum&lt;select&gt;&lt;option&gt;Diese Woche&lt;/option&gt;&lt;option&gt;Dieser Monat&lt;/option&gt;&lt;option&gt;Markierte Tage&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;`,&#x27;&lt;button class=&quot;ct-primary&quot; data-action=&quot;generic-save&quot;&gt;Standardpause übernehmen&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;period&#x27;||a===&#x27;print&#x27;){dialog(a===&#x27;print&#x27;?&#x27;Zeiten als PDF drucken&#x27;:&#x27;Zeitraum auswählen&#x27;,`&lt;div class=&quot;ct-fields&quot;&gt;&lt;label class=&quot;ct-span&quot;&gt;Mitarbeitende&lt;select&gt;&lt;option&gt;${state.employee}&lt;/option&gt;&lt;option&gt;Alle Mitarbeitenden&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Zeitraum&lt;select&gt;&lt;option&gt;Diese Woche&lt;/option&gt;&lt;option&gt;Dieser Monat&lt;/option&gt;&lt;option&gt;Eigener Zeitraum&lt;/option&gt;&lt;option&gt;Payroll-Monat&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Payroll-Monat&lt;input type=&quot;month&quot; value=&quot;2026-09&quot;&gt;&lt;/label&gt;&lt;label&gt;Von&lt;input type=&quot;date&quot; value=&quot;2026-09-14&quot;&gt;&lt;/label&gt;&lt;label&gt;Bis&lt;input type=&quot;date&quot; value=&quot;2026-09-20&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ct-span&quot;&gt;Team&lt;select&gt;&lt;option&gt;Alle Teams&lt;/option&gt;&lt;option&gt;Administration&lt;/option&gt;&lt;option&gt;Service&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;` ,`&lt;button data-action=&quot;close-dialog&quot;&gt;Abbrechen&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;${a===&#x27;print&#x27;?&#x27;print-preview&#x27;:&#x27;generic-save&#x27;}&quot;&gt;${a===&#x27;print&#x27;?&#x27;Druckvorschau&#x27;:&#x27;Zeitraum übernehmen&#x27;}&lt;/button&gt;`);return}if(a===&#x27;print-preview&#x27;){dialog(&#x27;Druckvorschau · Zeitnachweis&#x27;,`&lt;div class=&quot;ct-between&quot;&gt;&lt;h3&gt;CHRONO · ${esc(state.employee)}&lt;/h3&gt;&lt;span class=&quot;ct-tag&quot;&gt;PDF-Entwurf&lt;/span&gt;&lt;/div&gt;&lt;p class=&quot;ct-muted&quot;&gt;14.–20. September 2026&lt;/p&gt;&lt;div&gt;${[&#x27;14.09. · 08:00–16:30 · 7h 30m&#x27;,&#x27;15.09. · Keine Buchung&#x27;,&#x27;16.09. · Keine Buchung&#x27;].map(x=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;${x}&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;p class=&quot;ct-muted&quot; style=&quot;font-size:11px&quot;&gt;Vorschau mit Beispieldaten. Export ist in der Produktumsetzung verfügbar.&lt;/p&gt;`,&#x27;&lt;button data-action=&quot;close-dialog&quot;&gt;Vorschau schliessen&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;sickness&#x27;){vacation();host.querySelector(&#x27;[data-field=&quot;vac-type&quot;]&#x27;).value=&#x27;Krankheit&#x27;;host.querySelector(&#x27;.ct-dialog-head h2&#x27;).textContent=&#x27;Krankheit / Abwesenheit&#x27;;return}if(a===&#x27;holiday&#x27;||a===&#x27;swap&#x27;){dialog(a===&#x27;holiday&#x27;?&#x27;Feiertag verwalten&#x27;:&#x27;Arbeitstag tauschen&#x27;,`&lt;p class=&quot;ct-dialog-description&quot;&gt;${esc(state.employee)}&lt;/p&gt;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label&gt;${a===&#x27;holiday&#x27;?&#x27;Datum&#x27;:&#x27;Bisheriger Arbeitstag&#x27;}&lt;input type=&quot;date&quot; value=&quot;2026-09-21&quot;&gt;&lt;/label&gt;&lt;label&gt;${a===&#x27;holiday&#x27;?&#x27;Bezeichnung&#x27;:&#x27;Neuer Arbeitstag&#x27;}&lt;input type=&quot;${a===&#x27;holiday&#x27;?&#x27;text&#x27;:&#x27;date&#x27;}&quot; value=&quot;${a===&#x27;holiday&#x27;?&#x27;Feiertag&#x27;:&#x27;2026-09-22&#x27;}&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ct-span&quot;&gt;Begründung&lt;textarea rows=&quot;2&quot; placeholder=&quot;Änderung dokumentieren …&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;label class=&quot;ct-span&quot;&gt;&lt;select&gt;&lt;option&gt;Sollzeit automatisch berücksichtigen&lt;/option&gt;&lt;option&gt;Sollzeit unverändert lassen&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;`,&#x27;&lt;button class=&quot;ct-primary&quot; data-action=&quot;generic-save&quot;&gt;Speichern&lt;/button&gt;&#x27;);return}if(a===&#x27;acknowledge&#x27;){dialog(&#x27;Wochenabweichung bestätigen&#x27;,`&lt;p class=&quot;ct-dialog-description&quot;&gt;${state.employee} · 14.–20. September 2026&lt;/p&gt;&lt;div class=&quot;ct-notice&quot;&gt;Die Abweichung wird als geprüft markiert. Zeitbuchungen bleiben erhalten.&lt;/div&gt;&lt;label class=&quot;ct-stack&quot;&gt;Prüfnotiz&lt;textarea rows=&quot;3&quot; placeholder=&quot;Grund der Abweichung …&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;`,&#x27;&lt;button class=&quot;ct-primary&quot; data-action=&quot;generic-save&quot;&gt;Als geprüft bestätigen&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;batch-corrections&#x27;){dialog(&#x27;Korrekturen bis 15 Minuten&#x27;,`&lt;p class=&quot;ct-dialog-description&quot;&gt;Zwei passende Beispielkorrekturen können gesammelt entschieden werden.&lt;/p&gt;&lt;label class=&quot;ct-flex&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Mirjam Burkart · 14.09. · +10 Minuten&lt;/label&gt;&lt;label class=&quot;ct-flex&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Gabriela Tschopp · 11.09. · −5 Minuten&lt;/label&gt;&lt;label class=&quot;ct-stack&quot;&gt;Gemeinsame Notiz&lt;textarea rows=&quot;2&quot; placeholder=&quot;Optional …&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;`,&#x27;&lt;button data-action=&quot;generic-save&quot;&gt;Ablehnen&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;generic-save&quot;&gt;Auswahl genehmigen&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;analysis&#x27;||a===&#x27;toplist&#x27;){dialog(a===&#x27;analysis&#x27;?&#x27;Team-Salden im Überblick&#x27;:&#x27;Top-Salden&#x27;,`&lt;div class=&quot;ct-between&quot;&gt;&lt;span class=&quot;ct-tag red&quot;&gt;Ø −402h 27m&lt;/span&gt;&lt;span class=&quot;ct-tag&quot;&gt;8 negative Salden&lt;/span&gt;&lt;/div&gt;${(a===&#x27;toplist&#x27;?[people[1],people[0],...people.slice(2)]:people).map(p=&gt;`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;strong&gt;${p.name}&lt;/strong&gt;&lt;button data-action=&quot;person-detail&quot; data-person=&quot;${p.name}&quot;&gt;${p.balance} ↗&lt;/button&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}`,&#x27;&lt;button data-view=&quot;time&quot;&gt;Zeitprüfung öffnen&lt;/button&gt;&lt;button data-action=&quot;module&quot; data-module=&quot;Analytics&quot;&gt;Analytics ↗&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;platform&#x27;){dialog(&#x27;Plattform wechseln&#x27;,`&lt;div class=&quot;ct-module-grid&quot;&gt;${[&#x27;Chrono Zeiterfassung&#x27;,&#x27;Chrono 2.0&#x27;,&#x27;CRM&#x27;,&#x27;Supply Chain&#x27;,&#x27;PMS&#x27;,&#x27;Finanzbuchhaltung&#x27;].map(m=&gt;`&lt;button class=&quot;ct-module&quot; data-action=&quot;module&quot; data-module=&quot;${m}&quot;&gt;&lt;span&gt;PLATTFORM&lt;/span&gt;&lt;strong&gt;${m} ↗&lt;/strong&gt;&lt;/button&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;`);return}if(a===&#x27;account&#x27;){dialog(&#x27;Super Admin&#x27;,`&lt;span class=&quot;ct-tag&quot;&gt;Administrator · Beispieldaten&lt;/span&gt;&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-action=&quot;module&quot; data-module=&quot;Benutzerverwaltung&quot;&gt;Mein Profil&lt;/button&gt;&lt;button data-action=&quot;language&quot;&gt;Sprache&lt;/button&gt;&lt;button data-action=&quot;theme&quot;&gt;Darstellung wechseln&lt;/button&gt;&lt;button data-action=&quot;stamp&quot;&gt;Eigene Zeiterfassung&lt;/button&gt;&lt;button data-action=&quot;module&quot; data-module=&quot;Admin-Passwort&quot;&gt;Passwort&lt;/button&gt;&lt;button data-action=&quot;notifications&quot;&gt;Benachrichtigungen&lt;/button&gt;&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;mock-logout&quot;&gt;Abmelden&lt;/button&gt;&#x27;);return}if(a===&#x27;language&#x27;){dialog(&#x27;Sprache&#x27;,`&lt;div class=&quot;ct-fields&quot;&gt;&lt;label class=&quot;ct-span&quot;&gt;Anzeigesprache&lt;select data-input=&quot;language&quot;&gt;&lt;option&gt;Deutsch&lt;/option&gt;&lt;option&gt;Français&lt;/option&gt;&lt;option&gt;Italiano&lt;/option&gt;&lt;option&gt;English&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;`,&#x27;&lt;button class=&quot;ct-primary&quot; data-action=&quot;generic-save&quot;&gt;Auswahl übernehmen&lt;/button&gt;&#x27;);return}if(a===&#x27;theme&#x27;){state.theme=state.theme===&#x27;Dunkel&#x27;?&#x27;Hell&#x27;:&#x27;Dunkel&#x27;;root.style.colorScheme=state.theme===&#x27;Dunkel&#x27;?&#x27;dark&#x27;:&#x27;light&#x27;;toast(&#x27;Darstellung: &#x27;+state.theme);return}if(a===&#x27;notifications&#x27;){dialog(&#x27;Benachrichtigungen&#x27;,`&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;${state.requests} offene Anträge&lt;/strong&gt;&lt;small&gt;Zeitkorrekturen warten auf Entscheidung.&lt;/small&gt;&lt;/div&gt;&lt;button data-view=&quot;requests&quot;&gt;Prüfen ↗&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ct-list-item&quot;&gt;&lt;div&gt;&lt;strong&gt;7 Zeitprobleme&lt;/strong&gt;&lt;small&gt;6 fehlende · 1 unvollständige Buchung&lt;/small&gt;&lt;/div&gt;&lt;button data-view=&quot;time&quot;&gt;Öffnen ↗&lt;/button&gt;&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;generic-save&quot;&gt;Alle als gelesen markieren&lt;/button&gt;&#x27;);return}
+      if(a===&#x27;stamp&#x27;){dialog(&#x27;Eigene Zeiterfassung&#x27;,`&lt;span class=&quot;ct-tag green&quot;&gt;Für dieses Konto aktiviert · Entwurf&lt;/span&gt;&lt;h2&gt;Montag, 14. September&lt;/h2&gt;&lt;p class=&quot;ct-muted&quot;&gt;Bisher erfasst: 4h 12m&lt;/p&gt;&lt;div class=&quot;ct-fields&quot;&gt;&lt;label&gt;Projekt&lt;select&gt;&lt;option&gt;Allgemein&lt;/option&gt;&lt;option&gt;Administration&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label&gt;Kommentar&lt;input placeholder=&quot;Woran arbeitest du?&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;div data-stamp-state class=&quot;ct-notice&quot;&gt;Aktuell ausgestempelt&lt;/div&gt;`,&#x27;&lt;button data-action=&quot;stamp-pause&quot;&gt;Pause&lt;/button&gt;&lt;button class=&quot;ct-primary&quot; data-action=&quot;stamp-toggle&quot;&gt;Einstempeln&lt;/button&gt;&#x27;);return}if(a===&#x27;stamp-toggle&#x27;){const on=b.textContent===&#x27;Einstempeln&#x27;;b.textContent=on?&#x27;Ausstempeln&#x27;:&#x27;Einstempeln&#x27;;host.querySelector(&#x27;[data-stamp-state]&#x27;).textContent=on?&#x27;Eingestempelt · lokaler Entwurf&#x27;:&#x27;Ausgestempelt · lokaler Entwurf&#x27;;return}if(a===&#x27;stamp-pause&#x27;){host.querySelector(&#x27;[data-stamp-state]&#x27;).textContent=&#x27;Pause aktiv · lokaler Entwurf&#x27;;return}
+      if(a===&#x27;pin-tab&#x27;){const t=b.closest(&#x27;.ct-workspace-item&#x27;);t.dataset.pinned=t.dataset.pinned===&#x27;true&#x27;?&#x27;false&#x27;:&#x27;true&#x27;;b.textContent=t.dataset.pinned===&#x27;true&#x27;?&#x27;●&#x27;:&#x27;⌖&#x27;;toast(t.dataset.pinned===&#x27;true&#x27;?&#x27;Arbeitsbereich angeheftet&#x27;:&#x27;Anheftung gelöst&#x27;);return}if(a===&#x27;close-tab&#x27;){b.closest(&#x27;.ct-workspace-item&#x27;).remove();return}if(a===&#x27;add-tab&#x27;){const tabs=root.querySelector(&#x27;.ct-workspace&#x27;);const el=document.createElement(&#x27;div&#x27;);el.className=&#x27;ct-workspace-item&#x27;;el.innerHTML=&#x27;&lt;span class=&quot;ct-workspace-label&quot;&gt;Neuer Arbeitsbereich&lt;/span&gt;&lt;button data-action=&quot;pin-tab&quot; aria-label=&quot;Arbeitsbereich anheften&quot;&gt;⌖&lt;/button&gt;&lt;button data-action=&quot;close-tab&quot; aria-label=&quot;Arbeitsbereich schliessen&quot;&gt;×&lt;/button&gt;&#x27;;tabs.insertBefore(el,b);dialog(&#x27;Neuer Arbeitsbereich&#x27;,`&lt;div class=&quot;ct-flex&quot;&gt;&lt;button data-view=&quot;time&quot;&gt;Zeitprüfung&lt;/button&gt;&lt;button data-view=&quot;requests&quot;&gt;Anträge&lt;/button&gt;&lt;button data-view=&quot;calendar&quot;&gt;Kalender&lt;/button&gt;&lt;button data-view=&quot;modules&quot;&gt;Modul auswählen&lt;/button&gt;&lt;/div&gt;`);return}
+      if(a===&#x27;hide-person&#x27;){toast(state.employee+&#x27; im Entwurf ausgeblendet&#x27;);closeDialog();return}if(a===&#x27;mock-logout&#x27;){closeDialog();toast(&#x27;Abmelden ist in dieser Entwurfsansicht deaktiviert&#x27;);return}if(a===&#x27;generic-save&#x27;){closeDialog();toast(&#x27;Auswahl im lokalen Entwurf übernommen&#x27;);return}
+    });
+    root.addEventListener(&#x27;input&#x27;,e=&gt;{const type=e.target.dataset.input;if(type===&#x27;employee-search&#x27;){state.query=e.target.value;const p=root.querySelector(&#x27;[data-people-list]&#x27;),t=root.querySelector(&#x27;[data-review-list]&#x27;);if(p)p.innerHTML=peopleRows();if(t)t.innerHTML=reviewRows()}if(type===&#x27;module-search&#x27;){root.querySelectorAll(&#x27;.ct-module&#x27;).forEach(m=&gt;m.hidden=!m.textContent.toLowerCase().includes(e.target.value.toLowerCase()))}if(type===&#x27;command-search&#x27;){host.querySelectorAll(&#x27;.ct-command-results button&#x27;).forEach(b=&gt;b.hidden=!b.textContent.toLowerCase().includes(e.target.value.toLowerCase()))}});
+    root.addEventListener(&#x27;change&#x27;,e=&gt;{const type=e.target.dataset.input;if(type===&#x27;calendar-person&#x27;){state.employee=e.target.value;render()}if(type===&#x27;show-hidden&#x27;){state.hidden=e.target.checked;render()}if(type===&#x27;widget-visible&#x27;){state.widgets.find(w=&gt;w.id===e.target.dataset.id).visible=e.target.checked}if(type===&#x27;widget-size&#x27;){state.widgets.find(w=&gt;w.id===e.target.dataset.id).size=e.target.value}if(type===&#x27;compact&#x27;){state.compact=e.target.checked}if(type===&#x27;period&#x27;){if(e.target.value===&#x27;Eigener Zeitraum&#x27;||e.target.value===&#x27;Payroll-Monat&#x27;){root.querySelector(&#x27;[data-action=&quot;period&quot;]&#x27;).click()}else toast(&#x27;Zeitraum: &#x27;+e.target.value)}if(type===&#x27;team-filter&#x27;){state.team=e.target.value;render();root.querySelectorAll(&#x27;[data-input=&quot;team-filter&quot;]&#x27;).forEach(s=&gt;s.value=state.team);toast(state.team+&#x27; ausgewählt&#x27;)}if(e.target.dataset.field===&#x27;vac-type&#x27;){const type=e.target.value;if(type===&#x27;Betriebsurlaub&#x27;){host.querySelector(&#x27;[data-field=&quot;vac-team&quot;]&#x27;).value=&#x27;Alle Teams&#x27;}if(type===&#x27;Halber Urlaubstag&#x27;){host.querySelector(&#x27;[data-field=&quot;vac-deduction&quot;]&#x27;).value=&#x27;Vormittag · 50 %&#x27;}}});
+    root.addEventListener(&#x27;keydown&#x27;,e=&gt;{if((e.ctrlKey||e.metaKey)&amp;&amp;e.key.toLowerCase()===&#x27;k&#x27;){e.preventDefault();commands()}if(e.key===&#x27;Escape&#x27;)closeDialog()});
+    render();
+    if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(state,&#x27;radius&#x27;,{label:&#x27;Ecken&#x27;,min:0,max:22,unit:&#x27;px&#x27;});tweak.addToggle(state,&#x27;compact&#x27;,{label:&#x27;Kompakte Abstände&#x27;});tweak.addSelect(state,&#x27;theme&#x27;,{label:&#x27;Darstellung&#x27;,options:[&#x27;Automatisch&#x27;,&#x27;Hell&#x27;,&#x27;Dunkel&#x27;]});}
+  })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerdown&quot;, handlePointer);
+    document.removeEventListener(&quot;pointercancel&quot;, handlePointer);
+    document.removeEventListener(&quot;click&quot;, handleTouchClick);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerdown&quot;, handlePointer);
+  document.addEventListener(&quot;pointercancel&quot;, handlePointer);
+  document.addEventListener(&quot;click&quot;, handleTouchClick);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

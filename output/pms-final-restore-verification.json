@@ -1,0 +1,1 @@
+{"schemaVersion":1,"status":"OK","startedAt":"2026-09-12T12:19:34Z","verifiedAt":"2026-09-12T12:19:45Z","durationSeconds":11,"backupFile":"chrono_migration_fresh_20260912_v48_20260912T121934Z.sql","backupSha256":"ee881e92b864cb888300841b734463b7aa91e7cf38ccfd5f2383b7e53326134c","flywayVersion":"48","expectedFlywayVersion":"48","tableCount":152,"pmsTableCount":81}

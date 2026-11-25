@@ -1,52 +1,54 @@
 package com.chrono.chrono.controller;
 
-import com.chrono.chrono.repositories.ScheduleRuleRepository;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.ScheduleRule;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.chrono.chrono.services.AccessControlService;
+import com.chrono.chrono.services.ShiftDefinitionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/admin/shift-definitions")
 public class AdminShiftDefinitionController {
 
-    @Autowired
-    private ScheduleRuleRepository ruleRepository;
+    private final ShiftDefinitionService definitions;
+    private final AccessControlService accessControl;
+
+    public AdminShiftDefinitionController(ShiftDefinitionService definitions, AccessControlService accessControl) {
+        this.definitions = definitions;
+        this.accessControl = accessControl;
+    }
+
+    private Company company(Principal principal) {
+        return definitions.requireActorCompany(accessControl.requireAuthenticatedUser(principal));
+    }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public List<ScheduleRule> getActiveRules() {
-        return ruleRepository.findByIsActiveTrueOrderByStartTime();
+    @PreAuthorize("isAuthenticated()")
+    public List<ScheduleRule> getActiveRules(Principal principal) {
+        return definitions.effectiveRules(company(principal), true);
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public List<ScheduleRule> getAllRules() {
-        return ruleRepository.findAll();
+    @PreAuthorize("isAuthenticated()")
+    public List<ScheduleRule> getAllRules(Principal principal) {
+        return definitions.effectiveRules(company(principal), false);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<ScheduleRule> saveRule(@RequestBody ScheduleRule rule) {
-        if (rule.getId() != null) {
-            Optional<ScheduleRule> existingRuleOpt = ruleRepository.findById(rule.getId());
-            if (existingRuleOpt.isPresent()) {
-                ScheduleRule existingRule = existingRuleOpt.get();
-                existingRule.setLabel(rule.getLabel());
-                existingRule.setStartTime(rule.getStartTime());
-                existingRule.setEndTime(rule.getEndTime());
-                existingRule.setActive(rule.getIsActive());
+    public ResponseEntity<ScheduleRule> saveRule(@RequestBody ScheduleRule rule, Principal principal) {
+        return ResponseEntity.ok(definitions.save(company(principal), rule));
+    }
 
-                ScheduleRule updatedRule = ruleRepository.save(existingRule);
-                return ResponseEntity.ok(updatedRule);
-            }
-        }
-
-        ScheduleRule newRule = ruleRepository.save(rule);
-        return ResponseEntity.ok(newRule);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<Void> deleteRule(@PathVariable Long id, Principal principal) {
+        definitions.delete(company(principal), id);
+        return ResponseEntity.noContent().build();
     }
 }

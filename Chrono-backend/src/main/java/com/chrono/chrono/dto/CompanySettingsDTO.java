@@ -1,6 +1,7 @@
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Company;
+import java.util.List;
 
 public class CompanySettingsDTO {
     private Double uvgBuRate;
@@ -9,6 +10,8 @@ public class CompanySettingsDTO {
     private Double ktgRateEmployer;
     private Double fakRate;
     private Double midijobFactor;
+    private Boolean customHolidaySelectionEnabled;
+    private List<CompanyHolidayPreferenceDTO> holidayPreferences;
 
     public Double getUvgBuRate() { return uvgBuRate; }
     public void setUvgBuRate(Double uvgBuRate) { this.uvgBuRate = uvgBuRate; }
@@ -28,6 +31,12 @@ public class CompanySettingsDTO {
     public Double getMidijobFactor() { return midijobFactor; }
     public void setMidijobFactor(Double midijobFactor) { this.midijobFactor = midijobFactor; }
 
+    public Boolean getCustomHolidaySelectionEnabled() { return customHolidaySelectionEnabled; }
+    public void setCustomHolidaySelectionEnabled(Boolean customHolidaySelectionEnabled) { this.customHolidaySelectionEnabled = customHolidaySelectionEnabled; }
+
+    public List<CompanyHolidayPreferenceDTO> getHolidayPreferences() { return holidayPreferences; }
+    public void setHolidayPreferences(List<CompanyHolidayPreferenceDTO> holidayPreferences) { this.holidayPreferences = holidayPreferences; }
+
     public static CompanySettingsDTO fromEntity(Company c) {
         CompanySettingsDTO dto = new CompanySettingsDTO();
         dto.setUvgBuRate(c.getUvgBuRate());
@@ -36,6 +45,13 @@ public class CompanySettingsDTO {
         dto.setKtgRateEmployer(c.getKtgRateEmployer());
         dto.setFakRate(c.getFakRate());
         dto.setMidijobFactor(c.getMidijobFactor());
+        dto.setCustomHolidaySelectionEnabled(c.isCustomHolidaySelectionEnabled());
+        return dto;
+    }
+
+    public static CompanySettingsDTO fromEntity(Company c, List<CompanyHolidayPreferenceDTO> holidayPreferences) {
+        CompanySettingsDTO dto = fromEntity(c);
+        dto.setHolidayPreferences(holidayPreferences);
         return dto;
     }
 
@@ -46,5 +62,8 @@ public class CompanySettingsDTO {
         c.setKtgRateEmployer(this.ktgRateEmployer);
         c.setFakRate(this.fakRate);
         c.setMidijobFactor(this.midijobFactor);
+        if (this.customHolidaySelectionEnabled != null) {
+            c.setCustomHolidaySelectionEnabled(this.customHolidaySelectionEnabled);
+        }
     }
 }

@@ -1,11 +1,15 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "scm_service_requests")
+@Table(
+        name = "scm_service_requests",
+        indexes = @Index(name = "idx_scm_service_requests_company", columnList = "company_id")
+)
 public class ServiceRequest {
 
     @Id
@@ -28,6 +32,10 @@ public class ServiceRequest {
     private LocalDate openedDate = LocalDate.now();
 
     private LocalDate closedDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     public Long getId() {
         return id;
@@ -83,5 +91,13 @@ public class ServiceRequest {
 
     public void setClosedDate(LocalDate closedDate) {
         this.closedDate = closedDate;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 }

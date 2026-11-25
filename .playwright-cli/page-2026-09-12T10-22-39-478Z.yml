@@ -1,0 +1,437 @@
+- generic [ref=f7e2]:
+  - generic [ref=f7e236]:
+    - generic [ref=f7e237]:
+      - navigation "Hauptnavigation" [ref=f7e238]:
+        - link "Chrono PMS" [ref=f7e240] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f7e241]
+        - list [ref=f7e242]:
+          - listitem [ref=f7e243]:
+            - link "Zu Chrono wechseln" [ref=f7e244] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f7e245]:
+            - button "Was ist neu?" [ref=f7e246] [cursor=pointer]
+          - listitem [ref=f7e250]:
+            - button "Light Mode" [ref=f7e251] [cursor=pointer]
+          - listitem [ref=f7e256]:
+            - button "🌐" [ref=f7e257] [cursor=pointer]
+          - listitem [ref=f7e260]:
+            - button "Default Admin" [ref=f7e261] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e262]: D
+        - button "PMS-Bereiche" [ref=f7e267] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f7e270]:
+        - generic [ref=f7e271]:
+          - tablist "Offene Arbeitsbereiche" [ref=f7e272]:
+            - generic [ref=f7e273]:
+              - tab "Hotelverwaltung (PMS)" [ref=f7e274] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e275]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f7e277] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f7e278] [cursor=pointer]'
+            - generic [ref=f7e279]:
+              - tab "PMS · Zimmerplan" [ref=f7e280] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e281]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f7e283] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f7e284] [cursor=pointer]'
+            - generic [ref=f7e285]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f7e286] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e287]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f7e289] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f7e290] [cursor=pointer]'
+            - generic [ref=f7e291]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f7e292] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e293]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f7e295] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f7e296] [cursor=pointer]'
+            - generic [ref=f7e297]:
+              - tab "PMS · Rechnungen" [ref=f7e298] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e299]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f7e301] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f7e302] [cursor=pointer]'
+            - generic [ref=f7e303]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f7e304] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e305]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f7e307] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f7e308] [cursor=pointer]'
+            - generic [ref=f7e309]:
+              - tab "PMS · Berichte & Kennzahlen" [selected] [ref=f7e310] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e311]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f7e313] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f7e314] [cursor=pointer]'
+            - generic [ref=f7e315]:
+              - tab "PMS · Hotelportfolio" [ref=f7e316] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e317]: PMS
+              - 'button "Tab anheften: PMS · Hotelportfolio" [ref=f7e319] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Hotelportfolio" [ref=f7e320] [cursor=pointer]'
+          - generic [ref=f7e321]:
+            - button "Arbeitsbereich öffnen" [ref=f7e322] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f7e323] [cursor=pointer]
+    - generic [ref=f7e324]:
+      - complementary "PMS-Navigation" [ref=f7e325]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f7e326] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f7e327]: CH
+          - generic [ref=f7e328]:
+            - generic [ref=f7e329]: Aktives Hotel
+            - strong [ref=f7e330]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f7e331]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f7e332]:
+          - generic [ref=f7e333]:
+            - generic [ref=f7e334]: Rezeption
+            - button "Übersicht" [ref=f7e335] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e336]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f7e337] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e338]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f7e339] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e340]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f7e341] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e342]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f7e343] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e344]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f7e345] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e346]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f7e347]:
+            - generic [ref=f7e348]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f7e349] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e350]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f7e351] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e352]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f7e353] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e354]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f7e355] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e356]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f7e357]:
+            - generic [ref=f7e358]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f7e359] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e360]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f7e361] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e362]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f7e363] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e364]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f7e365]:
+            - generic [ref=f7e366]: Steuerung & System
+            - button "Hotelportfolio" [ref=f7e367] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e368]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f7e369] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e370]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f7e371] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e372]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f7e373] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e374]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f7e375] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e376]: SYS
+              - text: Schnittstellen
+        - generic [ref=f7e379]:
+          - strong [ref=f7e380]: PMS betriebsbereit
+          - generic [ref=f7e381]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f7e382]:
+        - generic [ref=f7e383]:
+          - generic [ref=f7e384]:
+            - generic [ref=f7e385]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f7e386]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f7e388] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e389]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f7e390]: Ctrl K
+        - region "Hotelportfolio" [ref=f7e391]:
+          - generic [ref=f7e393]:
+            - generic [ref=f7e394]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Berichte & Kennzahlen" [level=2] [ref=f7e395]
+            - paragraph [ref=f7e396]: Auslastung, Umsatz und operative Leistung auswerten. · Betriebstag 12.09.2026
+          - generic [ref=f7e397]:
+            - generic [ref=f7e398]:
+              - generic [ref=f7e399]:
+                - generic [ref=f7e400]:
+                  - generic [ref=f7e401]: Revenue Management
+                  - heading "Buchungsentwicklung und Monatsbudget" [level=3] [ref=f7e402]
+                - generic [ref=f7e403]: Betriebstag 12.09.2026
+              - paragraph [ref=f7e404]: Vergleichen Sie Zimmernächte und Netto-Zimmererlöse bestätigter und eingecheckter Aufenthalte mit einem tatsächlich gespeicherten Buchungsstand. Frühstück, Restaurant und sonstige Leistungen sind separat.
+              - generic [ref=f7e405]:
+                - generic [ref=f7e406]:
+                  - text: Aufenthalt ab
+                  - textbox "Aufenthalt ab" [ref=f7e407]: 2026-09-12
+                - generic [ref=f7e408]:
+                  - text: Bis einschließlich
+                  - textbox "Bis einschließlich" [ref=f7e409]: 2026-10-11
+                - generic [ref=f7e410]:
+                  - text: Vergleichsstand
+                  - combobox "Vergleichsstand" [ref=f7e411]:
+                    - option "Neuester gespeicherter Stand" [selected]
+                - button "Aktualisieren" [ref=f7e412] [cursor=pointer]
+              - generic [ref=f7e413]: Noch kein Vergleichsstand vorhanden. Vergangene Buchungsstände werden nicht nachträglich rekonstruiert.
+              - generic [ref=f7e414]:
+                - generic [ref=f7e415]:
+                  - generic [ref=f7e416]: Gebuchte Zimmernächte
+                  - strong [ref=f7e417]: 1'511
+                  - generic [ref=f7e418]: Kein vollständiger Vergleich
+                - generic [ref=f7e419]:
+                  - generic [ref=f7e420]: Netto-Zimmererlöse
+                  - strong [ref=f7e421]: CHF 231'994.50
+                  - generic [ref=f7e422]: Aktueller Buchungsstand
+                - generic [ref=f7e423]:
+                  - generic [ref=f7e424]: Erlösveränderung (Pickup)
+                  - strong [ref=f7e425]: Kein Vergleich
+                  - generic [ref=f7e426]: Aktuell minus gespeicherter Vergleich
+              - figure "12.09.2026 Lücken zeigen fehlende Werte. 11.10.2026" [ref=f7e427]:
+                - generic [ref=f7e428]:
+                  - generic [ref=f7e429]: CHF 76'743.18
+                  - generic [ref=f7e430]: Aktueller Buchungsstand Gespeicherter Vergleich
+                - 'img "Netto-Zimmererlöse je Aufenthaltstag: aktueller und gespeicherter Buchungsstand" [ref=f7e431]'
+                - generic [ref=f7e433]: CHF 0.00
+                - generic [ref=f7e435]:
+                  - generic [ref=f7e436]: 12.09.2026
+                  - generic [ref=f7e437]: Lücken zeigen fehlende Werte.
+                  - generic [ref=f7e438]: 11.10.2026
+              - table [ref=f7e440]:
+                - caption [ref=f7e441]: Monatsvergleich · Budgets bei Teilmonaten anteilig nach Kalendertagen
+                - rowgroup [ref=f7e442]:
+                  - row [ref=f7e443]:
+                    - columnheader "Aufenthaltsmonat" [ref=f7e444]
+                    - columnheader "Zimmernächte" [ref=f7e445]
+                    - columnheader "Nettoerlöse" [ref=f7e446]
+                    - columnheader "Erlösveränderung" [ref=f7e447]
+                    - columnheader "Budget Nettoerlöse" [ref=f7e448]
+                    - columnheader "Abweichung vom Budget" [ref=f7e449]
+                - rowgroup [ref=f7e450]:
+                  - row [ref=f7e451]:
+                    - rowheader "2026-09 19 von 30 Tagen" [ref=f7e452]:
+                      - text: 2026-09
+                      - generic [ref=f7e453]: 19 von 30 Tagen
+                    - cell "1'508" [ref=f7e454]
+                    - cell "CHF 231'332.64" [ref=f7e455]
+                    - cell "Kein Vergleich" [ref=f7e456]
+                    - cell "Nicht geplant" [ref=f7e457]
+                    - cell "—" [ref=f7e458]
+                  - row [ref=f7e459]:
+                    - rowheader "2026-10 11 von 31 Tagen" [ref=f7e460]:
+                      - text: 2026-10
+                      - generic [ref=f7e461]: 11 von 31 Tagen
+                    - cell "3" [ref=f7e462]
+                    - cell "CHF 661.86" [ref=f7e463]
+                    - cell "Kein Vergleich" [ref=f7e464]
+                    - cell "Nicht geplant" [ref=f7e465]
+                    - cell "—" [ref=f7e466]
+              - group [ref=f7e467]:
+                - generic "Aufenthaltstage einzeln anzeigen" [ref=f7e468] [cursor=pointer]
+              - generic [ref=f7e469]:
+                - generic [ref=f7e470]:
+                  - heading "Täglichen Vergleich sichern" [level=4] [ref=f7e471]
+                  - paragraph [ref=f7e472]: Pro Hotel und offenem Betriebstag wird einmal ein unveränderlicher Stand der nächsten 366 Tage gespeichert. Ein erneuter Klick überschreibt keine Historie.
+                  - button "Buchungsstand jetzt sichern" [ref=f7e473] [cursor=pointer]
+                - generic [ref=f7e474]:
+                  - heading "Monatsbudget festlegen" [level=4] [ref=f7e475]
+                  - paragraph [ref=f7e476]: Das Budget gilt für den vollständigen Kalendermonat und diese Hotelwährung.
+                  - generic [ref=f7e477]:
+                    - generic [ref=f7e478]:
+                      - text: Monat
+                      - combobox "Monat" [ref=f7e479]:
+                        - option "2026-09" [selected]
+                        - option "2026-10"
+                    - generic [ref=f7e480]:
+                      - text: Netto-Zimmererlöse (CHF)
+                      - spinbutton "Netto-Zimmererlöse (CHF)" [ref=f7e481]
+                    - generic [ref=f7e482]:
+                      - text: Zimmernächte
+                      - spinbutton "Zimmernächte" [ref=f7e483]
+                  - button "Monatsbudget speichern" [ref=f7e484] [cursor=pointer]
+            - generic [ref=f7e485]:
+              - generic [ref=f7e486]:
+                - generic [ref=f7e488]:
+                  - generic [ref=f7e489]: Umsatz & Auslastung
+                  - heading "Zimmerauslastung, ADR und RevPAR" [level=3] [ref=f7e490]
+                - generic [ref=f7e491]:
+                  - generic [ref=f7e492]:
+                    - text: Von
+                    - textbox "Bericht von" [ref=f7e493]: 2026-09-01
+                  - generic [ref=f7e494]:
+                    - text: Bis (einschliesslich)
+                    - textbox "Bericht bis" [ref=f7e495]: 2026-09-12
+                  - button "Bericht aktualisieren" [ref=f7e497] [cursor=pointer]
+                - generic [ref=f7e498]:
+                  - article [ref=f7e499]:
+                    - generic [ref=f7e500]: Zimmerauslastung
+                    - strong [ref=f7e501]: 0.05 %
+                    - generic [ref=f7e502]: 6 von 12083 Zimmernächten
+                  - article [ref=f7e503]:
+                    - generic [ref=f7e504]: Zimmerumsatz
+                    - strong [ref=f7e505]: CHF 1'121.40
+                    - generic [ref=f7e506]: Netto-Zimmerleistungen je Datum
+                  - article [ref=f7e507]:
+                    - generic [ref=f7e508]: ADR
+                    - strong [ref=f7e509]: CHF 186.90
+                    - generic [ref=f7e510]: Umsatz je verkaufter Zimmernacht
+                  - article [ref=f7e511]:
+                    - generic [ref=f7e512]: RevPAR
+                    - strong [ref=f7e513]: CHF 0.09
+                    - generic [ref=f7e514]: Umsatz je verfügbarer Zimmernacht
+                  - article [ref=f7e515]:
+                    - generic [ref=f7e516]: Anreisen
+                    - strong [ref=f7e517]: "3"
+                    - generic [ref=f7e518]: 0 Stornos · 1 nicht angereist
+                - paragraph [ref=f7e519]: Auswertung nach Aufenthaltsdatum; der Abreisetag zählt nicht als Übernachtung. Zimmerumsatz folgt den gespeicherten Netto-Zimmerleistungen je Leistungsdatum einschließlich Korrekturen; Bereits verbuchte Leistungen stornierter Aufenthalte bleiben bis zur Leistungskorrektur im Umsatz enthalten. Frühstück, andere Zusatzleistungen und Steuern sind ausgeschlossen. Zukünftige Werte sind gebuchte Vorschauwerte; stornierte, nicht angereiste (No-Show), Angebots-, Options- und Wartelistenbuchungen zählen nicht als verkauft.
+              - generic [ref=f7e520]:
+                - generic [ref=f7e521]:
+                  - generic [ref=f7e523]:
+                    - generic [ref=f7e524]: Tageswerte
+                    - heading "12 Betriebstage" [level=3] [ref=f7e525]
+                  - table [ref=f7e527]:
+                    - rowgroup [ref=f7e528]:
+                      - row [ref=f7e529]:
+                        - columnheader "Datum" [ref=f7e530]
+                        - columnheader "Verkaufskapazität" [ref=f7e531]
+                        - columnheader "Verkauft" [ref=f7e532]
+                        - columnheader "Noch frei" [ref=f7e533]
+                        - columnheader "Zimmerauslastung" [ref=f7e534]
+                        - columnheader "Umsatz" [ref=f7e535]
+                        - columnheader "ADR" [ref=f7e536]
+                        - columnheader "RevPAR" [ref=f7e537]
+                    - rowgroup [ref=f7e538]:
+                      - row [ref=f7e539]:
+                        - cell "01.09.2026" [ref=f7e540]
+                        - cell "1007" [ref=f7e541]
+                        - cell "0" [ref=f7e542]
+                        - cell "1007" [ref=f7e543]
+                        - cell "0.00 %" [ref=f7e544]
+                        - cell "CHF 0.00" [ref=f7e545]
+                        - cell "CHF 0.00" [ref=f7e546]
+                        - cell "CHF 0.00" [ref=f7e547]
+                      - row [ref=f7e548]:
+                        - cell "02.09.2026" [ref=f7e549]
+                        - cell "1007" [ref=f7e550]
+                        - cell "0" [ref=f7e551]
+                        - cell "1007" [ref=f7e552]
+                        - cell "0.00 %" [ref=f7e553]
+                        - cell "CHF 0.00" [ref=f7e554]
+                        - cell "CHF 0.00" [ref=f7e555]
+                        - cell "CHF 0.00" [ref=f7e556]
+                      - row [ref=f7e557]:
+                        - cell "03.09.2026" [ref=f7e558]
+                        - cell "1007" [ref=f7e559]
+                        - cell "0" [ref=f7e560]
+                        - cell "1007" [ref=f7e561]
+                        - cell "0.00 %" [ref=f7e562]
+                        - cell "CHF 0.00" [ref=f7e563]
+                        - cell "CHF 0.00" [ref=f7e564]
+                        - cell "CHF 0.00" [ref=f7e565]
+                      - row [ref=f7e566]:
+                        - cell "04.09.2026" [ref=f7e567]
+                        - cell "1007" [ref=f7e568]
+                        - cell "0" [ref=f7e569]
+                        - cell "1007" [ref=f7e570]
+                        - cell "0.00 %" [ref=f7e571]
+                        - cell "CHF 0.00" [ref=f7e572]
+                        - cell "CHF 0.00" [ref=f7e573]
+                        - cell "CHF 0.00" [ref=f7e574]
+                      - row [ref=f7e575]:
+                        - cell "05.09.2026" [ref=f7e576]
+                        - cell "1007" [ref=f7e577]
+                        - cell "0" [ref=f7e578]
+                        - cell "1007" [ref=f7e579]
+                        - cell "0.00 %" [ref=f7e580]
+                        - cell "CHF 0.00" [ref=f7e581]
+                        - cell "CHF 0.00" [ref=f7e582]
+                        - cell "CHF 0.00" [ref=f7e583]
+                      - row [ref=f7e584]:
+                        - cell "06.09.2026" [ref=f7e585]
+                        - cell "1007" [ref=f7e586]
+                        - cell "0" [ref=f7e587]
+                        - cell "1007" [ref=f7e588]
+                        - cell "0.00 %" [ref=f7e589]
+                        - cell "CHF 0.00" [ref=f7e590]
+                        - cell "CHF 0.00" [ref=f7e591]
+                        - cell "CHF 0.00" [ref=f7e592]
+                      - row [ref=f7e593]:
+                        - cell "07.09.2026" [ref=f7e594]
+                        - cell "1007" [ref=f7e595]
+                        - cell "0" [ref=f7e596]
+                        - cell "1007" [ref=f7e597]
+                        - cell "0.00 %" [ref=f7e598]
+                        - cell "CHF 0.00" [ref=f7e599]
+                        - cell "CHF 0.00" [ref=f7e600]
+                        - cell "CHF 0.00" [ref=f7e601]
+                      - row [ref=f7e602]:
+                        - cell "08.09.2026" [ref=f7e603]
+                        - cell "1007" [ref=f7e604]
+                        - cell "0" [ref=f7e605]
+                        - cell "1007" [ref=f7e606]
+                        - cell "0.00 %" [ref=f7e607]
+                        - cell "CHF 0.00" [ref=f7e608]
+                        - cell "CHF 0.00" [ref=f7e609]
+                        - cell "CHF 0.00" [ref=f7e610]
+                      - row [ref=f7e611]:
+                        - cell "09.09.2026" [ref=f7e612]
+                        - cell "1007" [ref=f7e613]
+                        - cell "0" [ref=f7e614]
+                        - cell "1007" [ref=f7e615]
+                        - cell "0.00 %" [ref=f7e616]
+                        - cell "CHF 0.00" [ref=f7e617]
+                        - cell "CHF 0.00" [ref=f7e618]
+                        - cell "CHF 0.00" [ref=f7e619]
+                      - row [ref=f7e620]:
+                        - cell "10.09.2026" [ref=f7e621]
+                        - cell "1007" [ref=f7e622]
+                        - cell "1" [ref=f7e623]
+                        - cell "1006" [ref=f7e624]
+                        - cell "0.10 %" [ref=f7e625]
+                        - cell "CHF 220.62" [ref=f7e626]
+                        - cell "CHF 220.62" [ref=f7e627]
+                        - cell "CHF 0.22" [ref=f7e628]
+                      - row [ref=f7e629]:
+                        - cell "11.09.2026" [ref=f7e630]
+                        - cell "1007" [ref=f7e631]
+                        - cell "2" [ref=f7e632]
+                        - cell "1005" [ref=f7e633]
+                        - cell "0.20 %" [ref=f7e634]
+                        - cell "CHF 373.80" [ref=f7e635]
+                        - cell "CHF 186.90" [ref=f7e636]
+                        - cell "CHF 0.37" [ref=f7e637]
+                      - row [ref=f7e638]:
+                        - cell "12.09.2026" [ref=f7e639]
+                        - cell "1006" [ref=f7e640]
+                        - cell "3" [ref=f7e641]
+                        - cell "1003" [ref=f7e642]
+                        - cell "0.30 %" [ref=f7e643]
+                        - cell "CHF 526.98" [ref=f7e644]
+                        - cell "CHF 175.66" [ref=f7e645]
+                        - cell "CHF 0.52" [ref=f7e646]
+                - generic [ref=f7e647]:
+                  - generic [ref=f7e649]:
+                    - generic [ref=f7e650]: Quellenmix
+                    - heading "Buchungskanäle" [level=3] [ref=f7e651]
+                  - generic [ref=f7e652]:
+                    - article [ref=f7e653]:
+                      - generic [ref=f7e654]:
+                        - generic [ref=f7e655]: 33.33 %
+                        - strong [ref=f7e656]: Direktreservierung
+                        - generic [ref=f7e657]: 2 Zimmernächte · CHF 306.36
+                    - article [ref=f7e658]:
+                      - generic [ref=f7e659]:
+                        - generic [ref=f7e660]: 50.00 %
+                        - strong [ref=f7e661]: Telefon
+                        - generic [ref=f7e662]: 3 Zimmernächte · CHF 661.86
+                    - article [ref=f7e663]:
+                      - generic [ref=f7e664]:
+                        - generic [ref=f7e665]: 16.67 %
+                        - strong [ref=f7e666]: E-Mail
+                        - generic [ref=f7e667]: 1 Zimmernächte · CHF 153.18
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

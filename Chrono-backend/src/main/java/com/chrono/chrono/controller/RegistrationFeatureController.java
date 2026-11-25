@@ -33,7 +33,7 @@ public class RegistrationFeatureController {
                 .map(company -> {
                     Map<String, Object> response = new LinkedHashMap<>();
                     response.put("enabledFeatures",
-                            List.copyOf(RegistrationFeatures.sanitizeOptionalFeatures(company.getEnabledFeatures())));
+                            List.copyOf(RegistrationFeatures.effectiveOptionalFeatures(company)));
                     return ResponseEntity.ok(response);
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)

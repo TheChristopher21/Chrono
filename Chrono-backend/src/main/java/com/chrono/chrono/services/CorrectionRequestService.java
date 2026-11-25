@@ -1,13 +1,16 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.AdminCorrectionRequestDTO;
 import com.chrono.chrono.dto.CorrectionRequest;
+import com.chrono.chrono.dto.CorrectionOriginalEntry;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.CorrectionRequestRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.utils.UserInitials;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
@@ -38,6 +41,8 @@ public class CorrectionRequestService {
     private TimeTrackingEntryRepository timeTrackingEntryRepo;
     @Autowired
     private TimeTrackingService timeTrackingService;
+    @Autowired
+    private AccessControlService accessControlService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -48,10 +53,16 @@ public class CorrectionRequestService {
                                            String reason, LocalDate requestDate) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User '" + username + "' not found"));
+        CompanyScope.requireTarget(user);
 
         TimeTrackingEntry targetEntry = null;
         if (targetEntryId != null) {
-            targetEntry = timeTrackingEntryRepo.findById(targetEntryId).orElse(null);
+            targetEntry = timeTrackingEntryRepo.findById(targetEntryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Der ursprüngliche Stempel existiert nicht mehr. Bitte den Tag neu laden."));
+            if (targetEntry.getUser() == null || !user.getId().equals(targetEntry.getUser().getId())
+                    || !desiredTimestamp.toLocalDate().equals(targetEntry.getEntryTimestamp().toLocalDate())) {
+                throw new IllegalArgumentException("Der ursprüngliche Stempel gehört nicht zu diesem Benutzer und Tag.");
+            }
         }
 
         TimeTrackingEntry.PunchType desiredPunchType;
@@ -69,6 +80,11 @@ public class CorrectionRequestService {
             req = new CorrectionRequest(user, requestDate, desiredTimestamp, desiredPunchType, reason);
         }
 
+        req.captureOriginalDay(entriesForDay(user, desiredTimestamp.toLocalDate()));
+        // Keep the old values on the request, without preventing later replacement
+        // of the live time entries by an approved correction or an admin edit.
+        req.setTargetEntry(null);
+
         logger.info("Creating CorrectionRequest for user {}, targetEntryId {}, desiredTime {}, desiredType {}, reason {}, requestDate {}",
                 username, targetEntryId, desiredTimestamp, desiredPunchType, reason, requestDate);
         return correctionRepo.save(req);
@@ -81,6 +97,9 @@ public class CorrectionRequestService {
     public List<CorrectionRequest> getAllRequestsForPrincipal(Principal principal) {
         User requestingUser = userRepo.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Anfragender Benutzer nicht gefunden: " + principal.getName()));
+        if (CompanyScope.selection() != null) {
+            return correctionRepo.findAllByCompanyId(CompanyScope.companyFor(requestingUser).getId());
+        }
 
         boolean isSuperAdmin = requestingUser.getRoles().stream()
                 .anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN"));
@@ -95,11 +114,11 @@ public class CorrectionRequestService {
 
         // Ein normaler ADMIN sieht nur Anträge aus der eigenen Firma
         if (isAdmin) {
-            if (requestingUser.getCompany() == null) {
+            if (CompanyScope.companyFor(requestingUser) == null) {
                 // Admin ohne Firma kann keine firmenbezogenen Anträge sehen.
                 return Collections.emptyList();
             }
-            Long companyId = requestingUser.getCompany().getId();
+            Long companyId = CompanyScope.companyFor(requestingUser).getId();
             return correctionRepo.findAllByCompanyId(companyId); // Hier wird die neue Repository-Methode verwendet
         }
 
@@ -123,6 +142,16 @@ public class CorrectionRequestService {
 
         CorrectionRequest initialRequest = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
+
+        User adminUser = userRepo.findByUsername(adminUsername)
+                .orElseThrow(() -> new SecurityException("Admin not found: " + adminUsername));
+        CompanyScope.requireTarget(initialRequest.getUser());
+        if (!accessControlService.isSuperAdmin(adminUser)) {
+            if (!accessControlService.isAdmin(adminUser)
+                    || !accessControlService.sameCompany(adminUser, initialRequest.getUser())) {
+                throw new SecurityException("Admin cannot approve correction requests from another company.");
+            }
+        }
 
         Long userId = initialRequest.getUser().getId();
 
@@ -151,9 +180,20 @@ public class CorrectionRequestService {
             throw new IllegalStateException("Keine gültigen Korrekturanfragen für den Tag gefunden.");
         }
 
-        List<TimeTrackingEntry> entriesToDelete = timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(targetUser, startOfDay, endOfDay);
+        List<TimeTrackingEntry> entriesToDelete = entriesForDay(targetUser, correctionDate);
+        for (CorrectionRequest req : allRequestsForDay) {
+            req.captureOriginalDay(entriesToDelete);
+        }
         if (!entriesToDelete.isEmpty()) {
+            // Also preserve older requests that still hold live foreign keys.
+            for (CorrectionRequest linked : correctionRepo.findByTargetEntryIn(entriesToDelete)) {
+                linked.setTargetEntry(linked.getTargetEntry());
+                linked.setTargetEntry(null);
+                correctionRepo.save(linked);
+            }
+            correctionRepo.flush();
             timeTrackingEntryRepo.deleteAll(entriesToDelete);
+            timeTrackingEntryRepo.flush();
             logger.info("Admin {}: {} bestehende Einträge für Benutzer {} am {} gelöscht.",
                     adminUsername, entriesToDelete.size(), targetUser.getUsername(), correctionDate);
         }
@@ -167,6 +207,8 @@ public class CorrectionRequestService {
             );
             newEntry.setCorrectedByUser(true);
             newEntry.setSystemGeneratedNote("Korrektur genehmigt von " + adminUsername + ".");
+            newEntry.setCorrectionAdminUsername(adminUser.getUsername());
+            newEntry.setCorrectionAdminInitials(UserInitials.from(adminUser));
             timeTrackingEntryRepo.save(newEntry);
             logger.info("Admin {}: Neuen korrigierten TimeTrackingEntry für Benutzer {} erstellt: {} {}",
                     adminUsername, targetUser.getUsername(), newEntry.getEntryTimestamp(), newEntry.getPunchType());
@@ -176,6 +218,8 @@ public class CorrectionRequestService {
             req.setApproved(true);
             req.setDenied(false);
             req.setAdminComment(comment);
+            req.setProcessedByAdminUsername(adminUser.getUsername());
+            req.setProcessedByAdminInitials(UserInitials.from(adminUser));
             correctionRepo.save(req);
         }
 
@@ -188,6 +232,7 @@ public class CorrectionRequestService {
     public List<AdminCorrectionRequestDTO> getAllRequestsForAdminDashboard() {
         return correctionRepo.findAllWithDetails()
                 .stream()
+                .filter(request -> !isSuperAdminUser(request.getUser()))
                 .map(this::toAdminDto)
                 .collect(Collectors.toList());
     }
@@ -196,37 +241,55 @@ public class CorrectionRequestService {
     public List<AdminCorrectionRequestDTO> getRequestsByCompanyForAdminDashboard(Long companyId) {
         return correctionRepo.findAllByCompanyId(companyId)
                 .stream()
+                .filter(request -> !isSuperAdminUser(request.getUser()))
                 .map(this::toAdminDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public CorrectionRequest denyRequest(Long requestId, String comment) {
+        return denyRequest(requestId, comment, null);
+    }
+
+    @Transactional
+    public CorrectionRequest denyRequest(Long requestId, String comment, String adminUsername) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
+        User adminUser = null;
+        CompanyScope.requireTarget(req.getUser());
+        if (adminUsername != null) {
+            adminUser = userRepo.findByUsername(adminUsername)
+                    .orElseThrow(() -> new SecurityException("Admin not found: " + adminUsername));
+            if (!accessControlService.isSuperAdmin(adminUser)) {
+                if (!accessControlService.isAdmin(adminUser)
+                        || !accessControlService.sameCompany(adminUser, req.getUser())) {
+                    throw new SecurityException("Admin cannot deny correction requests from another company.");
+                }
+            }
+        }
         if (req.isApproved() || req.isDenied()) {
             throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
         }
         req.setDenied(true);
         req.setApproved(false);
         req.setAdminComment(comment);
+        if (adminUser != null) {
+            req.setProcessedByAdminUsername(adminUser.getUsername());
+            req.setProcessedByAdminInitials(UserInitials.from(adminUser));
+        }
         return correctionRepo.save(req);
     }
 
     public UserRepository getUserRepo() { return userRepo; }
 
-    private AdminCorrectionRequestDTO toAdminDto(CorrectionRequest request) {
-        var targetEntry = request.getTargetEntry();
-        LocalDateTime originalTimestamp = null;
-        TimeTrackingEntry.PunchType originalPunchType = null;
-        Long targetEntryId = null;
-        if (targetEntry != null) {
-            originalTimestamp = targetEntry.getEntryTimestamp();
-            originalPunchType = targetEntry.getPunchType();
-            targetEntryId = targetEntry.getId();
-        }
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
+    }
 
-        return new AdminCorrectionRequestDTO(
+    private AdminCorrectionRequestDTO toAdminDto(CorrectionRequest request) {
+        AdminCorrectionRequestDTO dto = new AdminCorrectionRequestDTO(
                 request.getId(),
                 request.getUsername(),
                 request.getRequestDate(),
@@ -236,9 +299,25 @@ public class CorrectionRequestService {
                 request.isApproved(),
                 request.isDenied(),
                 request.getAdminComment(),
-                originalTimestamp,
-                originalPunchType,
-                targetEntryId
+                request.getProcessedByAdminUsername(),
+                request.getProcessedByAdminInitials(),
+                request.getOriginalTimestamp(),
+                request.getOriginalPunchType(),
+                request.getTargetEntryId()
         );
+        if (request.isOriginalDayCaptured()) {
+            dto.setOriginalDayEntries(request.getOriginalDayEntries());
+        } else if (!request.isApproved() && !request.isDenied() && request.getDesiredTimestamp() != null) {
+            // Legacy requests without an entry ID: show the real current day,
+            // never guess a pairing or reconstruct history from corrected times.
+            dto.setOriginalDayEntries(entriesForDay(request.getUser(), request.getDesiredTimestamp().toLocalDate())
+                    .stream().map(CorrectionOriginalEntry::new).toList());
+        }
+        return dto;
+    }
+
+    private List<TimeTrackingEntry> entriesForDay(User user, LocalDate day) {
+        return timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(
+                user, day.atStartOfDay(), day.plusDays(1).atStartOfDay());
     }
 }

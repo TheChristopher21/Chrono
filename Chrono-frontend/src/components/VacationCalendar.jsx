@@ -66,13 +66,14 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
         setSickComment('');
     }, []);
 
-    const fetchHolidays = useCallback(async (year, canton) => {
+    const fetchHolidays = useCallback(async (year, canton, companyId) => {
         try {
             const yearStartDate = `${year}-01-01`;
             const yearEndDate = `${year}-12-31`;
             const params = {
                 year: year,
                 cantonAbbreviation: canton || '',
+                companyId: companyId || undefined,
                 startDate: yearStartDate,
                 endDate: yearEndDate,
             };
@@ -98,6 +99,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
     useEffect(() => {
         const year = activeStartDate.getFullYear();
         const canton = userProfile?.company?.cantonAbbreviation;
+        const companyId = userProfile?.companyId || userProfile?.company?.id;
         const firstDayOfYearKey = `${year}-01-01`; // Oder ein anderer zuverlässiger Schlüssel für das Jahr
         let holidaysLoadedForYear = false;
         // Überprüfen, ob *irgendein* Feiertag für dieses Jahr geladen wurde, um unnötige Abfragen zu vermeiden.
@@ -110,7 +112,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
         }
 
         if (!holidaysLoadedForYear) {
-            fetchHolidays(year, canton);
+            fetchHolidays(year, canton, companyId);
         }
         fetchSickLeaves();
     }, [activeStartDate, userProfile, fetchHolidays, fetchSickLeaves, holidays]);
@@ -173,6 +175,9 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
         if (vacsToday.length > 0) {
             const displayVac = vacsToday.find(v => v.usesOvertime) || vacsToday[0];
             const color = displayVac.usesOvertime ? '#3498db' : (userProfile?.color || '#2ecc71');
+            const vacationLabel = displayVac.usesOvertime
+                ? t('vacation.overtimeVacationShort', 'Überstundenurlaub')
+                : t('vacation.normalVacationShort', 'Urlaub');
 
             const tooltip = vacsToday
                 .map((v) =>
@@ -182,7 +187,14 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                 )
                 .join('; ');
             content.push(
-                <div key={`vacation-${dateString}`} className="holiday-dot" title={tooltip} style={{ backgroundColor: color }} />
+                <div
+                    key={`vacation-${dateString}`}
+                    className="calendar-entry-badge vacation-entry-badge"
+                    title={tooltip}
+                    style={{ '--entry-color': color }}
+                >
+                    {vacationLabel}
+                </div>
             );
         }
 
@@ -191,10 +203,12 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
             content.push(
                 <div
                     key={`sick-${dateString}`}
-                    className="sick-leave-dot"
+                    className="calendar-entry-badge sick-entry-badge"
                     title={sickToday.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}
-                    style={{ backgroundColor: sickToday.color || '#FF6347' }}
-                />
+                    style={{ '--entry-color': sickToday.color || '#FF6347' }}
+                >
+                    {t('sickLeave.short', 'Krank')}
+                </div>
             );
         }
 

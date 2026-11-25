@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { useRefreshOnMutation } from '../../hooks/useRefreshOnMutation.js';
 import '../../styles/AdminKnowledgePageScoped.css';
 
 const AdminKnowledgePage = () => {
@@ -14,11 +15,17 @@ const AdminKnowledgePage = () => {
   const [content, setContent] = useState('');
   const [access, setAccess] = useState('ALL');
 
-  const fetchDocs = () => {
+  const fetchDocs = () => (
     api.get('/api/admin/knowledge').then(res => {
       setDocs(Array.isArray(res.data) ? res.data : []);
-    });
-  };
+    })
+  );
+
+  useRefreshOnMutation(['knowledge'], fetchDocs, {
+    refreshOnLocalMutation: false,
+    refreshOnFocus: true,
+    focusThrottleMs: 30_000,
+  });
 
   useEffect(() => {
     fetchDocs();

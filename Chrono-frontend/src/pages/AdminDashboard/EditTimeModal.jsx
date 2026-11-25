@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard/EditTimeModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatLocalDateYMD } from './adminDashboardUtils';
@@ -31,6 +31,8 @@ const EditTimeModal = ({
                            users,          // For break duration logic if still needed for autofill
                        }) => {
     const [editableEntries, setEditableEntries] = useState([]);
+    const [saving, setSaving] = useState(false);
+    const savingRef = useRef(false);
 
     useEffect(() => {
         if (isVisible) {
@@ -119,8 +121,9 @@ const EditTimeModal = ({
         setEditableEntries(editableEntries.filter((_, index) => index !== indexToRemove));
     };
 
-    const handleSubmitLocal = (e) => {
+    const handleSubmitLocal = async (e) => {
         e.preventDefault();
+        if (savingRef.current) return;
         let isValid = true;
         let lastType = null;
         let lastTimestamp = null;
@@ -161,7 +164,14 @@ const EditTimeModal = ({
                 correctedByUser: true,
                 systemGeneratedNote: entry.systemGeneratedNote || null
             }));
-            onSubmit(entriesToSubmit);
+            savingRef.current = true;
+            setSaving(true);
+            try {
+                await onSubmit(entriesToSubmit);
+            } finally {
+                savingRef.current = false;
+                setSaving(false);
+            }
         }
     };
 
@@ -299,8 +309,8 @@ const EditTimeModal = ({
                         </div>
 
                         <div className="modal-buttons main-actions">
-                            <button type="submit" className="button-primary">{t("save", "Speichern")}</button>
-                            <button type="button" onClick={onClose} className="button-cancel">
+                            <button type="submit" className="button-primary" disabled={saving}>{saving ? t('saving', 'Wird gespeichert …') : t("save", "Speichern")}</button>
+                            <button type="button" onClick={onClose} className="button-cancel" disabled={saving}>
                                 {t("cancel", "Abbrechen")}
                             </button>
                         </div>

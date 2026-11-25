@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import { useRefreshOnMutation } from "../../hooks/useRefreshOnMutation.js";
 import "../../styles/CrmDashboardScoped.css";
 import KpiSummary from "../../components/crm/KpiSummary.jsx";
 import PipelineOverview from "../../components/crm/PipelineOverview.jsx";
@@ -41,6 +42,8 @@ const CrmDashboard = () => {
     const [activityForm, setActivityForm] = useState({ id: null, notes: "", timestamp: "", contactId: "", type: "NOTE" });
     const [documentForm, setDocumentForm] = useState({ fileName: "", url: "" });
     const [accessDenied, setAccessDenied] = useState(false);
+    const crmRequestSequenceRef = useRef(0);
+    const customerDetailsSequenceRef = useRef(0);
 
     const formatDateTime = (value) => {
         if (!value) {
@@ -53,65 +56,80 @@ const CrmDashboard = () => {
         return parsed.toLocaleString();
     };
 
-    useEffect(() => {
+    const loadCrmData = useCallback(async () => {
         if (accessDenied) {
             return;
         }
-        const load = async () => {
-            try {
-                const ownerParam = ownerFilter === "ME" ? "me" : undefined;
-                const leadParams = {
-                    ...(leadFilter === "ALL" ? {} : { status: leadFilter }),
-                    ...(dateRange ? { dateRange } : {}),
-                    ...(ownerParam ? { owner: ownerParam } : {})
-                };
-                const opportunityParams = {
-                    ...(oppFilter === "ALL" ? {} : { stage: oppFilter }),
-                    ...(dateRange ? { dateRange } : {}),
-                    ...(ownerParam ? { owner: ownerParam } : {})
-                };
-                const campaignParams = {
-                    ...(campaignFilter === "ALL" ? {} : { status: campaignFilter }),
-                    ...(dateRange ? { dateRange } : {}),
-                    ...(ownerParam ? { owner: ownerParam } : {})
-                };
-                const customerParams = {
-                    ...(dateRange ? { dateRange } : {}),
-                    ...(ownerParam ? { owner: ownerParam } : {})
-                };
+        const requestSequence = ++crmRequestSequenceRef.current;
+        try {
+            const ownerParam = ownerFilter === "ME" ? "me" : undefined;
+            const leadParams = {
+                ...(leadFilter === "ALL" ? {} : { status: leadFilter }),
+                ...(dateRange ? { dateRange } : {}),
+                ...(ownerParam ? { owner: ownerParam } : {})
+            };
+            const opportunityParams = {
+                ...(oppFilter === "ALL" ? {} : { stage: oppFilter }),
+                ...(dateRange ? { dateRange } : {}),
+                ...(ownerParam ? { owner: ownerParam } : {})
+            };
+            const campaignParams = {
+                ...(campaignFilter === "ALL" ? {} : { status: campaignFilter }),
+                ...(dateRange ? { dateRange } : {}),
+                ...(ownerParam ? { owner: ownerParam } : {})
+            };
+            const customerParams = {
+                ...(dateRange ? { dateRange } : {}),
+                ...(ownerParam ? { owner: ownerParam } : {})
+            };
 
-                const [leadRes, oppRes, campRes, customerRes] = await Promise.all([
-                    api.get("/api/crm/leads", { params: leadParams }),
-                    api.get("/api/crm/opportunities", { params: opportunityParams }),
-                    api.get("/api/crm/campaigns", { params: campaignParams }),
-                    api.get("/api/customers", { params: customerParams })
-                ]);
-                setAccessDenied(false);
-                setLeads(leadRes.data ?? []);
-                setOpportunities(oppRes.data ?? []);
-                setCampaigns(campRes.data ?? []);
-                setCustomers(customerRes.data ?? []);
-            } catch (error) {
-                console.error("Failed to load CRM data", error);
-                if (error?.response?.status === 403) {
-                    if (!accessDenied) {
-                        notify(t("crm.featureDisabled", "Das CRM (Customer Relationship Management)-Modul ist für Ihre Firma nicht freigeschaltet."), "warning");
-                    }
-                    setAccessDenied(true);
-                    setLeads([]);
-                    setOpportunities([]);
-                    setCampaigns([]);
-                    setCustomers([]);
-                } else {
-                    notify(t("crm.loadError", "CRM (Customer Relationship Management)-Daten konnten nicht geladen werden."), "error");
+            const [leadRes, oppRes, campRes, customerRes] = await Promise.all([
+                api.get("/api/crm/leads", { params: leadParams }),
+                api.get("/api/crm/opportunities", { params: opportunityParams }),
+                api.get("/api/crm/campaigns", { params: campaignParams }),
+                api.get("/api/customers", { params: customerParams })
+            ]);
+            if (requestSequence !== crmRequestSequenceRef.current) return;
+            setAccessDenied(false);
+            setLeads(leadRes.data ?? []);
+            setOpportunities(oppRes.data ?? []);
+            setCampaigns(campRes.data ?? []);
+            setCustomers(customerRes.data ?? []);
+        } catch (error) {
+            if (requestSequence !== crmRequestSequenceRef.current) return;
+            console.error("Failed to load CRM data", error);
+            if (error?.response?.status === 403) {
+                if (!accessDenied) {
+                    notify(t("crm.featureDisabled", "Das CRM (Customer Relationship Management)-Modul ist für Ihre Firma nicht freigeschaltet."), "warning");
                 }
+                setAccessDenied(true);
+                setLeads([]);
+                setOpportunities([]);
+                setCampaigns([]);
+                setCustomers([]);
+            } else {
+                notify(t("crm.loadError", "CRM (Customer Relationship Management)-Daten konnten nicht geladen werden."), "error");
             }
-        };
-        load();
-    }, [notify, t, leadFilter, oppFilter, campaignFilter, accessDenied, dateRange, ownerFilter]);
+        }
+    }, [accessDenied, campaignFilter, dateRange, leadFilter, notify, oppFilter, ownerFilter, t]);
 
-    const loadCustomerDetails = async (customer) => {
+    useEffect(() => {
+        loadCrmData();
+        return () => {
+            crmRequestSequenceRef.current += 1;
+        };
+    }, [loadCrmData]);
+
+    useRefreshOnMutation(['crm', 'customers'], loadCrmData, {
+        enabled: !accessDenied,
+        debounceMs: 120,
+        refreshOnFocus: true,
+        focusThrottleMs: 30_000,
+    });
+
+    const loadCustomerDetails = useCallback(async (customer) => {
         if (!customer) {
+            customerDetailsSequenceRef.current += 1;
             setSelectedEntity(null);
             setSelectedEntityType(null);
             setCustomerContacts([]);
@@ -125,6 +143,7 @@ const CrmDashboard = () => {
         }
         setSelectedEntity(customer);
         setSelectedEntityType("customer");
+        const requestSequence = ++customerDetailsSequenceRef.current;
         try {
             const [contactRes, activityRes, addressRes, documentRes] = await Promise.all([
                 api.get(`/api/crm/customers/${customer.id}/contacts`),
@@ -132,15 +151,17 @@ const CrmDashboard = () => {
                 api.get(`/api/crm/customers/${customer.id}/addresses`),
                 api.get(`/api/crm/customers/${customer.id}/documents`)
             ]);
+            if (requestSequence !== customerDetailsSequenceRef.current) return;
             setCustomerContacts(contactRes.data ?? []);
             setCustomerActivities(activityRes.data ?? []);
             setCustomerAddresses(addressRes.data ?? []);
             setCustomerDocuments(documentRes.data ?? []);
         } catch (error) {
+            if (requestSequence !== customerDetailsSequenceRef.current) return;
             console.error("Failed to load customer details", error);
             notify(t("crm.customerLoadFailed", "Kundendetails konnten nicht geladen werden."), "error");
         }
-    };
+    }, [accessDenied, notify, t]);
 
     const resetCustomerForms = () => {
         setAddressForm({ id: null, street: "", postalCode: "", city: "", country: "", type: "OFFICE" });
@@ -494,6 +515,7 @@ const CrmDashboard = () => {
     };
 
     const closeSlideOver = () => {
+        customerDetailsSequenceRef.current += 1;
         setSelectedEntity(null);
         setSelectedEntityType(null);
         resetCustomerForms();

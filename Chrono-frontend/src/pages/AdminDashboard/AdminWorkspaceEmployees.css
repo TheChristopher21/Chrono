@@ -1,0 +1,60 @@
+.admin-workspace .aw-people { border: 1px solid var(--aw-border); border-radius: 12px; background: var(--aw-card); min-width: 0; }
+.admin-workspace .aw-people-heading { padding: 16px 20px 10px; }
+.admin-workspace .aw-people-heading h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.admin-workspace .aw-people-heading p { margin: 5px 0 0; font-size: 12px; color: var(--aw-muted); }
+.admin-workspace .aw-people-toolbar { display: flex; gap: 14px; align-items: end; padding: 0 20px 12px; }
+.admin-workspace .aw-people-toolbar label { display: grid; gap: 4px; min-width: 0; font-size: 11px; color: var(--aw-muted); }
+.admin-workspace .aw-people-toolbar label:first-child { flex: 1; }
+.admin-workspace .aw-people-toolbar :is(input,select) { width: 100%; min-height: 34px; padding: 7px 10px; color: var(--aw-text); background: var(--aw-card); border: 1px solid var(--aw-border); border-radius: 7px; font: inherit; font-size: 13px; }
+.admin-workspace .aw-people-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 12px; border-bottom: 1px solid var(--aw-border); }
+.admin-workspace .aw-people :is(.aw-people-filters button,.aw-people-actions button,.aw-people-footer button) { min-height: 32px; border: 1px solid var(--aw-border); border-radius: 6px; padding: 5px 10px; background: var(--aw-card); color: var(--aw-muted); box-shadow: none; font: inherit; font-size: 12px; }
+.admin-workspace .aw-people-filters button { display: inline-flex; gap: 8px; align-items: center; }
+.admin-workspace .aw-people-filters button[aria-pressed=true] { background: var(--aw-primary-soft); color: var(--aw-primary); border-color: var(--aw-primary); }
+.admin-workspace .aw-people-filters button span { font-variant-numeric: tabular-nums; font-weight: 600; }
+.admin-workspace .aw-people-list { list-style: none; padding: 0 20px; margin: 0; }
+.admin-workspace .aw-people-list > li { display: grid; grid-template-columns: minmax(140px,1.1fr) minmax(175px,1.5fr) minmax(100px,.7fr) auto; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--aw-border); }
+.admin-workspace .aw-people-list > li:last-child { border-bottom: 0; }
+.admin-workspace .aw-people-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.admin-workspace .aw-people-identity > div { display: grid; gap: 3px; min-width: 0; }
+.admin-workspace .aw-people-identity small,.admin-workspace .aw-people-state > small { color: var(--aw-muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.admin-workspace .aw-people-identity .aw-task-name { text-align: left; }
+.admin-workspace .aw-people-state { display: grid; gap: 5px; min-width: 0; }
+.admin-workspace .aw-people-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.admin-workspace .aw-people-badges > span { color: var(--aw-muted); font-size: 12px; }
+.admin-workspace .aw-people-badges > button { padding: 3px 6px; min-height: 25px; border: 0; border-radius: 4px; box-shadow: none; font: inherit; font-size: 11px; }
+.admin-workspace .aw-people-badges .is-problem { color: var(--aw-negative); background: color-mix(in srgb,var(--aw-negative) 9%,var(--aw-card)); }
+.admin-workspace .aw-people-badges .is-request { color: var(--aw-primary); background: var(--aw-primary-soft); }
+.admin-workspace .aw-people-balance { display: grid; gap: 3px; text-align: right; font-variant-numeric: tabular-nums; }
+.admin-workspace .aw-people-balance strong { font-size: 15px; font-weight: 500; color: var(--aw-text); }
+.admin-workspace .aw-people-balance.is-negative strong { color: var(--aw-negative); }
+.admin-workspace .aw-people-balance small { font-size: 10px; color: var(--aw-muted); }
+.admin-workspace .aw-people-actions { display: flex; gap: 6px; }
+.admin-workspace .aw-people-actions button { white-space: nowrap; }
+.admin-workspace .aw-people button:hover:not(:disabled) { background: var(--aw-soft); color: var(--aw-primary); transform: none; }
+.admin-workspace .aw-people button:disabled { opacity: .5; cursor: default; }
+.admin-workspace .aw-people-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; border-top: 1px solid var(--aw-border); color: var(--aw-muted); font-size: 11px; }
+.admin-workspace .aw-people-footer > div { display: flex; gap: 10px; align-items: center; }
+.admin-workspace .aw-people-warning { margin: 0; padding: 8px 20px; color: var(--aw-negative); font-size: 12px; }
+@media (min-width: 1101px) and (max-height: 850px) {
+    .admin-workspace .aw-people-heading { padding: 10px 20px 6px; }
+    .admin-workspace .aw-people-heading p { margin-top: 3px; }
+    .admin-workspace .aw-people-toolbar { padding-bottom: 8px; }
+    .admin-workspace .aw-people-filters { padding-bottom: 8px; }
+    .admin-workspace .aw-people-list > li { padding-block: 6px; }
+    .admin-workspace .aw-people-state { gap: 3px; }
+    .admin-workspace .aw-people-footer { padding-block: 7px; }
+}
+@media (max-width: 1100px) {
+    .admin-workspace .aw-people-list > li { grid-template-columns: minmax(130px,1fr) minmax(175px,1.4fr) 115px; gap: 10px; }
+    .admin-workspace .aw-people-actions { grid-column: 2 / -1; }
+}
+@media (max-width: 700px) {
+    .admin-workspace .aw-people-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .admin-workspace .aw-people-list > li { grid-template-columns: minmax(0,1fr) auto; padding-block: 14px; }
+    .admin-workspace .aw-people-state { grid-column: 1 / -1; grid-row: 2; }
+    .admin-workspace .aw-people-balance { grid-column: 2; grid-row: 1; }
+    .admin-workspace .aw-people-actions { grid-column: 1 / -1; }
+    .admin-workspace .aw-people :is(.aw-people-filters button,.aw-people-actions button,.aw-people-footer button) { min-height: 40px; }
+    .admin-workspace .aw-people-heading,.admin-workspace .aw-people-toolbar,.admin-workspace .aw-people-filters,.admin-workspace .aw-people-footer { padding-inline: 12px; }
+    .admin-workspace .aw-people-list { padding-inline: 12px; }
+}

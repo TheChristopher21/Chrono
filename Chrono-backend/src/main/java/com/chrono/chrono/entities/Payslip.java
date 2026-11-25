@@ -50,6 +50,17 @@ public class Payslip {
     private String socialSecurityNumber;
 
     private String payType;
+    @Column(length = 40)
+    private String calculationVersion;
+    @Lob @Column(columnDefinition = "longtext")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String calculationSnapshot;
+    @Column(length = 3)
+    private String currency;
+    private Long correctionOfId;
+    private Long supersedesCorrectionId;
+    @Column(length = 36)
+    private String correctionBatch;
     private boolean locked = false;
     private String pdfPath;
 
@@ -120,6 +131,19 @@ public class Payslip {
     public void setSocialSecurityNumber(String socialSecurityNumber) { this.socialSecurityNumber = socialSecurityNumber; }
 
     public String getPayType() { return payType; }
+    public String getCalculationVersion() { return calculationVersion; }
+    public void setCalculationVersion(String v) { calculationVersion = v; }
+    public String getCalculationSnapshot() { return calculationSnapshot; }
+    public void setCalculationSnapshot(String v) { calculationSnapshot = v; }
+    public String getCurrency() { return currency; }
+    public Long getCorrectionOfId() { return correctionOfId; }
+    public void setCorrectionOfId(Long value) { correctionOfId = value; }
+    public Long getSupersedesCorrectionId() { return supersedesCorrectionId; }
+    public void setSupersedesCorrectionId(Long value) { supersedesCorrectionId = value; }
+    public String getCorrectionBatch() { return correctionBatch; }
+    public void setCorrectionBatch(String value) { correctionBatch = value; }
+    public boolean isCorrection() { return correctionOfId != null; }
+    public void setCurrency(String v) { currency = v; }
     public void setPayType(String payType) { this.payType = payType; }
 
     public boolean isLocked() { return locked; }

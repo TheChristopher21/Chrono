@@ -5,7 +5,9 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.utils.RegistrationFeatures;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,18 +61,24 @@ public class UserDTO {
     private Boolean deleted;
     private Boolean optOut;
     private Boolean includeInTimeTracking;
+    private Boolean demo;
+    private LocalDateTime demoExpiresAt;
     private Long companyId;
+    private Long selectedCompanyId;
+    private String selectedCompanyName;
     private String companyCantonAbbreviation;
     private Boolean customerTrackingEnabled; // Kept
     private Long lastCustomerId;
     private String lastCustomerName;
     private Set<String> companyFeatureKeys;
     private LocalDate employmentModelEffectiveFrom;
+    private Map<String, String> pagePermissions;
 
     public UserDTO() {
         this.roles = new ArrayList<>();
         this.weeklySchedule = new ArrayList<>();
         this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
+        this.pagePermissions = new LinkedHashMap<>();
     }
 
     // Constructor from User entity
@@ -121,15 +129,20 @@ public class UserDTO {
         this.deleted = user.isDeleted();
         this.optOut = user.isOptOut();
         this.includeInTimeTracking = user.isIncludeInTimeTracking();
+        this.demo = user.isDemo();
+        this.demoExpiresAt = user.getDemoExpiresAt();
         this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
         this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
         this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
         this.lastCustomerName = user.getLastCustomer() != null ? user.getLastCustomer().getName() : null;
-        this.customerTrackingEnabled = (user.getCompany() != null) ? user.getCompany().getCustomerTrackingEnabled() : null; // Kept
+        this.customerTrackingEnabled = (user.getCompany() != null)
+                ? RegistrationFeatures.isProjectsEnabled(user.getCompany())
+                : null; // Kept for older clients; mirrors the effective projects feature.
         this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
         if (user.getCompany() != null) {
-            this.companyFeatureKeys.addAll(RegistrationFeatures.sanitizeOptionalFeatures(user.getCompany().getEnabledFeatures()));
+            this.companyFeatureKeys.addAll(RegistrationFeatures.effectiveOptionalFeatures(user.getCompany()));
         }
+        this.pagePermissions = user.getPagePermissions() != null ? new LinkedHashMap<>(user.getPagePermissions()) : new LinkedHashMap<>();
     }
 
     // All-Args-Constructor
@@ -197,6 +210,7 @@ public class UserDTO {
         this.deleted = deleted;
         this.optOut = optOut;
         this.includeInTimeTracking = includeInTimeTracking != null ? includeInTimeTracking : true;
+        this.pagePermissions = new LinkedHashMap<>();
     }
 
     // ----- Getters -----
@@ -245,13 +259,20 @@ public class UserDTO {
     public Boolean getDeleted() { return deleted; }
     public Boolean getOptOut() { return optOut; }
     public Boolean getIncludeInTimeTracking() { return includeInTimeTracking; }
+    public Boolean getDemo() { return demo; }
+    public LocalDateTime getDemoExpiresAt() { return demoExpiresAt; }
     public Long getCompanyId() { return companyId; }
+    public Long getSelectedCompanyId() { return selectedCompanyId; }
+    public void setSelectedCompanyId(Long id) { this.selectedCompanyId = id; }
+    public String getSelectedCompanyName() { return selectedCompanyName; }
+    public void setSelectedCompanyName(String name) { this.selectedCompanyName = name; }
     public String getCompanyCantonAbbreviation() { return companyCantonAbbreviation; }
     public Long getLastCustomerId() { return lastCustomerId; }
     public String getLastCustomerName() { return lastCustomerName; }
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; } // Kept
     public Set<String> getCompanyFeatureKeys() { return companyFeatureKeys; }
     public LocalDate getEmploymentModelEffectiveFrom() { return employmentModelEffectiveFrom; }
+    public Map<String, String> getPagePermissions() { return pagePermissions; }
 
     // ----- Setters -----
     public void setId(Long id) { this.id = id; }
@@ -299,12 +320,17 @@ public class UserDTO {
     public void setDeleted(Boolean deleted) { this.deleted = deleted; }
     public void setOptOut(Boolean optOut) { this.optOut = optOut; }
     public void setIncludeInTimeTracking(Boolean includeInTimeTracking) { this.includeInTimeTracking = includeInTimeTracking; }
+    public void setDemo(Boolean demo) { this.demo = demo; }
+    public void setDemoExpiresAt(LocalDateTime demoExpiresAt) { this.demoExpiresAt = demoExpiresAt; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public void setCompanyCantonAbbreviation(String companyCantonAbbreviation) { this.companyCantonAbbreviation = companyCantonAbbreviation; }
     public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
     public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; } // Kept
     public void setEmploymentModelEffectiveFrom(LocalDate employmentModelEffectiveFrom) { this.employmentModelEffectiveFrom = employmentModelEffectiveFrom; }
+    public void setPagePermissions(Map<String, String> pagePermissions) {
+        this.pagePermissions = pagePermissions != null ? new LinkedHashMap<>(pagePermissions) : new LinkedHashMap<>();
+    }
     public void setCompanyFeatureKeys(Set<String> companyFeatureKeys) {
         this.companyFeatureKeys = companyFeatureKeys != null
                 ? new LinkedHashSet<>(companyFeatureKeys)

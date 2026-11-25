@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.ComplianceAuditLogDTO;
 import com.chrono.chrono.entities.ComplianceAuditLog;
 import com.chrono.chrono.entities.User;
@@ -35,7 +36,7 @@ public class ComplianceAuditController {
             return ResponseEntity.status(401).build();
         }
         User user = userService.getUserByUsername(principal.getName());
-        if (user.getCompany() == null) {
+        if (CompanyScope.companyFor(user) == null) {
             return ResponseEntity.status(403).build();
         }
         boolean isAdmin = user.getRoles() != null && user.getRoles().stream()
@@ -43,7 +44,7 @@ public class ComplianceAuditController {
         if (!isAdmin) {
             return ResponseEntity.status(403).build();
         }
-        List<ComplianceAuditLog> logs = complianceAuditService.getRecentLogs(user.getCompany().getId(), limit);
+        List<ComplianceAuditLog> logs = complianceAuditService.getRecentLogs(CompanyScope.companyFor(user).getId(), limit);
         List<ComplianceAuditLogDTO> payload = logs.stream()
                 .map(ComplianceAuditLogDTO::fromEntity)
                 .collect(Collectors.toList());

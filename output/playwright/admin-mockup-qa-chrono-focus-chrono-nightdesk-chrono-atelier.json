@@ -1,0 +1,257 @@
+[
+  {
+    "name": "chrono-focus",
+    "sizes": [
+      {
+        "width": 1022,
+        "scrollWidth": 1022,
+        "height": 998,
+        "overflow": false
+      },
+      {
+        "width": 734,
+        "scrollWidth": 734,
+        "height": 1244,
+        "overflow": false
+      },
+      {
+        "width": 358,
+        "scrollWidth": 358,
+        "height": 1560,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(24, 34, 30)",
+      "color": "rgb(229, 238, 232)"
+    },
+    "interactions": [
+      {
+        "approvalRemaining": "5"
+      },
+      {
+        "history": "AW\nAnna Weber\nZeitkorrektur · Fehlender Endstempel · 17:15 Uhr\nAnsehen"
+      },
+      {
+        "hourly": "Noah Frei\nEmpfang · Stundenlohn\n\t12:30\t—\t—\t—\tGeprüft\t×"
+      },
+      {
+        "timeInputs": 4
+      },
+      {
+        "nextMonth": "Oktober 2026"
+      },
+      {
+        "modules": "Personal & Planung\nPayroll / Lohnabrechnung\n↗"
+      },
+      {
+        "view": "home",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "inbox",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "calendar",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "planning",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 358,
+          "scrollWidth": 358,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "chrono-nightdesk",
+    "sizes": [
+      {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 1230,
+        "overflow": false
+      },
+      {
+        "width": 736,
+        "scrollWidth": 736,
+        "height": 1292,
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 1858,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(12, 16, 24)",
+      "color": "rgb(237, 244, 250)"
+    },
+    "interactions": [
+      {
+        "afterApproval": "07 offen"
+      },
+      {
+        "history": "Sara Meier\nKorrektur\nMontag, 7. Sept. · Ausstempeln\nGenehmigt\n·\nIm Verlauf\nSara Meier\nFerien\n24.–28. August · 5 Tage\nGenehmigt\n·\nIm Verlauf"
+      },
+      {
+        "personFilter": "SM\nSara Meier\nProdukt & Design · 100 %\n\t40:00\t40:00\t00:00\t+04:30\tGeprüft"
+      },
+      {
+        "nextMonth": "Oktober 2026"
+      },
+      {
+        "pms": "GESCHÄFT\nPMS\nHotelverwaltung und Reservationen"
+      },
+      {
+        "view": "work",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "calendar",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "chrono-atelier",
+    "sizes": [
+      {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 1031,
+        "overflow": false
+      },
+      {
+        "width": 736,
+        "scrollWidth": 736,
+        "height": 1256,
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 2203,
+        "overflow": false
+      }
+    ],
+    "darkColors": {
+      "background": "rgb(247, 244, 237)",
+      "color": "rgb(57, 39, 54)"
+    },
+    "interactions": [
+      {
+        "afterApproval": "4"
+      },
+      {
+        "afterRejection": "3"
+      },
+      {
+        "personFilter": "NK\nNoah Keller\nEntwicklung\n100 % · Vollzeit\t38 h 00\t40 h 00\t−2 h 00\t0 h 00\tFehlende Zeiten\t"
+      },
+      {
+        "pms": "Die wichtigsten Einträge für deinen Arbeitsalltag.\n\nEintrag\tAktion\nReservation 2041 · Doppelzimmer · 8.–11. Sept.\tÖffnen\nZimmerstatus · 18 belegt · 6 verfügbar\tÖffnen\nAnreisen heute · 4 Gäste erwartet\tÖffnen\nNeuer Eintrag"
+      },
+      {
+        "view": "home",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "time",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "requests",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "team",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      },
+      {
+        "view": "modules",
+        "mobile": {
+          "width": 360,
+          "scrollWidth": 360,
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  }
+]

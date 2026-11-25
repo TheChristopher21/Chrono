@@ -1,0 +1,10 @@
+- generic [ref=f4e2]:
+  - alert [ref=f4e376]:
+    - paragraph [ref=f4e377]: Es ist ein unerwarteter Fehler aufgetreten.
+    - button "Neu laden" [ref=f4e378]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

@@ -1,12 +1,17 @@
 package com.chrono.chrono.controller.accounting;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.accounting.*;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.accounting.Account;
 import com.chrono.chrono.entities.accounting.Asset;
 import com.chrono.chrono.entities.accounting.JournalEntry;
 import com.chrono.chrono.entities.accounting.JournalEntryLine;
+import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.accounting.AccountRepository;
 import com.chrono.chrono.repositories.accounting.AssetRepository;
+import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.accounting.AccountingService;
 import com.chrono.chrono.services.accounting.AccountsPayableService;
 import com.chrono.chrono.services.accounting.AccountsReceivableService;
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import jakarta.validation.Valid;
 
+import java.security.Principal;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -42,67 +48,113 @@ public class AccountingController {
     private final AssetManagementService assetManagementService;
     private final AccountRepository accountRepository;
     private final AssetRepository assetRepository;
+    private final UserRepository userRepository;
+    private final UserPermissionService userPermissionService;
 
     public AccountingController(AccountingService accountingService,
                                 AccountsReceivableService accountsReceivableService,
-                                AccountsPayableService accountsPayableService,
-                                AssetManagementService assetManagementService,
-                                AccountRepository accountRepository,
-                                AssetRepository assetRepository) {
+                                 AccountsPayableService accountsPayableService,
+                                 AssetManagementService assetManagementService,
+                                 AccountRepository accountRepository,
+                                 AssetRepository assetRepository,
+                                 UserRepository userRepository,
+                                 UserPermissionService userPermissionService) {
         this.accountingService = accountingService;
         this.accountsReceivableService = accountsReceivableService;
         this.accountsPayableService = accountsPayableService;
         this.assetManagementService = assetManagementService;
         this.accountRepository = accountRepository;
         this.assetRepository = assetRepository;
+        this.userRepository = userRepository;
+        this.userPermissionService = userPermissionService;
+    }
+
+    private User requireUser(Principal principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return userRepository.findByUsernameWithPermissionContext(principal.getName())
+                .filter(user -> !user.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
+    private Company requireCompany(Principal principal) {
+        User user = requireUser(principal);
+        if (CompanyScope.companyFor(user) == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Company scoped user required");
+        }
+        return CompanyScope.companyFor(user);
+    }
+
+    private void requireAccountingAccess(Principal principal, String requiredLevel) {
+        User user = requireUser(principal);
+        if (!userPermissionService.hasPageAccess(user, UserPermissionService.PAGE_ADMIN_ACCOUNTING, requiredLevel)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accounting access required");
+        }
+    }
+
+    public record MigrationStatus(boolean legacyReviewRequired) {}
+
+    @GetMapping("/migration-status")
+    public MigrationStatus migrationStatus(Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
+        requireCompany(principal);
+        return new MigrationStatus(accountingService.hasUnassignedHistory() || assetRepository.existsByCompanyIsNull());
     }
 
     @GetMapping("/accounts")
-    public ResponseEntity<List<AccountDTO>> listAccounts() {
-        List<AccountDTO> accounts = accountingService.listAccounts().stream()
+    public ResponseEntity<List<AccountDTO>> listAccounts(Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
+        List<AccountDTO> accounts = accountingService.listAccounts(requireCompany(principal)).stream()
                 .map(AccountDTO::from)
                 .toList();
         return ResponseEntity.ok(accounts);
     }
 
     @PostMapping("/accounts")
-    public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request) {
-        Account saved = accountingService.saveAccount(request.toEntity());
+    public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request, Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
+        Account saved = accountingService.saveAccount(requireCompany(principal), request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/accounts/" + saved.getId()))
                 .body(AccountDTO.from(saved));
     }
 
     @GetMapping("/journal")
     public ResponseEntity<Page<JournalEntryDTO>> listJournal(@RequestParam(defaultValue = "0") int page,
-                                                             @RequestParam(defaultValue = "20") int size) {
+                                                             @RequestParam(defaultValue = "20") int size,
+                                                             Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<JournalEntryDTO> entries = accountingService.listEntries(pageable)
+        Page<JournalEntryDTO> entries = accountingService.listEntries(requireCompany(principal), pageable)
                 .map(JournalEntryDTO::from);
         return ResponseEntity.ok(entries);
     }
 
     @GetMapping("/assets")
-    public ResponseEntity<List<AssetDTO>> listAssets() {
-        List<AssetDTO> assets = assetManagementService.listAssets().stream()
+    public ResponseEntity<List<AssetDTO>> listAssets(Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
+        List<AssetDTO> assets = assetManagementService.listAssets(requireCompany(principal)).stream()
                 .map(AssetDTO::from)
                 .toList();
         return ResponseEntity.ok(assets);
     }
 
     @PostMapping("/journal")
-    public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request) {
+    public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request,
+                                                              Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireCompany(principal);
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
         entry.setDescription(request.getDescription());
-        entry.setSource(request.getSource());
+        entry.setSource("MANUAL");
         entry.setDocumentReference(request.getDocumentReference());
         List<JournalEntryLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
                 .map(line -> {
                     if (line.getAccountId() == null) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account is required");
                     }
-                    Account account = accountRepository.findById(line.getAccountId())
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+                    Account account = accountingService.requireAccount(company, line.getAccountId());
                     BigDecimal debit = line.getDebit() == null ? BigDecimal.ZERO : line.getDebit();
                     BigDecimal credit = line.getCredit() == null ? BigDecimal.ZERO : line.getCredit();
                     if (debit.compareTo(BigDecimal.ZERO) > 0 && credit.compareTo(BigDecimal.ZERO) > 0) {
@@ -119,40 +171,47 @@ public class AccountingController {
                     return jel;
                 }).toList();
         entry.setLines(lines);
-        JournalEntry saved = accountingService.postEntry(entry);
+        JournalEntry saved = accountingService.postEntry(company, entry);
         return ResponseEntity.created(URI.create("/api/accounting/journal/" + saved.getId()))
                 .body(JournalEntryDTO.from(saved));
     }
 
     @GetMapping("/receivables/open")
     public ResponseEntity<Page<CustomerInvoiceDTO>> openReceivables(@RequestParam(defaultValue = "0") int page,
-                                                                    @RequestParam(defaultValue = "20") int size) {
+                                                                    @RequestParam(defaultValue = "20") int size,
+                                                                    Principal principal) {
+        Company company = requireCompany(principal);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<CustomerInvoiceDTO> invoices = accountsReceivableService.findOpenInvoices(pageable)
+        Page<CustomerInvoiceDTO> invoices = accountsReceivableService.findOpenInvoices(company, pageable)
                 .map(CustomerInvoiceDTO::from);
         return ResponseEntity.ok(invoices);
     }
 
     @GetMapping("/payables/open")
     public ResponseEntity<Page<VendorInvoiceDTO>> openPayables(@RequestParam(defaultValue = "0") int page,
-                                                               @RequestParam(defaultValue = "20") int size) {
+                                                               @RequestParam(defaultValue = "20") int size,
+                                                               Principal principal) {
+        Company company = requireCompany(principal);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<VendorInvoiceDTO> invoices = accountsPayableService.findPendingInvoices(pageable)
+        Page<VendorInvoiceDTO> invoices = accountsPayableService.findPendingInvoices(company, pageable)
                 .map(VendorInvoiceDTO::from);
         return ResponseEntity.ok(invoices);
     }
 
     @PostMapping("/assets")
-    public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request) {
-        Asset saved = assetManagementService.registerAsset(request.toEntity());
+    public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request, Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
+        Asset saved = assetManagementService.registerAsset(requireCompany(principal), request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/assets/" + saved.getId()))
                 .body(AssetDTO.from(saved));
     }
 
     @PostMapping("/assets/{id}/depreciate")
-    public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id) {
-        return assetRepository.findById(id)
-                .map(assetManagementService::runMonthlyDepreciation)
+    public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id, Principal principal) {
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireCompany(principal);
+        return assetRepository.findByIdAndCompany_Id(id, company.getId())
+                .map(asset -> assetManagementService.runMonthlyDepreciation(company, asset))
                 .map(AssetDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -160,16 +219,20 @@ public class AccountingController {
 
     @PostMapping("/receivables/{id}/payments")
     public ResponseEntity<CustomerInvoiceDTO> applyReceivablePayment(@PathVariable Long id,
-                                                                     @RequestBody RecordPaymentRequest request) {
-        var updated = accountsReceivableService.applyPayment(id, request.getAmount(),
+                                                                     @RequestBody RecordPaymentRequest request,
+                                                                     Principal principal) {
+        Company company = requireCompany(principal);
+        var updated = accountsReceivableService.applyPayment(company, id, request.getAmount(),
                 request.getPaymentDate(), request.getMemo());
         return ResponseEntity.ok(CustomerInvoiceDTO.from(updated));
     }
 
     @PostMapping("/payables/{id}/payments")
     public ResponseEntity<VendorInvoiceDTO> applyPayablePayment(@PathVariable Long id,
-                                                                @RequestBody RecordPaymentRequest request) {
-        var updated = accountsPayableService.applyPayment(id, request.getAmount(),
+                                                                @RequestBody RecordPaymentRequest request,
+                                                                Principal principal) {
+        Company company = requireCompany(principal);
+        var updated = accountsPayableService.applyPayment(company, id, request.getAmount(),
                 request.getPaymentDate(), request.getMemo());
         return ResponseEntity.ok(VendorInvoiceDTO.from(updated));
     }

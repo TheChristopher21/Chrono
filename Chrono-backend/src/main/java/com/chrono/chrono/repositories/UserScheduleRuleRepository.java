@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface UserScheduleRuleRepository extends JpaRepository<UserScheduleRule, Long> {
     List<UserScheduleRule> findByUser(User user);
+    List<UserScheduleRule> findByUser_Company_Id(Long companyId);
 }

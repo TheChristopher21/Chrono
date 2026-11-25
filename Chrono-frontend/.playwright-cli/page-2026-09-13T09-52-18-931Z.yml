@@ -1,0 +1,141 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e1015]:
+        - navigation "Hauptnavigation" [ref=e1016]:
+          - link "Chrono PMS" [ref=e1018] [cursor=pointer]:
+            - /url: /pms
+            - img "Chrono" [ref=e1019]
+          - list [ref=e1020]:
+            - listitem [ref=e1021]:
+              - link "Zu Chrono wechseln" [ref=e1022] [cursor=pointer]:
+                - /url: /admin/dashboard
+            - listitem [ref=e1023]:
+              - button "Was ist neu?" [ref=e1024] [cursor=pointer]
+            - listitem [ref=e1028]:
+              - button "Dark Mode" [ref=e1029] [cursor=pointer]
+            - listitem [ref=e1033]:
+              - button "🌐" [ref=e1034] [cursor=pointer]
+            - listitem [ref=e1037]:
+              - button "Raja Siefert" [ref=e1038] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e1039]: R
+          - button "PMS-Bereiche" [ref=e1044] [cursor=pointer]
+        - region "PMS Arbeitsbereiche" [ref=e1047]:
+          - generic [ref=e1048]:
+            - tablist "Offene Arbeitsbereiche" [ref=e1049]:
+              - generic [ref=e1050]:
+                - tab "Hotelverwaltung (PMS)" [selected] [ref=e1051] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1052]: PMS
+                - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=e1054] [cursor=pointer]'
+                - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=e1055] [cursor=pointer]'
+              - generic [ref=e1056]:
+                - tab "PMS · Reservierungen" [ref=e1057] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1058]: PMS
+                - 'button "Tab anheften: PMS · Reservierungen" [ref=e1060] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Reservierungen" [ref=e1061] [cursor=pointer]'
+              - generic [ref=e1062]:
+                - tab "PMS · Gastkonten & Zahlungen" [ref=e1063] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1064]: PMS
+                - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=e1066] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=e1067] [cursor=pointer]'
+              - generic [ref=e1068]:
+                - tab "PMS · Zimmerplan" [ref=e1069] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1070]: PMS
+                - 'button "Tab anheften: PMS · Zimmerplan" [ref=e1072] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Zimmerplan" [ref=e1073] [cursor=pointer]'
+              - generic [ref=e1074]:
+                - tab "PMS · Gästeprofile" [ref=e1075] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1076]: PMS
+                - 'button "Tab anheften: PMS · Gästeprofile" [ref=e1078] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Gästeprofile" [ref=e1079] [cursor=pointer]'
+              - generic [ref=e1080]:
+                - tab "PMS · Raten & Verfügbarkeit" [ref=e1081] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1082]: PMS
+                - 'button "Tab anheften: PMS · Raten & Verfügbarkeit" [ref=e1084] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Raten & Verfügbarkeit" [ref=e1085] [cursor=pointer]'
+              - generic [ref=e1086]:
+                - tab "PMS · Geschäftspartner" [ref=e1087] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1088]: PMS
+                - 'button "Tab anheften: PMS · Geschäftspartner" [ref=e1090] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Geschäftspartner" [ref=e1091] [cursor=pointer]'
+              - generic [ref=e1092]:
+                - tab "PMS · Rechnungen" [ref=e1093] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1094]: PMS
+                - 'button "Tab anheften: PMS · Rechnungen" [ref=e1096] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Rechnungen" [ref=e1097] [cursor=pointer]'
+              - generic [ref=e1098]:
+                - tab "PMS · Housekeeping & Reinigung" [ref=e1099] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1100]: PMS
+                - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=e1102] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=e1103] [cursor=pointer]'
+              - generic [ref=e1104]:
+                - tab "PMS · Veranstaltungen & Ressourcen" [ref=e1105] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1106]: PMS
+                - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=e1108] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=e1109] [cursor=pointer]'
+              - generic [ref=e1110]:
+                - tab "PMS · Berichte & Kennzahlen" [ref=e1111] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1112]: PMS
+                - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=e1114] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=e1115] [cursor=pointer]'
+              - generic [ref=e1116]:
+                - tab "PMS · Schnittstellen" [ref=e1117] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e1118]: PMS
+                - 'button "Tab anheften: PMS · Schnittstellen" [ref=e1120] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Schnittstellen" [ref=e1121] [cursor=pointer]'
+            - generic [ref=e1122]:
+              - button "Arbeitsbereich öffnen" [ref=e1123] [cursor=pointer]
+              - button "Tab-Aktionen" [ref=e1124] [cursor=pointer]
+      - generic [ref=e63]:
+        - complementary "PMS-Navigation" [ref=e64]:
+          - button "Aktives Hotel Hotel wird geladen…" [ref=e1125] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e66]: CH
+            - generic [ref=e67]:
+              - generic [ref=e68]: Aktives Hotel
+              - strong [ref=e69]: Hotel wird geladen…
+            - generic [aria-hidden] [ref=e70]: ⌄
+          - navigation "PMS-Arbeitsbereiche" [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e73]: Rezeption
+              - button "Übersicht" [ref=e74] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e75]: HQ
+                - text: Übersicht
+          - generic [ref=e118]:
+            - strong [ref=e119]: PMS betriebsbereit
+            - generic [ref=e120]: Status- und Schnittstellenprüfung aktiv
+        - main [ref=e121]:
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - generic [ref=e124]: Chrono Hotel-PMS
+              - heading "Guten Tag, Raja Siefert" [level=1] [ref=e125]
+              - paragraph [ref=e126]: Deine operative Übersicht für den aktuellen Hotelbetrieb.
+            - button "Suchen oder Aktion starten Ctrl K" [ref=e128] [cursor=pointer]:
+              - generic [aria-hidden] [ref=e129]: ⌕
+              - text: Suchen oder Aktion starten
+              - generic [ref=e130]: Ctrl K
+          - alert [ref=e1369]:
+            - generic [ref=e1371]:
+              - heading "Zugriff nicht freigegeben" [level=2] [ref=e1372]
+              - paragraph [ref=e1373]: Für diesen Arbeitsbereich liegt keine aktuelle PMS-Berechtigung vor. Ein PMS-Master kann die Hotelrechte prüfen.
+    - generic [ref=e387]:
+      - generic:
+        - generic:
+          - generic:
+            - heading "Chrono Assistent" [level=3]
+          - button "Chat schließen": ×
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: Hallo Raja Siefert! Wie kann ich dir helfen?
+        - generic:
+          - textbox "Stelle eine Frage..."
+          - button "Nachricht senden"
+      - button "Chat öffnen" [ref=e388] [cursor=pointer]:
+        - img "Chat Assistent Icon" [ref=e389]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

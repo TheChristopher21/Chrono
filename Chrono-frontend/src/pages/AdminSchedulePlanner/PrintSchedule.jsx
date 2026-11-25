@@ -1,14 +1,18 @@
 // src/pages/admin/PrintSchedule.jsx
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { addDays, format, formatISO, startOfWeek } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { de, enUS } from 'date-fns/locale';
 import api from '../../utils/api';
 import jsPDF from 'jspdf';
+import { LanguageContext } from '../../context/LanguageContext';
 
 // ------------------ Utils & Config ------------------
 function useQueryParams() { return new URLSearchParams(useLocation().search); }
-const DAYS_FULL = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const DAYS_FULL = {
+    de: ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'],
+    en: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
+};
 
 const L = {
     margin: 8, weekGap: 6, colGap: 3,
@@ -173,6 +177,7 @@ function drawWeek(pdf,x,y,w,theme,week){
 
 // ------------------ Component ------------------
 export default function PrintSchedule(){
+    const { language } = useContext(LanguageContext);
     const ranRef = useRef(false); // StrictMode-Guard
     const q = useQueryParams();
     const startParam = q.get('start');
@@ -190,10 +195,13 @@ export default function PrintSchedule(){
         ranRef.current = true;
 
         (async () => {
+            const isEnglish = language === 'en';
+            const dateLocale = isEnglish ? enUS : de;
+            const dayNames = DAYS_FULL[isEnglish ? 'en' : 'de'];
             // 1) Wochenzahl
             let weeks = Number.isFinite(defaultWeeks) && defaultWeeks > 0 ? defaultWeeks : undefined;
             if (!weeks) {
-                const ask = window.prompt('Wie viele Wochen sollen exportiert werden?', '1');
+                const ask = window.prompt(isEnglish ? 'How many weeks should be exported?' : 'Wie viele Wochen sollen exportiert werden?', '1');
                 if (ask === null) return;
                 weeks = Math.max(1, parseInt(ask, 10) || 1);
             }
@@ -218,8 +226,8 @@ export default function PrintSchedule(){
             const weeksData = [];
             for (let w=0; w<weeks; w++){
                 const ws = addDays(startOfWeek(startDate, { weekStartsOn: 1 }), w*7);
-                const title = `KW ${format(ws,'w')} / ${format(ws,'yyyy')}`;
-                const days = DAYS_FULL.map((name, i) => {
+                const title = `${isEnglish ? 'Week' : 'KW'} ${format(ws,'w', { locale: dateLocale })} / ${format(ws,'yyyy', { locale: dateLocale })}`;
+                const days = dayNames.map((name, i) => {
                     const key = formatISO(addDays(ws, i), { representation: 'date' });
                     const shiftsForDay = shifts.map(s => {
                         const entries = (map[key] || []).filter(e => e.shift === s.shiftKey);
@@ -233,7 +241,7 @@ export default function PrintSchedule(){
                         if (!chips.length) chips.push({ text: '–', bg: '#9aa3b2', fg: '#111' });
                         return { label: s.label || '', time: `${s.startTime || ''}${s.endTime ? ' - ' + s.endTime : ''}`.trim(), chips };
                     });
-                    return { name, date: format(new Date(key), 'dd.MM.', { locale: de }), shifts: shiftsForDay };
+                    return { name, date: format(new Date(key), isEnglish ? 'MM/dd' : 'dd.MM.', { locale: dateLocale }), shifts: shiftsForDay };
                 });
                 weeksData.push({ title, days });
             }
@@ -263,7 +271,7 @@ export default function PrintSchedule(){
                 }
                 // Footer
                 pdf.setFontSize(8); pdf.setTextColor(readTheme(forceTheme).isDark ? 255 : 0);
-                pdf.text(`Erstellt: ${format(new Date(),'dd.MM.yyyy HH:mm',{locale:de})}`, L.margin, pageH - 4);
+                pdf.text(`${isEnglish ? 'Created' : 'Erstellt'}: ${format(new Date(), isEnglish ? 'MM/dd/yyyy HH:mm' : 'dd.MM.yyyy HH:mm', { locale: dateLocale })}`, L.margin, pageH - 4);
 
                 if (i < weeksData.length) {
                     pdf.addPage('a4', orientation);
@@ -286,7 +294,7 @@ export default function PrintSchedule(){
                 window.location.href = url;
             }
         })();
-    }, [defaultWeeks, forceTheme, orientation, startDate]);
+    }, [defaultWeeks, forceTheme, language, orientation, startDate]);
 
     // Headless: kein UI
     return null;

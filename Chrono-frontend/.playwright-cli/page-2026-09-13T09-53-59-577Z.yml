@@ -1,0 +1,7 @@
+- generic [ref=e2]:
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

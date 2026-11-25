@@ -2,6 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar';
+import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 
 const PercentageVacationSection = ({
                                        t,
@@ -21,6 +22,8 @@ const PercentageVacationSection = ({
                     onRefreshVacations={onRefreshVacations}
                 />
             </div>
+
+            <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
         </section>
     );
 };

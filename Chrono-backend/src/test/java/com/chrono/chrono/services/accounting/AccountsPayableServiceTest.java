@@ -1,6 +1,8 @@
 package com.chrono.chrono.services.accounting;
 
 import com.chrono.chrono.entities.accounting.InvoiceStatus;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.entities.accounting.JournalEntry;
 import com.chrono.chrono.entities.accounting.VendorInvoice;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
@@ -27,9 +29,12 @@ class AccountsPayableServiceTest {
     @Autowired
     private VendorInvoiceRepository vendorInvoiceRepository;
 
+    @Autowired private CompanyRepository companies;
+
     @Test
     void recordVendorInvoiceAssignsDefaultsAndPostsJournalEntry() {
         VendorInvoice invoice = new VendorInvoice();
+        invoice.setCompany(companies.save(new Company("Praxis")));
         invoice.setVendorName("Supply AG");
         invoice.setAmount(new BigDecimal("1500.00"));
         invoice.setInvoiceNumber(null);

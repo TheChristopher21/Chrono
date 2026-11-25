@@ -1,0 +1,387 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - navigation "Hauptnavigation" [ref=e7]:
+          - link "Chrono PMS" [ref=e9] [cursor=pointer]:
+            - /url: /pms
+            - img "Chrono" [ref=e10]
+          - list [ref=e11]:
+            - listitem [ref=e12]:
+              - link "Zu Chrono wechseln" [ref=e13] [cursor=pointer]:
+                - /url: /admin/dashboard
+            - listitem [ref=e14]:
+              - button "Was ist neu?" [ref=e15] [cursor=pointer]
+            - listitem [ref=e20]:
+              - button "Light Mode" [active] [ref=e390] [cursor=pointer]
+            - listitem [ref=e25]:
+              - button "🌐" [ref=e26] [cursor=pointer]
+            - listitem [ref=e29]:
+              - button "Raja Siefert" [ref=e30] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e31]: R
+          - button "PMS-Bereiche" [ref=e36] [cursor=pointer]
+        - region "PMS Arbeitsbereiche" [ref=e39]:
+          - generic [ref=e40]:
+            - tablist "Offene Arbeitsbereiche" [ref=e41]:
+              - generic [ref=e42]:
+                - tab "Hotelverwaltung (PMS)" [selected] [ref=e43] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e44]: PMS
+                - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=e46] [cursor=pointer]'
+                - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=e47] [cursor=pointer]'
+              - generic [ref=e48]:
+                - tab "PMS · Reservierungen" [ref=e49] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e50]: PMS
+                - 'button "Tab anheften: PMS · Reservierungen" [ref=e52] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Reservierungen" [ref=e53] [cursor=pointer]'
+              - generic [ref=e54]:
+                - tab "PMS · Gastkonten & Zahlungen" [ref=e55] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e56]: PMS
+                - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=e58] [cursor=pointer]'
+                - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=e59] [cursor=pointer]'
+            - generic [ref=e60]:
+              - button "Arbeitsbereich öffnen" [ref=e61] [cursor=pointer]
+              - button "Tab-Aktionen" [ref=e62] [cursor=pointer]
+      - generic [ref=e63]:
+        - complementary "PMS-Navigation" [ref=e64]:
+          - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=e65] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e66]: CH
+            - generic [ref=e67]:
+              - generic [ref=e68]: Aktives Hotel
+              - strong [ref=e69]: Chrono Demo Hotel Zürich
+            - generic [aria-hidden] [ref=e70]: ⌄
+          - navigation "PMS-Arbeitsbereiche" [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e73]: Rezeption
+              - button "Übersicht" [ref=e74] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e75]: HQ
+                - text: Übersicht
+              - button "Reservierungen" [ref=e76] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e77]: RES
+                - text: Reservierungen
+              - button "Zimmerplan" [ref=e78] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e79]: ZIM
+                - text: Zimmerplan
+              - button "Gästeprofile" [ref=e80] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e81]: GAS
+                - text: Gästeprofile
+              - button "Gastkonten & Zahlungen" [ref=e82] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e83]: CHF
+                - text: Gastkonten & Zahlungen
+              - button "Gästeanmeldung" [ref=e84] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e85]: DCI
+                - text: Gästeanmeldung
+            - generic [ref=e86]:
+              - generic [ref=e87]: Hotelbetrieb
+              - button "Housekeeping & Reinigung" [ref=e88] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e89]: HK
+                - text: Housekeeping & Reinigung
+              - button "Gästekommunikation" [ref=e90] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e91]: COM
+                - text: Gästekommunikation
+              - button "Veranstaltungen & Ressourcen" [ref=e92] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e93]: VER
+                - text: Veranstaltungen & Ressourcen
+              - button "Verkauf & lokale Integrationen" [ref=e94] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e95]: POS
+                - text: Verkauf & lokale Integrationen
+            - generic [ref=e96]:
+              - generic [ref=e97]: Verkauf & Partner
+              - button "Raten & Verfügbarkeit" [ref=e98] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e99]: RAT
+                - text: Raten & Verfügbarkeit
+              - button "Gruppenreservierungen" [ref=e100] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e101]: GRP
+                - text: Gruppenreservierungen
+              - button "Geschäftspartner" [ref=e102] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e103]: ORG
+                - text: Geschäftspartner
+            - generic [ref=e104]:
+              - generic [ref=e105]: Steuerung & System
+              - button "Hotelportfolio" [ref=e106] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e107]: HP
+                - text: Hotelportfolio
+              - button "Rechnungen" [ref=e108] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e109]: RE
+                - text: Rechnungen
+              - button "Tagesabschluss" [ref=e110] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e111]: NA
+                - text: Tagesabschluss
+              - button "Berichte & Kennzahlen" [ref=e112] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e113]: KPI
+                - text: Berichte & Kennzahlen
+              - button "Schnittstellen" [ref=e114] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e115]: SYS
+                - text: Schnittstellen
+          - generic [ref=e118]:
+            - strong [ref=e119]: PMS betriebsbereit
+            - generic [ref=e120]: Status- und Schnittstellenprüfung aktiv
+        - main [ref=e121]:
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - generic [ref=e124]: Chrono Hotel-PMS
+              - heading "Guten Tag, Raja Siefert" [level=1] [ref=e125]
+              - paragraph [ref=e126]: Deine operative Übersicht für den aktuellen Hotelbetrieb.
+            - button "Suchen oder Aktion starten Ctrl K" [ref=e128] [cursor=pointer]:
+              - generic [aria-hidden] [ref=e129]: ⌕
+              - text: Suchen oder Aktion starten
+              - generic [ref=e130]: Ctrl K
+          - region "Betriebstag und Status" [ref=e131]:
+            - generic [ref=e132]:
+              - button "Vorheriger Tag" [ref=e133] [cursor=pointer]: ←
+              - generic [ref=e134]:
+                - generic [ref=e135]: Betriebstag
+                - strong [ref=e136]: Sonntag, 13. September 2026
+              - button "Nächster Tag" [ref=e137] [cursor=pointer]: →
+              - button "Heute" [ref=e138] [cursor=pointer]
+            - generic [ref=e141]:
+              - generic [ref=e142]: Systemstatus
+              - strong [ref=e143]: Betriebsprüfung mit Hinweisen
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - button "Übersicht anpassen" [ref=e146] [cursor=pointer]
+              - status [ref=e147]: Mit dem Benutzerkonto synchronisiert
+            - generic [ref=e148]:
+              - region "Schnellaktionen" [ref=e149]:
+                - region [ref=e151]:
+                  - generic [ref=e152]:
+                    - generic [ref=e153]:
+                      - generic [ref=e154]: Rezeption
+                      - heading "Schnellaktionen" [level=2] [ref=e155]
+                    - paragraph [ref=e156]: Für schnelle Bedienung werden die Tastaturkürzel eingeblendet.
+                  - generic [ref=e157]:
+                    - button "Gast vor Ort aufnehmen Gastdaten, Meldeschein, Zimmer und Check-in in einem Ablauf Alt W" [ref=e158] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e159]: "01"
+                      - generic [ref=e160]:
+                        - strong [ref=e161]: Gast vor Ort aufnehmen
+                        - generic [ref=e162]: Gastdaten, Meldeschein, Zimmer und Check-in in einem Ablauf
+                      - generic [ref=e163]: Alt W
+                      - generic [aria-hidden] [ref=e164]: →
+                    - button "Reservierung anlegen Telefon-, E-Mail- oder Direktbuchung erfassen Ctrl N" [ref=e165] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e166]: "02"
+                      - generic [ref=e167]:
+                        - strong [ref=e168]: Reservierung anlegen
+                        - generic [ref=e169]: Telefon-, E-Mail- oder Direktbuchung erfassen
+                      - generic [ref=e170]: Ctrl N
+                      - generic [aria-hidden] [ref=e171]: →
+                    - button "Einchecken Anreise prüfen und Gast einchecken Ctrl I" [ref=e172] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e173]: "03"
+                      - generic [ref=e174]:
+                        - strong [ref=e175]: Einchecken
+                        - generic [ref=e176]: Anreise prüfen und Gast einchecken
+                      - generic [ref=e177]: Ctrl I
+                      - generic [aria-hidden] [ref=e178]: →
+                    - button "Auschecken Gastkonto prüfen und Gast auschecken Ctrl O" [ref=e179] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e180]: "04"
+                      - generic [ref=e181]:
+                        - strong [ref=e182]: Auschecken
+                        - generic [ref=e183]: Gastkonto prüfen und Gast auschecken
+                      - generic [ref=e184]: Ctrl O
+                      - generic [aria-hidden] [ref=e185]: →
+                    - button "Gast suchen Profile, Aufenthalte und Reservierungen Ctrl G" [ref=e186] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e187]: "05"
+                      - generic [ref=e188]:
+                        - strong [ref=e189]: Gast suchen
+                        - generic [ref=e190]: Profile, Aufenthalte und Reservierungen
+                      - generic [ref=e191]: Ctrl G
+                      - generic [aria-hidden] [ref=e192]: →
+                    - button "Zahlung erfassen Offene Gastkonten und Zahlungen bearbeiten Ctrl P" [ref=e193] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=e194]: "06"
+                      - generic [ref=e195]:
+                        - strong [ref=e196]: Zahlung erfassen
+                        - generic [ref=e197]: Offene Gastkonten und Zahlungen bearbeiten
+                      - generic [ref=e198]: Ctrl P
+                      - generic [aria-hidden] [ref=e199]: →
+              - region "Kennzahlen" [ref=e200]:
+                - region "Kennzahlen des Betriebstags" [ref=e202]:
+                  - article [ref=e203]:
+                    - generic [ref=e204]: Auslastung
+                    - strong [ref=e205]: 0 %
+                    - generic [ref=e206]: 0 von 7 Zimmern verkauft oder belegt
+                  - article [ref=e207]:
+                    - generic [ref=e208]: Gäste im Haus
+                    - strong [ref=e209]: "3"
+                    - generic [ref=e210]: Eingecheckte Aufenthalte
+                  - article [ref=e211]:
+                    - generic [ref=e212]: Anreisen
+                    - strong [ref=e213]: "0"
+                    - generic [ref=e214]: Am Betriebstag
+                  - article [ref=e215]:
+                    - generic [ref=e216]: Abreisen
+                    - strong [ref=e217]: "0"
+                    - generic [ref=e218]: Am Betriebstag
+                  - article [ref=e219]:
+                    - generic [ref=e220]: Zu reinigen
+                    - strong [ref=e221]: "0"
+                    - generic [ref=e222]: 0 Aufgaben
+                  - article [ref=e223]:
+                    - generic [ref=e224]: Offene Gastkonten
+                    - strong [ref=e225]: CHF 3789.50
+                    - generic [ref=e226]: 9 offene Gastkonten
+              - region "Anreisen" [ref=e227]:
+                - generic [ref=e229]:
+                  - generic [ref=e230]:
+                    - generic [ref=e231]:
+                      - generic [ref=e232]: Rezeption
+                      - heading "Anreisen heute" [level=2] [ref=e233]
+                    - button "Alle anzeigen" [ref=e234] [cursor=pointer]
+                  - generic [aria-hidden] [ref=e235]:
+                    - generic [ref=e236]: Gast
+                    - generic [ref=e237]: Zeit
+                    - generic [ref=e238]: Zimmer
+                    - generic [ref=e239]: Status
+                  - generic [ref=e240]:
+                    - generic [aria-hidden] [ref=e241]: A
+                    - generic [ref=e242]:
+                      - strong [ref=e243]: Keine Anreisen vorhanden
+                      - paragraph [ref=e244]: Sobald Reservierungen erfasst sind, erscheinen die heutigen Anreisen hier.
+                    - button "Reservierung anlegen" [ref=e245] [cursor=pointer]
+              - region "Zimmerstatus" [ref=e246]:
+                - generic [ref=e248]:
+                  - generic [ref=e249]:
+                    - generic [ref=e250]:
+                      - generic [ref=e251]: Zimmerstatus
+                      - heading "Zimmerstatus" [level=2] [ref=e252]
+                    - button "Zimmerplan" [ref=e253] [cursor=pointer]
+                  - generic [ref=e254]:
+                    - generic "7 Zimmer eingerichtet" [ref=e255]:
+                      - strong [ref=e256]: "7"
+                      - generic [ref=e257]: Zimmer
+                    - generic [ref=e258]:
+                      - generic [ref=e259]:
+                        - text: Sauber & frei
+                        - strong [ref=e261]: "7"
+                      - generic [ref=e262]:
+                        - text: Zu reinigen
+                        - strong [ref=e264]: "0"
+                      - generic [ref=e265]:
+                        - text: Reinigung läuft
+                        - strong [ref=e267]: "0"
+                      - generic [ref=e268]:
+                        - text: Zu kontrollieren
+                        - strong [ref=e270]: "0"
+                      - generic [ref=e271]:
+                        - text: Belegt
+                        - strong [ref=e273]: "0"
+                      - generic [ref=e274]:
+                        - text: Eingeschränkter Betrieb (OOS)
+                        - strong [ref=e276]: "0"
+                      - generic [ref=e277]:
+                        - text: Nicht verkaufbar
+                        - strong [ref=e279]: "0"
+              - region "Abreisen & Gastkonten" [ref=e280]:
+                - generic [ref=e282]:
+                  - generic [ref=e283]:
+                    - generic [ref=e284]:
+                      - generic [ref=e285]: Rezeption
+                      - heading "Abreisen & offene Gastkonten" [level=2] [ref=e286]
+                    - button "Gastkonten öffnen" [ref=e287] [cursor=pointer]
+                  - generic [ref=e288]:
+                    - generic [ref=e289]:
+                      - generic [ref=e290]: Abreisen
+                      - strong [ref=e291]: "0"
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: Offener Betrag
+                      - strong [ref=e294]: CHF 3789.50
+                    - button "Gastkonten bearbeiten" [ref=e295] [cursor=pointer]
+              - region "Housekeeping" [ref=e296]:
+                - generic [ref=e298]:
+                  - generic [ref=e299]:
+                    - generic [ref=e300]:
+                      - generic [ref=e301]: Housekeeping
+                      - heading "Arbeitslast" [level=2] [ref=e302]
+                    - button "Aufgaben öffnen" [ref=e303] [cursor=pointer]
+                  - generic [ref=e304]:
+                    - generic [ref=e305]:
+                      - generic [ref=e306]: Benötigt
+                      - strong [ref=e307]: 0.0 h
+                    - generic [aria-hidden] [ref=e308]: →
+                    - generic [ref=e309]:
+                      - generic [ref=e310]: Eingeplant
+                      - strong [ref=e311]: 0 h
+                    - generic [ref=e312]: 0 Aufgaben
+                  - paragraph [ref=e313]: Abreisen erzeugen automatisch priorisierte Reinigungsaufgaben. Sauberstatus und Check-in-Bereitschaft bleiben dadurch synchron.
+              - region "Systeme" [ref=e314]:
+                - generic [ref=e316]:
+                  - generic [ref=e317]:
+                    - generic [ref=e318]:
+                      - generic [ref=e319]: Schnittstellenstatus
+                      - heading "Systeme" [level=2] [ref=e320]
+                    - button "Details" [ref=e321] [cursor=pointer]
+                  - generic [ref=e322]:
+                    - generic [ref=e323]:
+                      - generic [ref=e324]: Datenbank
+                      - strong [ref=e326]: Datenbankabfrage erfolgreich.
+                    - generic [ref=e327]:
+                      - generic [ref=e328]: Externe Übertragungen
+                      - strong [ref=e330]: 29 offen, 0 fehlgeschlagen, 0 endgültig fehlgeschlagen.
+                    - generic [ref=e331]:
+                      - generic [ref=e332]: Änderungsprotokoll
+                      - strong [ref=e334]: 30 letzte Ereignisse geprüft, 0 ungültig.
+                    - generic [ref=e335]:
+                      - generic [ref=e336]: Datensicherung
+                      - strong [ref=e338]: Automatische Datenbanksicherung ist nicht aktiviert.
+                    - generic [ref=e339]:
+                      - generic [ref=e340]: Restore-Probelauf
+                      - strong [ref=e342]: Automatischer Restore-Probelauf ist nicht aktiviert.
+              - region "Prüfungen" [ref=e343]:
+                - generic [ref=e345]:
+                  - generic [ref=e346]:
+                    - generic [ref=e347]:
+                      - generic [ref=e348]: Betriebsprüfungen
+                      - heading "Prüfungen" [level=2] [ref=e349]
+                    - generic [ref=e350]: Nachvollziehbar geprüft
+                  - article [ref=e352]:
+                    - generic [ref=e353]:
+                      - generic [ref=e354]: Warnung
+                      - strong [ref=e355]: Externe Übertragungen benötigen Aufmerksamkeit
+                      - generic [ref=e356]: Das älteste offene Ereignis überschreitet das Zeitlimit. · Anbieterverbindung und ausstehende Übertragungen prüfen.
+              - region "Ersteinrichtung" [ref=e357]:
+                - generic [ref=e359]:
+                  - generic [ref=e360]:
+                    - generic [ref=e361]: Ersteinrichtung
+                    - heading "Hoteleinrichtung abschliessen" [level=2] [ref=e362]
+                    - paragraph [ref=e363]: 1 Hotel, 3 Zimmertypen und 7 Zimmer sind eingerichtet.
+                    - button "Einrichtung verwalten" [ref=e364] [cursor=pointer]
+                  - list [ref=e365]:
+                    - listitem [ref=e366]:
+                      - generic [ref=e367]: "1"
+                      - strong [ref=e368]: Hotel und Betriebsdaten anlegen
+                      - generic [ref=e369]: Abgeschlossen
+                    - listitem [ref=e370]:
+                      - generic [ref=e371]: "2"
+                      - strong [ref=e372]: Zimmertypen und Zimmer erfassen
+                      - generic [ref=e373]: Abgeschlossen
+                    - listitem [ref=e374]:
+                      - generic [ref=e375]: "3"
+                      - strong [ref=e376]: Ratenpläne und Verfügbarkeiten definieren
+                      - generic [ref=e377]: Abgeschlossen
+                    - listitem [ref=e378]:
+                      - generic [ref=e379]: "4"
+                      - strong [ref=e380]: Gastkonten und Zahlungsarten aktivieren
+                      - generic [ref=e381]: Abgeschlossen
+                    - listitem [ref=e382]:
+                      - generic [ref=e383]: "5"
+                      - strong [ref=e384]: Buchungskanäle anbinden
+                      - generic [ref=e385]: Wartet auf Grundlage
+    - generic [ref=e387]:
+      - generic:
+        - generic:
+          - generic:
+            - heading "Chrono Assistent" [level=3]
+          - button "Chat schließen": ×
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: Hallo Raja Siefert! Wie kann ich dir helfen?
+        - generic:
+          - textbox "Stelle eine Frage..."
+          - button "Nachricht senden"
+      - button "Chat öffnen" [ref=e388] [cursor=pointer]:
+        - img "Chat Assistent Icon" [ref=e389]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

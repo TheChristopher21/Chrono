@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Lightweight projection for correction requests used by the admin dashboard.
@@ -14,6 +15,10 @@ import java.time.LocalDateTime;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AdminCorrectionRequestDTO {
+    private List<CorrectionOriginalEntry> originalDayEntries = List.of();
+
+    public List<CorrectionOriginalEntry> getOriginalDayEntries() { return originalDayEntries; }
+    public void setOriginalDayEntries(List<CorrectionOriginalEntry> entries) { originalDayEntries = entries; }
 
     private Long id;
     private String username;
@@ -29,6 +34,8 @@ public class AdminCorrectionRequestDTO {
     private boolean approved;
     private boolean denied;
     private String adminComment;
+    private String processedByAdminUsername;
+    private String processedByAdminInitials;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime originalTimestamp;
@@ -47,6 +54,8 @@ public class AdminCorrectionRequestDTO {
                                      boolean approved,
                                      boolean denied,
                                      String adminComment,
+                                     String processedByAdminUsername,
+                                     String processedByAdminInitials,
                                      LocalDateTime originalTimestamp,
                                      TimeTrackingEntry.PunchType originalPunchType,
                                      Long targetEntryId) {
@@ -59,6 +68,8 @@ public class AdminCorrectionRequestDTO {
         this.approved = approved;
         this.denied = denied;
         this.adminComment = adminComment;
+        this.processedByAdminUsername = processedByAdminUsername;
+        this.processedByAdminInitials = processedByAdminInitials;
         this.originalTimestamp = originalTimestamp;
         this.originalPunchType = originalPunchType;
         this.targetEntryId = targetEntryId;
@@ -134,6 +145,22 @@ public class AdminCorrectionRequestDTO {
 
     public void setAdminComment(String adminComment) {
         this.adminComment = adminComment;
+    }
+
+    public String getProcessedByAdminUsername() {
+        return processedByAdminUsername;
+    }
+
+    public void setProcessedByAdminUsername(String processedByAdminUsername) {
+        this.processedByAdminUsername = processedByAdminUsername;
+    }
+
+    public String getProcessedByAdminInitials() {
+        return processedByAdminInitials;
+    }
+
+    public void setProcessedByAdminInitials(String processedByAdminInitials) {
+        this.processedByAdminInitials = processedByAdminInitials;
     }
 
     public LocalDateTime getOriginalTimestamp() {

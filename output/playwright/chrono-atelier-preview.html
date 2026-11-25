@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Chrono Atelier</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Chrono Atelier" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Chrono Atelier&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;style&gt;
+#chrono-atelier{--ca-paper:#f7f4ed;--ca-white:#fffdf8;--ca-ink:#392736;--ca-muted:#766b70;--ca-line:#ddd5cf;--ca-accent:#65405b;--ca-tint:#ebe2e8;--ca-sage:#dfe9dc;--ca-sage-ink:#425a42;--ca-peach:#f4e1d2;--ca-density:1;box-sizing:border-box;background:var(--ca-paper);color:var(--ca-ink);font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color-scheme:light;padding:26px 34px 18px;position:relative;overflow-wrap:anywhere}
+#chrono-atelier *{box-sizing:border-box}#chrono-atelier [hidden]{display:none!important}#chrono-atelier button,#chrono-atelier input,#chrono-atelier select,#chrono-atelier textarea{font:inherit}#chrono-atelier button{cursor:pointer;color:inherit}#chrono-atelier button:disabled{cursor:default;opacity:.5}#chrono-atelier button,#chrono-atelier input,#chrono-atelier select,#chrono-atelier textarea{max-width:100%}#chrono-atelier button{background:none;border:0;padding:0}#chrono-atelier h1,#chrono-atelier h2,#chrono-atelier h3,#chrono-atelier p{margin:0}#chrono-atelier h1,#chrono-atelier h2,#chrono-atelier h3{font-weight:400}#chrono-atelier .ca-serif{font-family:Georgia,&#x27;Times New Roman&#x27;,serif;font-weight:400;letter-spacing:-.05em}#chrono-atelier .ca-top{display:flex;justify-content:space-between;gap:15px;align-items:center;padding-bottom:20px;border-bottom:1px solid var(--ca-ink)}#chrono-atelier .ca-brand{display:flex;align-items:center;gap:18px}#chrono-atelier .ca-logo{font-size:38px;line-height:1;letter-spacing:-.065em}#chrono-atelier .ca-edition{font-size:11px;text-transform:uppercase;letter-spacing:.16em;border-left:1px solid var(--ca-line);padding-left:18px;line-height:1.5}#chrono-atelier .ca-account{display:flex;align-items:center;gap:12px;font-size:12px}#chrono-atelier .ca-avatar{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:var(--ca-tint);color:var(--ca-accent);border-radius:50%;font-size:11px;flex-shrink:0}#chrono-atelier .ca-avatar.ca-profile{background:var(--ca-ink);color:var(--ca-white);width:35px;height:35px}#chrono-atelier .ca-nav{display:flex;gap:6px;padding:17px 0 0;align-items:center;flex-wrap:wrap}#chrono-atelier .ca-nav button{font-size:12px;padding:8px 14px;border-radius:24px;color:var(--ca-muted);white-space:nowrap}#chrono-atelier .ca-nav button[aria-current=page]{background:var(--ca-ink);color:var(--ca-white)}#chrono-atelier .ca-count{font-size:10px;padding:1px 5px;background:var(--ca-tint);border-radius:12px;color:var(--ca-ink);margin-left:3px}#chrono-atelier .ca-nav .ca-custom{margin-left:auto;color:var(--ca-ink);padding-right:0}#chrono-atelier .ca-icon{display:inline-flex;align-items:center;gap:6px}#chrono-atelier i[data-lucide],#chrono-atelier svg.lucide{width:15px;height:15px;vertical-align:middle;flex-shrink:0}#chrono-atelier .ca-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;padding:30px 0 24px}#chrono-atelier .ca-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.17em;color:var(--ca-muted);margin-bottom:7px}#chrono-atelier .ca-hero h1{font-size:47px;line-height:1.08;max-width:590px}#chrono-atelier .ca-hero-note{font-size:12px;color:var(--ca-muted);margin-top:10px}#chrono-atelier .ca-week-stamp{text-align:right;min-width:110px}#chrono-atelier .ca-week-stamp span{display:block;color:var(--ca-muted);font-size:11px}#chrono-atelier .ca-week-stamp strong{font-weight:400;font-size:42px;line-height:1.1}#chrono-atelier .ca-home{display:flex;flex-direction:column;gap:24px}#chrono-atelier .ca-decisions{display:grid;grid-template-columns:130px repeat(3,minmax(0,1fr));gap:17px;padding:16px 0;border-top:1px solid var(--ca-line);border-bottom:1px solid var(--ca-line)}#chrono-atelier .ca-decision-heading{font-size:11px;color:var(--ca-muted)}#chrono-atelier .ca-decision-heading strong{display:block;font-size:28px;line-height:1.05;color:var(--ca-ink)}#chrono-atelier .ca-decision-item{border-left:1px solid var(--ca-line);padding-left:17px;display:flex;align-items:center;justify-content:space-between;gap:8px}#chrono-atelier .ca-decision-item small{display:block;font-size:10px;color:var(--ca-muted);margin-bottom:4px}#chrono-atelier .ca-decision-item b{font-size:12px;font-weight:400}#chrono-atelier .ca-circle{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--ca-line)!important;border-radius:50%;flex-shrink:0}#chrono-atelier .ca-planning{display:grid;grid-template-columns:minmax(0,1fr) 198px;gap:26px}#chrono-atelier .ca-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}#chrono-atelier .ca-section-head h2{font-size:23px}#chrono-atelier .ca-segment{display:flex;align-items:center;gap:3px;background:#ede7df;padding:3px;border-radius:20px}#chrono-atelier .ca-segment button{border-radius:20px;padding:4px 10px;font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-segment button[aria-pressed=true]{background:var(--ca-white);color:var(--ca-ink)}#chrono-atelier .ca-calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}#chrono-atelier .ca-legend{display:flex;gap:10px;flex-wrap:wrap;color:var(--ca-muted);font-size:10px}#chrono-atelier .ca-legend label{display:flex;gap:4px;align-items:center;cursor:pointer}#chrono-atelier .ca-legend input{accent-color:var(--ca-accent);margin:0;width:12px;height:12px}#chrono-atelier .ca-link{color:var(--ca-accent)!important;font-size:11px!important;text-decoration:underline;text-underline-offset:4px;display:inline-flex;align-items:center;gap:5px}#chrono-atelier .ca-days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-top:1px solid var(--ca-line);border-bottom:1px solid var(--ca-line)}#chrono-atelier .ca-day{padding:12px 9px 10px;min-width:0;border-right:1px solid var(--ca-line)}#chrono-atelier .ca-day:first-child{padding-left:0}#chrono-atelier .ca-day:last-child{padding-right:0;border-right:0}#chrono-atelier .ca-day-top{display:flex;align-items:baseline;justify-content:space-between;gap:5px;margin-bottom:3px}#chrono-atelier .ca-day-top .ca-serif{font-size:32px;line-height:1}#chrono-atelier .ca-day-top small{font-size:10px}#chrono-atelier .ca-today .ca-day-top{color:var(--ca-accent)}#chrono-atelier .ca-today .ca-day-top .ca-serif{background:var(--ca-accent);color:var(--ca-white);border-radius:50%;width:40px;height:40px;display:inline-flex;justify-content:center;align-items:center;font-size:30px;margin-top:-8px}#chrono-atelier .ca-presence{font-size:9px;color:var(--ca-muted);display:block;margin:7px 0 19px}#chrono-atelier .ca-event{display:block;text-align:left;width:100%;padding:9px 8px!important;border-radius:5px;margin-bottom:7px;background:var(--ca-tint)!important;font-size:10px!important;line-height:1.35;min-height:56px}#chrono-atelier .ca-event strong{display:block;font-size:11px;font-weight:400;margin-top:3px}#chrono-atelier .ca-event.ca-focus{background:var(--ca-ink)!important;color:var(--ca-white)}#chrono-atelier .ca-event.ca-event-free{background:var(--ca-sage)!important;color:var(--ca-sage-ink)}#chrono-atelier .ca-event.ca-event-plain{background:transparent!important;border-top:1px solid var(--ca-line)!important;border-radius:0;padding:10px 0!important;color:var(--ca-muted)}#chrono-atelier .ca-absence-lane{padding:12px 0 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}#chrono-atelier .ca-absence{background:var(--ca-sage);color:var(--ca-sage-ink);border-radius:4px;font-size:10px;padding:6px 9px;grid-column:span 3;text-align:left}#chrono-atelier button.ca-absence{background:var(--ca-sage);color:var(--ca-sage-ink);padding:6px 9px}#chrono-atelier .ca-absence.ca-sick{grid-column:span 2;background:var(--ca-peach);color:#754f38}#chrono-atelier .ca-absence.ca-holiday{grid-column:5;background:var(--ca-tint);color:var(--ca-accent);padding:5px 7px}#chrono-atelier .ca-agenda{border-left:1px solid var(--ca-line);padding-left:23px}#chrono-atelier .ca-agenda-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:19px}#chrono-atelier .ca-agenda h2{font-size:23px}#chrono-atelier .ca-agenda-head small{font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-agenda-item{display:grid;grid-template-columns:33px 1fr;gap:10px;padding:0 0 18px;font-size:11px;width:100%;text-align:left;position:relative}#chrono-atelier .ca-agenda-item time{font-size:9px;color:var(--ca-muted);padding-top:2px}#chrono-atelier .ca-agenda-item strong{font-weight:400;display:block}#chrono-atelier .ca-agenda-item small{display:block;font-size:10px;color:var(--ca-muted);margin-top:3px}#chrono-atelier .ca-agenda-item.ca-agenda-next span{border-left:2px solid var(--ca-accent);padding-left:8px;margin-left:-10px}#chrono-atelier .ca-agenda-foot{border-top:1px solid var(--ca-line);padding-top:13px;font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-agenda-foot b{font-size:24px;color:var(--ca-ink);font-weight:400;display:block}#chrono-atelier .ca-balance-strip{display:grid;grid-template-columns:1.1fr repeat(3,1fr);gap:22px;padding:17px 0 2px;border-top:1px solid var(--ca-ink)}#chrono-atelier .ca-balance-strip h2{font-size:23px;line-height:1.15}#chrono-atelier .ca-balance-strip p{font-size:10px;color:var(--ca-muted);margin-top:7px}#chrono-atelier .ca-stat{text-align:left}#chrono-atelier .ca-stat small{display:block;font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-stat strong{font-size:32px;line-height:1.3;font-weight:400;display:block}#chrono-atelier .ca-stat span{font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-footer{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;padding-top:23px;color:var(--ca-muted);font-size:10px}#chrono-atelier .ca-footer em{font-style:normal}#chrono-atelier .ca-work-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:18px}#chrono-atelier .ca-work-head h2{font-size:29px}#chrono-atelier .ca-work-head p{color:var(--ca-muted);font-size:12px;margin-top:4px}#chrono-atelier .ca-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}#chrono-atelier .ca-button{border:1px solid var(--ca-line)!important;border-radius:5px;padding:8px 12px!important;font-size:12px!important;display:inline-flex;gap:6px;align-items:center;justify-content:center;background:var(--ca-white)!important}#chrono-atelier .ca-button.ca-primary{background:var(--ca-accent)!important;border-color:var(--ca-accent)!important;color:var(--ca-white)}#chrono-atelier .ca-button.ca-danger{color:#8a463d}#chrono-atelier .ca-filters{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;padding:14px 0 19px;border-top:1px solid var(--ca-line)}#chrono-atelier .ca-field{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--ca-muted);flex:1 1 135px;min-width:0}#chrono-atelier .ca-field input,#chrono-atelier .ca-field select,#chrono-atelier .ca-field textarea{width:100%;border:1px solid var(--ca-line);border-radius:5px;padding:8px 9px;background:var(--ca-white);color:var(--ca-ink);font-size:12px;min-height:35px}#chrono-atelier .ca-field textarea{min-height:70px;resize:vertical}#chrono-atelier .ca-problems{display:flex;gap:7px;flex-wrap:wrap;padding:0 0 15px}#chrono-atelier .ca-problem{padding:6px 9px!important;background:var(--ca-tint)!important;border-radius:20px;font-size:10px!important}#chrono-atelier .ca-problem[aria-pressed=true]{background:var(--ca-accent)!important;color:var(--ca-white)}#chrono-atelier .ca-table-wrap{width:100%;overflow-x:auto}#chrono-atelier table{border-collapse:collapse;width:100%;font-size:12px}#chrono-atelier th,#chrono-atelier td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--ca-line);vertical-align:middle}#chrono-atelier th{color:var(--ca-muted);font-size:10px;font-weight:400;background:#efeae2}#chrono-atelier td:first-child,#chrono-atelier th:first-child{padding-left:10px}#chrono-atelier .ca-person{display:flex;gap:8px;align-items:center;min-width:137px}#chrono-atelier .ca-person small{display:block;font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}#chrono-atelier .ca-positive{color:var(--ca-sage-ink)}#chrono-atelier .ca-negative{color:#95513d}#chrono-atelier .ca-tag{background:var(--ca-tint);color:var(--ca-accent);font-size:10px;border-radius:15px;display:inline-block;padding:3px 7px;white-space:normal}#chrono-atelier .ca-tag.ca-ok{background:var(--ca-sage);color:var(--ca-sage-ink)}#chrono-atelier .ca-table-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--ca-muted);padding-top:13px}#chrono-atelier .ca-detail{background:var(--ca-white);border:1px solid var(--ca-accent);border-radius:7px;padding:20px;margin-bottom:23px;box-shadow:0 6px 30px #3927360c}#chrono-atelier .ca-detail-top{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:15px}#chrono-atelier .ca-detail h2{font-size:27px}#chrono-atelier .ca-detail h3{font-size:19px;margin:16px 0 8px}#chrono-atelier .ca-detail p{font-size:12px;color:var(--ca-muted);margin:8px 0}#chrono-atelier .ca-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:15px 0}#chrono-atelier .ca-detail .ca-actions{margin-top:16px}#chrono-atelier .ca-detail dl{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:12px;margin:0}#chrono-atelier .ca-detail dt{color:var(--ca-muted)}#chrono-atelier .ca-detail dd{margin:0;text-align:right}#chrono-atelier .ca-module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:25px;border-top:1px solid var(--ca-ink);padding-top:22px}#chrono-atelier .ca-module-group h3{font-size:21px;margin-bottom:16px}#chrono-atelier .ca-module-group button{display:flex;justify-content:space-between;width:100%;gap:8px;text-align:left;padding:10px 0;border-bottom:1px solid var(--ca-line);font-size:12px}#chrono-atelier .ca-module-group small{font-size:10px;color:var(--ca-muted)}#chrono-atelier .ca-inline-info{padding:13px 15px;background:var(--ca-tint);border-radius:4px;font-size:12px;margin:14px 0;color:var(--ca-accent)}#chrono-atelier .ca-request-type{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}#chrono-atelier .ca-request-type button{padding:7px 12px;border-bottom:1px solid var(--ca-line);font-size:12px}#chrono-atelier .ca-request-type button[aria-pressed=true]{border-bottom:2px solid var(--ca-accent);color:var(--ca-accent)}#chrono-atelier .ca-selection{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0;font-size:11px}#chrono-atelier .ca-selection label{display:flex;align-items:center;gap:6px}#chrono-atelier input[type=checkbox]{accent-color:var(--ca-accent)}#chrono-atelier .ca-request-row{display:grid;grid-template-columns:24px minmax(150px,1fr) minmax(145px,1fr) auto;gap:12px;align-items:center;padding:16px 0;border-bottom:1px solid var(--ca-line)}#chrono-atelier .ca-request-row small{display:block;color:var(--ca-muted);font-size:10px}#chrono-atelier .ca-request-row strong{font-size:13px;font-weight:400}#chrono-atelier .ca-request-row .ca-actions{gap:6px}#chrono-atelier .ca-empty{padding:25px;text-align:center;color:var(--ca-muted);font-size:12px;border-bottom:1px solid var(--ca-line)}#chrono-atelier .ca-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;border-top:1px solid var(--ca-line)}#chrono-atelier .ca-month-day{min-height:65px;border-bottom:1px solid var(--ca-line);border-right:1px solid var(--ca-line);padding:6px!important;text-align:left;display:flex;flex-direction:column;gap:5px;font-size:11px!important}#chrono-atelier .ca-month-day small{font-size:8px;background:var(--ca-sage);padding:2px;color:var(--ca-sage-ink)}#chrono-atelier .ca-month-head{font-size:10px;padding:5px;color:var(--ca-muted)}#chrono-atelier .ca-month-day.ca-month-today{background:var(--ca-tint)}#chrono-atelier .ca-config-row{display:grid;grid-template-columns:minmax(150px,1fr) 130px auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--ca-line);font-size:12px}#chrono-atelier .ca-config-row label{display:flex;gap:7px;align-items:center}#chrono-atelier .ca-config-row select{background:var(--ca-paper);border:1px solid var(--ca-line);padding:5px;border-radius:4px;color:var(--ca-ink)}#chrono-atelier [data-ca-widget][data-size=kompakt] .ca-event-plain,#chrono-atelier [data-ca-widget][data-size=kompakt] .ca-hero-note,#chrono-atelier [data-ca-widget][data-size=kompakt] .ca-stat span{display:none}#chrono-atelier [data-ca-widget][data-size=gross]{padding-top:25px;padding-bottom:25px}#chrono-atelier .ca-quiet{color:var(--ca-muted);font-size:11px}#chrono-atelier .ca-check-line{display:flex;align-items:center;gap:8px;font-size:12px;margin:12px 0}#chrono-atelier .ca-inline-day{padding:12px 15px;background:#eee8e1;font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}#chrono-atelier .ca-inline-day small{color:var(--ca-muted)}
+@media(max-width:820px){#chrono-atelier{padding:23px}#chrono-atelier .ca-hero h1{font-size:42px}#chrono-atelier .ca-planning{grid-template-columns:minmax(0,1fr);gap:20px}#chrono-atelier .ca-agenda{border-left:0;border-top:1px solid var(--ca-line);padding:16px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}#chrono-atelier .ca-agenda-head,#chrono-atelier .ca-agenda-foot{grid-column:1/-1;margin-bottom:0}#chrono-atelier .ca-agenda-item{display:block;padding-bottom:0}#chrono-atelier .ca-agenda-item time{display:block;margin-bottom:5px}#chrono-atelier .ca-agenda-item.ca-agenda-next span{display:block;margin-left:0}#chrono-atelier .ca-agenda-foot{display:flex;justify-content:space-between;align-items:center}#chrono-atelier .ca-agenda-foot b{display:inline;font-size:20px}#chrono-atelier .ca-decisions{grid-template-columns:100px repeat(3,minmax(0,1fr));gap:10px}#chrono-atelier .ca-decision-item{padding-left:10px}#chrono-atelier .ca-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#chrono-atelier .ca-request-row{grid-template-columns:24px 1fr 1fr}#chrono-atelier .ca-request-row&gt;.ca-actions{grid-column:2/-1}#chrono-atelier .ca-nav{gap:2px}#chrono-atelier .ca-nav button{padding:7px 10px}#chrono-atelier .ca-nav .ca-custom{margin-left:0}}
+@media(max-width:520px){#chrono-atelier{padding:18px 16px 15px}#chrono-atelier .ca-edition{display:none}#chrono-atelier .ca-account&gt;span{display:none}#chrono-atelier .ca-top{padding-bottom:16px}#chrono-atelier .ca-logo{font-size:34px}#chrono-atelier .ca-hero{padding:25px 0 20px;gap:8px;align-items:center}#chrono-atelier .ca-hero h1{font-size:35px}#chrono-atelier .ca-week-stamp{display:none}#chrono-atelier .ca-hero-note{font-size:11px}#chrono-atelier .ca-nav button{font-size:11px;padding:7px 10px}#chrono-atelier .ca-nav .ca-custom{font-size:10px;padding-left:0;width:100%;justify-content:flex-start;padding-top:9px}#chrono-atelier .ca-decisions{grid-template-columns:1fr;gap:11px;padding:14px 0}#chrono-atelier .ca-decision-heading{display:flex;align-items:center;gap:9px}#chrono-atelier .ca-decision-heading strong{font-size:26px}#chrono-atelier .ca-decision-item{border-left:0;padding:0;gap:10px}#chrono-atelier .ca-decision-item small{display:inline-block;margin-right:8px;margin-bottom:0}#chrono-atelier .ca-days{grid-template-columns:1fr;gap:0}#chrono-atelier .ca-day{display:grid;grid-template-columns:55px 1fr 1fr;gap:7px;border-right:0;border-bottom:1px solid var(--ca-line);padding:13px 0!important;align-items:start}#chrono-atelier .ca-day:last-child{border-bottom:0}#chrono-atelier .ca-day-top{display:block;grid-column:1;grid-row:1;margin:0}#chrono-atelier .ca-day-top .ca-serif{font-size:29px;display:block}#chrono-atelier .ca-day-top small{font-size:9px}#chrono-atelier .ca-today .ca-day-top .ca-serif{margin-top:0;width:34px;height:34px;font-size:27px}#chrono-atelier .ca-presence{grid-column:1;grid-row:2;font-size:8px;margin:0}#chrono-atelier .ca-event{min-height:57px;grid-row:1/3;margin:0}#chrono-atelier .ca-event-plain{grid-column:2/-1;grid-row:auto!important;min-height:0;padding:3px 0!important}#chrono-atelier .ca-absence-lane{grid-template-columns:1fr;gap:6px}#chrono-atelier .ca-absence,#chrono-atelier .ca-absence.ca-sick,#chrono-atelier .ca-absence.ca-holiday{grid-column:1}#chrono-atelier .ca-agenda{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}#chrono-atelier .ca-agenda-foot{display:block}#chrono-atelier .ca-agenda-foot b{display:block}#chrono-atelier .ca-balance-strip{grid-template-columns:1fr 1fr;gap:20px}#chrono-atelier .ca-balance-strip h2{font-size:24px}#chrono-atelier .ca-stat strong{font-size:30px}#chrono-atelier .ca-home{gap:21px}#chrono-atelier .ca-detail{padding:15px}#chrono-atelier .ca-detail-grid{grid-template-columns:1fr}#chrono-atelier .ca-detail h2{font-size:24px}#chrono-atelier .ca-config-row{grid-template-columns:1fr auto}#chrono-atelier .ca-config-row label{grid-column:1/-1}#chrono-atelier .ca-config-row select{width:100%}#chrono-atelier .ca-module-grid{gap:22px 18px}#chrono-atelier .ca-module-group h3{font-size:19px}#chrono-atelier .ca-request-row{grid-template-columns:20px 1fr;gap:9px}#chrono-atelier .ca-request-row&gt;div:nth-child(3){grid-column:2}#chrono-atelier .ca-button{font-size:11px!important;padding:8px 9px!important}#chrono-atelier .ca-month-day{min-height:53px;padding:4px!important}#chrono-atelier .ca-month-day small{font-size:8px;overflow-wrap:anywhere}#chrono-atelier .ca-detail dl{grid-template-columns:1fr}#chrono-atelier .ca-detail dd{text-align:left;margin-top:-7px}#chrono-atelier .ca-work-head h2{font-size:26px}}
+@media(pointer:coarse){#chrono-atelier .ca-nav button,#chrono-atelier .ca-button,#chrono-atelier .ca-circle,#chrono-atelier .ca-segment button,#chrono-atelier .ca-problem,#chrono-atelier .ca-link{min-height:44px}#chrono-atelier .ca-circle{min-width:44px}#chrono-atelier .ca-field input,#chrono-atelier .ca-field select,#chrono-atelier .ca-field textarea{font-size:16px}#chrono-atelier .ca-legend label{min-height:36px}}
+#chrono-atelier .ca-eyebrow,#chrono-atelier .ca-count,#chrono-atelier .ca-decision-item small,#chrono-atelier .ca-segment button,#chrono-atelier .ca-legend,#chrono-atelier .ca-day-top small,#chrono-atelier .ca-presence,#chrono-atelier .ca-event,#chrono-atelier .ca-absence,#chrono-atelier .ca-agenda-head small,#chrono-atelier .ca-agenda-item time,#chrono-atelier .ca-agenda-item small,#chrono-atelier .ca-agenda-foot,#chrono-atelier .ca-balance-strip p,#chrono-atelier .ca-stat small,#chrono-atelier .ca-stat span,#chrono-atelier .ca-footer,#chrono-atelier th,#chrono-atelier .ca-person small,#chrono-atelier .ca-tag,#chrono-atelier .ca-module-group small,#chrono-atelier .ca-request-row small,#chrono-atelier .ca-month-head,#chrono-atelier .ca-month-day small,#chrono-atelier .ca-problem{font-size:11px!important}
+#chrono-atelier .ca-presence{line-height:1.3}#chrono-atelier .ca-month-day{min-height:70px}
+@media(max-width:520px){#chrono-atelier .ca-day-top small{display:block;margin-top:4px}}
+&lt;/style&gt;
+&lt;div id=&quot;chrono-atelier&quot; aria-label=&quot;Chrono Atelier – Admin Dashboard, Designvariante 3&quot;&gt;
+  &lt;header class=&quot;ca-top&quot;&gt;&lt;div class=&quot;ca-brand&quot;&gt;&lt;span class=&quot;ca-logo ca-serif&quot;&gt;chrono.&lt;/span&gt;&lt;span class=&quot;ca-edition&quot;&gt;Atelier&lt;br&gt;Administration&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;ca-account&quot;&gt;&lt;span&gt;Studio Nord · Zürich&lt;/span&gt;&lt;button class=&quot;ca-avatar ca-profile&quot; data-action=&quot;profile&quot; aria-label=&quot;Profil von Anna öffnen&quot;&gt;AK&lt;/button&gt;&lt;/div&gt;&lt;/header&gt;
+  &lt;nav class=&quot;ca-nav&quot; aria-label=&quot;Hauptnavigation&quot;&gt;&lt;button data-view=&quot;home&quot; aria-current=&quot;page&quot;&gt;Meine Woche&lt;/button&gt;&lt;button data-view=&quot;time&quot;&gt;Zeitprüfung&lt;/button&gt;&lt;button data-view=&quot;requests&quot;&gt;Entscheidungen &lt;span class=&quot;ca-count&quot; data-request-count&gt;5&lt;/span&gt;&lt;/button&gt;&lt;button data-view=&quot;team&quot;&gt;Team &amp; Salden&lt;/button&gt;&lt;button data-view=&quot;modules&quot;&gt;Arbeitsraum&lt;/button&gt;&lt;button class=&quot;ca-custom ca-icon&quot; data-action=&quot;customize&quot;&gt;&lt;i data-lucide=&quot;sliders-horizontal&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Ansicht gestalten&lt;/button&gt;&lt;/nav&gt;
+  &lt;section class=&quot;ca-hero&quot;&gt;&lt;div&gt;&lt;div class=&quot;ca-eyebrow&quot; id=&quot;ca-eyebrow&quot;&gt;Dienstag, 8. September 2026&lt;/div&gt;&lt;h1 class=&quot;ca-serif&quot; id=&quot;ca-title&quot;&gt;Zeit für das Wesentliche.&lt;/h1&gt;&lt;p class=&quot;ca-hero-note&quot; id=&quot;ca-subtitle&quot;&gt;8 Menschen, 3 Teams. Und eine Woche mit Raum für gute Arbeit.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ca-week-stamp&quot;&gt;&lt;span&gt;7. — 11. September&lt;/span&gt;&lt;strong class=&quot;ca-serif&quot;&gt;KW 37&lt;/strong&gt;&lt;span&gt;Die Woche im Blick&lt;/span&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;section class=&quot;ca-detail&quot; id=&quot;ca-detail&quot; aria-label=&quot;Detailansicht&quot; hidden&gt;&lt;div class=&quot;ca-detail-top&quot;&gt;&lt;h2 class=&quot;ca-serif&quot; id=&quot;ca-detail-title&quot;&gt;Details&lt;/h2&gt;&lt;button class=&quot;ca-circle&quot; data-action=&quot;close-detail&quot; aria-label=&quot;Detailansicht schliessen&quot;&gt;&lt;i data-lucide=&quot;x&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;div id=&quot;ca-detail-body&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;main&gt;
+    &lt;section data-panel=&quot;home&quot; class=&quot;ca-home&quot;&gt;
+      &lt;div class=&quot;ca-decisions&quot; data-ca-widget=&quot;decisions&quot; data-size=&quot;normal&quot;&gt;&lt;div class=&quot;ca-decision-heading&quot;&gt;&lt;strong class=&quot;ca-serif&quot; data-request-count&gt;5&lt;/strong&gt; offene Entscheidungen&lt;/div&gt;&lt;div class=&quot;ca-decision-item&quot;&gt;&lt;div&gt;&lt;small&gt;02 · FERIEN&lt;/small&gt;&lt;b&gt;Mia plant eine Auszeit.&lt;/b&gt;&lt;/div&gt;&lt;button class=&quot;ca-circle&quot; data-request=&quot;r1&quot; aria-label=&quot;Ferienantrag Mia ansehen&quot;&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ca-decision-item&quot;&gt;&lt;div&gt;&lt;small&gt;02 · ZEITKORREKTUREN&lt;/small&gt;&lt;b&gt;Noahs Montag ergänzen.&lt;/b&gt;&lt;/div&gt;&lt;button class=&quot;ca-circle&quot; data-request=&quot;r3&quot; aria-label=&quot;Zeitkorrektur Noah ansehen&quot;&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ca-decision-item&quot;&gt;&lt;div&gt;&lt;small&gt;01 · ARBEITSTAGTAUSCH&lt;/small&gt;&lt;b&gt;Lea möchte tauschen.&lt;/b&gt;&lt;/div&gt;&lt;button class=&quot;ca-circle&quot; data-request=&quot;r5&quot; aria-label=&quot;Arbeitstagtausch Lea ansehen&quot;&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;section class=&quot;ca-planning&quot; data-ca-widget=&quot;planning&quot; data-size=&quot;normal&quot;&gt;
+        &lt;div&gt;&lt;div class=&quot;ca-section-head&quot;&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Ein gemeinsamer Plan.&lt;/h2&gt;&lt;div class=&quot;ca-segment&quot; aria-label=&quot;Kalenderansicht&quot;&gt;&lt;button data-calendar=&quot;week&quot; aria-pressed=&quot;true&quot;&gt;Woche&lt;/button&gt;&lt;button data-calendar=&quot;month&quot; aria-pressed=&quot;false&quot;&gt;Monat&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ca-calendar-toolbar&quot;&gt;&lt;div class=&quot;ca-legend&quot;&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-cal-filter=&quot;ferien&quot; checked&gt; Ferien&lt;/label&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-cal-filter=&quot;krank&quot; checked&gt; Krank&lt;/label&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-cal-filter=&quot;feiertag&quot; checked&gt; Feiertage&lt;/label&gt;&lt;/div&gt;&lt;button class=&quot;ca-link&quot; data-action=&quot;new-absence&quot;&gt;Abwesenheit eintragen &lt;i data-lucide=&quot;plus&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;
+          &lt;div id=&quot;ca-week&quot;&gt;&lt;div class=&quot;ca-days&quot;&gt;
+            &lt;div class=&quot;ca-day&quot;&gt;&lt;div class=&quot;ca-day-top&quot;&gt;&lt;span class=&quot;ca-serif&quot;&gt;07&lt;/span&gt;&lt;small&gt;Mo&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ca-presence&quot;&gt;6 von 8 im Einsatz&lt;/span&gt;&lt;button class=&quot;ca-event&quot; data-event=&quot;Wochenauftakt|Montag, 7. September · 09:00–09:30|Alle Teams · Atelier Zürich&quot;&gt;09:00&lt;strong&gt;Wochenauftakt&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-free&quot; data-event=&quot;Design Sprint|Montag, 7. September · 10:00–12:00|Lina &amp; Sara · Projekt Nord&quot;&gt;10:00&lt;strong&gt;Design Sprint&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-plain&quot; data-action=&quot;issue-missing&quot;&gt;1 Zeitstempel offen&lt;/button&gt;&lt;/div&gt;
+            &lt;div class=&quot;ca-day ca-today&quot;&gt;&lt;div class=&quot;ca-day-top&quot;&gt;&lt;span class=&quot;ca-serif&quot;&gt;08&lt;/span&gt;&lt;small&gt;Di · heute&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ca-presence&quot;&gt;6 von 8 im Einsatz&lt;/span&gt;&lt;button class=&quot;ca-event ca-focus&quot; data-event=&quot;Fokuszeit|Dienstag, 8. September · 09:00–12:00|Entwicklung · 3 Personen · Keine Sitzungen&quot;&gt;09:00&lt;strong&gt;Fokuszeit&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event&quot; data-event=&quot;Studio Review|Dienstag, 8. September · 14:00–15:00|Lina, Leon &amp; Jan · Besprechung 01&quot;&gt;14:00&lt;strong&gt;Studio Review&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-plain&quot; data-view=&quot;requests&quot;&gt;5 Entscheidungen offen&lt;/button&gt;&lt;/div&gt;
+            &lt;div class=&quot;ca-day&quot;&gt;&lt;div class=&quot;ca-day-top&quot;&gt;&lt;span class=&quot;ca-serif&quot;&gt;09&lt;/span&gt;&lt;small&gt;Mi&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ca-presence&quot;&gt;6 von 8 im Einsatz&lt;/span&gt;&lt;button class=&quot;ca-event&quot; data-event=&quot;Kundenworkshop|Mittwoch, 9. September · 10:00–12:00|Jan &amp; Lina · Kunde Bergblick&quot;&gt;10:00&lt;strong&gt;Kundenworkshop&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-free&quot; data-event=&quot;Projektzeit|Mittwoch, 9. September · 13:00–17:00|Design &amp; Entwicklung · Projekt Nord&quot;&gt;13:00&lt;strong&gt;Projektzeit&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-plain&quot; data-module=&quot;Dienstplan&quot;&gt;Dienstplan ansehen&lt;/button&gt;&lt;/div&gt;
+            &lt;div class=&quot;ca-day&quot;&gt;&lt;div class=&quot;ca-day-top&quot;&gt;&lt;span class=&quot;ca-serif&quot;&gt;10&lt;/span&gt;&lt;small&gt;Do&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ca-presence&quot;&gt;7 von 8 im Einsatz&lt;/span&gt;&lt;button class=&quot;ca-event ca-event-free&quot; data-event=&quot;Fokuszeit|Donnerstag, 10. September · 09:00–12:00|Alle Teams · Freier Arbeitsblock&quot;&gt;09:00&lt;strong&gt;Fokuszeit&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event&quot; data-event=&quot;Teamgespräche|Donnerstag, 10. September · 15:00–16:00|Anna &amp; Team · Raum 02&quot;&gt;15:00&lt;strong&gt;Teamgespräche&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-plain&quot; data-module=&quot;Aufgaben&quot;&gt;3 Aufgaben bis Freitag&lt;/button&gt;&lt;/div&gt;
+            &lt;div class=&quot;ca-day&quot;&gt;&lt;div class=&quot;ca-day-top&quot;&gt;&lt;span class=&quot;ca-serif&quot;&gt;11&lt;/span&gt;&lt;small&gt;Fr&lt;/small&gt;&lt;/div&gt;&lt;span class=&quot;ca-presence&quot;&gt;5 von 8 im Einsatz&lt;/span&gt;&lt;button class=&quot;ca-event&quot; data-event=&quot;Wochenrückblick|Freitag, 11. September · 11:00–11:30|Alle Teams · Was nehmen wir mit?&quot;&gt;11:00&lt;strong&gt;Wochenrückblick&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-free&quot; data-event=&quot;Freier Nachmittag|Freitag, 11. September · ab 13:00|Individuelle Projektarbeit · Zürich&quot;&gt;13:00&lt;strong&gt;Freier Nachmittag&lt;/strong&gt;&lt;/button&gt;&lt;button class=&quot;ca-event ca-event-plain&quot; data-view=&quot;time&quot;&gt;Woche abschliessen&lt;/button&gt;&lt;/div&gt;
+          &lt;/div&gt;&lt;div class=&quot;ca-absence-lane&quot;&gt;&lt;button class=&quot;ca-absence&quot; data-absence=&quot;Mia Brunner&quot; data-kind=&quot;ferien&quot;&gt;Mia · Ferien, 7.–9. Sept.&lt;/button&gt;&lt;button class=&quot;ca-absence ca-sick&quot; data-absence=&quot;Noah Keller&quot; data-kind=&quot;krank&quot;&gt;Noah · Krank, Do–Fr&lt;/button&gt;&lt;button class=&quot;ca-absence ca-holiday&quot; data-absence=&quot;Standortdemo&quot; data-kind=&quot;feiertag&quot;&gt;Feiertag*&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div id=&quot;ca-month&quot; hidden&gt;&lt;/div&gt;&lt;div class=&quot;ca-quiet&quot; style=&quot;margin-top:8px;font-size:9px&quot;&gt;* Fiktiver Standortfeiertag für die Vorschau.&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;aside class=&quot;ca-agenda&quot; data-ca-widget=&quot;agenda&quot; data-size=&quot;normal&quot;&gt;&lt;div class=&quot;ca-agenda-head&quot;&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Heute.&lt;/h2&gt;&lt;small&gt;DI / 08&lt;/small&gt;&lt;/div&gt;&lt;button class=&quot;ca-agenda-item&quot; data-event=&quot;Check-in|Dienstag, 8. September · 08:30–08:45|Team Zürich · Abgeschlossen&quot;&gt;&lt;time&gt;08:30&lt;/time&gt;&lt;span&gt;&lt;strong&gt;Check-in&lt;/strong&gt;&lt;small&gt;Alle sind angekommen.&lt;/small&gt;&lt;/span&gt;&lt;/button&gt;&lt;button class=&quot;ca-agenda-item ca-agenda-next&quot; data-view=&quot;requests&quot;&gt;&lt;time&gt;11:30&lt;/time&gt;&lt;span&gt;&lt;strong&gt;Entscheidungszeit&lt;/strong&gt;&lt;small&gt;5 Anträge warten auf dich.&lt;/small&gt;&lt;/span&gt;&lt;/button&gt;&lt;button class=&quot;ca-agenda-item&quot; data-event=&quot;Studio Review|Dienstag, 8. September · 14:00–15:00|Lina, Leon &amp; Jan · Besprechung 01&quot;&gt;&lt;time&gt;14:00&lt;/time&gt;&lt;span&gt;&lt;strong&gt;Studio Review&lt;/strong&gt;&lt;small&gt;Projekt Nord · 3 Personen&lt;/small&gt;&lt;/span&gt;&lt;/button&gt;&lt;button class=&quot;ca-agenda-item&quot; data-view=&quot;time&quot;&gt;&lt;time&gt;16:30&lt;/time&gt;&lt;span&gt;&lt;strong&gt;Zeiten im Blick&lt;/strong&gt;&lt;small&gt;6 Hinweise kurz prüfen.&lt;/small&gt;&lt;/span&gt;&lt;/button&gt;&lt;div class=&quot;ca-agenda-foot&quot;&gt;&lt;b class=&quot;ca-serif&quot;&gt;6 von 8&lt;/b&gt;heute verfügbar · 1 Ferien · 1 frei&lt;/div&gt;&lt;/aside&gt;
+      &lt;/section&gt;
+      &lt;section class=&quot;ca-balance-strip&quot; data-ca-widget=&quot;balance&quot; data-size=&quot;normal&quot;&gt;&lt;div&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;In Balance&lt;br&gt;bleiben.&lt;/h2&gt;&lt;p&gt;Menschen vor Kennzahlen.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;ca-stat&quot; data-view=&quot;time&quot;&gt;&lt;small&gt;ZEITEN DIE AUFFALLEN&lt;/small&gt;&lt;strong class=&quot;ca-serif&quot; id=&quot;ca-issues-total&quot;&gt;6&lt;/strong&gt;&lt;span&gt;Fehlende Zeiten &amp; Abweichungen ↗&lt;/span&gt;&lt;/button&gt;&lt;button class=&quot;ca-stat&quot; data-action=&quot;negative-balances&quot;&gt;&lt;small&gt;MIT NEGATIVEM SALDO&lt;/small&gt;&lt;strong class=&quot;ca-serif&quot;&gt;3 &lt;span&gt;Menschen&lt;/span&gt;&lt;/strong&gt;&lt;span&gt;Gemeinsam wieder ausgleichen ↗&lt;/span&gt;&lt;/button&gt;&lt;button class=&quot;ca-stat&quot; data-action=&quot;top-balances&quot;&gt;&lt;small&gt;HÖCHSTER ZEITSALDO&lt;/small&gt;&lt;strong class=&quot;ca-serif&quot;&gt;+22&lt;span&gt;h&lt;/span&gt; 30&lt;span&gt;m&lt;/span&gt;&lt;/strong&gt;&lt;span&gt;Leon Frei · Team Entwicklung ↗&lt;/span&gt;&lt;/button&gt;&lt;/section&gt;
+    &lt;/section&gt;
+    &lt;section data-panel=&quot;time&quot; hidden&gt;&lt;div class=&quot;ca-work-head&quot;&gt;&lt;div&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Zeit mit Sorgfalt prüfen.&lt;/h2&gt;&lt;p&gt;Stempel, Sollzeiten und Ausnahmen an einem Ort.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;print&quot;&gt;&lt;i data-lucide=&quot;printer&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Drucken&lt;/button&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-action=&quot;export&quot;&gt;&lt;i data-lucide=&quot;download&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Export&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;ca-filters&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Zeitraum&lt;select id=&quot;ca-period&quot;&gt;&lt;option value=&quot;week&quot;&gt;Woche · KW 37&lt;/option&gt;&lt;option value=&quot;month&quot;&gt;Monat · September&lt;/option&gt;&lt;option value=&quot;custom&quot;&gt;Freier Zeitraum&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Person suchen&lt;input id=&quot;ca-time-search&quot; placeholder=&quot;Name oder Team&quot; type=&quot;search&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Arbeitsmodell&lt;select id=&quot;ca-workmodel&quot;&gt;&lt;option value=&quot;all&quot;&gt;Alle Arbeitsmodelle&lt;/option&gt;&lt;option value=&quot;100&quot;&gt;Vollzeit · 100 %&lt;/option&gt;&lt;option value=&quot;80&quot;&gt;Teilzeit · 80 %&lt;/option&gt;&lt;option value=&quot;hourly&quot;&gt;Stundenlohn&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot; id=&quot;ca-date-from-field&quot; hidden&gt;Von&lt;input id=&quot;ca-date-from&quot; type=&quot;date&quot; value=&quot;2026-09-07&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot; id=&quot;ca-date-to-field&quot; hidden&gt;Bis&lt;input id=&quot;ca-date-to&quot; type=&quot;date&quot; value=&quot;2026-09-11&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;div class=&quot;ca-problems&quot; id=&quot;ca-problems&quot;&gt;&lt;/div&gt;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Person &amp; Modell&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Ist&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Soll&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Saldo&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Überstunden&lt;/th&gt;&lt;th&gt;Prüfhinweis&lt;/th&gt;&lt;th&gt;Details&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody id=&quot;ca-time-body&quot;&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;div class=&quot;ca-table-foot&quot;&gt;&lt;span id=&quot;ca-time-summary&quot;&gt;&lt;/span&gt;&lt;span&gt;Stundenlohn: keine Soll- oder Überstundenbewertung.&lt;/span&gt;&lt;/div&gt;&lt;/section&gt;
+    &lt;section data-panel=&quot;requests&quot; hidden&gt;&lt;div class=&quot;ca-work-head&quot;&gt;&lt;div&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Klar entscheiden.&lt;/h2&gt;&lt;p&gt;Ferien, Zeitkorrekturen und Arbeitstagtausch.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;history&quot;&gt;&lt;i data-lucide=&quot;history&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Verlauf&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ca-request-type&quot;&gt;&lt;button data-request-type=&quot;all&quot; aria-pressed=&quot;true&quot;&gt;Alle&lt;/button&gt;&lt;button data-request-type=&quot;Ferien&quot; aria-pressed=&quot;false&quot;&gt;Ferien&lt;/button&gt;&lt;button data-request-type=&quot;Zeitkorrektur&quot; aria-pressed=&quot;false&quot;&gt;Zeitkorrekturen&lt;/button&gt;&lt;button data-request-type=&quot;Arbeitstagtausch&quot; aria-pressed=&quot;false&quot;&gt;Arbeitstagtausch&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ca-selection&quot;&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ca-select-all&quot;&gt; Alle auswählen&lt;/label&gt;&lt;span id=&quot;ca-selection-count&quot;&gt;0 ausgewählt&lt;/span&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-action=&quot;approve-selected&quot;&gt;Genehmigen&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;reject-selected&quot;&gt;Ablehnen&lt;/button&gt;&lt;/div&gt;&lt;div id=&quot;ca-request-list&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+    &lt;section data-panel=&quot;team&quot; hidden&gt;&lt;div class=&quot;ca-work-head&quot;&gt;&lt;div&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Für alle ein gutes Gleichgewicht.&lt;/h2&gt;&lt;p&gt;Zeitkonten im Team · Stand 8. September 2026&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;person-report&quot;&gt;Personenbericht&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ca-filters&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Team filtern&lt;select id=&quot;ca-team-filter&quot;&gt;&lt;option value=&quot;all&quot;&gt;Alle Teams&lt;/option&gt;&lt;option&gt;Design&lt;/option&gt;&lt;option&gt;Entwicklung&lt;/option&gt;&lt;option&gt;Operations&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Sortieren&lt;select id=&quot;ca-team-sort&quot;&gt;&lt;option value=&quot;name&quot;&gt;Nach Name&lt;/option&gt;&lt;option value=&quot;negative&quot;&gt;Negative Salden&lt;/option&gt;&lt;option value=&quot;top&quot;&gt;Höchster Saldo zuerst&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Mitarbeitende&lt;/th&gt;&lt;th&gt;Arbeitsmodell&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Zeitkonto&lt;/th&gt;&lt;th class=&quot;ca-num&quot;&gt;Ferienrest&lt;/th&gt;&lt;th&gt;Aktion&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody id=&quot;ca-team-body&quot;&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;/section&gt;
+    &lt;section data-panel=&quot;modules&quot; hidden&gt;&lt;div class=&quot;ca-work-head&quot;&gt;&lt;div&gt;&lt;h2 class=&quot;ca-serif&quot;&gt;Alles hat seinen Platz.&lt;/h2&gt;&lt;p&gt;Dein Arbeitsraum. Nach Aufgaben geordnet.&lt;/p&gt;&lt;/div&gt;&lt;label class=&quot;ca-field&quot; style=&quot;max-width:220px&quot;&gt;Modul finden&lt;input id=&quot;ca-module-search&quot; type=&quot;search&quot; placeholder=&quot;z. B. Lohn oder Projekte&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;div class=&quot;ca-module-grid&quot; id=&quot;ca-module-grid&quot;&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;/main&gt;
+  &lt;footer class=&quot;ca-footer&quot;&gt;&lt;span&gt;CHRONO ATELIER / KONZEPT 03 · Fiktive Demodaten&lt;/span&gt;&lt;em id=&quot;ca-status&quot; aria-live=&quot;polite&quot;&gt;Alle Änderungen bleiben in dieser Vorschau.&lt;/em&gt;&lt;/footer&gt;
+&lt;/div&gt;
+&lt;script&gt;
+(()=&gt;{
+const root=document.getElementById(&#x27;chrono-atelier&#x27;);if(!root)return;
+const $=s=&gt;root.querySelector(s),$$=s=&gt;Array.from(root.querySelectorAll(s));
+const esc=s=&gt;String(s).replace(/[&amp;&lt;&gt;&quot;&#x27;]/g,c=&gt;({&#x27;&amp;&#x27;:&#x27;&amp;amp;&#x27;,&#x27;&lt;&#x27;:&#x27;&amp;lt;&#x27;,&#x27;&gt;&#x27;:&#x27;&amp;gt;&#x27;,&#x27;&quot;&#x27;:&#x27;&amp;quot;&#x27;,&quot;&#x27;&quot;:&#x27;&amp;#39;&#x27;}[c]));
+const people=[{id:1,n:&#x27;Lina Meier&#x27;,i:&#x27;LM&#x27;,t:&#x27;Design&#x27;,m:&#x27;100&#x27;,ist:40.5,soll:40,saldo:18.25,over:.5,holiday:12,p:&#x27;&#x27;},{id:2,n:&#x27;Noah Keller&#x27;,i:&#x27;NK&#x27;,t:&#x27;Entwicklung&#x27;,m:&#x27;100&#x27;,ist:38,soll:40,saldo:-2,over:0,holiday:9,p:&#x27;missing&#x27;},{id:3,n:&#x27;Mia Brunner&#x27;,i:&#x27;MB&#x27;,t:&#x27;Operations&#x27;,m:&#x27;80&#x27;,ist:31,soll:32,saldo:-1,over:0,holiday:14,p:&#x27;incomplete&#x27;},{id:4,n:&#x27;Leon Frei&#x27;,i:&#x27;LF&#x27;,t:&#x27;Entwicklung&#x27;,m:&#x27;100&#x27;,ist:42,soll:40,saldo:22.5,over:2,holiday:7,p:&#x27;automatic&#x27;},{id:5,n:&#x27;Sara Baumann&#x27;,i:&#x27;SB&#x27;,t:&#x27;Design&#x27;,m:&#x27;80&#x27;,ist:32,soll:32,saldo:-4.75,over:0,holiday:11,p:&#x27;deviation&#x27;},{id:6,n:&#x27;Jan Weber&#x27;,i:&#x27;JW&#x27;,t:&#x27;Operations&#x27;,m:&#x27;100&#x27;,ist:40,soll:40,saldo:7,over:0,holiday:8,p:&#x27;holiday&#x27;},{id:7,n:&#x27;Lea Schmid&#x27;,i:&#x27;LS&#x27;,t:&#x27;Operations&#x27;,m:&#x27;100&#x27;,ist:41.5,soll:40,saldo:12.5,over:1.5,holiday:13,p:&#x27;&#x27;},{id:8,n:&#x27;Elia Roth&#x27;,i:&#x27;ER&#x27;,t:&#x27;Entwicklung&#x27;,m:&#x27;hourly&#x27;,ist:22,soll:0,saldo:0,over:0,holiday:8,p:&#x27;missing&#x27;}];
+const requests=[{id:&#x27;r1&#x27;,person:3,type:&#x27;Ferien&#x27;,when:&#x27;21.–25. September 2026&#x27;,amount:&#x27;5 Tage&#x27;,note:&#x27;Eine Woche in den Bergen. Übergabe an Lea ist besprochen.&#x27;,status:&#x27;Offen&#x27;},{id:&#x27;r2&#x27;,person:5,type:&#x27;Ferien&#x27;,when:&#x27;18. September 2026 · Nachmittag&#x27;,amount:&#x27;½ Tag&#x27;,note:&#x27;Privater Termin. Keine Teamüberschneidung.&#x27;,status:&#x27;Offen&#x27;},{id:&#x27;r3&#x27;,person:2,type:&#x27;Zeitkorrektur&#x27;,when:&#x27;7. September 2026 · 08:00–17:00&#x27;,amount:&#x27;+2 h 00 min&#x27;,note:&#x27;Ausstempeln vergessen. Pause 12:00–13:00.&#x27;,status:&#x27;Offen&#x27;},{id:&#x27;r4&#x27;,person:4,type:&#x27;Zeitkorrektur&#x27;,when:&#x27;4. September 2026 · 09:00–18:00&#x27;,amount:&#x27;−30 min&#x27;,note:&#x27;Mittagspause war 60 statt 30 Minuten.&#x27;,status:&#x27;Offen&#x27;},{id:&#x27;r5&#x27;,person:7,type:&#x27;Arbeitstagtausch&#x27;,when:&#x27;Freitag, 11. → Montag, 14. September&#x27;,amount:&#x27;1 Arbeitstag&#x27;,note:&#x27;Gleiche Stundenzahl. Dienstplan mit Mia abgestimmt.&#x27;,status:&#x27;Offen&#x27;}];
+const problems={missing:&#x27;Fehlende Zeiten&#x27;,incomplete:&#x27;Unvollständig&#x27;,automatic:&#x27;Auto-beendet · ungeprüft&#x27;,holiday:&#x27;Feiertag offen&#x27;,deviation:&#x27;Wochenabweichung&#x27;};
+let view=&#x27;home&#x27;,problem=&#x27;all&#x27;,requestType=&#x27;all&#x27;,selected=new Set(),activePerson=1,calendarView=&#x27;week&#x27;,activeAbsence=null;const custom={decisions:{on:true,size:&#x27;normal&#x27;},planning:{on:true,size:&#x27;normal&#x27;},agenda:{on:true,size:&#x27;normal&#x27;},balance:{on:true,size:&#x27;normal&#x27;}};let widgetOrder=[&#x27;decisions&#x27;,&#x27;planning&#x27;,&#x27;balance&#x27;];
+const toClock=m=&gt;String(Math.floor(m/60)).padStart(2,&#x27;0&#x27;)+&#x27;:&#x27;+String(Math.round(m%60)).padStart(2,&#x27;0&#x27;);
+const timeEntries=Object.fromEntries(people.map(p=&gt;{const base=p.m===&#x27;hourly&#x27;?4.4:p.m===&#x27;80&#x27;?6.4:8;return[p.id,Array.from({length:5},(_,day)=&gt;{const net=day===0?p.ist-base*4:base;return{date:&#x27;2026-09-&#x27;+String(7+day).padStart(2,&#x27;0&#x27;),start:day===0&amp;&amp;p.p===&#x27;missing&#x27;?&#x27;&#x27;:&#x27;08:00&#x27;,end:day===1&amp;&amp;p.p===&#x27;incomplete&#x27;?&#x27;&#x27;:toClock(8*60+60+net*60),pause:60,net};})];}));
+const model=p=&gt;p.m===&#x27;hourly&#x27;?&#x27;Stundenlohn&#x27;:p.m+&#x27; % · &#x27;+(p.m===&#x27;80&#x27;?&#x27;Teilzeit&#x27;:&#x27;Vollzeit&#x27;);
+const hours=n=&gt;{const m=Math.round(Math.abs(n)*60);return(n&lt;0?&#x27;−&#x27;:&#x27;&#x27;)+Math.floor(m/60)+&#x27; h &#x27;+String(m%60).padStart(2,&#x27;0&#x27;);};
+const signed=n=&gt;(n&gt;0?&#x27;+&#x27;:&#x27;&#x27;)+hours(n);const icons=()=&gt;{if(globalThis.lucide)globalThis.lucide.createIcons({attrs:{width:16,height:16}})};
+const notify=t=&gt;{$(&#x27;#ca-status&#x27;).textContent=t;};
+function openDetail(title,html){$(&#x27;#ca-detail-title&#x27;).textContent=title;$(&#x27;#ca-detail-body&#x27;).innerHTML=html;$(&#x27;#ca-detail&#x27;).hidden=false;icons();$(&#x27;#ca-detail&#x27;).scrollIntoView({block:&#x27;nearest&#x27;});}
+function closeDetail(){$(&#x27;#ca-detail&#x27;).hidden=true;}
+const personCell=p=&gt;&#x27;&lt;div class=&quot;ca-person&quot;&gt;&lt;span class=&quot;ca-avatar&quot;&gt;&#x27;+p.i+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+p.n+&#x27;&lt;small&gt;&#x27;+p.t+&#x27;&lt;/small&gt;&lt;/span&gt;&lt;/div&gt;&#x27;;
+function setView(v){view=v;$$(&#x27;[data-panel]&#x27;).forEach(e=&gt;e.hidden=e.dataset.panel!==v);$$(&#x27;.ca-nav [data-view]&#x27;).forEach(e=&gt;{if(e.dataset.view===v)e.setAttribute(&#x27;aria-current&#x27;,&#x27;page&#x27;);else e.removeAttribute(&#x27;aria-current&#x27;);});const titles={home:[&#x27;Zeit für das Wesentliche.&#x27;,&#x27;8 Menschen, 3 Teams. Und eine Woche mit Raum für gute Arbeit.&#x27;],time:[&#x27;Jede Stunde zählt.&#x27;,&#x27;Zeitprüfung · Überblick, Ausnahmen und klare Entscheidungen.&#x27;],requests:[&#x27;Raum für Entscheidungen.&#x27;,&#x27;Anträge transparent prüfen und verlässlich beantworten.&#x27;],team:[&#x27;Menschen im Mittelpunkt.&#x27;,&#x27;Arbeitszeit, Ferien und Salden im Zusammenhang sehen.&#x27;],modules:[&#x27;Ein Ort. Viele Möglichkeiten.&#x27;,&#x27;Personal, Arbeit und Betrieb – sinnvoll zusammengebracht.&#x27;]};$(&#x27;#ca-title&#x27;).textContent=titles[v][0];$(&#x27;#ca-subtitle&#x27;).textContent=titles[v][1];closeDetail();if(v===&#x27;time&#x27;)renderTime();if(v===&#x27;requests&#x27;)renderRequests();if(v===&#x27;team&#x27;)renderTeam();if(v===&#x27;modules&#x27;)renderModules();}
+function rangeMultiplier(){return $(&#x27;#ca-period&#x27;).value===&#x27;month&#x27;?4:$(&#x27;#ca-period&#x27;).value===&#x27;custom&#x27;?Math.max(1,Math.min(30,(new Date($(&#x27;#ca-date-to&#x27;).value)-new Date($(&#x27;#ca-date-from&#x27;).value))/86400000+1))/5:1;}
+function filteredPeople(){const q=$(&#x27;#ca-time-search&#x27;).value.toLowerCase(),m=$(&#x27;#ca-workmodel&#x27;).value;return people.filter(p=&gt;(p.n+&#x27; &#x27;+p.t).toLowerCase().includes(q)&amp;&amp;(m===&#x27;all&#x27;||p.m===m)&amp;&amp;(problem===&#x27;all&#x27;||p.p===problem));}
+function renderTime(){const mult=rangeMultiplier();$(&#x27;#ca-problems&#x27;).innerHTML=&#x27;&lt;button class=&quot;ca-problem&quot; data-problem=&quot;all&quot; aria-pressed=&quot;&#x27;+(problem===&#x27;all&#x27;)+&#x27;&quot;&gt;Alle · &#x27;+people.length+&#x27;&lt;/button&gt;&#x27;+Object.entries(problems).map(([key,label])=&gt;&#x27;&lt;button class=&quot;ca-problem&quot; data-problem=&quot;&#x27;+key+&#x27;&quot; aria-pressed=&quot;&#x27;+(problem===key)+&#x27;&quot;&gt;&#x27;+label+&#x27; · &#x27;+people.filter(p=&gt;p.p===key).length+&#x27;&lt;/button&gt;&#x27;).join(&#x27;&#x27;);const rows=filteredPeople();$(&#x27;#ca-time-body&#x27;).innerHTML=rows.map(p=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+personCell(p)+&#x27;&lt;small class=&quot;ca-quiet&quot;&gt;&#x27;+model(p)+&#x27;&lt;/small&gt;&lt;/td&gt;&lt;td class=&quot;ca-num&quot;&gt;&#x27;+hours(p.ist*mult)+&#x27;&lt;/td&gt;&lt;td class=&quot;ca-num&quot;&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:hours(p.soll*mult))+&#x27;&lt;/td&gt;&lt;td class=&quot;ca-num &#x27;+(p.saldo&lt;0?&#x27;ca-negative&#x27;:&#x27;ca-positive&#x27;)+&#x27;&quot;&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:signed(p.saldo))+&#x27;&lt;/td&gt;&lt;td class=&quot;ca-num&quot;&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:signed(p.over*mult))+&#x27;&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ca-tag &#x27;+(!p.p?&#x27;ca-ok&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&#x27;+(problems[p.p]||&#x27;Geprüft&#x27;)+&#x27;&lt;/span&gt;&lt;/td&gt;&lt;td&gt;&lt;button class=&quot;ca-circle&quot; data-person=&quot;&#x27;+p.id+&#x27;&quot; aria-label=&quot;Tagesstempel von &#x27;+p.n+&#x27; aufklappen&quot;&gt;&lt;i data-lucide=&quot;chevron-down&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)||&#x27;&lt;tr&gt;&lt;td colspan=&quot;7&quot; class=&quot;ca-empty&quot;&gt;Keine Personen für diese Filter.&lt;/td&gt;&lt;/tr&gt;&#x27;;$(&#x27;#ca-time-summary&#x27;).textContent=rows.length+&#x27; Personen · &#x27;+hours(rows.reduce((s,p)=&gt;s+p.ist*mult,0))+&#x27; erfasst · &#x27;+($(&#x27;#ca-period&#x27;).value===&#x27;week&#x27;?&#x27;7.–11. September&#x27;:$(&#x27;#ca-period&#x27;).value===&#x27;month&#x27;?&#x27;September · simulierte Monatswerte&#x27;:$(&#x27;#ca-date-from&#x27;).value+&#x27; bis &#x27;+$(&#x27;#ca-date-to&#x27;).value+&#x27; · simuliert&#x27;);$(&#x27;#ca-issues-total&#x27;).textContent=people.filter(p=&gt;p.p).length;icons();}
+function timeDetail(id){activePerson=Number(id);const p=people.find(p=&gt;p.id===activePerson);openDetail(p.n+&#x27; · Tagesstempel&#x27;,&#x27;&lt;p&gt;&#x27;+model(p)+&#x27; · KW 37 · 7.–11. September 2026&lt;/p&gt;&lt;div class=&quot;ca-inline-info&quot;&gt;&#x27;+(p.p?problems[p.p]+&#x27;: Eintrag kontrollieren und anschliessend als geprüft markieren.&#x27;:&#x27;Alle Zeiteinträge sind geprüft.&#x27;)+&#x27;&lt;/div&gt;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Tag&lt;/th&gt;&lt;th&gt;Kommen&lt;/th&gt;&lt;th&gt;Pause&lt;/th&gt;&lt;th&gt;Gehen&lt;/th&gt;&lt;th&gt;Netto&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&#x27;+timeEntries[p.id].map((d,i)=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+d.date.slice(8)+&#x27;.09.&lt;/td&gt;&lt;td&gt;&#x27;+(d.start||&#x27;—&#x27;)+&#x27;&lt;/td&gt;&lt;td&gt;12:00–&#x27;+toClock(12*60+d.pause)+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+(d.end||&#x27;—&#x27;)+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+(!d.start||!d.end?&#x27;offen&#x27;:hours(d.net))+&#x27;&lt;/td&gt;&lt;td&gt;&lt;button class=&quot;ca-link&quot; data-edit-day=&quot;&#x27;+i+&#x27;&quot;&gt;Bearbeiten&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-action=&quot;mark-checked&quot;&gt;Als geprüft markieren&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;person-report&quot;&gt;PDF-Bericht&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;edit-time&quot;&gt;Zeit bearbeiten&lt;/button&gt;&lt;/div&gt;&#x27;);}
+function editTime(day=0){const p=people.find(p=&gt;p.id===activePerson),entry=timeEntries[p.id][Number(day)];openDetail(&#x27;Zeit korrigieren · &#x27;+p.n,&#x27;&lt;form id=&quot;ca-time-form&quot; data-day=&quot;&#x27;+day+&#x27;&quot;&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Datum&lt;input type=&quot;date&quot; name=&quot;date&quot; value=&quot;&#x27;+entry.date+&#x27;&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Arbeitsbeginn&lt;input type=&quot;time&quot; name=&quot;start&quot; value=&quot;&#x27;+(entry.start||&#x27;08:00&#x27;)+&#x27;&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Arbeitsende&lt;input type=&quot;time&quot; name=&quot;end&quot; value=&quot;&#x27;+(entry.end||&#x27;17:00&#x27;)+&#x27;&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Pause (Minuten)&lt;input type=&quot;number&quot; name=&quot;pause&quot; value=&quot;&#x27;+entry.pause+&#x27;&quot; min=&quot;0&quot; max=&quot;600&quot; required&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;ca-field&quot;&gt;Begründung&lt;textarea name=&quot;reason&quot; required&gt;Mit der Person abgestimmt.&lt;/textarea&gt;&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; type=&quot;submit&quot;&gt;Korrektur speichern&lt;/button&gt;&lt;button class=&quot;ca-button&quot; type=&quot;button&quot; data-person=&quot;&#x27;+p.id+&#x27;&quot;&gt;Zurück&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+function updateCounts(){const count=requests.filter(r=&gt;r.status===&#x27;Offen&#x27;).length;$$(&#x27;[data-request-count]&#x27;).forEach(e=&gt;e.textContent=count);const labels=$$(&#x27;.ca-decision-item small&#x27;);[&#x27;Ferien&#x27;,&#x27;Zeitkorrektur&#x27;,&#x27;Arbeitstagtausch&#x27;].forEach((t,i)=&gt;{labels[i].textContent=String(requests.filter(r=&gt;r.type===t&amp;&amp;r.status===&#x27;Offen&#x27;).length).padStart(2,&#x27;0&#x27;)+&#x27; · &#x27;+[&#x27;FERIEN&#x27;,&#x27;ZEITKORREKTUREN&#x27;,&#x27;ARBEITSTAGTAUSCH&#x27;][i]});}
+function visibleRequests(){return requests.filter(r=&gt;r.status===&#x27;Offen&#x27;&amp;&amp;(requestType===&#x27;all&#x27;||r.type===requestType));}
+function renderRequests(){const rows=visibleRequests();$(&#x27;#ca-request-list&#x27;).innerHTML=rows.map(r=&gt;{const p=people.find(p=&gt;p.id===r.person);return&#x27;&lt;div class=&quot;ca-request-row&quot;&gt;&lt;input type=&quot;checkbox&quot; data-select-request=&quot;&#x27;+r.id+&#x27;&quot; &#x27;+(selected.has(r.id)?&#x27;checked&#x27;:&#x27;&#x27;)+&#x27; aria-label=&quot;Antrag von &#x27;+p.n+&#x27; auswählen&quot;&gt;&lt;div&gt;&#x27;+personCell(p)+&#x27;&lt;/div&gt;&lt;div&gt;&lt;strong&gt;&#x27;+r.type+&#x27; · &#x27;+r.amount+&#x27;&lt;/strong&gt;&lt;small&gt;&#x27;+r.when+&#x27;&lt;/small&gt;&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button&quot; data-request=&quot;&#x27;+r.id+&#x27;&quot;&gt;Details&lt;/button&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-approve=&quot;&#x27;+r.id+&#x27;&quot; aria-label=&quot;Antrag von &#x27;+p.n+&#x27; genehmigen&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Ja&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-reject=&quot;&#x27;+r.id+&#x27;&quot; aria-label=&quot;Antrag von &#x27;+p.n+&#x27; ablehnen&quot;&gt;&lt;i data-lucide=&quot;x&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt; Nein&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&#x27;}).join(&#x27;&#x27;)||&#x27;&lt;p class=&quot;ca-empty&quot;&gt;Alles entschieden. Keine offenen Anträge in dieser Ansicht.&lt;/p&gt;&#x27;;$(&#x27;#ca-selection-count&#x27;).textContent=selected.size+&#x27; ausgewählt&#x27;;$(&#x27;#ca-select-all&#x27;).checked=rows.length&gt;0&amp;&amp;rows.every(r=&gt;selected.has(r.id));$$(&#x27;[data-action=&quot;approve-selected&quot;],[data-action=&quot;reject-selected&quot;]&#x27;).forEach(b=&gt;b.disabled=selected.size===0);updateCounts();icons();}
+function requestDetail(id){const r=requests.find(r=&gt;r.id===id),p=people.find(p=&gt;p.id===r.person);openDetail(r.type+&#x27; · &#x27;+p.n,&#x27;&lt;dl&gt;&lt;dt&gt;Zeitraum&lt;/dt&gt;&lt;dd&gt;&#x27;+r.when+&#x27;&lt;/dd&gt;&lt;dt&gt;Umfang&lt;/dt&gt;&lt;dd&gt;&#x27;+r.amount+&#x27;&lt;/dd&gt;&lt;dt&gt;Status&lt;/dt&gt;&lt;dd&gt;&#x27;+r.status+&#x27;&lt;/dd&gt;&lt;dt&gt;Ferienrest vor Antrag&lt;/dt&gt;&lt;dd&gt;&#x27;+p.holiday+&#x27; Tage&lt;/dd&gt;&lt;/dl&gt;&lt;h3 class=&quot;ca-serif&quot;&gt;Eine kurze Einordnung.&lt;/h3&gt;&lt;p&gt;&#x27;+r.note+&#x27;&lt;/p&gt;&lt;div class=&quot;ca-inline-info&quot;&gt;&#x27;+(r.type===&#x27;Ferien&#x27;?&#x27;Teamabdeckung geprüft · Mindestens 5 Personen verfügbar.&#x27;:r.type===&#x27;Arbeitstagtausch&#x27;?&#x27;Sollzeit unverändert · Betroffene Dienstplantage werden gemeinsam getauscht.&#x27;:&#x27;Original und beantragte Zeit bleiben im Verlauf sichtbar.&#x27;)+&#x27;&lt;/div&gt;&#x27;+(r.status===&#x27;Offen&#x27;?&#x27;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-approve=&quot;&#x27;+r.id+&#x27;&quot;&gt;Genehmigen&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-reject=&quot;&#x27;+r.id+&#x27;&quot;&gt;Ablehnen&lt;/button&gt;&lt;/div&gt;&#x27;:&#x27;&#x27;));}
+function decide(ids,status){ids.forEach(id=&gt;{const r=requests.find(r=&gt;r.id===id);if(r&amp;&amp;r.status===&#x27;Offen&#x27;){r.status=status;r.decision=&#x27;8. September 2026 · Anna Keller&#x27;;selected.delete(id);}});renderRequests();closeDetail();notify(ids.length+&#x27; Antrag&#x27;+(ids.length!==1?&#x27;e&#x27;:&#x27;&#x27;)+&#x27; &#x27;+status.toLowerCase()+&#x27; · lokal simuliert.&#x27;);}
+function reject(ids){if(!ids.length)return;openDetail(&#x27;Antrag ablehnen&#x27;,&#x27;&lt;form id=&quot;ca-reject-form&quot; data-ids=&quot;&#x27;+ids.join(&#x27;,&#x27;)+&#x27;&quot;&gt;&lt;p&gt;&#x27;+ids.length+&#x27; Antrag&#x27;+(ids.length!==1?&#x27;e&#x27;:&#x27;&#x27;)+&#x27; ausgewählt.&lt;/p&gt;&lt;label class=&quot;ca-field&quot;&gt;Begründung&lt;textarea name=&quot;reason&quot; required placeholder=&quot;Eine kurze, nachvollziehbare Rückmeldung&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button type=&quot;submit&quot; class=&quot;ca-button ca-primary&quot;&gt;Ablehnung speichern&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;ca-button&quot; data-action=&quot;close-detail&quot;&gt;Abbrechen&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+function history(){const done=requests.filter(r=&gt;r.status!==&#x27;Offen&#x27;);openDetail(&#x27;Entscheidungsverlauf&#x27;,&#x27;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Antrag&lt;/th&gt;&lt;th&gt;Person&lt;/th&gt;&lt;th&gt;Entscheidung&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&#x27;+done.map(r=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+r.type+&#x27;&lt;small class=&quot;ca-quiet&quot;&gt; · &#x27;+r.when+&#x27;&lt;/small&gt;&lt;/td&gt;&lt;td&gt;&#x27;+people.find(p=&gt;p.id===r.person).n+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+r.status+&#x27;&lt;small class=&quot;ca-quiet&quot;&gt; · Anna Keller&lt;/small&gt;&#x27;+(r.reason?&#x27;&lt;p&gt;&#x27;+esc(r.reason)+&#x27;&lt;/p&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;tr&gt;&lt;td&gt;Ferien · 28. August&lt;/td&gt;&lt;td&gt;Jan Weber&lt;/td&gt;&lt;td&gt;Genehmigt · 21. August 2026&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&#x27;);}
+function renderTeam(){let rows=people.filter(p=&gt;$(&#x27;#ca-team-filter&#x27;).value===&#x27;all&#x27;||p.t===$(&#x27;#ca-team-filter&#x27;).value);if($(&#x27;#ca-team-sort&#x27;).value===&#x27;negative&#x27;)rows=rows.filter(p=&gt;p.m!==&#x27;hourly&#x27;&amp;&amp;p.saldo&lt;0).sort((a,b)=&gt;a.saldo-b.saldo);else if($(&#x27;#ca-team-sort&#x27;).value===&#x27;top&#x27;)rows.sort((a,b)=&gt;b.saldo-a.saldo);else rows.sort((a,b)=&gt;a.n.localeCompare(b.n));$(&#x27;#ca-team-body&#x27;).innerHTML=rows.map(p=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+personCell(p)+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+model(p)+&#x27;&lt;/td&gt;&lt;td class=&quot;ca-num &#x27;+(p.saldo&lt;0?&#x27;ca-negative&#x27;:&#x27;ca-positive&#x27;)+&#x27;&quot;&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:signed(p.saldo))+&#x27;&lt;/td&gt;&lt;td class=&quot;ca-num&quot;&gt;&#x27;+p.holiday+&#x27; Tage&lt;/td&gt;&lt;td&gt;&lt;button class=&quot;ca-link&quot; data-person=&quot;&#x27;+p.id+&#x27;&quot;&gt;Konto öffnen&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)||&#x27;&lt;tr&gt;&lt;td colspan=&quot;5&quot; class=&quot;ca-empty&quot;&gt;Keine Personen für diese Auswahl.&lt;/td&gt;&lt;/tr&gt;&#x27;;}
+const groups=[[&#x27;Menschen &amp; Lohn&#x27;,[[&#x27;Personal&#x27;,&#x27;8 Personen&#x27;],[&#x27;Lohn&#x27;,&#x27;September&#x27;],[&#x27;Dienstplan&#x27;,&#x27;KW 37&#x27;],[&#x27;Regeln&#x27;,&#x27;4 Modelle&#x27;]]],[&#x27;Arbeit &amp; Kunden&#x27;,[[&#x27;Projekte&#x27;,&#x27;6 aktiv&#x27;],[&#x27;Aufgaben&#x27;,&#x27;12 offen&#x27;],[&#x27;Kunden&#x27;,&#x27;18 Kontakte&#x27;],[&#x27;Reports&#x27;,&#x27;4 Berichte&#x27;],[&#x27;CRM&#x27;,&#x27;3 Chancen&#x27;]]],[&#x27;Betrieb&#x27;,[[&#x27;PMS&#x27;,&#x27;Hotelverwaltung&#x27;],[&#x27;Supply Chain&#x27;,&#x27;3 Lieferungen&#x27;],[&#x27;Wissen&#x27;,&#x27;24 Einträge&#x27;],[&#x27;Buchhaltung&#x27;,&#x27;5 Belege&#x27;],[&#x27;Zahlungsverkehr&#x27;,&#x27;2 Freigaben&#x27;]]],[&#x27;Administration&#x27;,[[&#x27;Einstellungen&#x27;,&#x27;Organisation&#x27;],[&#x27;Import&#x27;,&#x27;CSV &amp; Excel&#x27;],[&#x27;Integrationen&#x27;,&#x27;3 verbunden&#x27;],[&#x27;Chrono 2.0&#x27;,&#x27;Neue Arbeitswelt&#x27;]]]];
+function renderModules(){const q=$(&#x27;#ca-module-search&#x27;).value.toLowerCase();$(&#x27;#ca-module-grid&#x27;).innerHTML=groups.map(([g,items])=&gt;{const list=items.filter(([n])=&gt;n.toLowerCase().includes(q));return list.length?&#x27;&lt;div class=&quot;ca-module-group&quot;&gt;&lt;h3 class=&quot;ca-serif&quot;&gt;&#x27;+g+&#x27;&lt;/h3&gt;&#x27;+list.map(([n,s])=&gt;&#x27;&lt;button data-module=&quot;&#x27;+n+&#x27;&quot;&gt;&lt;span&gt;&#x27;+n+&#x27;&lt;small style=&quot;display:block&quot;&gt;&#x27;+s+&#x27;&lt;/small&gt;&lt;/span&gt;&lt;i data-lucide=&quot;arrow-up-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/div&gt;&#x27;:&#x27;&#x27;}).join(&#x27;&#x27;)||&#x27;&lt;p class=&quot;ca-empty&quot;&gt;Kein passendes Modul gefunden.&lt;/p&gt;&#x27;;icons();}
+const moduleRows={Personal:[&#x27;Lina Meier · Design · 100 %&#x27;,&#x27;Mia Brunner · Operations · 80 %&#x27;,&#x27;Elia Roth · Entwicklung · Stundenlohn&#x27;],Lohn:[&#x27;September 2026 · Entwurf&#x27;,&#x27;August 2026 · Abgeschlossen&#x27;,&#x27;Spesen · 5 Belege offen&#x27;],Dienstplan:[&#x27;KW 37 · 8 Personen geplant&#x27;,&#x27;KW 38 · Entwurf mit 2 offenen Schichten&#x27;,&#x27;Vorlagen · Standardwoche Zürich&#x27;],Regeln:[&#x27;Vollzeit · 40 h / Woche&#x27;,&#x27;Teilzeit · Pensum in Prozent&#x27;,&#x27;Stundenlohn · Ohne Soll und Überstunden&#x27;],Projekte:[&#x27;Nord · Website · 124 / 180 h&#x27;,&#x27;Bergblick · Markenauftritt · 46 / 80 h&#x27;,&#x27;Intern · Weiterentwicklung · 18 / 40 h&#x27;],Aufgaben:[&#x27;Designfreigabe · Lina · heute&#x27;,&#x27;Angebot senden · Jan · morgen&#x27;,&#x27;Release testen · Leon · Freitag&#x27;],Kunden:[&#x27;Bergblick AG · Aktiver Kunde&#x27;,&#x27;Studio West · Angebot offen&#x27;,&#x27;Nord &amp; Partner · Aktiver Kunde&#x27;],Reports:[&#x27;Arbeitszeiten · September&#x27;,&#x27;Projektbudgets · Q3&#x27;,&#x27;Auslastung · Teams&#x27;],CRM:[&#x27;Bergblick · Angebot · CHF 18 000&#x27;,&#x27;Studio West · Erstgespräch · CHF 7 500&#x27;,&#x27;Nord &amp; Partner · Verhandlung · CHF 12 000&#x27;],PMS:[&#x27;Reservation 2041 · Doppelzimmer · 8.–11. Sept.&#x27;,&#x27;Zimmerstatus · 18 belegt · 6 verfügbar&#x27;,&#x27;Anreisen heute · 4 Gäste erwartet&#x27;], &#x27;Supply Chain&#x27;:[&#x27;Material Nord · Lieferung 10. Sept.&#x27;,&#x27;Bürobedarf · Bestellung freigegeben&#x27;,&#x27;Partnerliste · 6 Lieferanten&#x27;],Wissen:[&#x27;Onboarding · 8 Kapitel&#x27;,&#x27;Ferien &amp; Abwesenheiten · Richtlinie&#x27;,&#x27;Projektübergabe · Vorlage&#x27;],Buchhaltung:[&#x27;Rechnung 2026-091 · CHF 4 200 · Offen&#x27;,&#x27;5 Spesenbelege · Zur Prüfung&#x27;,&#x27;August · Abgestimmt&#x27;],Zahlungsverkehr:[&#x27;Zahlungslauf September · 2 Freigaben offen&#x27;,&#x27;Rechnung 2026-088 · CHF 2 800 · Vorgemerkt&#x27;,&#x27;Bankabgleich · 6. September · Abgeschlossen&#x27;],Integrationen:[&#x27;Microsoft 365 · Verbunden&#x27;,&#x27;Lohnexport · Bereit&#x27;,&#x27;Kalender · Synchronisiert&#x27;],&#x27;Chrono 2.0&#x27;:[&#x27;Neue Arbeitswelt · Vorschau verfügbar&#x27;,&#x27;Persönlicher Arbeitsplatz · Zusammenstellung&#x27;,&#x27;Organisation · Module und Berechtigungen&#x27;]};
+function moduleDetail(name){if(name===&#x27;Einstellungen&#x27;){openDetail(&#x27;Organisation &amp; Einstellungen&#x27;,&#x27;&lt;form id=&quot;ca-settings-form&quot;&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Organisation&lt;input name=&quot;company&quot; value=&quot;Studio Nord&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Kanton für Feiertage&lt;select&gt;&lt;option&gt;Zürich (ZH)&lt;/option&gt;Bern (BE)&lt;/option&gt;Basel-Stadt (BS)&lt;/option&gt;Zug (ZG)&lt;/option&gt;Luzern (LU)&lt;/option&gt;Waadt (VD)&lt;/option&gt;Genf (GE)&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Standard-Wochenstunden&lt;input type=&quot;number&quot; value=&quot;40&quot; min=&quot;1&quot; max=&quot;60&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Zeitzone&lt;select&gt;&lt;option&gt;Europe/Zurich&lt;/option&gt;&lt;option&gt;Europe/Berlin&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;ca-check-line&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Kantonale Feiertage berücksichtigen&lt;/label&gt;&lt;label class=&quot;ca-check-line&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Automatisch beendete Zeiten zur Prüfung vorlegen&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; type=&quot;submit&quot;&gt;Einstellungen speichern&lt;/button&gt;&lt;button class=&quot;ca-button&quot; type=&quot;button&quot; data-action=&quot;new-absence&quot;&gt;Betriebsurlaub planen&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);return;}
+if(name===&#x27;Import&#x27;){openDetail(&#x27;Import vorbereiten&#x27;,&#x27;&lt;form id=&quot;ca-import-form&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Datei auswählen&lt;input type=&quot;file&quot; accept=&quot;.csv,.xlsx&quot; name=&quot;file&quot; required&gt;&lt;/label&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Importieren&lt;select&gt;&lt;option&gt;Mitarbeitende&lt;/option&gt;&lt;option&gt;Zeiteinträge&lt;/option&gt;&lt;option&gt;Kunden&lt;/option&gt;&lt;option&gt;Projekte&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Bestehende Datensätze&lt;select&gt;&lt;option&gt;Überspringen&lt;/option&gt;&lt;option&gt;Aktualisieren&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&lt;p&gt;Lokale Vorschau: Es werden keine Dateien hochgeladen.&lt;/p&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; type=&quot;submit&quot;&gt;Importvorschau prüfen&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);return;}
+openDetail(name,&#x27;&lt;p&gt;&#x27;+({Regeln:&#x27;Pensum und Arbeitsmodelle bestimmen die Zeitbewertung.&#x27;,Integrationen:&#x27;Verbindungen, letzter Abgleich und Konfiguration.&#x27;,Lohn:&#x27;Zeitdaten kontrollieren und den Monatslauf vorbereiten.&#x27;,Reports:&#x27;Berichte nach Team, Person und Zeitraum.&#x27;}[name]||&#x27;Die wichtigsten Einträge für deinen Arbeitsalltag.&#x27;)+&#x27;&lt;/p&gt;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Eintrag&lt;/th&gt;&lt;th&gt;Aktion&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&#x27;+(moduleRows[name]||[]).map((line,i)=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+line+&#x27;&lt;/td&gt;&lt;td&gt;&lt;button class=&quot;ca-link&quot; data-module-entry=&quot;&#x27;+esc(name)+&#x27;|&#x27;+i+&#x27;&quot;&gt;&#x27;+(name===&#x27;Integrationen&#x27;?&#x27;Konfigurieren&#x27;:&#x27;Öffnen&#x27;)+&#x27;&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-new-module=&quot;&#x27;+esc(name)+&#x27;&quot;&gt;&#x27;+(name===&#x27;Reports&#x27;?&#x27;Bericht erstellen&#x27;:name===&#x27;Integrationen&#x27;?&#x27;Verbindung hinzufügen&#x27;:&#x27;Neuer Eintrag&#x27;)+&#x27;&lt;/button&gt;&#x27;+(name===&#x27;Regeln&#x27;?&#x27;&lt;button class=&quot;ca-button&quot; data-action=&quot;new-absence&quot;&gt;Feiertage &amp; Betriebsurlaub&lt;/button&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;/div&gt;&#x27;);}
+function moduleEntry(name,index){const line=(moduleRows[name]||[])[Number(index)]||&#x27;&#x27;;openDetail(name+&#x27; · Details&#x27;,&#x27;&lt;form id=&quot;ca-module-edit&quot; data-module-name=&quot;&#x27;+esc(name)+&#x27;&quot; data-index=&quot;&#x27;+index+&#x27;&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Bezeichnung&lt;input name=&quot;name&quot; value=&quot;&#x27;+esc(line)+&#x27;&quot; required&gt;&lt;/label&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Status&lt;select&gt;&lt;option&gt;Aktiv&lt;/option&gt;&lt;option&gt;Entwurf&lt;/option&gt;&lt;option&gt;Abgeschlossen&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Verantwortlich&lt;select&gt;&#x27;+people.map(p=&gt;&#x27;&lt;option&gt;&#x27;+p.n+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;/div&gt;&#x27;+(name===&#x27;Regeln&#x27;?&#x27;&lt;label class=&quot;ca-field&quot;&gt;Arbeitsmodell&lt;select id=&quot;ca-rule-model&quot;&gt;&lt;option value=&quot;percent&quot;&gt;Prozentpensum&lt;/option&gt;&lt;option value=&quot;hourly&quot;&gt;Stundenlohn · ohne Soll / Überstunden&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot; id=&quot;ca-rule-percent-field&quot;&gt;Pensum in Prozent&lt;input type=&quot;number&quot; min=&quot;1&quot; max=&quot;100&quot; value=&quot;80&quot;&gt;&lt;/label&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;label class=&quot;ca-field&quot;&gt;Notiz&lt;textarea name=&quot;note&quot;&gt;Für die Vorschau bearbeitbar.&lt;/textarea&gt;&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button type=&quot;submit&quot; class=&quot;ca-button ca-primary&quot;&gt;Speichern&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;ca-button&quot; data-module=&quot;&#x27;+esc(name)+&#x27;&quot;&gt;Zurück&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+function newModule(name){openDetail(name+&#x27; · Neuer Eintrag&#x27;,&#x27;&lt;form id=&quot;ca-module-new&quot; data-module-name=&quot;&#x27;+esc(name)+&#x27;&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Bezeichnung&lt;input name=&quot;name&quot; required placeholder=&quot;Bezeichnung eingeben&quot;&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot; style=&quot;margin-top:12px&quot;&gt;Notiz&lt;textarea name=&quot;note&quot; placeholder=&quot;Was ist wichtig?&quot;&gt;&lt;/textarea&gt;&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button type=&quot;submit&quot; class=&quot;ca-button ca-primary&quot;&gt;Eintrag anlegen&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+function absence(name){
+activeAbsence=name?$$(&#x27;[data-absence]&#x27;).find(e=&gt;e.dataset.absence===name)||null:null;
+const saved=activeAbsence?activeAbsence.dataset:{},person=name===&#x27;Standortdemo&#x27;?&#x27;Standort Zürich&#x27;:name||people[0].n,type=saved.type||(name===&#x27;Noah Keller&#x27;?&#x27;Krankheit&#x27;:name===&#x27;Standortdemo&#x27;?&#x27;Kantonaler Feiertag&#x27;:&#x27;Ferien&#x27;),from=saved.from||(name===&#x27;Noah Keller&#x27;?&#x27;2026-09-10&#x27;:name===&#x27;Standortdemo&#x27;?&#x27;2026-09-11&#x27;:&#x27;2026-09-07&#x27;),to=saved.to||(name===&#x27;Noah Keller&#x27;||name===&#x27;Standortdemo&#x27;?&#x27;2026-09-11&#x27;:&#x27;2026-09-09&#x27;);
+openDetail(name?&#x27;Abwesenheit bearbeiten&#x27;:&#x27;Raum für eine Pause.&#x27;,&#x27;&lt;form id=&quot;ca-absence-form&quot;&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Person / Geltungsbereich&lt;select name=&quot;person&quot;&gt;&#x27;+[...people.map(p=&gt;p.n),&#x27;Alle Mitarbeitenden&#x27;,&#x27;Standort Zürich&#x27;].map(n=&gt;&#x27;&lt;option &#x27;+(n===person?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+n+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Abwesenheit&lt;select name=&quot;type&quot; id=&quot;ca-absence-type&quot;&gt;&#x27;+[&#x27;Ferien&#x27;,&#x27;Krankheit&#x27;,&#x27;Überstundenfrei&#x27;,&#x27;Betriebsurlaub&#x27;,&#x27;Kantonaler Feiertag&#x27;].map(t=&gt;&#x27;&lt;option &#x27;+(t===type?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+t+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Von&lt;input name=&quot;from&quot; type=&quot;date&quot; value=&quot;&#x27;+from+&#x27;&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Bis&lt;input name=&quot;to&quot; type=&quot;date&quot; value=&quot;&#x27;+to+&#x27;&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Umfang&lt;select name=&quot;part&quot;&gt;&#x27;+[&#x27;Ganzer Tag&#x27;,&#x27;Vormittag · ½ Tag&#x27;,&#x27;Nachmittag · ½ Tag&#x27;].map(t=&gt;&#x27;&lt;option &#x27;+(t===saved.part?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+t+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Stunden vom Saldo abziehen&lt;input name=&quot;deduct&quot; type=&quot;number&quot; min=&quot;0&quot; step=&quot;0.25&quot; value=&quot;&#x27;+(saved.deduct||0)+&#x27;&quot;&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;ca-check-line&quot;&gt;&lt;input name=&quot;approved&quot; type=&quot;checkbox&quot; checked&gt; Direkt als genehmigt eintragen&lt;/label&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; type=&quot;submit&quot;&gt;Abwesenheit speichern&lt;/button&gt;&lt;button class=&quot;ca-button&quot; type=&quot;button&quot; data-module=&quot;Einstellungen&quot;&gt;Feiertagskanton ändern&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+function renderMonth(){let html=[&#x27;Mo&#x27;,&#x27;Di&#x27;,&#x27;Mi&#x27;,&#x27;Do&#x27;,&#x27;Fr&#x27;,&#x27;Sa&#x27;,&#x27;So&#x27;].map(d=&gt;&#x27;&lt;span class=&quot;ca-month-head&quot;&gt;&#x27;+d+&#x27;&lt;/span&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;span class=&quot;ca-month-day&quot;&gt;&lt;/span&gt;&#x27;;for(let d=1;d&lt;=30;d++){const holiday=d&gt;=7&amp;&amp;d&lt;=9,sick=d===10||d===11;html+=&#x27;&lt;button class=&quot;ca-month-day &#x27;+(d===8?&#x27;ca-month-today&#x27;:&#x27;&#x27;)+&#x27;&quot; data-calendar-day=&quot;&#x27;+d+&#x27;&quot;&gt;&lt;span&gt;&#x27;+d+&#x27;&lt;/span&gt;&#x27;+(holiday?&#x27;&lt;small data-kind=&quot;ferien&quot;&gt;Mia · Ferien&lt;/small&gt;&#x27;:sick?&#x27;&lt;small data-kind=&quot;krank&quot; style=&quot;background:var(--ca-peach)&quot;&gt;Noah · krank&lt;/small&gt;&#x27;:&#x27;&#x27;)+(d===11?&#x27;&lt;small data-kind=&quot;feiertag&quot; style=&quot;background:var(--ca-tint)&quot;&gt;Feiertag*&lt;/small&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;/button&gt;&#x27;;}$(&#x27;#ca-month&#x27;).innerHTML=&#x27;&lt;div class=&quot;ca-month&quot;&gt;&#x27;+html+&#x27;&lt;/div&gt;&#x27;;applyCalendarFilters();}
+function applyCalendarFilters(){$$(&#x27;[data-cal-filter]&#x27;).forEach(c=&gt;$$(&#x27;[data-kind=&quot;&#x27;+c.dataset.calFilter+&#x27;&quot;]&#x27;).forEach(e=&gt;e.hidden=!c.checked));}
+function report(kind){const p=people.find(p=&gt;p.id===activePerson);openDetail(kind===&#x27;print&#x27;?&#x27;Druckvorschau&#x27;:kind===&#x27;export&#x27;?&#x27;Export vorbereiten&#x27;:&#x27;PDF-Bericht · &#x27;+p.n,&#x27;&lt;form id=&quot;ca-report-form&quot; data-kind=&quot;&#x27;+kind+&#x27;&quot;&gt;&lt;div class=&quot;ca-detail-grid&quot;&gt;&lt;label class=&quot;ca-field&quot;&gt;Umfang&lt;select name=&quot;scope&quot;&gt;&lt;option&gt;&#x27;+ (kind===&#x27;person&#x27;?p.n:&#x27;Alle gefilterten Personen&#x27;)+&#x27;&lt;/option&gt;&lt;option&gt;Alle Mitarbeitenden&lt;/option&gt;&#x27;+people.filter(x=&gt;x.id!==activePerson).map(x=&gt;&#x27;&lt;option&gt;&#x27;+x.n+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Format&lt;select name=&quot;format&quot;&gt;&lt;option&gt;PDF&lt;/option&gt;&lt;option&gt;CSV&lt;/option&gt;&lt;option&gt;Excel&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Von&lt;input type=&quot;date&quot; name=&quot;from&quot; value=&quot;2026-09-07&quot; required&gt;&lt;/label&gt;&lt;label class=&quot;ca-field&quot;&gt;Bis&lt;input type=&quot;date&quot; name=&quot;to&quot; value=&quot;2026-09-11&quot; required&gt;&lt;/label&gt;&lt;/div&gt;&lt;label class=&quot;ca-check-line&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Tagesstempel und Pausen einschliessen&lt;/label&gt;&lt;label class=&quot;ca-check-line&quot;&gt;&lt;input type=&quot;checkbox&quot; checked&gt; Salden und Prüfhinweise anzeigen&lt;/label&gt;&lt;div class=&quot;ca-inline-info&quot;&gt;Vorschau · 7.–11. September 2026 · 8 Mitarbeitende · 287 h erfasst&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; type=&quot;submit&quot;&gt;&#x27;+(kind===&#x27;print&#x27;?&#x27;Druckansicht erstellen&#x27;:&#x27;Vorschau erstellen&#x27;)+&#x27;&lt;/button&gt;&lt;/div&gt;&lt;/form&gt;&#x27;);}
+const widgetNames={decisions:&#x27;Offene Entscheidungen&#x27;,planning:&#x27;Wochen- und Monatsplanung&#x27;,agenda:&#x27;Tagesagenda&#x27;,balance:&#x27;Zeitprüfung &amp; Salden&#x27;};
+function applyCustomization(){$$(&#x27;[data-ca-widget]&#x27;).forEach(e=&gt;{const v=custom[e.dataset.caWidget];e.hidden=!v.on;e.dataset.size=v.size;});widgetOrder.forEach((key,i)=&gt;$(&#x27;[data-ca-widget=&quot;&#x27;+key+&#x27;&quot;]&#x27;).style.order=i);$(&#x27;.ca-planning&#x27;).style.gridTemplateColumns=custom.agenda.on?&#x27;&#x27;:&#x27;minmax(0,1fr)&#x27;;}
+function customization(){openDetail(&#x27;Dein Überblick. Deine Reihenfolge.&#x27;,&#x27;&lt;p&gt;Informationen einblenden, ihre Grösse wählen und den Ablauf anpassen.&lt;/p&gt;&#x27;+[...widgetOrder,&#x27;agenda&#x27;].map(k=&gt;&#x27;&lt;div class=&quot;ca-config-row&quot;&gt;&lt;label&gt;&lt;input type=&quot;checkbox&quot; data-widget-toggle=&quot;&#x27;+k+&#x27;&quot; &#x27;+(custom[k].on?&#x27;checked&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+widgetNames[k]+&#x27;&lt;/label&gt;&lt;select data-widget-size=&quot;&#x27;+k+&#x27;&quot; aria-label=&quot;Grösse &#x27;+widgetNames[k]+&#x27;&quot;&gt;&#x27;+[&#x27;kompakt&#x27;,&#x27;normal&#x27;,&#x27;gross&#x27;].map(s=&gt;&#x27;&lt;option &#x27;+(custom[k].size===s?&#x27;selected&#x27;:&#x27;&#x27;)+&#x27;&gt;&#x27;+s+&#x27;&lt;/option&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/select&gt;&#x27;+(k!==&#x27;agenda&#x27;?&#x27;&lt;div class=&quot;ca-actions&quot; style=&quot;margin:0&quot;&gt;&lt;button class=&quot;ca-circle&quot; data-widget-up=&quot;&#x27;+k+&#x27;&quot; aria-label=&quot;&#x27;+widgetNames[k]+&#x27; nach oben&quot;&gt;&lt;i data-lucide=&quot;arrow-up&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;button class=&quot;ca-circle&quot; data-widget-down=&quot;&#x27;+k+&#x27;&quot; aria-label=&quot;&#x27;+widgetNames[k]+&#x27; nach unten&quot;&gt;&lt;i data-lucide=&quot;arrow-down&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&#x27;:&#x27;&lt;span class=&quot;ca-quiet&quot;&gt;neben Planung&lt;/span&gt;&#x27;)+&#x27;&lt;/div&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-action=&quot;close-detail&quot;&gt;Fertig&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;reset-layout&quot;&gt;Standard wiederherstellen&lt;/button&gt;&lt;/div&gt;&#x27;);}
+root.addEventListener(&#x27;click&#x27;,e=&gt;{const b=e.target.closest(&#x27;button&#x27;);if(!b||!root.contains(b))return;
+if(b.dataset.view){setView(b.dataset.view);return;}if(b.dataset.person){timeDetail(b.dataset.person);return;}if(b.dataset.editDay!==undefined){editTime(b.dataset.editDay);return;}if(b.dataset.problem){problem=b.dataset.problem;renderTime();return;}if(b.dataset.request){requestDetail(b.dataset.request);return;}if(b.dataset.approve){decide([b.dataset.approve],&#x27;Genehmigt&#x27;);return;}if(b.dataset.reject){reject([b.dataset.reject]);return;}if(b.dataset.requestType){requestType=b.dataset.requestType;selected.clear();$$(&#x27;[data-request-type]&#x27;).forEach(e=&gt;e.setAttribute(&#x27;aria-pressed&#x27;,e===b));renderRequests();return;}if(b.dataset.module){moduleDetail(b.dataset.module);return;}if(b.dataset.moduleEntry){const [n,i]=b.dataset.moduleEntry.split(&#x27;|&#x27;);moduleEntry(n,i);return;}if(b.dataset.newModule){newModule(b.dataset.newModule);return;}if(b.dataset.absence){absence(b.dataset.absence);return;}if(b.dataset.event){const [title,when,note]=b.dataset.event.split(&#x27;|&#x27;);openDetail(title,&#x27;&lt;p&gt;&#x27;+when+&#x27;&lt;/p&gt;&lt;div class=&quot;ca-inline-info&quot;&gt;&#x27;+note+&#x27;&lt;/div&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button&quot; data-module=&quot;Dienstplan&quot;&gt;Im Dienstplan öffnen&lt;/button&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;close-detail&quot;&gt;Zurück zur Woche&lt;/button&gt;&lt;/div&gt;&#x27;);return;}if(b.dataset.calendar){calendarView=b.dataset.calendar;$(&#x27;#ca-week&#x27;).hidden=calendarView!==&#x27;week&#x27;;$(&#x27;#ca-month&#x27;).hidden=calendarView!==&#x27;month&#x27;;$$(&#x27;[data-calendar]&#x27;).forEach(e=&gt;e.setAttribute(&#x27;aria-pressed&#x27;,e===b));if(calendarView===&#x27;month&#x27;)renderMonth();return;}if(b.dataset.calendarDay){openDetail(b.dataset.calendarDay+&#x27;. September 2026&#x27;,&#x27;&lt;p&gt;Kalendertag · Studio Nord&lt;/p&gt;&lt;div class=&quot;ca-inline-info&quot;&gt;&#x27;+(Number(b.dataset.calendarDay)&gt;=7&amp;&amp;Number(b.dataset.calendarDay)&lt;=9?&#x27;Mia Brunner · Ferien · ganztags&#x27;:&#x27;Keine weiteren Abwesenheiten eingetragen.&#x27;)+&#x27;&lt;/div&gt;&lt;button class=&quot;ca-button ca-primary&quot; data-action=&quot;new-absence&quot;&gt;Abwesenheit eintragen&lt;/button&gt;&#x27;);return;}if(b.dataset.widgetUp||b.dataset.widgetDown){const k=b.dataset.widgetUp||b.dataset.widgetDown,i=widgetOrder.indexOf(k),j=b.dataset.widgetUp?i-1:i+1;if(j&gt;=0&amp;&amp;j&lt;widgetOrder.length)[widgetOrder[i],widgetOrder[j]]=[widgetOrder[j],widgetOrder[i]];applyCustomization();customization();return;}
+const a=b.dataset.action;if(a===&#x27;close-detail&#x27;)closeDetail();else if(a===&#x27;customize&#x27;){if(view!==&#x27;home&#x27;)setView(&#x27;home&#x27;);customization();}else if(a===&#x27;reset-layout&#x27;){Object.values(custom).forEach(v=&gt;{v.on=true;v.size=&#x27;normal&#x27;});widgetOrder=[&#x27;decisions&#x27;,&#x27;planning&#x27;,&#x27;balance&#x27;];applyCustomization();customization();notify(&#x27;Standardansicht wiederhergestellt.&#x27;);}else if(a===&#x27;new-absence&#x27;)absence();else if(a===&#x27;issue-missing&#x27;){setView(&#x27;time&#x27;);problem=&#x27;missing&#x27;;renderTime();}else if(a===&#x27;negative-balances&#x27;||a===&#x27;top-balances&#x27;){setView(&#x27;team&#x27;);$(&#x27;#ca-team-sort&#x27;).value=a===&#x27;negative-balances&#x27;?&#x27;negative&#x27;:&#x27;top&#x27;;renderTeam();}else if(a===&#x27;approve-selected&#x27;&amp;&amp;selected.size)decide([...selected],&#x27;Genehmigt&#x27;);else if(a===&#x27;reject-selected&#x27;)reject([...selected]);else if(a===&#x27;history&#x27;)history();else if(a===&#x27;mark-checked&#x27;){people.find(p=&gt;p.id===activePerson).p=&#x27;&#x27;;renderTime();closeDetail();notify(&#x27;Zeitkonto als geprüft markiert.&#x27;);}else if(a===&#x27;edit-time&#x27;)editTime();else if([&#x27;print&#x27;,&#x27;export&#x27;,&#x27;person-report&#x27;].includes(a))report(a===&#x27;person-report&#x27;?&#x27;person&#x27;:a);else if(a===&#x27;profile&#x27;)openDetail(&#x27;Anna Keller&#x27;,&#x27;&lt;p&gt;Administratorin · Studio Nord · Zürich&lt;/p&gt;&lt;dl&gt;&lt;dt&gt;Rolle&lt;/dt&gt;&lt;dd&gt;Administration&lt;/dd&gt;&lt;dt&gt;Zugriff&lt;/dt&gt;&lt;dd&gt;Alle Teams und Module&lt;/dd&gt;&lt;dt&gt;Benachrichtigungen&lt;/dt&gt;&lt;dd&gt;Anträge &amp; Zeitprobleme&lt;/dd&gt;&lt;/dl&gt;&lt;div class=&quot;ca-actions&quot;&gt;&lt;button class=&quot;ca-button&quot; data-module=&quot;Einstellungen&quot;&gt;Einstellungen öffnen&lt;/button&gt;&lt;/div&gt;&#x27;);
+});
+root.addEventListener(&#x27;input&#x27;,e=&gt;{if(e.target.id===&#x27;ca-time-search&#x27;)renderTime();if(e.target.id===&#x27;ca-module-search&#x27;)renderModules();});
+root.addEventListener(&#x27;change&#x27;,e=&gt;{const t=e.target;if(t.id===&#x27;ca-period&#x27;){const free=t.value===&#x27;custom&#x27;;$(&#x27;#ca-date-from-field&#x27;).hidden=!free;$(&#x27;#ca-date-to-field&#x27;).hidden=!free;renderTime();}if([&#x27;ca-workmodel&#x27;,&#x27;ca-date-from&#x27;,&#x27;ca-date-to&#x27;].includes(t.id))renderTime();if([&#x27;ca-team-filter&#x27;,&#x27;ca-team-sort&#x27;].includes(t.id))renderTeam();if(t.dataset.selectRequest){if(t.checked)selected.add(t.dataset.selectRequest);else selected.delete(t.dataset.selectRequest);renderRequests();}if(t.id===&#x27;ca-select-all&#x27;){visibleRequests().forEach(r=&gt;t.checked?selected.add(r.id):selected.delete(r.id));renderRequests();}if(t.dataset.calFilter)applyCalendarFilters();if(t.dataset.widgetToggle){custom[t.dataset.widgetToggle].on=t.checked;applyCustomization();}if(t.dataset.widgetSize){custom[t.dataset.widgetSize].size=t.value;applyCustomization();}if(t.id===&#x27;ca-rule-model&#x27;)$(&#x27;#ca-rule-percent-field&#x27;).hidden=t.value===&#x27;hourly&#x27;;});
+function submitForm(e){e.preventDefault();const form=e.target,f=new FormData(form);
+if(form.id===&#x27;ca-time-form&#x27;){const min=s=&gt;Number(s.split(&#x27;:&#x27;)[0])*60+Number(s.split(&#x27;:&#x27;)[1]);const total=min(f.get(&#x27;end&#x27;))-min(f.get(&#x27;start&#x27;))-Number(f.get(&#x27;pause&#x27;));if(total&lt;=0){notify(&#x27;Bitte Beginn, Ende und Pause prüfen.&#x27;);return;}const p=people.find(p=&gt;p.id===activePerson),entry=timeEntries[p.id][Number(form.dataset.day)],diff=total/60-entry.net;p.ist=Math.round((p.ist+diff)*100)/100;if(p.m!==&#x27;hourly&#x27;){p.saldo+=diff;p.over=Math.max(0,p.ist-p.soll);}Object.assign(entry,{date:f.get(&#x27;date&#x27;),start:f.get(&#x27;start&#x27;),end:f.get(&#x27;end&#x27;),pause:Number(f.get(&#x27;pause&#x27;)),net:total/60});p.p=timeEntries[p.id].some(d=&gt;!d.start||!d.end)?&#x27;incomplete&#x27;:&#x27;&#x27;;renderTime();timeDetail(p.id);notify(&#x27;Zeitkorrektur für &#x27;+p.n+&#x27; gespeichert · &#x27;+hours(total/60)+&#x27; netto.&#x27;);}
+else if(form.id===&#x27;ca-reject-form&#x27;){const ids=form.dataset.ids.split(&#x27;,&#x27;);ids.forEach(id=&gt;requests.find(r=&gt;r.id===id).reason=f.get(&#x27;reason&#x27;));decide(ids,&#x27;Abgelehnt&#x27;);}
+else if(form.id===&#x27;ca-absence-form&#x27;){if(f.get(&#x27;to&#x27;)&lt;f.get(&#x27;from&#x27;)){notify(&#x27;Das Enddatum muss nach dem Startdatum liegen.&#x27;);return;}const p=people.find(p=&gt;p.n===f.get(&#x27;person&#x27;));if(p&amp;&amp;p.m!==&#x27;hourly&#x27;)p.saldo-=Number(f.get(&#x27;deduct&#x27;))-Number(activeAbsence?.dataset.deduct||0);const lane=$(&#x27;.ca-absence-lane&#x27;),entry=activeAbsence||document.createElement(&#x27;button&#x27;);entry.className=&#x27;ca-absence&#x27;+(f.get(&#x27;type&#x27;)===&#x27;Krankheit&#x27;?&#x27; ca-sick&#x27;:f.get(&#x27;type&#x27;).includes(&#x27;Feiertag&#x27;)?&#x27; ca-holiday&#x27;:&#x27;&#x27;);entry.dataset.absence=f.get(&#x27;person&#x27;);entry.dataset.kind=f.get(&#x27;type&#x27;)===&#x27;Krankheit&#x27;?&#x27;krank&#x27;:f.get(&#x27;type&#x27;).includes(&#x27;Feiertag&#x27;)?&#x27;feiertag&#x27;:&#x27;ferien&#x27;;[&#x27;type&#x27;,&#x27;from&#x27;,&#x27;to&#x27;,&#x27;part&#x27;,&#x27;deduct&#x27;].forEach(k=&gt;entry.dataset[k]=f.get(k));entry.textContent=f.get(&#x27;person&#x27;)+&#x27; · &#x27;+f.get(&#x27;type&#x27;)+&#x27; · &#x27;+f.get(&#x27;from&#x27;)+&#x27; bis &#x27;+f.get(&#x27;to&#x27;)+&#x27; · &#x27;+f.get(&#x27;part&#x27;);if(!entry.isConnected)lane.appendChild(entry);applyCalendarFilters();closeDetail();notify(&#x27;Abwesenheit für &#x27;+f.get(&#x27;person&#x27;)+&#x27; gespeichert · lokale Vorschau.&#x27;);activeAbsence=null;}
+else if(form.id===&#x27;ca-settings-form&#x27;){closeDetail();notify(&#x27;Einstellungen für &#x27;+f.get(&#x27;company&#x27;)+&#x27; gespeichert.&#x27;);}
+else if(form.id===&#x27;ca-import-form&#x27;){const file=f.get(&#x27;file&#x27;);openDetail(&#x27;Importvorschau&#x27;,&#x27;&lt;div class=&quot;ca-inline-info&quot;&gt;&#x27;+esc(file&amp;&amp;file.name?file.name:&#x27;Datei&#x27;)+&#x27; ausgewählt.&lt;/div&gt;&lt;p&gt;Demovorschau: 8 Datensätze würden geprüft. In dieser Vorschau wird kein Dateiinhalt importiert.&lt;/p&gt;&lt;button class=&quot;ca-button&quot; data-module=&quot;Import&quot;&gt;Andere Datei wählen&lt;/button&gt;&#x27;);}
+else if(form.id===&#x27;ca-module-edit&#x27;){const n=form.dataset.moduleName,i=Number(form.dataset.index);moduleRows[n][i]=f.get(&#x27;name&#x27;);moduleDetail(n);notify(n+&#x27; aktualisiert · lokal gespeichert.&#x27;);}
+else if(form.id===&#x27;ca-module-new&#x27;){const n=form.dataset.moduleName;if(!moduleRows[n])moduleRows[n]=[];moduleRows[n].push(f.get(&#x27;name&#x27;));moduleDetail(n);notify(&#x27;Neuer Eintrag in &#x27;+n+&#x27; angelegt.&#x27;);}
+else if(form.id===&#x27;ca-report-form&#x27;){if(f.get(&#x27;to&#x27;)&lt;f.get(&#x27;from&#x27;)){notify(&#x27;Bitte einen gültigen Zeitraum wählen.&#x27;);return;}openDetail(f.get(&#x27;format&#x27;)+&#x27; · Berichtsvorschau&#x27;,&#x27;&lt;div class=&quot;ca-eyebrow&quot;&gt;CHRONO / ARBEITSZEITBERICHT&lt;/div&gt;&lt;h3 class=&quot;ca-serif&quot;&gt;&#x27;+esc(f.get(&#x27;scope&#x27;))+&#x27;&lt;/h3&gt;&lt;p&gt;&#x27;+f.get(&#x27;from&#x27;)+&#x27; bis &#x27;+f.get(&#x27;to&#x27;)+&#x27; · erstellt am 8. September 2026&lt;/p&gt;&lt;div class=&quot;ca-table-wrap&quot;&gt;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Person&lt;/th&gt;&lt;th&gt;Ist · KW 37&lt;/th&gt;&lt;th&gt;Soll · KW 37&lt;/th&gt;&lt;th&gt;Saldo&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&#x27;+people.filter(p=&gt;f.get(&#x27;scope&#x27;).includes(&#x27;Alle&#x27;)||p.n===f.get(&#x27;scope&#x27;)).map(p=&gt;&#x27;&lt;tr&gt;&lt;td&gt;&#x27;+p.n+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+hours(p.ist)+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:hours(p.soll))+&#x27;&lt;/td&gt;&lt;td&gt;&#x27;+(p.m===&#x27;hourly&#x27;?&#x27;—&#x27;:signed(p.saldo))+&#x27;&lt;/td&gt;&lt;/tr&gt;&#x27;).join(&#x27;&#x27;)+&#x27;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;p&gt;Layoutvorschau mit Demowerten aus KW 37. &#x27;+(form.dataset.kind===&#x27;print&#x27;?&#x27;Druckansicht vorbereitet.&#x27;:&#x27;Dateiausgabe wird in diesem Mockup simuliert.&#x27;)+&#x27;&lt;/p&gt;&lt;button class=&quot;ca-button&quot; data-action=&quot;close-detail&quot;&gt;Vorschau schliessen&lt;/button&gt;&#x27;);notify(&#x27;Berichtsvorschau erstellt.&#x27;);}
+}
+root.addEventListener(&#x27;submit&#x27;,submitForm);
+root.addEventListener(&#x27;click&#x27;,e=&gt;{const button=e.target.closest(&#x27;button[type=&quot;submit&quot;]&#x27;);if(!button||!root.contains(button))return;const form=button.closest(&#x27;form&#x27;);if(!form)return;e.preventDefault();if(form.reportValidity())submitForm({target:form,preventDefault:()=&gt;{}});});
+renderTime();renderRequests();renderTeam();renderModules();applyCustomization();
+if(globalThis.Tweak){const design={accent:&#x27;#65405b&#x27;,density:&#x27;Normal&#x27;};const tweak=new globalThis.Tweak({container:root,onChange:()=&gt;{root.style.setProperty(&#x27;--ca-accent&#x27;,design.accent);root.style.setProperty(&#x27;--ca-density&#x27;,design.density===&#x27;Kompakt&#x27;?.8:1);$$(&#x27;.ca-event&#x27;).forEach(e=&gt;e.style.minHeight=design.density===&#x27;Kompakt&#x27;?&#x27;44px&#x27;:&#x27;&#x27;);}});tweak.addColorPicker(design,&#x27;accent&#x27;,{label:&#x27;Atelier Akzent&#x27;,reference:&#x27;--ca-accent&#x27;});tweak.addSelect(design,&#x27;density&#x27;,{label:&#x27;Planungsdichte&#x27;,options:[&#x27;Normal&#x27;,&#x27;Kompakt&#x27;]});}
+})();
+&lt;/script&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerdown&quot;, handlePointer);
+    document.removeEventListener(&quot;pointercancel&quot;, handlePointer);
+    document.removeEventListener(&quot;click&quot;, handleTouchClick);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerdown&quot;, handlePointer);
+  document.addEventListener(&quot;pointercancel&quot;, handlePointer);
+  document.addEventListener(&quot;click&quot;, handleTouchClick);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

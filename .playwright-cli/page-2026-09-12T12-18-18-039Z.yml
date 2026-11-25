@@ -1,0 +1,259 @@
+- generic [ref=f21e2]:
+  - generic [ref=f21e2960]:
+    - generic [ref=f21e2961]:
+      - navigation "Hauptnavigation" [ref=f21e2962]:
+        - link "Chrono PMS" [ref=f21e2964] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f21e2965]
+        - list [ref=f21e2966]:
+          - listitem [ref=f21e2967]:
+            - link "Zu Chrono wechseln" [ref=f21e2968] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f21e2969]:
+            - button "Was ist neu?" [ref=f21e2970] [cursor=pointer]
+          - listitem [ref=f21e2974]:
+            - button "Dark Mode" [ref=f21e3220] [cursor=pointer]
+          - listitem [ref=f21e2980]:
+            - button "🌐" [ref=f21e2981] [cursor=pointer]
+          - listitem [ref=f21e2984]:
+            - button "Default Admin" [ref=f21e2985] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e2986]: D
+        - button "PMS-Bereiche" [ref=f21e2991] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f21e2994]:
+        - generic [ref=f21e2995]:
+          - tablist "Offene Arbeitsbereiche" [ref=f21e2996]:
+            - generic [ref=f21e2997]:
+              - tab "Hotelverwaltung (PMS)" [ref=f21e2998] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e2999]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f21e3001] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f21e3002] [cursor=pointer]'
+            - generic [ref=f21e3003]:
+              - tab "PMS · Zimmerplan" [ref=f21e3004] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3005]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f21e3007] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f21e3008] [cursor=pointer]'
+            - generic [ref=f21e3009]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f21e3010] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3011]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f21e3013] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f21e3014] [cursor=pointer]'
+            - generic [ref=f21e3015]:
+              - tab "PMS · Housekeeping & Reinigung" [ref=f21e3016] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3017]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f21e3019] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f21e3020] [cursor=pointer]'
+            - generic [ref=f21e3021]:
+              - tab "PMS · Rechnungen" [selected] [ref=f21e3022] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3023]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f21e3025] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f21e3026] [cursor=pointer]'
+            - generic [ref=f21e3027]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f21e3028] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3029]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f21e3031] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f21e3032] [cursor=pointer]'
+            - generic [ref=f21e3033]:
+              - tab "PMS · Berichte & Kennzahlen" [ref=f21e3034] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3035]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f21e3037] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f21e3038] [cursor=pointer]'
+            - generic [ref=f21e3039]:
+              - tab "PMS · Hotelportfolio" [ref=f21e3040] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f21e3041]: PMS
+              - 'button "Tab anheften: PMS · Hotelportfolio" [ref=f21e3043] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Hotelportfolio" [ref=f21e3044] [cursor=pointer]'
+          - generic [ref=f21e3045]:
+            - button "Arbeitsbereich öffnen" [ref=f21e3046] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f21e3047] [cursor=pointer]
+    - generic [ref=f21e3048]:
+      - complementary "PMS-Navigation" [ref=f21e3049]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f21e3050] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f21e3051]: CH
+          - generic [ref=f21e3052]:
+            - generic [ref=f21e3053]: Aktives Hotel
+            - strong [ref=f21e3054]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f21e3055]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f21e3056]:
+          - generic [ref=f21e3057]:
+            - generic [ref=f21e3058]: Rezeption
+            - button "Übersicht" [ref=f21e3059] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3060]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f21e3061] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3062]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f21e3063] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3064]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f21e3065] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3066]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f21e3067] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3068]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f21e3069] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3070]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f21e3071]:
+            - generic [ref=f21e3072]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f21e3073] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3074]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f21e3075] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3076]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f21e3077] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3078]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f21e3079] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3080]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f21e3081]:
+            - generic [ref=f21e3082]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f21e3083] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3084]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f21e3085] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3086]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f21e3087] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3088]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f21e3089]:
+            - generic [ref=f21e3090]: Steuerung & System
+            - button "Hotelportfolio" [ref=f21e3091] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3092]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f21e3093] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3094]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f21e3095] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3096]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f21e3097] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3098]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f21e3099] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f21e3100]: SYS
+              - text: Schnittstellen
+        - generic [ref=f21e3103]:
+          - strong [ref=f21e3104]: PMS betriebsbereit
+          - generic [ref=f21e3105]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f21e3106]:
+        - generic [ref=f21e3107]:
+          - generic [ref=f21e3108]:
+            - generic [ref=f21e3109]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f21e3110]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f21e3112] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f21e3113]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f21e3114]: Ctrl K
+        - region [ref=f21e3115]:
+          - generic [ref=f21e3117]:
+            - generic [ref=f21e3118]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Rechnungen" [level=2] [ref=f21e3119]
+            - paragraph [ref=f21e3120]: Rechnungen erstellen, ausgeben und korrigieren. · Betriebstag 12.09.2026
+          - generic [ref=f21e3121]:
+            - navigation "Bereiche im Rechnungswesen" [ref=f21e3122]:
+              - button "Rechnungen" [ref=f21e3123] [cursor=pointer]
+              - button "Forderungen" [ref=f21e3124] [cursor=pointer]
+              - button "Versand & Mahnungen" [ref=f21e3125] [cursor=pointer]
+              - button "Bank & Buchhaltung" [active] [pressed] [ref=f21e3126] [cursor=pointer]
+              - button "Zahlungen" [ref=f21e3127] [cursor=pointer]
+              - button "Freigaben" [ref=f21e3128] [cursor=pointer]
+              - button "Länder & XML" [ref=f21e3129] [cursor=pointer]
+            - generic [ref=f21e3223]:
+              - generic [ref=f21e3224]:
+                - generic [ref=f21e3225]:
+                  - generic [ref=f21e3226]: Bank und Buchhaltung
+                  - heading "Bankabgleich und Exportjournal" [level=3] [ref=f21e3227]
+                - button "Aktualisieren" [ref=f21e3228] [cursor=pointer]
+              - paragraph [ref=f21e3229]: Bankdateien erzeugen zunächst eine Vorschau. Nur bestätigte positive Bankgutschriften gleichen eine Forderung aus. Jede Bankreferenz wird je Hotel und Bankkonto einmal übernommen.
+              - group [ref=f21e3230]:
+                - generic "CSV-Format und Buchung" [ref=f21e3231] [cursor=pointer]
+              - generic [ref=f21e3232]:
+                - generic [ref=f21e3233]:
+                  - text: Bankdatei
+                  - button "Bankdatei" [ref=f21e3234]
+                - button "Importvorschau erstellen" [disabled] [ref=f21e3235]
+              - generic [ref=f21e3237]:
+                - text: Gespeicherter Bankimport
+                - combobox "Gespeicherter Bankimport" [ref=f21e3238]:
+                  - option "Bankimport auswählen" [selected]
+              - heading "Buchhaltungsexporte" [level=4] [ref=f21e3239]
+              - paragraph [ref=f21e3240]: Jeder Exportlauf bewahrt seine Originaldatei und Prüfsumme. Eine Empfangsbestätigung dokumentiert die Übernahme in die Buchhaltung; ein Download allein setzt diesen Status nicht.
+              - generic [ref=f21e3241]:
+                - generic [ref=f21e3242]:
+                  - generic [ref=f21e3243]:
+                    - text: Ab Buchungstag
+                    - textbox "Ab Buchungstag" [ref=f21e3244]: 2026-09-12
+                  - generic [ref=f21e3245]:
+                    - text: Bis Datum (ausschließlich)
+                    - textbox "Bis Datum (ausschließlich)" [ref=f21e3246]: 2026-09-13
+                - button "Exportlauf erzeugen" [ref=f21e3247] [cursor=pointer]
+              - table [ref=f21e3249]:
+                - rowgroup [ref=f21e3250]:
+                  - row [ref=f21e3251]:
+                    - columnheader "Lauf" [ref=f21e3252]
+                    - columnheader "Zeitraum" [ref=f21e3253]
+                    - columnheader "Status" [ref=f21e3254]
+                    - columnheader "Empfangsreferenz" [ref=f21e3255]
+                    - columnheader [ref=f21e3256]
+                - rowgroup
+            - region "Hotelverlauf" [ref=f21e3176]:
+              - generic [ref=f21e3177]:
+                - heading "Verlauf und ältere Einträge" [level=3] [ref=f21e3178]
+                - button "Verlauf aktualisieren" [ref=f21e3179]
+              - generic [ref=f21e3180]:
+                - generic [ref=f21e3181]:
+                  - text: Verlaufsbereich
+                  - combobox "Verlaufsbereich" [ref=f21e3182]:
+                    - option "Rechnungen" [selected]
+                - generic [ref=f21e3183]:
+                  - text: Verlauf durchsuchen
+                  - searchbox "Verlauf durchsuchen" [ref=f21e3184]
+                - generic [ref=f21e3185]:
+                  - text: Einträge pro Seite
+                  - combobox "Einträge pro Seite" [ref=f21e3186]:
+                    - option "10"
+                    - option "25" [selected]
+                    - option "50"
+                    - option "100"
+              - status [ref=f21e3187]: 1 passende Einträge
+              - table [ref=f21e3189]:
+                - rowgroup [ref=f21e3190]:
+                  - row [ref=f21e3191]:
+                    - columnheader "ID" [ref=f21e3192]
+                    - columnheader "Rechnungsnummer" [ref=f21e3193]
+                    - columnheader "Art" [ref=f21e3194]
+                    - columnheader "Ausgestellt" [ref=f21e3195]
+                    - columnheader "Fällig" [ref=f21e3196]
+                    - columnheader "Empfänger" [ref=f21e3197]
+                    - columnheader "Währung" [ref=f21e3198]
+                    - columnheader "Netto" [ref=f21e3199]
+                    - columnheader "Steuer" [ref=f21e3200]
+                    - columnheader "Brutto" [ref=f21e3201]
+                    - columnheader "Status" [ref=f21e3202]
+                - rowgroup [ref=f21e3203]:
+                  - row [ref=f21e3204]:
+                    - cell "1" [ref=f21e3205]
+                    - cell "INV-2026-00001" [ref=f21e3206]
+                    - cell "Rechnung" [ref=f21e3207]
+                    - cell "2026-09-12" [ref=f21e3208]
+                    - cell "2026-10-12" [ref=f21e3209]
+                    - cell "Emma Baumann" [ref=f21e3210]
+                    - cell "CHF" [ref=f21e3211]
+                    - cell "CHF 1'124.28" [ref=f21e3212]
+                    - cell "CHF 42.72" [ref=f21e3213]
+                    - cell "CHF 1'167.00" [ref=f21e3214]
+                    - cell "Ausgestellt" [ref=f21e3215]
+              - generic [ref=f21e3216]:
+                - button "Vorherige Seite" [disabled] [ref=f21e3217]
+                - generic [ref=f21e3218]: Seite 1 von 1
+                - button "Nächste Seite" [disabled] [ref=f21e3219]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

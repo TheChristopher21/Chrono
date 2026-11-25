@@ -1,8 +1,15 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.dto.PayslipDTO;
+import com.chrono.chrono.dto.PayslipTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
+import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.PayrollService;
+import com.chrono.chrono.services.PayrollReviewService;
+import com.chrono.chrono.dto.PayrollReviewDTO;
+import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.PayslipRepository;
@@ -14,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,7 +39,73 @@ public class PayslipController {
     @Autowired
     private PayslipRepository payslipRepository;
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @Autowired
+    private AccessControlService accessControlService;
+
+    @Autowired
+    private TimeTrackingService timeTrackingService;
+
+    @Autowired
+    private PayrollReviewService payrollReviewService;
+    @Autowired
+    private com.chrono.chrono.services.PayrollCorrectionService correctionService;
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @PostMapping("/{id}/corrections")
+    public ResponseEntity<List<PayslipDTO>> correct(@PathVariable Long id,
+            @RequestBody com.chrono.chrono.services.PayrollCorrectionService.Request request, Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
+        return ResponseEntity.ok(correctionService.generate(id, request, requester.getUsername()).stream().map(PayslipDTO::new).toList());
+    }
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @DeleteMapping("/{id}/corrections")
+    public ResponseEntity<Void> discardCorrections(@PathVariable Long id, Principal principal) {
+        requireAccessiblePayslip(id, requireRequester(principal));
+        correctionService.discard(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @GetMapping("/admin/review")
+    public ResponseEntity<PayrollReviewDTO> review(
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        User target = requireTargetUser(userId);
+        requirePayrollAccess(requester, target);
+        try {
+            return ResponseEntity.ok(payrollReviewService.review(target, start, end));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @GetMapping("/admin/time-summary")
+    public ResponseEntity<PayslipTimeSummaryDTO> timeSummary(
+            @RequestParam Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        User target = requireTargetUser(userId);
+        requirePayrollAccess(requester, target);
+        if ((start == null) != (end == null) || (start != null && start.isAfter(end))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bitte einen gültigen Zeitraum angeben.");
+        }
+        if (start == null) {
+            return ResponseEntity.ok(new PayslipTimeSummaryDTO(target.getTrackingBalanceInMinutes(), null, null, null));
+        }
+        TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(target, start, end);
+        return ResponseEntity.ok(new PayslipTimeSummaryDTO(
+                summary.getTrackingBalance(), summary.getWorkedMinutes(),
+                summary.getExpectedMinutes(), summary.getDifferenceMinutes()));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/generate")
     public ResponseEntity<PayslipDTO> generate(
             @RequestParam Long userId,
@@ -39,34 +113,51 @@ public class PayslipController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate,
             @RequestParam(defaultValue = "false") boolean payoutOvertime,
-            @RequestParam(required = false) Double overtimeHours) {
+            @RequestParam(required = false) Double overtimeHours,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        requirePayrollAccess(requester, requireTargetUser(userId));
         Payslip ps = payrollService.generatePayslip(userId, start, end, payoutDate, overtimeHours, payoutOvertime);
         return ResponseEntity.ok(new PayslipDTO(ps));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/schedule")
     public ResponseEntity<Void> schedule(
             @RequestParam Long userId,
-            @RequestParam int day) {
+            @RequestParam int day,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        requirePayrollAccess(requester, requireTargetUser(userId));
         payrollService.setPayslipSchedule(userId, day);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/schedule-all")
-    public ResponseEntity<Void> scheduleAll(@RequestParam(defaultValue = "1") int day) {
-        payrollService.setPayslipScheduleForAll(day);
+    public ResponseEntity<Void> scheduleAll(@RequestParam(defaultValue = "1") int day,
+                                            Principal principal) {
+        User requester = requireRequester(principal);
+        payrollService.setPayslipScheduleForAll(requester, day);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN', 'USER')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<PayslipDTO>> list(
             @PathVariable Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal
     ) {
+        User requester = userRepository.findByUsername(principal.getName()).orElseThrow();
+        boolean privileged = hasAnyRole(requester, "ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_PAYROLL_ADMIN");
+        if (!privileged && !requester.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        if (privileged) {
+            requirePayrollAccess(requester, requireTargetUser(userId));
+        }
         List<Payslip> list = payrollService.getPayslipsForUser(userId, start, end);
         return ResponseEntity.ok(list.stream().map(PayslipDTO::new).toList());
     }
@@ -102,9 +193,10 @@ public class PayslipController {
             return ResponseEntity.notFound().build();
         }
 
-        boolean isAdmin = user.getRoles().stream().anyMatch(r ->
-                r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_PAYROLL_ADMIN"));
-        if (!isAdmin && !ps.getUser().getId().equals(user.getId())) {
+        boolean isAdmin = hasAnyRole(user, "ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_PAYROLL_ADMIN");
+        if (isAdmin) {
+            requirePayrollAccess(user, ps.getUser());
+        } else if (!ps.getUser().getId().equals(user.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -116,55 +208,88 @@ public class PayslipController {
         return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
+    @PostMapping("/approve-batch")
+    public ResponseEntity<Void> approveBatch(@RequestBody ApprovalBatch request, Principal principal) {
+        if (request.ids() == null || request.ids().isEmpty() || request.ids().size() > 500 || request.ids().stream().anyMatch(java.util.Objects::isNull)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bitte zwischen 1 und 500 Abrechnungen auswählen.");
+        }
+        User requester = requireRequester(principal);
+        request.ids().stream().distinct().forEach(id -> requireAccessiblePayslip(id, requester));
+        payrollService.approveBatch(request.ids(), request.comment());
+        return ResponseEntity.ok().build();
+    }
+
+    public record ApprovalBatch(List<Long> ids, String comment) {}
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/approve/{id}")
     public ResponseEntity<Void> approve(@PathVariable Long id,
-                                        @RequestParam(required = false) String comment) {
+                                        @RequestParam(required = false) String comment,
+                                        Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
         payrollService.approvePayslip(id, comment);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/set-payout/{id}")
     public ResponseEntity<Void> setPayoutDate(@PathVariable Long id,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
         payrollService.setPayoutDate(id, payoutDate);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/approve-all")
     public ResponseEntity<Void> approveAll(@RequestParam(required = false) Long userId,
-                                           @RequestParam(required = false) String comment) {
+                                           @RequestParam(required = false) String comment,
+                                           Principal principal) {
+        User requester = requireRequester(principal);
         if (userId != null) {
+            requirePayrollAccess(requester, requireTargetUser(userId));
             payrollService.approveAllForUser(userId, comment);
         } else {
-            payrollService.approveAll(comment);
+            if (accessControlService.isSuperAdmin(requester) && CompanyScope.companyFor(requester) == null) {
+                payrollService.approveAll(comment);
+            } else {
+                payrollService.approveForUsers(accessControlService.visibleUsersForAdmin(requester).stream()
+                        .map(User::getId).toList(), comment);
+            }
         }
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
         payrollService.deletePayslip(id);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @PostMapping("/reopen/{id}")
-    public ResponseEntity<Void> reopen(@PathVariable Long id) {
+    public ResponseEntity<Void> reopen(@PathVariable Long id, Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
         payrollService.reopenPayslip(id);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/all")
-    public ResponseEntity<List<PayslipDTO>> all() {
-        return ResponseEntity.ok(payrollService.getAllPayslips().stream().map(PayslipDTO::new).toList());
+    public ResponseEntity<List<PayslipDTO>> all(Principal principal) {
+        User requester = requireRequester(principal);
+        return ResponseEntity.ok(payrollService.getAllPayslips(requester).stream().map(PayslipDTO::new).toList());
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/pending")
     public ResponseEntity<List<PayslipDTO>> pending(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName()).orElseThrow();
@@ -173,7 +298,7 @@ public class PayslipController {
                         .map(PayslipDTO::new).toList());
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/approved")
     public ResponseEntity<List<PayslipDTO>> approved(
             @RequestParam(required = false) String name,
@@ -186,10 +311,13 @@ public class PayslipController {
 
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/pdf/{id}")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id,
-            @RequestParam(defaultValue = "de") String lang) {
+            @RequestParam(defaultValue = "de") String lang,
+            Principal principal) {
+        User requester = requireRequester(principal);
+        requireAccessiblePayslip(id, requester);
         byte[] bytes = payrollService.getPayslipPdf(id, lang);
         if (bytes == null) return ResponseEntity.notFound().build();
         HttpHeaders headers = new HttpHeaders();
@@ -198,24 +326,27 @@ public class PayslipController {
         return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/export")
-    public ResponseEntity<String> exportCsv(@RequestParam(defaultValue = "en") String lang) {
+    public ResponseEntity<String> exportCsv(@RequestParam(defaultValue = "en") String lang,
+                                            Principal principal) {
+        User requester = requireRequester(principal);
         StringBuilder sb = new StringBuilder();
         if ("de".equalsIgnoreCase(lang)) {
-            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto,Waehrung\n");
+            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto,Waehrung,BelegID,KorrekturZu,Freigegeben\n");
         } else {
-            sb.append("userId,periodStart,periodEnd,gross,deductions,net,currency\n");
+            sb.append("userId,periodStart,periodEnd,gross,deductions,net,currency,documentId,correctionOfId,approved\n");
         }
-        payrollService.getAllPayslips().forEach(ps -> {
-            String currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
+        payrollService.getAllPayslips(requester).forEach(ps -> {
+            String currency = new PayslipDTO(ps).getCurrency();
             sb.append(ps.getUser().getId()).append(',')
               .append(ps.getPeriodStart()).append(',')
               .append(ps.getPeriodEnd()).append(',')
               .append(ps.getGrossSalary()).append(',')
               .append(ps.getDeductions()).append(',')
               .append(ps.getNetSalary()).append(',')
-              .append(currency).append('\n');
+              .append(currency).append(',').append(ps.getId()).append(',')
+              .append(ps.getCorrectionOfId() == null ? "" : ps.getCorrectionOfId()).append(',').append(ps.isApproved()).append('\n');
         });
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
@@ -223,10 +354,39 @@ public class PayslipController {
         return ResponseEntity.ok().headers(headers).body(sb.toString());
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN', 'PAYROLL_ADMIN')")
     @GetMapping("/admin/backup")
-    public ResponseEntity<String> backup() {
+    public ResponseEntity<String> backup(Principal principal) {
         // Default-Sprache: Englisch
-        return exportCsv("en");
+        return exportCsv("en", principal);
+    }
+
+    private boolean hasAnyRole(User user, String... roleNames) {
+        if (user == null || roleNames == null) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .anyMatch(role -> java.util.Arrays.asList(roleNames).contains(role.getRoleName()));
+    }
+
+    private User requireRequester(Principal principal) {
+        return userRepository.findByUsername(principal.getName()).orElseThrow();
+    }
+
+    private User requireTargetUser(Long userId) {
+        return userRepository.findById(userId).orElseThrow();
+    }
+
+    private void requirePayrollAccess(User requester, User target) {
+        if (requester.getId().equals(target.getId())) {
+            return;
+        }
+        accessControlService.requirePayrollAccess(requester, target);
+    }
+
+    private Payslip requireAccessiblePayslip(Long id, User requester) {
+        Payslip payslip = payslipRepository.findById(id).orElseThrow();
+        requirePayrollAccess(requester, payslip.getUser());
+        return payslip;
     }
 }

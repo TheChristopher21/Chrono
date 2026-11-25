@@ -1,5 +1,5 @@
 // src/components/PrintReportModal.jsx
-import React from "react";
+import React, { useId } from "react";
 import ModalOverlay from './ModalOverlay';
 import PropTypes from "prop-types";
 import "../styles/PrintReportScoped.css";          // optional – Styles für alle Dashboards
@@ -15,6 +15,7 @@ const PrintReportModal = ({
                               onClose,
                               cssScope = ""
                           }) => {
+    const fieldId = useId();
     if (!visible) return null;
 
     const cls = cssScope ? ` ${cssScope}-print-modal` : "";
@@ -29,8 +30,9 @@ const PrintReportModal = ({
                 <h3>{t("selectPeriod")}</h3>
 
                 <div className="form-group">
-                    <label>{t("startDate")}:</label>
+                    <label htmlFor={`${fieldId}-start`}>{t("startDate")}:</label>
                     <input
+                        id={`${fieldId}-start`}
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
@@ -38,8 +40,9 @@ const PrintReportModal = ({
                 </div>
 
                 <div className="form-group">
-                    <label>{t("endDate")}:</label>
+                    <label htmlFor={`${fieldId}-end`}>{t("endDate")}:</label>
                     <input
+                        id={`${fieldId}-end`}
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}

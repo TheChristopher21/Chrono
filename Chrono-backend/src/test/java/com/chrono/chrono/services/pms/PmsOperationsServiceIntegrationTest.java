@@ -1,0 +1,1178 @@
+package com.chrono.chrono.services.pms;
+
+import com.chrono.chrono.dto.pms.*;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.pms.*;
+import com.chrono.chrono.repositories.CompanyRepository;
+import com.chrono.chrono.repositories.pms.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@Import({PmsOperationsService.class, com.chrono.chrono.services.pms.PmsGroupRoutingService.class, com.chrono.chrono.services.pms.PmsGroupInventoryService.class, com.chrono.chrono.services.pms.PmsHousekeepingService.class, com.chrono.chrono.services.pms.PmsReservationPolicyService.class, PmsDocumentFingerprintService.class, PmsRefundProcessor.class, PmsCashService.class, PmsFinancialPeriodService.class, PmsAuditWriter.class})
+@ActiveProfiles("test")
+class PmsOperationsServiceIntegrationTest {
+
+    @Autowired
+    private PmsOperationsService service;
+    @Autowired
+    private CompanyRepository companyRepository;
+    @Autowired
+    private HotelPropertyRepository propertyRepository;
+    @Autowired
+    private RoomTypeRepository roomTypeRepository;
+    @Autowired
+    private RoomRepository roomRepository;
+    @Autowired
+    private GuestProfileRepository guestRepository;
+    @Autowired
+    private PmsOrganizationRepository organizationRepository;
+    @Autowired
+    private RatePlanRepository ratePlanRepository;
+    @Autowired
+    private FolioRepository folioRepository;
+    @Autowired
+    private FolioItemRepository folioItemRepository;
+    @Autowired
+    private HousekeepingTaskRepository housekeepingTaskRepository;
+    @Autowired
+    private ReservationStatusHistoryRepository reservationStatusHistoryRepository;
+    @Autowired
+    private ReservationRepository reservationRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private CashShiftRepository cashShiftRepository;
+    @Autowired
+    private RoomBlockRepository roomBlockRepository;
+    @Autowired
+    private MaintenanceWorkOrderRepository maintenanceWorkOrderRepository;
+    @Autowired
+    private PmsAuditEventRepository auditEventRepository;
+    @Autowired
+    private PmsAuditWriter auditWriter;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
+    private Company company;
+    private HotelProperty property;
+    private RoomType roomType;
+    private Room room;
+    private GuestProfile guest;
+    private RatePlan ratePlan;
+    private LocalDate today;
+
+    @BeforeEach
+    void setUp() {
+        company = companyRepository.save(new Company("Chrono Hotel AG"));
+        property = new HotelProperty();
+        property.setCompany(company);
+        property.setCode("ZRH");
+        property.setName("Chrono Zürich");
+        property.setTimezone("Europe/Zurich");
+        property.setCurrencyCode("CHF");
+        property = propertyRepository.save(property);
+
+        roomType = new RoomType();
+        roomType.setProperty(property);
+        roomType.setCode("DBL");
+        roomType.setName("Doppelzimmer");
+        roomType.setBaseOccupancy(1);
+        roomType.setMaxOccupancy(2);
+        roomType = roomTypeRepository.save(roomType);
+
+        room = new Room();
+        room.setProperty(property);
+        room.setRoomType(roomType);
+        room.setNumber("101");
+        room.setHousekeepingStatus(HousekeepingStatus.CLEAN);
+        room = roomRepository.save(room);
+
+        guest = new GuestProfile();
+        guest.setCompany(company);
+        guest.setFirstName("Gabriela");
+        guest.setLastName("Tschopp");
+        guest.setEmail("gabriela@example.com");
+        guest = guestRepository.save(guest);
+
+        ratePlan = new RatePlan();
+        ratePlan.setProperty(property);
+        ratePlan.setRoomType(roomType);
+        ratePlan.setCode("BAR");
+        ratePlan.setName("Beste verfügbare Rate");
+        ratePlan.setCurrencyCode("CHF");
+        ratePlan.setNightlyRate(new BigDecimal("120.00"));
+        ratePlan.setMinStay(1);
+        ratePlan = ratePlanRepository.save(ratePlan);
+
+        today = LocalDate.now(ZoneId.of("Europe/Zurich"));
+    }
+
+    @Test
+    void loadsOperationalSnapshotsWithoutQueriesPerReservation() {
+        for (int index = 0; index < 2; index++) {
+            service.createReservation(company,
+                    reservationRequest(today.plusDays(index + 1), today.plusDays(index + 2), room.getId()),
+                    "reception", today);
+        }
+        var statistics = entityManager.getEntityManagerFactory()
+                .unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        boolean wasEnabled = statistics.isStatisticsEnabled();
+        statistics.setStatisticsEnabled(true);
+        try {
+            entityManager.flush();
+            entityManager.clear();
+            statistics.clear();
+            var small = service.getOperations(company, property.getId(), today, null, null);
+            long smallQueryCount = statistics.getPrepareStatementCount();
+            assertThat(small.reservations()).hasSize(2);
+
+            for (int index = 2; index < 20; index++) {
+                service.createReservation(company,
+                        reservationRequest(today.plusDays(index + 1), today.plusDays(index + 2), room.getId()),
+                        "reception", today);
+            }
+            entityManager.flush();
+            entityManager.clear();
+            statistics.clear();
+            var large = service.getOperations(company, property.getId(), today, null, null);
+            long largeQueryCount = statistics.getPrepareStatementCount();
+            assertThat(large.reservations()).hasSize(20);
+            assertThat(large.folios()).hasSize(20);
+            assertThat(large.reservations()).allSatisfy(reservation ->
+                    assertThat(reservation.history()).hasSize(1));
+            assertThat(largeQueryCount).as("SQL query count for 20 stays versus 2 stays")
+                    .isLessThanOrEqualTo(smallQueryCount + 4);
+        } finally {
+            statistics.setStatisticsEnabled(wasEnabled);
+        }
+    }
+
+    @Test
+    void createsReservationFolioAndReducesAvailability() {
+        var response = service.createReservation(
+                company,
+                reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()),
+                "Christopher",
+                today
+        );
+
+        assertThat(response.reservations()).hasSize(1);
+        assertThat(response.reservations().get(0).totalAmount()).isEqualByComparingTo("240.00");
+        assertThat(response.folios()).hasSize(1);
+        assertThat(response.folios().get(0).items()).hasSize(2);
+        assertThat(response.folios().get(0).balance()).isEqualByComparingTo("240.00");
+
+        AvailabilityResponse availability = service.getAvailability(
+                company,
+                property.getId(),
+                today.plusDays(1),
+                today.plusDays(3)
+        );
+        assertThat(availability.roomTypes().get(0).availableRooms()).isZero();
+        assertThat(availability.roomTypes().get(0).rates().get(0).available()).isFalse();
+        PmsAuditEvent auditEvent = auditEventRepository
+                .findTop100ByProperty_IdOrderByCreatedAtDesc(property.getId()).get(0);
+        assertThat(auditEvent.getEventType()).isEqualTo("reservation.created");
+        assertThat(auditWriter.hasValidIntegrityHash(auditEvent)).isTrue();
+    }
+
+    @Test
+    void preventsOverbookingTheLastPhysicalRoom() {
+        service.createReservation(
+                company,
+                reservationRequest(today.plusDays(2), today.plusDays(4), null),
+                "Christopher",
+                today
+        );
+
+        assertThatThrownBy(() -> service.createReservation(
+                company,
+                reservationRequest(today.plusDays(3), today.plusDays(5), null),
+                "Christopher",
+                today
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ausgebucht");
+    }
+
+    @Test
+    void appliesDailyRateOverrideAndMinimumStayRestriction() {
+        service.upsertRateOverride(
+                company,
+                property.getId(),
+                ratePlan.getId(),
+                new UpsertRateOverrideRequest(
+                        today.plusDays(1),
+                        new BigDecimal("180.00"),
+                        2,
+                        false,
+                        false,
+                        false
+                ),
+                today
+        );
+
+        AvailabilityResponse oneNight = service.getAvailability(
+                company,
+                property.getId(),
+                today.plusDays(1),
+                today.plusDays(2)
+        );
+        assertThat(oneNight.roomTypes().get(0).rates().get(0).available()).isFalse();
+        assertThat(oneNight.roomTypes().get(0).rates().get(0).restriction())
+                .contains("Mindestaufenthalt");
+
+        AvailabilityResponse twoNights = service.getAvailability(
+                company,
+                property.getId(),
+                today.plusDays(1),
+                today.plusDays(3)
+        );
+        assertThat(twoNights.roomTypes().get(0).rates().get(0).available()).isTrue();
+        assertThat(twoNights.roomTypes().get(0).rates().get(0).totalAmount())
+                .isEqualByComparingTo("300.00");
+    }
+
+    @Test
+    void requiresBalancedFolioBeforeCheckoutAndCreatesHousekeepingWork() {
+        PmsOperationsResponse created = service.createReservation(
+                company,
+                reservationRequest(today, today.plusDays(1), room.getId()),
+                "Christopher",
+                today
+        );
+        Long reservationId = created.reservations().get(0).id();
+        Long folioId = created.folios().get(0).id();
+
+        service.checkIn(company, reservationId, today);
+
+        assertThatThrownBy(() -> service.checkOut(company, reservationId, today))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ausgeglichen");
+
+        service.postPayment(
+                company,
+                property.getId(),
+                folioId,
+                new PostPaymentRequest(new BigDecimal("120.00"), PaymentMethod.BANK_TRANSFER, "bank-test"),
+                "Christopher",
+                today
+        );
+        PmsOperationsResponse checkedOut = service.checkOut(company, reservationId, today);
+
+        assertThat(checkedOut.reservations().get(0).status()).isEqualTo(ReservationStatus.CHECKED_OUT);
+        assertThat(folioRepository.findById(folioId).orElseThrow().getStatus()).isEqualTo(FolioStatus.CLOSED);
+        assertThat(roomRepository.findById(room.getId()).orElseThrow().getHousekeepingStatus())
+                .isEqualTo(HousekeepingStatus.DIRTY);
+        assertThat(housekeepingTaskRepository.findByRoom_IdAndServiceDate(room.getId(), today)).isPresent();
+    }
+
+    @Test
+    void refusesToPostCardPaymentWithoutConfiguredProvider() {
+        PmsOperationsResponse created = service.createReservation(
+                company,
+                reservationRequest(today, today.plusDays(1), room.getId()),
+                "Christopher",
+                today
+        );
+        Long folioId = created.folios().get(0).id();
+
+        assertThatThrownBy(() -> service.postPayment(
+                company,
+                property.getId(),
+                folioId,
+                new PostPaymentRequest(new BigDecimal("120.00"), PaymentMethod.CARD, "unverified-card"),
+                "Christopher",
+                today
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Zahlungsprovider");
+    }
+
+    @Test
+    void keepsGuestsAndReservationsCompanyScoped() {
+        Company otherCompany = companyRepository.save(new Company("Other Hotels AG"));
+
+        assertThatThrownBy(() -> service.createReservation(
+                otherCompany,
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()),
+                "outsider",
+                today
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Hotel nicht gefunden");
+    }
+
+    @Test
+    void waitlistDoesNotConsumeInventoryAndConfirmationRechecksCapacity() {
+        service.createReservation(
+                company,
+                reservationRequest(today.plusDays(2), today.plusDays(4), room.getId()),
+                "Christopher",
+                today
+        );
+        UpsertReservationRequest waitlistRequest = new UpsertReservationRequest(
+                property.getId(), guest.getId(), roomType.getId(), room.getId(), ratePlan.getId(),
+                today.plusDays(2), today.plusDays(4), 1, 0,
+                ReservationStatus.WAITLISTED, ReservationSource.PHONE, "Bitte benachrichtigen",
+                ReservationGuaranteeStatus.UNGUARANTEED, null
+        );
+        PmsOperationsResponse response = service.createReservation(
+                company, waitlistRequest, "Christopher", today
+        );
+        PmsOperationsResponse.ReservationView waitlisted = response.reservations().stream()
+                .filter(entry -> entry.status() == ReservationStatus.WAITLISTED)
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(service.getAvailability(
+                company, property.getId(), today.plusDays(2), today.plusDays(4)
+        ).roomTypes().get(0).soldRooms()).isEqualTo(1);
+        assertThatThrownBy(() -> service.confirmReservation(
+                company,
+                waitlisted.id(),
+                new ReservationLifecycleRequest("Gast akzeptiert", null, ReservationGuaranteeStatus.CREDIT_CARD),
+                "Christopher",
+                today
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ausgebucht");
+    }
+
+    @Test
+    void dashboardSeparatesOperationalArrivalsFromOptionsAndUsesTheSelectedBusinessDateForOccupancy() {
+        Room checkedInRoom = room("102");
+        Room optionRoom = room("103");
+        LocalDate departure = today.plusDays(3);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, room.getId()),
+                "Christopher",
+                today
+        );
+        PmsOperationsResponse checkedInCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, checkedInRoom.getId()),
+                "Christopher",
+                today
+        );
+        Long checkedInReservationId = checkedInCreated.reservations().stream()
+                .filter(view -> checkedInRoom.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        service.checkIn(company, checkedInReservationId, "Christopher", today);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, optionRoom.getId(), ReservationStatus.TENTATIVE),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.WAITLISTED),
+                "Christopher",
+                today
+        );
+
+        PmsOperationsResponse todayView =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(todayView.arrivals())
+                .extracting(PmsOperationsResponse.ReservationView::status)
+                .containsExactlyInAnyOrder(ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN);
+        assertThat(todayView.metrics().arrivals()).isEqualTo(2);
+        assertThat(todayView.metrics().occupiedRooms()).isEqualTo(2);
+        assertThat(todayView.metrics().availableRooms()).isEqualTo(1);
+        assertThat(todayView.metrics().occupancyPercent()).isEqualTo(67);
+        assertThat(todayView.metrics().inHouse()).isEqualTo(1);
+
+        PmsOperationsResponse nextBusinessDate =
+                service.getOperations(company, property.getId(), today.plusDays(1), null, null);
+        assertThat(nextBusinessDate.arrivals()).isEmpty();
+        assertThat(nextBusinessDate.metrics().occupiedRooms()).isEqualTo(2);
+        assertThat(nextBusinessDate.metrics().availableRooms()).isEqualTo(1);
+        assertThat(nextBusinessDate.metrics().occupancyPercent()).isEqualTo(67);
+        assertThat(nextBusinessDate.metrics().inHouse()).isEqualTo(1);
+    }
+
+    @Test
+    void dashboardDeparturesContainOnlyGuestsInHouseAndCompletedCheckouts() {
+        Room checkedOutRoom = room("102");
+        Room optionRoom = room("103");
+        LocalDate departure = today.plusDays(1);
+
+        PmsOperationsResponse checkedInCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, room.getId()),
+                "Christopher",
+                today
+        );
+        Long checkedInReservationId = checkedInCreated.reservations().stream()
+                .filter(view -> room.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        service.checkIn(company, checkedInReservationId, "Christopher", today);
+
+        PmsOperationsResponse checkedOutCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, checkedOutRoom.getId(), ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        Long checkedOutReservationId = checkedOutCreated.reservations().stream()
+                .filter(view -> checkedOutRoom.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        Reservation checkedOut = reservationRepository.findById(checkedOutReservationId).orElseThrow();
+        checkedOut.setStatus(ReservationStatus.CHECKED_OUT);
+        checkedOut.setCheckedOutAt(LocalDateTime.now());
+        reservationRepository.save(checkedOut);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, optionRoom.getId(), ReservationStatus.TENTATIVE),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.WAITLISTED),
+                "Christopher",
+                today
+        );
+
+        PmsOperationsResponse departureView =
+                service.getOperations(company, property.getId(), departure, null, null);
+        assertThat(departureView.departures())
+                .extracting(PmsOperationsResponse.ReservationView::status)
+                .containsExactlyInAnyOrder(ReservationStatus.CHECKED_IN, ReservationStatus.CHECKED_OUT);
+        assertThat(departureView.metrics().departures()).isEqualTo(2);
+    }
+
+    @Test
+    void expiresOffersAndKeepsAnAuditableStatusHistory() {
+        LocalDateTime expiredAt = LocalDateTime.now().minusMinutes(5);
+        UpsertReservationRequest offerRequest = new UpsertReservationRequest(
+                property.getId(), guest.getId(), roomType.getId(), null, ratePlan.getId(),
+                today.plusDays(5), today.plusDays(6), 1, 0,
+                ReservationStatus.OFFERED, ReservationSource.EMAIL, "Angebot per E-Mail",
+                ReservationGuaranteeStatus.UNGUARANTEED, expiredAt
+        );
+
+        assertThatThrownBy(() -> service.createReservation(company, offerRequest, "Christopher", today))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Haltefrist");
+
+        LocalDateTime futureHold = LocalDateTime.now().plusHours(2);
+        UpsertReservationRequest validOffer = new UpsertReservationRequest(
+                property.getId(), guest.getId(), roomType.getId(), null, ratePlan.getId(),
+                today.plusDays(5), today.plusDays(6), 1, 0,
+                ReservationStatus.OFFERED, ReservationSource.EMAIL, "Angebot per E-Mail",
+                ReservationGuaranteeStatus.UNGUARANTEED, futureHold
+        );
+        PmsOperationsResponse created = service.createReservation(company, validOffer, "Christopher", today);
+        Long reservationId = created.reservations().get(0).id();
+
+        assertThat(service.expireReservationHolds(futureHold.plusSeconds(1))).isEqualTo(1);
+        Reservation expired = reservationStatusHistoryRepository
+                .findAllByReservation_IdOrderByChangedAtDesc(reservationId)
+                .get(0)
+                .getReservation();
+        assertThat(expired.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+        assertThat(expired.getCancellationReason()).isEqualTo("Haltefrist abgelaufen");
+        assertThat(reservationStatusHistoryRepository
+                .findAllByReservation_IdOrderByChangedAtDesc(reservationId))
+                .extracting(ReservationStatusHistory::getToStatus)
+                .containsExactly(ReservationStatus.CANCELLED, ReservationStatus.OFFERED);
+    }
+
+    @Test
+    void movesAnInHouseGuestAndMarksThePreviousRoomDirty() {
+        Room target = new Room();
+        target.setProperty(property);
+        target.setRoomType(roomType);
+        target.setNumber("102");
+        target.setHousekeepingStatus(HousekeepingStatus.CLEAN);
+        target = roomRepository.save(target);
+
+        PmsOperationsResponse created = service.createReservation(
+                company,
+                reservationRequest(today, today.plusDays(1), room.getId()),
+                "Christopher",
+                today
+        );
+        Long reservationId = created.reservations().get(0).id();
+        service.checkIn(company, reservationId, "Christopher", today);
+
+        PmsOperationsResponse moved = service.moveReservationRoom(
+                company,
+                reservationId,
+                new MoveReservationRoomRequest(target.getId(), "Gastwunsch"),
+                "Christopher",
+                today
+        );
+
+        assertThat(moved.reservations().get(0).roomNumber()).isEqualTo("102");
+        assertThat(roomRepository.findById(room.getId()).orElseThrow().getHousekeepingStatus())
+                .isEqualTo(HousekeepingStatus.DIRTY);
+        assertThat(reservationStatusHistoryRepository
+                .findAllByReservation_IdOrderByChangedAtDesc(reservationId).get(0).getReason())
+                .contains("101 → 102")
+                .contains("Gastwunsch");
+    }
+
+    @Test
+    void requiresCashShiftAndAuditsRefundsAndClosingVariance() {
+        PmsOperationsResponse created = service.createReservation(
+                company,
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()),
+                "Christopher",
+                today
+        );
+        Long folioId = created.folios().get(0).id();
+
+        assertThatThrownBy(() -> service.postPayment(
+                company,
+                property.getId(),
+                folioId,
+                new PostPaymentRequest(new BigDecimal("100.00"), PaymentMethod.CASH, "cash-1"),
+                "Christopher",
+                today
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Kassenschicht");
+
+        service.openCashShift(
+                company,
+                property.getId(),
+                new OpenCashShiftRequest(new BigDecimal("200.00"), "Frühschicht"),
+                "Christopher",
+                today
+        );
+        PmsOperationsResponse paid = service.postPayment(
+                company,
+                property.getId(),
+                folioId,
+                new PostPaymentRequest(new BigDecimal("100.00"), PaymentMethod.CASH, "cash-1"),
+                "Christopher",
+                today
+        );
+        Long paymentId = paid.folios().get(0).paymentEntries().get(0).id();
+
+        PmsOperationsResponse refunded = service.refundPayment(
+                company,
+                property.getId(),
+                paymentId,
+                new RefundPaymentRequest(new BigDecimal("25.00"), "Preisnachlass"),
+                "Christopher",
+                today
+        );
+        assertThat(refunded.folios().get(0).payments()).isEqualByComparingTo("75.00");
+        assertThat(refunded.cashShift().expectedCash()).isEqualByComparingTo("275.00");
+        assertThat(refunded.folios().get(0).paymentEntries())
+                .extracting(PmsOperationsResponse.PaymentView::kind)
+                .containsExactly(PaymentKind.PAYMENT, PaymentKind.REFUND);
+
+        service.closeCashShift(
+                company,
+                property.getId(),
+                new CloseCashShiftRequest(new BigDecimal("274.50"), "50 Rappen Differenz"),
+                "Christopher",
+                today
+        );
+        CashShift closed = cashShiftRepository.findAllByProperty_IdOrderByOpenedAtDesc(property.getId()).get(0);
+        assertThat(closed.getExpectedCash()).isEqualByComparingTo("275.00");
+        assertThat(closed.getVariance()).isEqualByComparingTo("-0.50");
+        assertThat(closed.getStatus()).isEqualTo(CashShiftStatus.CLOSED);
+        assertThat(paymentRepository.findAllByOriginalPayment_IdAndStatus(paymentId, PaymentStatus.POSTED))
+                .hasSize(1);
+    }
+
+    @Test
+    void maintenanceBlockRemovesInventoryUntilWorkOrderIsResolved() {
+        LocalDate start = today.plusDays(10);
+        LocalDate end = start.plusDays(2);
+        PmsOperationsResponse blocked = service.createMaintenanceWorkOrder(
+                company,
+                property.getId(),
+                new CreateMaintenanceWorkOrderRequest(
+                        room.getId(), "Wasserhahn ersetzen", "Leck unter dem Lavabo",
+                        MaintenancePriority.HIGH, "Technik", start, true,
+                        RoomBlockType.OUT_OF_ORDER, start, end
+                ),
+                "Christopher",
+                today
+        );
+
+        assertThat(blocked.maintenanceWorkOrders()).singleElement().satisfies(order -> {
+            assertThat(order.status()).isEqualTo(MaintenanceStatus.OPEN);
+            assertThat(order.roomBlockId()).isNotNull();
+        });
+        assertThat(service.getAvailability(company, property.getId(), start, end)
+                .roomTypes().get(0).availableRooms()).isZero();
+        assertThatThrownBy(() -> service.createReservation(
+                company, reservationRequest(start, end, room.getId()), "Christopher", today))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ausgebucht");
+
+        Long workOrderId = maintenanceWorkOrderRepository.findAll().get(0).getId();
+        service.resolveMaintenanceWorkOrder(
+                company,
+                property.getId(),
+                workOrderId,
+                new ResolveMaintenanceWorkOrderRequest("Dichtung ersetzt, Dichtheitsprüfung bestanden"),
+                "Christopher",
+                today
+        );
+
+        assertThat(roomBlockRepository.findAll().get(0).getStatus()).isEqualTo(RoomBlockStatus.COMPLETED);
+        assertThat(service.getAvailability(company, property.getId(), start, end)
+                .roomTypes().get(0).availableRooms()).isEqualTo(1);
+    }
+
+    @Test
+    void outOfServiceBlockKeepsTheRoomInInventoryAndAssignable() {
+        LocalDate start = today.plusDays(10);
+        LocalDate end = start.plusDays(2);
+
+        service.createMaintenanceWorkOrder(
+                company,
+                property.getId(),
+                new CreateMaintenanceWorkOrderRequest(
+                        room.getId(), "Kosmetischer Mangel", "Kratzer am Nachttisch",
+                        MaintenancePriority.LOW, "Technik", start, true,
+                        RoomBlockType.OUT_OF_SERVICE, start, end
+                ),
+                "Christopher",
+                today
+        );
+
+        assertThat(roomBlockRepository.findAll()).singleElement().satisfies(block -> {
+            assertThat(block.getType()).isEqualTo(RoomBlockType.OUT_OF_SERVICE);
+            assertThat(block.getStatus()).isEqualTo(RoomBlockStatus.ACTIVE);
+        });
+        assertThat(service.getAvailability(company, property.getId(), start, end)
+                .roomTypes().get(0).availableRooms()).isEqualTo(1);
+
+        PmsOperationsResponse reservation = service.createReservation(
+                company,
+                reservationRequest(start, end, room.getId()),
+                "Christopher",
+                today
+        );
+        assertThat(reservation.reservations()).singleElement()
+                 .satisfies(view -> assertThat(view.roomNumber()).isEqualTo("101"));
+    }
+
+    @Test
+    void dashboardInventoryDistinguishesOutOfServiceFromBlockingRoomStatuses() {
+        RoomBlock outOfService = roomBlock(RoomBlockType.OUT_OF_SERVICE, today, today.plusDays(1));
+
+        PmsOperationsResponse withOutOfService =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOutOfService.metrics().totalRooms()).isEqualTo(1);
+        assertThat(withOutOfService.metrics().availableRooms()).isEqualTo(1);
+
+        roomBlockRepository.delete(outOfService);
+        roomBlockRepository.flush();
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        roomRepository.save(room);
+        roomBlock(RoomBlockType.OUT_OF_ORDER, today, today.plusDays(1));
+
+        PmsOperationsResponse withOutOfOrder =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOutOfOrder.metrics().totalRooms()).isZero();
+        assertThat(withOutOfOrder.metrics().availableRooms()).isZero();
+        assertThat(withOutOfOrder.metrics().occupancyPercent()).isZero();
+        assertThat(withOutOfOrder.metrics().dirtyRooms()).isZero();
+
+        roomBlockRepository.deleteAll();
+        roomBlockRepository.flush();
+        roomBlock(RoomBlockType.OWNER_USE, today, today.plusDays(1));
+
+        PmsOperationsResponse withOwnerUse =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOwnerUse.metrics().totalRooms()).isZero();
+        assertThat(withOwnerUse.metrics().availableRooms()).isZero();
+    }
+
+    @Test
+    void housekeepingStatusDoesNotChangeTheOperationalRoomStatus() {
+        HousekeepingTask task = new HousekeepingTask();
+        task.setProperty(property);
+        task.setRoom(room);
+        task.setServiceDate(today);
+        task.setType(HousekeepingTaskType.MANUAL);
+        task.setStatus(HousekeepingStatus.DIRTY);
+        task.setPriority(50);
+        task.setEstimatedMinutes(20);
+        task = housekeepingTaskRepository.save(task);
+
+        room.setOperationalStatus(RoomOperationalStatus.OUT_OF_ORDER);
+        roomRepository.save(room);
+
+        service.updateHousekeepingTask(
+                company,
+                property.getId(),
+                task.getId(),
+                new UpdateHousekeepingTaskRequest(
+                        HousekeepingTaskType.INSPECTION,
+                        HousekeepingStatus.CLEAN,
+                        50,
+                        20,
+                        null,
+                        "Housekeeping"
+                ),
+                today
+        );
+
+        Room technicallyBlocked = roomRepository.findById(room.getId()).orElseThrow();
+        assertThat(technicallyBlocked.getHousekeepingStatus()).isEqualTo(HousekeepingStatus.CLEAN);
+        assertThat(technicallyBlocked.getOperationalStatus()).isEqualTo(RoomOperationalStatus.OUT_OF_ORDER);
+
+        technicallyBlocked.setOperationalStatus(RoomOperationalStatus.IN_SERVICE);
+        roomRepository.save(technicallyBlocked);
+
+        service.updateHousekeepingTask(
+                company,
+                property.getId(),
+                task.getId(),
+                new UpdateHousekeepingTaskRequest(
+                        HousekeepingTaskType.MANUAL,
+                        HousekeepingStatus.OUT_OF_SERVICE,
+                        50,
+                        20,
+                        null,
+                        "Housekeeping"
+                ),
+                today
+        );
+
+        Room housekeepingBlocked = roomRepository.findById(room.getId()).orElseThrow();
+        assertThat(housekeepingBlocked.getHousekeepingStatus()).isEqualTo(HousekeepingStatus.OUT_OF_SERVICE);
+        assertThat(housekeepingBlocked.getOperationalStatus()).isEqualTo(RoomOperationalStatus.IN_SERVICE);
+    }
+
+    @Test
+    void dirtyRoomMetricOnlyCountsSellableRoomsAwaitingCleaning() {
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isEqualTo(1);
+
+        room.setHousekeepingStatus(HousekeepingStatus.IN_PROGRESS);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isZero();
+
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        room.setOperationalStatus(RoomOperationalStatus.OUT_OF_ORDER);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isZero();
+    }
+
+    @Test
+    void storesGuestCardCompanyChildrenAgesAndPreferenceSnapshot() {
+        roomType.setMaxOccupancy(4);
+        roomTypeRepository.save(roomType);
+        PmsOrganization organization = new PmsOrganization();
+        organization.setCompany(company);
+        organization.setType(OrganizationType.COMPANY);
+        organization.setName("BMW Schweiz AG");
+        organization.setCountryCode("CH");
+        organization = organizationRepository.save(organization);
+
+        GuestProfile createdGuest = service.createGuestRecord(company, property.getId(), new UpsertGuestRequest(
+                "Max", "Müller", "max@example.com", "+41 79 123 45 67", null,
+                "CH", "de", "Stammgast", true,
+                "Seestrasse 4", "8002", "Zürich", "CH", "ZH 12345",
+                "Ruhig, hohe Etage, Badewanne", organization.getId()));
+
+        PmsOperationsResponse response = service.createReservation(
+                company,
+                new UpsertReservationRequest(
+                        property.getId(), createdGuest.getId(), roomType.getId(), room.getId(), ratePlan.getId(),
+                        today.plusDays(1), today.plusDays(2), 1, 2,
+                        ReservationStatus.CONFIRMED, ReservationSource.DIRECT, null,
+                        ReservationGuaranteeStatus.COMPANY_GUARANTEE, null, java.util.List.of(4, 9)),
+                "Christopher",
+                today);
+
+        assertThat(createdGuest.getReferenceCode()).startsWith("GK");
+        assertThat(response.guests()).filteredOn(view -> view.id().equals(createdGuest.getId())).singleElement()
+                .satisfies(view -> {
+                    assertThat(view.addressLine1()).isEqualTo("Seestrasse 4");
+                    assertThat(view.vehiclePlate()).isEqualTo("ZH 12345");
+                    assertThat(view.organizationName()).isEqualTo("BMW Schweiz AG");
+                });
+        assertThat(response.reservations()).singleElement().satisfies(view -> {
+            assertThat(view.childAges()).containsExactly(4, 9);
+            assertThat(view.guestPreferenceSnapshot()).isEqualTo("Ruhig, hohe Etage, Badewanne");
+        });
+        assertThat(response.folios()).singleElement()
+                .satisfies(view -> assertThat(view.organizationName()).isEqualTo("BMW Schweiz AG"));
+    }
+
+    @Test
+    void mergesDuplicateGuestWithoutDeletingHistoryAndReassignsReservations() {
+        GuestProfile duplicate = service.createGuestRecord(company, property.getId(), new UpsertGuestRequest(
+                "Gabi", "Tschopp", "neu@example.com", null, null,
+                "CH", "de", "Notiz aus Dublette", false));
+        service.createReservation(
+                company,
+                new UpsertReservationRequest(
+                        property.getId(), duplicate.getId(), roomType.getId(), room.getId(), ratePlan.getId(),
+                        today.plusDays(1), today.plusDays(2), 1, 0,
+                        ReservationStatus.CONFIRMED, ReservationSource.PHONE, null),
+                "Christopher", today);
+
+        service.mergeGuest(company, property.getId(), duplicate.getId(),
+                new MergeGuestProfilesRequest(guest.getId(), java.util.Set.of("email", "notes")), today);
+
+        GuestProfile retainedSource = guestRepository.findById(duplicate.getId()).orElseThrow();
+        GuestProfile updatedTarget = guestRepository.findById(guest.getId()).orElseThrow();
+        assertThat(retainedSource.isActive()).isFalse();
+        assertThat(retainedSource.getMergedInto().getId()).isEqualTo(guest.getId());
+        assertThat(updatedTarget.getEmail()).isEqualTo("neu@example.com");
+        assertThat(updatedTarget.getNotes()).isEqualTo("Notiz aus Dublette");
+        assertThat(reservationRepository.findAllByGuest_IdOrderByArrivalDateDesc(guest.getId())).hasSize(1);
+        assertThat(guestRepository.searchForOperations(company.getId(), "%%",
+                org.springframework.data.domain.PageRequest.of(0, 20)))
+                .extracting(GuestProfile::getId).doesNotContain(duplicate.getId());
+    }
+
+    @Test
+    void netRateAndSeparateBreakfastTaxesHaveIdenticalQuoteReservationAndFolioTotals() {
+        ratePlan.setTaxIncluded(false);
+        ratePlan.setVatRate(new BigDecimal("7"));
+        ratePlan.setBreakfastIncluded(true);
+        ratePlan.setBreakfastAmount(new BigDecimal("20"));
+        ratePlan.setBreakfastVatRate(new BigDecimal("19"));
+        ratePlan.setExtraAdultRate(new BigDecimal("10"));
+        ratePlanRepository.save(ratePlan);
+        AvailabilityResponse availability = service.getAvailability(company, property.getId(), today, today.plusDays(2), 2, 0, guest.getId());
+        assertThat(availability.roomTypes().get(0).rates().get(0).totalAmount()).isEqualByComparingTo("283.00");
+
+        PmsOperationsResponse response = service.createReservation(company,
+                reservationRequest(today, today.plusDays(2), room.getId()), "Test", today);
+        assertThat(response.reservations().get(0).totalAmount()).isEqualByComparingTo("283.00");
+        assertThat(response.folios().get(0).charges()).isEqualByComparingTo("283.00");
+        var items = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(response.folios().get(0).id());
+        assertThat(items).hasSize(4).allMatch(FolioItem::isRateGenerated).allMatch(FolioItem::isTaxIncluded);
+        assertThat(items).filteredOn(item -> item.getType() == FolioItemType.ROOM)
+                .allSatisfy(item -> assertThat(item.getTaxRate()).isEqualByComparingTo("7"));
+        assertThat(items).filteredOn(item -> item.getType() == FolioItemType.BREAKFAST)
+                .allSatisfy(item -> assertThat(item.getTaxRate()).isEqualByComparingTo("19"));
+
+        service.postFolioItem(company, property.getId(), response.folios().get(0).id(),
+                new PostFolioItemRequest(today, FolioItemType.BREAKFAST, "Zusätzliches Frühstück", BigDecimal.ONE, new BigDecimal("25")), today);
+        PmsOperationsResponse updated = service.updateReservation(company, response.reservations().get(0).id(),
+                reservationRequest(today, today.plusDays(1), room.getId()), "Test", today);
+        assertThat(updated.folios().get(0).charges()).isEqualByComparingTo("166.50");
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(response.folios().get(0).id()))
+                .hasSize(3).filteredOn(item -> !item.isRateGenerated()).singleElement()
+                .satisfies(item -> assertThat(item.getDescription()).isEqualTo("Zusätzliches Frühstück"));
+    }
+
+    @Test
+    void negotiatedRateRequiresTheLinkedOrganizationAndRejectsAnotherTenant() {
+        PmsOrganization firm = new PmsOrganization();
+        firm.setCompany(company); firm.setName("Vertragsfirma"); firm.setType(OrganizationType.COMPANY);
+        organizationRepository.save(firm);
+        ratePlan.setOrganization(firm); ratePlanRepository.save(ratePlan);
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId())
+                .roomTypes().get(0).rates().get(0).available()).isFalse();
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, null, firm.getId())
+                .roomTypes().get(0).rates().get(0).available()).isTrue();
+        // A staff quote for a new guest may select a firm, but cannot override an existing guest's affiliation.
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId(), firm.getId())
+                .roomTypes().get(0).rates().get(0).available()).isFalse();
+        assertThatThrownBy(() -> service.createReservation(company,
+                reservationRequest(today, today.plusDays(1), room.getId()), "Test", today))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Firmenrate");
+        guest.setOrganization(firm); guestRepository.save(guest);
+        assertThat(service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, guest.getId())
+                .roomTypes().get(0).rates().get(0).available()).isTrue();
+        GuestProfile outsider = new GuestProfile();
+        outsider.setCompany(companyRepository.save(new Company("Fremdes Unternehmen")));
+        outsider.setFirstName("Andere"); outsider.setLastName("Person"); guestRepository.save(outsider);
+        assertThatThrownBy(() -> service.getAvailability(company, property.getId(), today, today.plusDays(1), 2, 0, outsider.getId()))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("Gast nicht gefunden");
+    }
+
+    @Test
+    void updatingAnAdvanceBookingUsesTheOriginalBookingDateForSalesRestrictions() {
+        PmsOperationsResponse initial = service.createReservation(company,
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Test", today);
+        Reservation booked = reservationRepository.findById(initial.reservations().get(0).id()).orElseThrow();
+        booked.setCreatedAt(today.minusDays(40).atStartOfDay()); reservationRepository.save(booked);
+        ratePlan.setBookingTo(today.minusDays(1)); ratePlan.setMinAdvanceDays(30); ratePlanRepository.save(ratePlan);
+        PmsOperationsResponse updated = service.updateReservation(company, booked.getId(),
+                reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Test", today);
+        assertThat(updated.reservations()).singleElement()
+                .satisfies(value -> assertThat(value.totalAmount()).isEqualByComparingTo("120.00"));
+    }
+
+    @Test
+    void repricesRoutedRoomChargesOnceAndKeepsTheirOriginalFolioAndIds() {
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Christopher", today);
+        Long id = created.reservations().get(0).id();
+        Reservation reservation = reservationRepository.findById(id).orElseThrow();
+        Folio second = new Folio(); second.setReservation(reservation); second.setCurrencyCode("CHF"); second.setLabel("Firma");
+        second = folioRepository.save(second);
+        FolioItem moved = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(created.folios().get(0).id()).get(0);
+        Long movedId = moved.getId(); moved.setFolio(second); folioItemRepository.save(moved);
+        service.updateReservation(company, id, reservationRequest(today.plusDays(1), today.plusDays(4), room.getId()), "Christopher", today);
+        var items = folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id);
+        assertThat(items).hasSize(3);
+        assertThat(items.stream().map(FolioItem::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("360.00");
+        assertThat(folioItemRepository.findById(movedId).orElseThrow().getFolio().getId()).isEqualTo(second.getId());
+        service.updateReservation(company, id, reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Christopher", today);
+        assertThat(folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id)).extracting(FolioItem::getId).containsExactly(movedId);
+    }
+
+    @Test
+    void plannedMoveUsesOnlyItsOwnDatesAndRetainsEarlierOccupancy() {
+        Room target = room("102");
+        service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), target.getId()), "Christopher", today);
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(5), room.getId()), "Christopher", today);
+        Long id = created.reservations().stream().filter(r -> r.roomId().equals(room.getId())).findFirst().orElseThrow().id();
+        service.moveReservationRoom(company, id, new MoveReservationRoomRequest(target.getId(), "Umzug", today.plusDays(3), null), "Christopher", today);
+        var details = service.getStayDetails(company, id);
+        assertThat(details.roomSegments()).hasSize(2);
+        assertThat(details.roomSegments().get(0).roomId()).isEqualTo(room.getId());
+        assertThat(details.roomSegments().get(0).endDate()).isEqualTo(today.plusDays(3));
+        assertThat(details.roomSegments().get(1).roomId()).isEqualTo(target.getId());
+        assertThat(reservationRepository.countOverlappingByRoom(room.getId(), today.plusDays(3), today.plusDays(5), java.util.Set.of(ReservationStatus.CANCELLED), null)).isZero();
+        assertThat(reservationRepository.countOverlappingByRoom(target.getId(), today.plusDays(3), today.plusDays(5), java.util.Set.of(ReservationStatus.CANCELLED), null)).isEqualTo(1);
+    }
+
+    @Test
+    void upgradePricesOnlyTheNewSegment() {
+        RoomType suite = new RoomType(); suite.setProperty(property); suite.setCode("SUITE"); suite.setName("Suite"); suite.setMaxOccupancy(3); suite = roomTypeRepository.save(suite);
+        Room target = new Room(); target.setProperty(property); target.setRoomType(suite); target.setNumber("301"); target.setHousekeepingStatus(HousekeepingStatus.CLEAN); target = roomRepository.save(target);
+        RatePlan suiteRate = new RatePlan(); suiteRate.setProperty(property); suiteRate.setRoomType(suite); suiteRate.setCode("SUITE"); suiteRate.setName("Suite"); suiteRate.setCurrencyCode("CHF"); suiteRate.setNightlyRate(new BigDecimal("200")); suiteRate = ratePlanRepository.save(suiteRate);
+        Long id = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(4), room.getId()), "Christopher", today).reservations().get(0).id();
+        service.moveReservationRoom(company, id, new MoveReservationRoomRequest(target.getId(), "Upgrade", today.plusDays(2), suiteRate.getId()), "Christopher", today);
+        var charges = folioItemRepository.findAllByFolio_Reservation_IdAndRateGeneratedTrueOrderByServiceDateAscIdAsc(id);
+        assertThat(charges).extracting(FolioItem::getTotalAmount).containsExactly(new BigDecimal("120.00"), new BigDecimal("200.00"), new BigDecimal("200.00"));
+    }
+
+    @Test
+    void registersNamedCoGuestsSeparatelyAndRejectsOccupancyOverflow() {
+        Long id = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Christopher", today).reservations().get(0).id();
+        GuestProfile companion = new GuestProfile(); companion.setCompany(company); companion.setFirstName("Anna"); companion.setLastName("Gast"); companion = guestRepository.save(companion);
+        var entry = new UpsertReservationGuestsRequest.GuestEntry(companion.getId(), today.plusDays(1), today.plusDays(2), false);
+        service.updateCoGuests(company, id, new UpsertReservationGuestsRequest(java.util.List.of(entry)), "Christopher");
+        var response = service.registerCoGuest(company, id, companion.getId(), new CompleteGuestRegistrationRequest("Strasse 1", "8000", "Zürich", "CH", "DE", "SECRET-DOC1234", null, "Anna Gast", true, null, null), "Christopher");
+        assertThat(response.coGuests()).hasSize(1);
+        assertThat(response.coGuests().get(0).registrationCompletedAt()).isNotNull();
+        assertThat(reservationRepository.findById(id).orElseThrow().getCoGuests().get(0).getDocumentHash()).doesNotContain("SECRET").hasSize(64);
+        assertThatThrownBy(() -> service.updateCoGuests(company, id, new UpsertReservationGuestsRequest(java.util.List.of(entry, entry)), "Christopher")).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void keepsConcurrentRegistersAndTheirCashMovementsSeparate() {
+        Long folio = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(2), room.getId()), "Christopher", today).folios().get(0).id();
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(new BigDecimal("100"), null, "DESK1", "RECEPTION"), "Alice", today);
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(new BigDecimal("50"), null, "BAR1", "BAR"), "Bob", today);
+        var shifts = service.getCashShifts(company, property.getId());
+        Long desk = shifts.stream().filter(s -> s.registerCode().equals("DESK1")).findFirst().orElseThrow().id();
+        Long bar = shifts.stream().filter(s -> s.registerCode().equals("BAR1")).findFirst().orElseThrow().id();
+        service.postPayment(company, property.getId(), folio, new PostPaymentRequest(new BigDecimal("30"), PaymentMethod.CASH, null, desk), "Alice", today);
+        service.postPayment(company, property.getId(), folio, new PostPaymentRequest(new BigDecimal("20"), PaymentMethod.CASH, null, bar), "Bob", today);
+        shifts = service.getCashShifts(company, property.getId());
+        assertThat(shifts.stream().filter(s -> s.id().equals(desk)).findFirst().orElseThrow().expectedCash()).isEqualByComparingTo("130");
+        assertThat(shifts.stream().filter(s -> s.id().equals(bar)).findFirst().orElseThrow().expectedCash()).isEqualByComparingTo("70");
+        service.closeCashShift(company, property.getId(), new CloseCashShiftRequest(new BigDecimal("130"), null, desk), "Alice", today);
+        assertThat(cashShiftRepository.findById(bar).orElseThrow().getStatus()).isEqualTo(CashShiftStatus.OPEN);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"JPY,123,246", "KWD,12.345,24.690", "CHF,12.35,24.70"})
+    void keepsHotelCurrencyMinorUnitsFromRateThroughFolioAndPayment(String currency, String nightly, String expected) {
+        property.setCurrencyCode(currency); propertyRepository.save(property);
+        service.updateRatePlan(company, property.getId(), ratePlan.getId(), new UpsertRatePlanRequest(
+                roomType.getId(), "BAR", "Currency rate", new BigDecimal(nightly), 1, false, true, true), today);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(2), room.getId()), "Alice", today);
+        Long folioId = created.folios().get(0).id();
+        assertThat(created.reservations().get(0).totalAmount()).isEqualByComparingTo(expected);
+        folioItemRepository.flush();
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId))
+                .allSatisfy(line -> assertThat(line.getTotalAmount()).isEqualByComparingTo(nightly));
+        service.postPayment(company, property.getId(), folioId, new PostPaymentRequest(new BigDecimal(expected), PaymentMethod.BANK_TRANSFER, "Currency"), "Alice", today);
+        assertThat(paymentRepository.findAllByFolio_IdOrderByReceivedAtAsc(folioId)).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualByComparingTo(expected));
+    }
+
+    @Test
+    void refusesFractionalSwissCentInsteadOfSilentlyChangingRateOrPayment() {
+        assertThatThrownBy(() -> service.updateRatePlan(company, property.getId(), ratePlan.getId(), new UpsertRatePlanRequest(
+                roomType.getId(), "BAR", "Currency rate", new BigDecimal("12.345"), 1, false, true, true), today))
+                .hasMessageContaining("kleinsten Einheit");
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        assertThatThrownBy(() -> service.postPayment(company, property.getId(), created.folios().get(0).id(),
+                new PostPaymentRequest(new BigDecimal("0.001"), PaymentMethod.BANK_TRANSFER, "Invalid"), "Alice", today))
+                .hasMessageContaining("kleinsten Einheit");
+    }
+
+    @Test
+    void refusesShiftClosingWhileAnEarlierCashOperationStillAwaitsReconciliation() {
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        service.openCashShift(company, property.getId(), new OpenCashShiftRequest(BigDecimal.ZERO, "Shift"), "Alice", today);
+        CashShift shift = cashShiftRepository.findAllByProperty_IdOrderByOpenedAtDesc(property.getId()).get(0);
+        Payment pending = new Payment(); pending.setFolio(folioRepository.findById(created.folios().get(0).id()).orElseThrow());
+        pending.setMethod(PaymentMethod.CASH); pending.setKind(PaymentKind.REFUND); pending.setAmount(new BigDecimal("-10"));
+        pending.setStatus(PaymentStatus.PENDING); pending.setCashShift(shift); pending.setCreatedBy("Alice"); paymentRepository.saveAndFlush(pending);
+        assertThatThrownBy(() -> service.closeCashShift(company, property.getId(), new CloseCashShiftRequest(BigDecimal.ZERO, "Close", shift.getId()), "Alice", today))
+                .hasMessageContaining("offenen Zahlungsvorgang");
+    }
+
+    @Test
+    void accountingDateRangeUsesPostingBusinessDateWithACompatibilityFallbackForLegacyPayments() {
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        Payment p = new Payment(); p.setFolio(folioRepository.findById(created.folios().get(0).id()).orElseThrow()); p.setAmount(BigDecimal.TEN);
+        p.setMethod(PaymentMethod.BANK_TRANSFER); p.setCreatedBy("Alice"); p.setReceivedAt(today.atTime(23, 45)); p.setPostingDate(today.plusDays(1));
+        paymentRepository.saveAndFlush(p);
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today, today.plusDays(1))).isEmpty();
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today.plusDays(1), today.plusDays(2))).containsExactly(p);
+        p.setPostingDate(null); paymentRepository.saveAndFlush(p);
+        assertThat(paymentRepository.findByPostingDateRange(property.getId(), today, today.plusDays(1))).containsExactly(p);
+    }
+
+    private UpsertReservationRequest reservationRequest(LocalDate arrival,
+                                                         LocalDate departure,
+                                                         Long roomId) {
+        return new UpsertReservationRequest(
+                property.getId(),
+                guest.getId(),
+                roomType.getId(),
+                roomId,
+                ratePlan.getId(),
+                arrival,
+                departure,
+                2,
+                0,
+                ReservationStatus.CONFIRMED,
+                ReservationSource.DIRECT,
+                "Ruhiges Zimmer"
+        );
+    }
+
+    private UpsertReservationRequest reservationRequest(LocalDate arrival,
+                                                        LocalDate departure,
+                                                        Long roomId,
+                                                        ReservationStatus status) {
+        return new UpsertReservationRequest(
+                property.getId(),
+                guest.getId(),
+                roomType.getId(),
+                roomId,
+                ratePlan.getId(),
+                arrival,
+                departure,
+                2,
+                0,
+                status,
+                ReservationSource.DIRECT,
+                "Ruhiges Zimmer",
+                ReservationGuaranteeStatus.UNGUARANTEED,
+                null
+        );
+    }
+
+    private Room room(String number) {
+        Room additionalRoom = new Room();
+        additionalRoom.setProperty(property);
+        additionalRoom.setRoomType(roomType);
+        additionalRoom.setNumber(number);
+        additionalRoom.setHousekeepingStatus(HousekeepingStatus.CLEAN);
+        return roomRepository.save(additionalRoom);
+    }
+
+    @Test
+    void keepsAcceptedDepositPolicyWhenTheRateChangesAndRequiresActualDepositAtCheckIn() {
+        ratePlan.setDepositPercent(new BigDecimal("50")); ratePlan.setDepositDueDaysBeforeArrival(0); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(1), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id();
+        ratePlan.setDepositPercent(new BigDecimal("90")); ratePlanRepository.save(ratePlan);
+        assertThat(service.getReservationPolicy(company, id).depositRequiredAmount()).isEqualByComparingTo("60");
+        assertThatThrownBy(() -> service.checkIn(company, id, "Alice", today)).hasMessageContaining("Anzahlung");
+        service.postPayment(company, property.getId(), created.folios().get(0).id(),
+                new PostPaymentRequest(new BigDecimal("60"), PaymentMethod.BANK_TRANSFER, "Anzahlung"), "Alice", today);
+        assertThat(service.getReservationPolicy(company, id).depositOverdue()).isFalse();
+        service.checkIn(company, id, "Alice", today);
+        assertThat(reservationRepository.findById(id).orElseThrow().getStatus()).isEqualTo(ReservationStatus.CHECKED_IN);
+    }
+
+    @Test
+    void cancellationUsesAcceptedFeeAndLeavesARefundableDepositAsOpenCredit() {
+        ratePlan.setCancellationDeadlineHours(8760); ratePlan.setCancellationFeePercent(new BigDecimal("25"));
+        ratePlan.setPolicyFeeTaxRate(BigDecimal.ZERO); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today.plusDays(1), today.plusDays(3), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id(); Long folioId = created.folios().get(0).id();
+        service.postPayment(company, property.getId(), folioId,
+                new PostPaymentRequest(new BigDecimal("100"), PaymentMethod.BANK_TRANSFER, "Deposit"), "Alice", today);
+        ratePlan.setCancellationFeePercent(new BigDecimal("100")); ratePlanRepository.save(ratePlan);
+        service.cancelReservation(company, id, null, "Alice", today);
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId)).singleElement().satisfies(line -> {
+            assertThat(line.getTotalAmount()).isEqualByComparingTo("60"); assertThat(line.isRateGenerated()).isFalse(); assertThat(line.getTaxRate()).isZero();
+        });
+        assertThat(folioRepository.findById(folioId).orElseThrow().getStatus()).isEqualTo(FolioStatus.OPEN);
+        assertThat(reservationRepository.findById(id).orElseThrow().getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+    }
+
+    @Test
+    void noShowReplacesEditableAccommodationWithConfiguredFeeAndDoesNotDoublePost() {
+        ratePlan.setNoShowFeePercent(new BigDecimal("50")); ratePlan.setPolicyFeeTaxRate(BigDecimal.ZERO); ratePlanRepository.save(ratePlan);
+        var created = service.createReservation(company, reservationRequest(today, today.plusDays(2), room.getId()), "Alice", today);
+        Long id = created.reservations().get(0).id(); Long folioId = created.folios().get(0).id();
+        service.markNoShow(company, id, "Alice", today);
+        assertThat(folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folioId)).singleElement()
+                .satisfies(line -> assertThat(line.getTotalAmount()).isEqualByComparingTo("120"));
+        assertThatThrownBy(() -> service.markNoShow(company, id, "Alice", today)).hasMessageContaining("bestätigte");
+    }
+
+    private RoomBlock roomBlock(RoomBlockType type, LocalDate startDate, LocalDate endDate) {
+        RoomBlock block = new RoomBlock();
+        block.setProperty(property);
+        block.setRoom(room);
+        block.setType(type);
+        block.setStartDate(startDate);
+        block.setEndDate(endDate);
+        block.setReason("Wartung");
+        block.setCreatedBy("Christopher");
+        return roomBlockRepository.save(block);
+    }
+}

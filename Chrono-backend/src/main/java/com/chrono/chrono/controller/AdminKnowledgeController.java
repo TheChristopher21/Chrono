@@ -1,5 +1,7 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateCompanyKnowledgeRequest;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.CompanyKnowledge;
 import com.chrono.chrono.entities.User;
@@ -29,10 +31,10 @@ public class AdminKnowledgeController {
     private Company getCompany(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName()).orElse(null);
         if (admin == null) return null;
-        if (admin.getCompany() == null) {
+        if (CompanyScope.companyFor(admin) == null) {
             return null;
         }
-        return companyRepository.findById(admin.getCompany().getId()).orElse(null);
+        return companyRepository.findById(CompanyScope.companyFor(admin).getId()).orElse(null);
     }
 
     @GetMapping
@@ -43,11 +45,11 @@ public class AdminKnowledgeController {
     }
 
     @PostMapping
-    public ResponseEntity<CompanyKnowledge> create(@RequestBody CompanyKnowledge doc,
+    public ResponseEntity<CompanyKnowledge> create(@RequestBody CreateCompanyKnowledgeRequest request,
                                                    Principal principal) {
         Company c = getCompany(principal);
         if (c == null) return ResponseEntity.badRequest().build();
-        doc.setCompany(c);
+        CompanyKnowledge doc = new CompanyKnowledge(c, request.getTitle(), request.getContent(), request.getAccessLevel());
         return ResponseEntity.ok(knowledgeService.save(doc));
     }
 

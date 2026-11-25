@@ -1,0 +1,443 @@
+{
+  "source": "BMF 2026Version1 program-test interface",
+  "retrieved": "2026-10-16",
+  "cases": [
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "78241",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 2,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "66450",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3003600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 3,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "40183",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 4,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "78241",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 5,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "128033",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3429600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 6,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "132458",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "0",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3556200",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 200001,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "8816",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "554912",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 581250,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "101141",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "4208100",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 845000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "198175",
+        "SOLZLZZ": "3402",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "7078700",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 1000000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "263275",
+        "SOLZLZZ": "11149",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "8938700",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 2000000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 0,
+        "R": 0,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "0",
+        "BKS": "0",
+        "LSTLZZ": "683275",
+        "SOLZLZZ": "37580",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "20938700",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 0,
+        "PVS": 1,
+        "PVA": 0,
+        "ZKF": "1.5",
+        "R": 1,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "40066",
+        "BKS": "0",
+        "LSTLZZ": "78408",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3435600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 0,
+        "PVS": 1,
+        "PVA": 1,
+        "ZKF": "1.5",
+        "R": 1,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "40425",
+        "BKS": "0",
+        "LSTLZZ": "78833",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3450600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 1,
+        "KVZ": "2.9",
+        "PVZ": 0,
+        "PVS": 1,
+        "PVA": 4,
+        "ZKF": "1.5",
+        "R": 1,
+        "af": 0,
+        "f": 1
+      },
+      "outputs": {
+        "BK": "41516",
+        "BKS": "0",
+        "LSTLZZ": "80116",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3495600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    },
+    {
+      "inputs": {
+        "LZZ": 2,
+        "RE4": 500000,
+        "STKL": 4,
+        "KVZ": "2.9",
+        "PVZ": 1,
+        "PVS": 0,
+        "PVA": 0,
+        "ZKF": 1,
+        "R": 1,
+        "af": 1,
+        "f": "0.853",
+        "LZZFREIB": 15000,
+        "LZZHINZU": 2500
+      },
+      "outputs": {
+        "BK": "51833",
+        "BKS": "0",
+        "LSTLZZ": "63141",
+        "SOLZLZZ": "0",
+        "SOLZS": "0",
+        "STS": "0",
+        "VFRB": "123000",
+        "VFRBS1": "0",
+        "VFRBS2": "0",
+        "WVFRB": "3279600",
+        "WVFRBO": "0",
+        "WVFRBM": "0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "status": "PASSED",
+  "recordedAt": "2026-09-12T12:03:13.7102178+02:00",
+  "environment": "isolated local Docker; MySQL migration fixture only",
+  "productionDataUsed": false,
+  "source": {
+    "container": "chrono-pms-enterprise-mysql-qa",
+    "database": "chrono_migration_fresh",
+    "mysqlVersion": "8.4.11"
+  },
+  "restoredTarget": {
+    "container": "chrono-pms-restore-drill-db-20260912",
+    "database": "chrono_restore_validation",
+    "mysqlVersion": "8.4.11"
+  },
+  "backup": {
+    "file": "chrono_migration_fresh_20260912T095620Z.sql",
+    "bytes": 195706,
+    "sha256": "abd4035c9b3bb45e673a0e2d877d33193622a7d75841c012464ff08e6fd7f999",
+    "checkBackupScriptPassed": true
+  },
+  "comparison": {
+    "matches": true,
+    "tables": 131,
+    "pmsTables": 60,
+    "flywayHistoryRows": 25,
+    "flywayHistorySha256": "630b4c3b58b384894bf23e836d3ce439ca643f3f956ea56c23897d1d85c0b0f6",
+    "foreignKeys": 206,
+    "columnSchemaSha256": "a4f68bf96c583d6e02f3c3b78e9d2581f7f5211e5d28d3a8db49d2477899ea5c"
+  },
+  "actualRestoreEvidence": {
+    "schemaVersion": 1,
+    "status": "OK",
+    "startedAt": "2026-09-12T10:01:00Z",
+    "verifiedAt": "2026-09-12T10:01:13Z",
+    "durationSeconds": 13,
+    "backupFile": "chrono_migration_fresh_20260912T095620Z.sql",
+    "backupSha256": "abd4035c9b3bb45e673a0e2d877d33193622a7d75841c012464ff08e6fd7f999",
+    "flywayVersion": "38",
+    "expectedFlywayVersion": "38",
+    "tableCount": 131,
+    "pmsTableCount": 60
+  },
+  "runtime": {
+    "finishedAt": "2026-09-12T12:01:13.3868506+02:00",
+    "exitCode": 0,
+    "durationSeconds": 13.001,
+    "startedAt": "2026-09-12T12:01:00.3856121+02:00"
+  },
+  "negativeChecks": [
+    {
+      "exitCode": 1,
+      "evidence": {
+        "schemaVersion": 1,
+        "status": "FAILED",
+        "startedAt": "2026-09-12T10:01:14Z",
+        "verifiedAt": "2026-09-12T10:01:14Z",
+        "durationSeconds": 0,
+        "backupFile": "chrono_migration_fresh_20260912T095620Z.sql",
+        "backupSha256": "09f3cff11a25518ac36ff86278a29c371d812049600261b9ec13ca578edf46e5",
+        "flywayVersion": "",
+        "expectedFlywayVersion": "",
+        "tableCount": 0,
+        "pmsTableCount": 0
+      }
+    },
+    {
+      "evidence": {
+        "schemaVersion": 1,
+        "status": "FAILED",
+        "startedAt": "2026-09-12T10:02:01Z",
+        "verifiedAt": "2026-09-12T10:02:14Z",
+        "durationSeconds": 13,
+        "backupFile": "chrono_migration_fresh_20260912T095620Z.sql",
+        "backupSha256": "abd4035c9b3bb45e673a0e2d877d33193622a7d75841c012464ff08e6fd7f999",
+        "flywayVersion": "38",
+        "expectedFlywayVersion": "39",
+        "tableCount": 131,
+        "pmsTableCount": 60
+      },
+      "exitCode": 1
+    }
+  ],
+  "scripts": {
+    "source": "ops/backup/restore-drill.sh",
+    "testedSha256": "03f9427574a8c78322a217d19d37d388099fd252d9e0f18efe4698f90ad722d3",
+    "shellcheck": "passed v0.10.0",
+    "lineEndings": "LF in Linux test mount"
+  },
+  "limitations": [
+    "Source is a migration fixture schema, not a populated operating hotel.",
+    "Elapsed time is for this local schema-sized test; no production RTO/RPO or SLA is inferred."
+  ],
+  "cleanup": {
+    "scratchContainersRemoved": true,
+    "scratchNetworkRemoved": true,
+    "sourceContainerPreserved": true,
+    "backupAndEvidenceRetained": true
+  }
+}

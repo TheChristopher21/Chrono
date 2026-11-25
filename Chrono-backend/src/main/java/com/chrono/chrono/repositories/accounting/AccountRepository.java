@@ -10,4 +10,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByCode(String code);
 
     List<Account> findByActiveTrueOrderByCodeAsc();
+
+    Optional<Account> findByCompany_IdAndCode(Long companyId, String code);
+    Optional<Account> findByIdAndCompany_Id(Long id, Long companyId);
+    List<Account> findByCompany_IdAndActiveTrueOrderByCodeAsc(Long companyId);
+    List<Account> findByCompanyIsNullOrderByIdAsc();
 }

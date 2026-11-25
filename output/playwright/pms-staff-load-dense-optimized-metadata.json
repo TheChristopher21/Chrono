@@ -1,0 +1,161 @@
+{
+  "capturedAtUtc": "2026-09-12T10:22:54.8267012Z",
+  "api": "http://127.0.0.1:18086",
+  "propertyId": 1,
+  "businessDate": "2026-09-12",
+  "initialRooms": 1007,
+  "additionalRooms": 0,
+  "totalRooms": 1007,
+  "configuredVus": 12,
+  "configuredDurationSeconds": 45,
+  "writeProbabilityPerEligibleIteration": 0.05,
+  "users": [
+    {
+      "role": "reception",
+      "userId": 2,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "FRONT_DESK": "MANAGE",
+            "GUESTS": "MANAGE"
+          }
+        }
+      ],
+      "master": false
+    },
+    {
+      "role": "housekeeping",
+      "userId": 3,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "HOUSEKEEPING": "MANAGE"
+          }
+        }
+      ],
+      "master": false
+    },
+    {
+      "role": "finance",
+      "userId": 4,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "FINANCE": "MANAGE"
+          }
+        }
+      ],
+      "master": false
+    },
+    {
+      "role": "management",
+      "userId": 5,
+      "grants": [
+        {
+          "propertyId": 1,
+          "propertyName": "Chrono Demo Hotel Zürich",
+          "permissions": {
+            "REPORTS": "VIEW"
+          }
+        }
+      ],
+      "master": false
+    }
+  ],
+  "roleChecks": [
+    {
+      "actual": 403,
+      "role": "reception",
+      "operation": "master access administration denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "reception",
+      "operation": "ungranted hotel area denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "housekeeping",
+      "operation": "master access administration denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "housekeeping",
+      "operation": "ungranted hotel area denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "finance",
+      "operation": "master access administration denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "finance",
+      "operation": "ungranted hotel area denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "management",
+      "operation": "master access administration denied",
+      "expected": 403
+    },
+    {
+      "actual": 403,
+      "role": "management",
+      "operation": "ungranted hotel area denied",
+      "expected": 403
+    }
+  ],
+  "before": {
+    "reservationsVisible": 509,
+    "foliosVisible": 509,
+    "housekeepingOrders": 2,
+    "guestProfilesVisible": 200,
+    "invoiceHistory": 1
+  },
+  "limitations": [
+    "Single local API instance and isolated synthetic data; not distributed production capacity certification.",
+    "Only guest creation and housekeeping state updates are write workloads; no booking/payment contention or external provider calls.",
+    "Five percent write probability applies to eligible reception/housekeeping iterations, not all HTTP calls.",
+    "Invoice/receivable history remains small; 500 synthetic confirmed stays add 1500 room nights and at least 1500 ledger lines.",
+    "Separate optimized frozen classes and file-backed H2 QA database; this differs from the memory-backed legacy baseline, as do corrected tax snapshots and the random write sample.",
+    "Operations guestProfilesVisible is capped at 200; it is not the total number of guest profiles in the database."
+  ],
+  "denseSeedEvidence": "pms-staff-dense-seed-optimized.json",
+  "loadExitCode": 0,
+  "after": {
+    "reservationsVisible": 509,
+    "housekeepingFixtureVersion": 18,
+    "foliosVisible": 509,
+    "housekeepingOrders": 2,
+    "guestProfilesVisible": 200
+  },
+  "results": {
+    "httpRequests": 1342,
+    "workloadOperations": 1338,
+    "writes": 29,
+    "guestCreateWrites": 11,
+    "housekeepingWrites": 18,
+    "observedWriteSharePercent": 2.17,
+    "readP95Ms": 83.4314577999999,
+    "writeP95Ms": 179.58638739999998,
+    "httpErrorRate": 0,
+    "workloadErrorRate": 0,
+    "authorizationErrorRate": 0,
+    "negativeRoleProbesPassed": 8,
+    "allK6ThresholdsPassed": true,
+    "missingTaxSnapshots": 0
+  }
+}

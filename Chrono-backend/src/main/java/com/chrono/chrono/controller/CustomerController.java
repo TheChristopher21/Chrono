@@ -1,10 +1,13 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateCustomerRequest;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.CustomerService;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,16 +46,9 @@ public class CustomerController {
      * Akzeptiert jetzt ein User-Objekt direkt.
      */
     private boolean featureEnabled(User user) {
-        if (user == null || user.getCompany() == null) {
-            return false;
-        }
-
-        if (Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
-            return true;
-        }
-
-        return user.getCompany().getEnabledFeatures() != null
-                && user.getCompany().getEnabledFeatures().contains("crm");
+        return user != null
+                && (RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(user))
+                    || RegistrationFeatures.isCompanyFeatureEnabled(CompanyScope.companyFor(user), "crm"));
     }
 
     /**
@@ -65,7 +61,7 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         // Ruft die neue Service-Methode auf, um nach der Firmen-ID zu filtern
-        List<Customer> customers = customerService.findAllByCompanyId(user.getCompany().getId());
+        List<Customer> customers = customerService.findAllByCompanyId(CompanyScope.companyFor(user).getId());
         return ResponseEntity.ok(customers);
     }
 
@@ -95,7 +91,7 @@ public class CustomerController {
         return customerService.findById(id)
                 .map(customer -> {
                     // Sicherheitsprüfung: Gehört der Kunde zur Firma des Benutzers?
-                    if (!Objects.equals(customer.getCompany().getId(), user.getCompany().getId())) {
+                    if (!Objects.equals(customer.getCompany().getId(), CompanyScope.companyFor(user).getId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).<Customer>build();
                     }
                     return ResponseEntity.ok(customer);
@@ -107,13 +103,14 @@ public class CustomerController {
      * GEÄNDERT: Stellt sicher, dass der neue Kunde der Firma des Erstellers zugeordnet wird.
      */
     @PostMapping
-    public ResponseEntity<Customer> create(@RequestBody Customer customer, Principal principal) {
+    public ResponseEntity<Customer> create(@RequestBody CreateCustomerRequest request, Principal principal) {
         User user = getPrincipalUser(principal);
         if (!featureEnabled(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        // WICHTIG: Setzt die Firma für den neuen Kunden
-        customer.setCompany(user.getCompany());
+        Customer customer = new Customer();
+        customer.setName(request.getName());
+        customer.setCompany(CompanyScope.companyFor(user));
         Customer savedCustomer = customerService.save(customer);
         return new ResponseEntity<>(savedCustomer, HttpStatus.CREATED);
     }
@@ -131,7 +128,7 @@ public class CustomerController {
         return customerService.findById(id)
                 .map(existingCustomer -> {
                     // Sicherheitsprüfung: Darf der User diesen Kunden bearbeiten?
-                    if (!Objects.equals(existingCustomer.getCompany().getId(), user.getCompany().getId())) {
+                    if (!Objects.equals(existingCustomer.getCompany().getId(), CompanyScope.companyFor(user).getId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).<Customer>build();
                     }
                     existingCustomer.setName(customerDetails.getName());
@@ -154,7 +151,7 @@ public class CustomerController {
         return customerService.findById(id)
                 .map(customer -> {
                     // Sicherheitsprüfung: Darf der User diesen Kunden löschen?
-                    if (!Objects.equals(customer.getCompany().getId(), user.getCompany().getId())) {
+                    if (!Objects.equals(customer.getCompany().getId(), CompanyScope.companyFor(user).getId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).<Void>build();
                     }
                     customerService.deleteById(id);

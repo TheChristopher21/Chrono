@@ -1,11 +1,14 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
+import com.chrono.chrono.dto.CreateTaskRequest;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.ProjectService;
 import com.chrono.chrono.services.TaskService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.RegistrationFeatures;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +33,7 @@ public class TaskController {
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
         User u = userService.getUserByUsername(principal.getName());
-        return u.getCompany() != null && Boolean.TRUE.equals(u.getCompany().getCustomerTrackingEnabled());
+        return RegistrationFeatures.isProjectsEnabled(CompanyScope.companyFor(u));
     }
 
     @GetMapping
@@ -38,28 +41,33 @@ public class TaskController {
                                                Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (projectId != null) {
-            Optional<Project> project = projectService.findById(projectId);
-            if (project.isEmpty() || project.get().getCustomer() == null ||
-                !project.get().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
-                return ResponseEntity.status(403).build();
-            }
+        if (projectId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<Project> project = projectService.findById(projectId);
+        if (project.isEmpty() || project.get().getCustomer() == null ||
+            !project.get().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
+            return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(taskService.getTasks(projectId));
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task, Principal principal) {
+    public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         User user = userService.getUserByUsername(principal.getName());
-        if (task.getProject() == null || task.getProject().getId() == null) {
+        if (request.getProject() == null || request.getProject().getId() == null) {
             return ResponseEntity.badRequest().build();
         }
-        Project project = projectService.findById(task.getProject().getId()).orElse(null);
+        Project project = projectService.findById(request.getProject().getId()).orElse(null);
         if (project == null || project.getCustomer() == null ||
-            !project.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !project.getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
+        Task task = new Task();
+        task.setName(request.getName());
+        task.setBillable(request.getBillable());
+        task.setBudgetMinutes(request.getBudgetMinutes());
         task.setProject(project);
         return ResponseEntity.ok(taskService.save(task));
     }
@@ -74,7 +82,7 @@ public class TaskController {
         }
         Task existing = existingOpt.get();
         if (existing.getProject() == null || existing.getProject().getCustomer() == null ||
-            !existing.getProject().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !existing.getProject().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         existing.setName(taskDetails.getName());
@@ -93,7 +101,7 @@ public class TaskController {
         }
         Task existing = existingOpt.get();
         if (existing.getProject() == null || existing.getProject().getCustomer() == null ||
-            !existing.getProject().getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            !existing.getProject().getCustomer().getCompany().getId().equals(CompanyScope.companyFor(user).getId())) {
             return ResponseEntity.status(403).build();
         }
         taskService.deleteById(id);

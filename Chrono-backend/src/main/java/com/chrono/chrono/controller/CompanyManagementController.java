@@ -1,12 +1,15 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.EmploymentModelType;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.StripeService;
+import com.chrono.chrono.services.UserPermissionService;
 import com.stripe.model.PaymentIntent;
 import com.chrono.chrono.utils.RegistrationFeatures;
 // import com.chrono.chrono.utils.PasswordEncoderConfig; // Wird nicht direkt verwendet, PasswordEncoder reicht
@@ -14,8 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -28,6 +33,8 @@ public class CompanyManagementController {
     @Autowired private RoleRepository    roleRepository;
     @Autowired private PasswordEncoder   passwordEncoder;
     @Autowired private StripeService     stripeService;
+    @Autowired private UserPermissionService userPermissionService;
+    @Autowired private EmploymentModelHistoryService employmentModelHistoryService;
 
     @GetMapping
     public List<CompanyDTO> getAllCompanies() {
@@ -40,11 +47,12 @@ public class CompanyManagementController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getCompany(@PathVariable Long id) {
         return companyRepository.findById(id)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(company -> ResponseEntity.ok(CompanyDTO.fromEntity(company)))
                 .orElse(ResponseEntity.badRequest().body("Company not found"));
     }
 
     @PostMapping("/create-with-admin")
+    @Transactional
     public ResponseEntity<?> createCompanyWithAdmin(@RequestBody CreateCompanyWithAdminDTO body) {
         if (body.getCompanyName() == null || body.getCompanyName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Company name is required");
@@ -52,8 +60,25 @@ public class CompanyManagementController {
         if (body.getAdminUsername() == null || body.getAdminUsername().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Admin username is required");
         }
-        if (body.getAdminPassword() == null || body.getAdminPassword().trim().isEmpty()) {
+        if (body.getAdminPassword() == null || body.getAdminPassword().isBlank()) {
             return ResponseEntity.badRequest().body("Admin password is required");
+        }
+        if (body.getAdminPassword().length() < 12) {
+            return ResponseEntity.badRequest().body("Admin password must contain at least 12 characters");
+        }
+        if (body.getAdminPersonnelNumber() == null || body.getAdminPersonnelNumber().isBlank()) {
+            return ResponseEntity.badRequest().body("Admin personnel number is required");
+        }
+
+        String country = normalizeCountry(body.getAdminCountry());
+        if (country == null) {
+            return ResponseEntity.badRequest().body("Admin country must be CH or DE");
+        }
+        if ("CH".equals(country) && trimToNull(body.getAdminTarifCode()) == null) {
+            return ResponseEntity.badRequest().body("Admin tariff code is required for CH");
+        }
+        if ("DE".equals(country) && trimToNull(body.getAdminTaxClass()) == null) {
+            return ResponseEntity.badRequest().body("Admin tax class is required for DE");
         }
         if (userRepository.existsByUsername(body.getAdminUsername().trim())) {
             return ResponseEntity.badRequest().body("Admin username already exists");
@@ -75,8 +100,11 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(body.getTeamsWebhookUrl());
         company.setNotifyVacation(body.getNotifyVacation());
         company.setNotifyOvertime(body.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(body.getCustomerTrackingEnabled());
-        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures()));
+        LinkedHashSet<String> enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures());
+        if (Boolean.TRUE.equals(body.getAdminPmsAccess())) {
+            enabledFeatures.add("pms");
+        }
+        applyProjectFeatureAliases(company, body.getCustomerTrackingEnabled(), enabledFeatures);
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);
@@ -84,23 +112,59 @@ public class CompanyManagementController {
 
         User admin = new User();
         admin.setUsername(body.getAdminUsername().trim());
-        admin.setPassword(passwordEncoder.encode(body.getAdminPassword()));
-        admin.setEmail(body.getAdminEmail()); // Kann null sein
-        admin.setFirstName(body.getAdminFirstName()); // Kann null sein
-        admin.setLastName(body.getAdminLastName()); // Kann null sein
+        String encodedPassword = passwordEncoder.encode(body.getAdminPassword());
+        admin.setPassword(encodedPassword);
+        admin.setAdminPassword(encodedPassword);
+        admin.setEmail(trimToNull(body.getAdminEmail()));
+        admin.setFirstName(trimToNull(body.getAdminFirstName()));
+        admin.setLastName(trimToNull(body.getAdminLastName()));
+        admin.setDepartment(trimToNull(body.getAdminDepartment()));
+        admin.setCountry(country);
+        admin.setTaxClass("DE".equals(country) ? trimToNull(body.getAdminTaxClass()) : null);
+        admin.setTarifCode("CH".equals(country) ? trimToNull(body.getAdminTarifCode()) : null);
+        admin.setCanton("CH".equals(country) ? trimToNull(body.getAdminCanton()) : null);
+        admin.setPersonnelNumber(body.getAdminPersonnelNumber().trim());
+        admin.setEmailNotifications(false);
+        admin.setIncludeInTimeTracking(Boolean.TRUE.equals(body.getAdminIncludeInTimeTracking()));
+        admin.setTrackingBalanceInMinutes(0);
+        admin.setAnnualVacationDays(0);
+        admin.setBreakDuration(0);
+        admin.setIsHourly(false);
+        admin.setIsPercentage(false);
+        admin.setWorkPercentage(100);
+        admin.setExpectedWorkDays(5);
+        admin.setDailyWorkHours(8.5);
+        admin.setScheduleCycle(1);
+        admin.setWeeklySchedule(List.of(User.getDefaultWeeklyScheduleMap()));
+        LocalDate today = employmentModelHistoryService.currentBerlinDate();
+        admin.setEntryDate(today);
+        admin.setScheduleEffectiveDate(today);
         admin.setCompany(company);
 
         Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
         admin.getRoles().add(adminRole);
-        userRepository.save(admin);
+
+        Map<String, String> requestedPermissions = new HashMap<>();
+        if (Boolean.TRUE.equals(body.getAdminPmsAccess())) {
+            requestedPermissions.put(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_MANAGE);
+        }
+        admin.setPagePermissions(
+                userPermissionService.resolvePermissionsForPersistence(admin, requestedPermissions)
+        );
+
+        User savedAdmin = userRepository.save(admin);
+        employmentModelHistoryService.ensureBaselineEntry(savedAdmin, EmploymentModelType.STANDARD, today);
+        company.getUsers().add(savedAdmin);
 
         Map<String,Object> response = new LinkedHashMap<>();
         response.put("company", CompanyDTO.fromEntity(company));
         response.put("adminUser", Map.of(
-                "id", admin.getId(),
-                "username", admin.getUsername(),
-                "email", Optional.ofNullable(admin.getEmail()).orElse("")
+                "id", savedAdmin.getId(),
+                "username", savedAdmin.getUsername(),
+                "email", Optional.ofNullable(savedAdmin.getEmail()).orElse(""),
+                "role", "ROLE_ADMIN",
+                "pmsAccess", Boolean.TRUE.equals(body.getAdminPmsAccess())
         ));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -118,7 +182,7 @@ public class CompanyManagementController {
         company.setAddressLine2(companyDTO.getAddressLine2());
         company.setPostalCode(companyDTO.getPostalCode());
         company.setCity(companyDTO.getCity());
-        company.setActive(companyDTO.isActive()); // Standard auf true oder vom DTO nehmen
+        company.setActive(companyDTO.getActive() == null || companyDTO.getActive());
         company.setPaid(false); // Standard für neue Firmen
         company.setCanceled(false); // Standard für neue Firmen
 
@@ -131,8 +195,11 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(companyDTO.getTeamsWebhookUrl());
         company.setNotifyVacation(companyDTO.getNotifyVacation());
         company.setNotifyOvertime(companyDTO.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
-        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
+        applyProjectFeatureAliases(
+                company,
+                companyDTO.getCustomerTrackingEnabled(),
+                companyDTO.getEnabledFeatures()
+        );
 
         Company saved = companyRepository.save(company);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -154,8 +221,8 @@ public class CompanyManagementController {
                         existingCompany.setPostalCode(companyDTO.getPostalCode());
                     if (companyDTO.getCity() != null)
                         existingCompany.setCity(companyDTO.getCity());
-                    // Das DTO sollte den aktuellen 'active' Status enthalten, nicht nur für den Toggle
-                    existingCompany.setActive(companyDTO.isActive());
+                    if (companyDTO.getActive() != null)
+                        existingCompany.setActive(companyDTO.getActive());
 
                     if (companyDTO.getCantonAbbreviation() != null) {
                         String canton = companyDTO.getCantonAbbreviation().trim().toUpperCase();
@@ -169,10 +236,11 @@ public class CompanyManagementController {
                         existingCompany.setNotifyVacation(companyDTO.getNotifyVacation());
                     if (companyDTO.getNotifyOvertime() != null)
                         existingCompany.setNotifyOvertime(companyDTO.getNotifyOvertime());
-                    if (companyDTO.getCustomerTrackingEnabled() != null)
-                        existingCompany.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
-                    if (companyDTO.getEnabledFeatures() != null)
-                        existingCompany.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
+                    applyProjectFeatureAliases(
+                            existingCompany,
+                            companyDTO.getCustomerTrackingEnabled(),
+                            companyDTO.getEnabledFeatures()
+                    );
                     // Zahlungsstatus sollte über /payment aktualisiert werden, um die Logik getrennt zu halten
                     // existingCompany.setPaid(companyDTO.isPaid());
                     // existingCompany.setPaymentMethod(companyDTO.getPaymentMethod());
@@ -234,7 +302,7 @@ public class CompanyManagementController {
         private String addressLine2;
         private String postalCode;
         private String city;
-        private boolean active;
+        private Boolean active;
         private int    userCount;
         private boolean paid;
         private String  paymentMethod;
@@ -266,9 +334,9 @@ public class CompanyManagementController {
             dto.teamsWebhookUrl = co.getTeamsWebhookUrl();
             dto.notifyVacation = co.getNotifyVacation();
             dto.notifyOvertime = co.getNotifyOvertime();
-            dto.customerTrackingEnabled = co.getCustomerTrackingEnabled();
+            dto.customerTrackingEnabled = RegistrationFeatures.isProjectsEnabled(co);
             dto.logoPath = co.getLogoPath();
-            dto.enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(co.getEnabledFeatures());
+            dto.enabledFeatures = RegistrationFeatures.effectiveOptionalFeatures(co);
             return dto;
         }
 
@@ -279,7 +347,7 @@ public class CompanyManagementController {
         public String getAddressLine2() { return addressLine2; }
         public String getPostalCode() { return postalCode; }
         public String getCity() { return city; }
-        public boolean isActive() { return active; }
+        public Boolean getActive() { return active; }
         public int getUserCount() { return userCount; }
         public boolean isPaid() { return paid; }
         public String getPaymentMethod() { return paymentMethod; }
@@ -300,7 +368,7 @@ public class CompanyManagementController {
         public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
         public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
         public void setCity(String city) { this.city = city; }
-        public void setActive(boolean active) { this.active = active; }
+        public void setActive(Boolean active) { this.active = active; }
         public void setUserCount(int userCount) { this.userCount = userCount; }
         public void setPaid(boolean paid) { this.paid = paid; }
         public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
@@ -326,6 +394,14 @@ public class CompanyManagementController {
         private String adminFirstName;
         private String adminLastName;
         private String adminEmail;
+        private String adminDepartment;
+        private String adminCountry;
+        private String adminTaxClass;
+        private String adminTarifCode;
+        private String adminCanton;
+        private String adminPersonnelNumber;
+        private Boolean adminIncludeInTimeTracking;
+        private Boolean adminPmsAccess;
         private String addressLine1;
         private String addressLine2;
         private String postalCode;
@@ -351,6 +427,22 @@ public class CompanyManagementController {
         public void setAdminLastName(String adminLastName) { this.adminLastName = adminLastName; }
         public String getAdminEmail() { return adminEmail; }
         public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+        public String getAdminDepartment() { return adminDepartment; }
+        public void setAdminDepartment(String adminDepartment) { this.adminDepartment = adminDepartment; }
+        public String getAdminCountry() { return adminCountry; }
+        public void setAdminCountry(String adminCountry) { this.adminCountry = adminCountry; }
+        public String getAdminTaxClass() { return adminTaxClass; }
+        public void setAdminTaxClass(String adminTaxClass) { this.adminTaxClass = adminTaxClass; }
+        public String getAdminTarifCode() { return adminTarifCode; }
+        public void setAdminTarifCode(String adminTarifCode) { this.adminTarifCode = adminTarifCode; }
+        public String getAdminCanton() { return adminCanton; }
+        public void setAdminCanton(String adminCanton) { this.adminCanton = adminCanton; }
+        public String getAdminPersonnelNumber() { return adminPersonnelNumber; }
+        public void setAdminPersonnelNumber(String adminPersonnelNumber) { this.adminPersonnelNumber = adminPersonnelNumber; }
+        public Boolean getAdminIncludeInTimeTracking() { return adminIncludeInTimeTracking; }
+        public void setAdminIncludeInTimeTracking(Boolean adminIncludeInTimeTracking) { this.adminIncludeInTimeTracking = adminIncludeInTimeTracking; }
+        public Boolean getAdminPmsAccess() { return adminPmsAccess; }
+        public void setAdminPmsAccess(Boolean adminPmsAccess) { this.adminPmsAccess = adminPmsAccess; }
         public String getAddressLine1() { return addressLine1; }
         public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
         public String getAddressLine2() { return addressLine2; }
@@ -377,6 +469,57 @@ public class CompanyManagementController {
                     ? RegistrationFeatures.sanitizeOptionalFeatures(enabledFeatures)
                     : null;
         }
+    }
+
+    private static String normalizeCountry(String rawCountry) {
+        String country = trimToNull(rawCountry);
+        if (country == null) {
+            return null;
+        }
+        country = country.toUpperCase(Locale.ROOT);
+        return Set.of("CH", "DE").contains(country) ? country : null;
+    }
+
+    /**
+     * Keeps the historic customer-tracking flag and the modern projects feature
+     * key in sync. Requests sent by either an older or a newer client remain
+     * authoritative; conflicting explicit values resolve to enabled so an
+     * upgrade cannot silently remove an active company capability.
+     */
+    private static void applyProjectFeatureAliases(Company company,
+                                                   Boolean requestedLegacyValue,
+                                                   Set<String> requestedFeatures) {
+        boolean featureSetProvided = requestedFeatures != null;
+        LinkedHashSet<String> effectiveFeatures = featureSetProvided
+                ? RegistrationFeatures.sanitizeOptionalFeatures(requestedFeatures)
+                : RegistrationFeatures.sanitizeOptionalFeatures(company.getEnabledFeatures());
+
+        boolean projectsEnabled;
+        if (requestedLegacyValue != null && featureSetProvided) {
+            projectsEnabled = requestedLegacyValue || effectiveFeatures.contains("projects");
+        } else if (requestedLegacyValue != null) {
+            projectsEnabled = requestedLegacyValue;
+        } else if (featureSetProvided) {
+            projectsEnabled = effectiveFeatures.contains("projects");
+        } else {
+            projectsEnabled = RegistrationFeatures.isProjectsEnabled(company);
+        }
+
+        if (projectsEnabled) {
+            effectiveFeatures.add("projects");
+        } else {
+            effectiveFeatures.remove("projects");
+        }
+        company.setCustomerTrackingEnabled(projectsEnabled);
+        company.setEnabledFeatures(effectiveFeatures);
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public static class PaymentUpdateDTO {

@@ -1,0 +1,390 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e5]:
+    - generic [ref=f5e6]:
+      - navigation "Hauptnavigation" [ref=f5e7]:
+        - link "Chrono" [ref=f5e9] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=f5e10]
+        - list [ref=f5e11]:
+          - listitem [ref=f5e12]:
+            - link "Arbeitszeit-Rechner" [ref=f5e13] [cursor=pointer]:
+              - /url: /arbeitszeit-rechner
+          - listitem [ref=f5e14]:
+            - button "Was ist neu?" [ref=f5e15] [cursor=pointer]
+          - listitem [ref=f5e20]:
+            - button "Light Mode" [ref=f5e21] [cursor=pointer]
+          - listitem [ref=f5e26]:
+            - button "🌐" [ref=f5e27] [cursor=pointer]
+          - listitem [ref=f5e30]:
+            - button "Vorschau Admin" [ref=f5e31] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e32]: V
+        - button "Plattform" [ref=f5e37] [cursor=pointer]
+      - region "Chrono Arbeitsbereiche" [ref=f5e40]:
+        - generic [ref=f5e41]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e42]:
+            - generic [ref=f5e43]:
+              - tab "Mitarbeiter · Mirjam" [selected] [ref=f5e44] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e45]: Admin
+              - 'button "Tab anheften: Mitarbeiter · Mirjam" [ref=f5e47] [cursor=pointer]'
+              - 'button "Tab schließen: Mitarbeiter · Mirjam" [ref=f5e48] [cursor=pointer]'
+          - generic [ref=f5e49]:
+            - button "Arbeitsbereich öffnen" [ref=f5e50] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e51] [cursor=pointer]
+    - main [ref=f5e52]:
+      - generic [ref=f5e53]:
+        - generic [ref=f5e54]:
+          - heading "Mitarbeiter-Übersicht" [level=1] [ref=f5e55]
+          - paragraph [ref=f5e56]:
+            - strong [ref=f5e57]: Mirjam Burkart
+          - generic "Mitarbeiterdetails" [ref=f5e58]: "Rolle: Prozentual"
+        - generic [ref=f5e60]:
+          - generic [ref=f5e61]: Aktiv
+          - link "Zurück zum Dashboard" [ref=f5e62] [cursor=pointer]:
+            - /url: /admin/dashboard
+      - generic [ref=f5e63]:
+        - generic [ref=f5e64]:
+          - heading "Problemfokus" [level=2] [ref=f5e65]
+          - button "Keine Problemfälle" [disabled] [ref=f5e66] [cursor=pointer]
+        - list "Problemtypen filtern" [ref=f5e67]:
+          - button "Fehlende Zeiten (0)" [disabled] [ref=f5e68]
+          - button "Unvollständig (0)" [disabled] [ref=f5e69]
+          - button "Automatisch beendet (0)" [disabled] [ref=f5e70]
+          - button "Feiertag offen (0)" [disabled] [ref=f5e71]
+      - generic [ref=f5e72]:
+        - article [ref=f5e73]:
+          - heading "Heute" [level=3] [ref=f5e74]
+          - paragraph [ref=f5e75]:
+            - strong [ref=f5e76]: Keine Daten
+          - paragraph [ref=f5e77]: Keine Zeiterfassungen vorhanden.
+        - article [ref=f5e78]:
+          - heading "Woche" [level=3] [ref=f5e79]
+          - paragraph [ref=f5e80]:
+            - text: Soll 32h 00m / Ist
+            - strong [ref=f5e81]: 0h 00m
+          - paragraph [ref=f5e82]:
+            - text: "Überstunden:"
+            - strong [ref=f5e83]: ...
+        - article [ref=f5e84]:
+          - heading "Offen" [level=3] [ref=f5e85]
+          - paragraph [ref=f5e86]:
+            - strong [ref=f5e87]: "0"
+            - text: Anträge
+          - paragraph [ref=f5e88]: "Gesamtüberstunden: 0h 00m"
+      - generic [ref=f5e89]:
+        - generic [ref=f5e90]:
+          - article [ref=f5e91]:
+            - generic [ref=f5e92]:
+              - heading "Zeiterfassung" [level=2] [ref=f5e93]
+              - generic [ref=f5e94]:
+                - button "Woche" [ref=f5e95] [cursor=pointer]
+                - button "Monat" [ref=f5e96] [cursor=pointer]
+            - generic [ref=f5e97]:
+              - button "←" [ref=f5e98] [cursor=pointer]
+              - strong [ref=f5e99]: 14.09.2026 – 20.09.2026
+              - button "→" [ref=f5e100] [cursor=pointer]
+              - button "Diese Woche" [ref=f5e101] [cursor=pointer]
+            - generic [ref=f5e102]:
+              - generic [ref=f5e103]:
+                - text: "Gesamtstunden:"
+                - strong [ref=f5e104]: 0h 00m
+              - generic [ref=f5e105]:
+                - text: "Überstunden/Minus:"
+                - strong [ref=f5e106]: ...
+              - generic [ref=f5e107]:
+                - text: "Fehlzeiten:"
+                - strong [ref=f5e108]: 0 Tage
+              - generic [ref=f5e109]:
+                - text: "Gesamtüberstunden:"
+                - strong [ref=f5e110]: 0h 00m
+            - generic [ref=f5e111]:
+              - heading "Gestempelte Zeiten" [level=3] [ref=f5e113]
+              - generic [ref=f5e114]:
+                - generic [ref=f5e115]:
+                  - generic [ref=f5e116]: Mo
+                  - generic [ref=f5e117]: Di
+                  - generic [ref=f5e118]: Mi
+                  - generic [ref=f5e119]: Do
+                  - generic [ref=f5e120]: Fr
+                  - generic [ref=f5e121]: Sa
+                  - generic [ref=f5e122]: So
+                - generic [ref=f5e123]:
+                  - generic [ref=f5e124]:
+                    - generic [ref=f5e125]:
+                      - strong [ref=f5e126]: 14.09.2026 (Montag)
+                      - button "Korrigieren" [ref=f5e127] [cursor=pointer]
+                    - paragraph [ref=f5e128]: Keine Daten
+                  - generic [ref=f5e129]:
+                    - generic [ref=f5e130]:
+                      - strong [ref=f5e131]: 15.09.2026 (Dienstag)
+                      - button "Korrigieren" [ref=f5e132] [cursor=pointer]
+                    - paragraph [ref=f5e133]: Keine Daten
+                  - generic [ref=f5e134]:
+                    - generic [ref=f5e135]:
+                      - strong [ref=f5e136]: 16.09.2026 (Mittwoch)
+                      - button "Korrigieren" [ref=f5e137] [cursor=pointer]
+                    - paragraph [ref=f5e138]: Keine Daten
+                  - generic [ref=f5e139]:
+                    - generic [ref=f5e140]:
+                      - strong [ref=f5e141]: 17.09.2026 (Donnerstag)
+                      - button "Korrigieren" [ref=f5e142] [cursor=pointer]
+                    - paragraph [ref=f5e143]: Keine Daten
+                  - generic [ref=f5e144]:
+                    - generic [ref=f5e145]:
+                      - strong [ref=f5e146]: 18.09.2026 (Freitag)
+                      - button "Korrigieren" [ref=f5e147] [cursor=pointer]
+                    - paragraph [ref=f5e148]: Keine Daten
+                  - generic [ref=f5e149]:
+                    - generic [ref=f5e150]:
+                      - strong [ref=f5e151]: 19.09.2026 (Samstag)
+                      - button "Korrigieren" [ref=f5e152] [cursor=pointer]
+                    - paragraph [ref=f5e153]: Keine Daten
+                  - generic [ref=f5e154]:
+                    - generic [ref=f5e155]:
+                      - strong [ref=f5e156]: 20.09.2026 (Sonntag)
+                      - button "Korrigieren" [ref=f5e157] [cursor=pointer]
+                    - paragraph [ref=f5e158]: Keine Daten
+          - article [ref=f5e159]:
+            - heading "Korrekturanträge (alle Benutzer)" [level=2] [ref=f5e161]
+            - paragraph [ref=f5e163]: Keine Anträge gefunden.
+        - generic [ref=f5e164]:
+          - article [ref=f5e165]:
+            - heading "Abwesenheits-Zusammenfassung" [level=2] [ref=f5e166]
+            - generic [ref=f5e167]:
+              - paragraph [ref=f5e168]:
+                - generic [ref=f5e169]: Verbleibender Urlaub
+                - strong [ref=f5e170]: 18.8 Tage
+              - paragraph [ref=f5e171]:
+                - generic [ref=f5e172]: Geplant
+                - strong [ref=f5e173]: 0.0 Tage
+              - paragraph [ref=f5e174]:
+                - generic [ref=f5e175]: Urlaubstage dieses Jahr
+                - strong [ref=f5e176]: 18.8 Tage
+              - paragraph [ref=f5e177]:
+                - generic [ref=f5e178]: Nächste Abwesenheit
+                - strong [ref=f5e179]: Keine geplant
+              - paragraph [ref=f5e180]:
+                - generic [ref=f5e181]: Aktueller Status
+                - strong [ref=f5e182]: Aktiv
+              - paragraph [ref=f5e183]:
+                - generic [ref=f5e184]: Diese Woche
+                - strong [ref=f5e185]: 0 Tage abwesend
+              - paragraph [ref=f5e186]:
+                - generic [ref=f5e187]: Pause (Woche)
+                - strong [ref=f5e188]: ...
+          - generic [ref=f5e189]:
+            - article [ref=f5e190]:
+              - heading "Kalender" [level=2] [ref=f5e191]
+              - paragraph [ref=f5e192]: Urlaub/Krank direkt für diesen Mitarbeiter erfassen.
+              - generic [ref=f5e193]:
+                - generic [ref=f5e194]:
+                  - heading "Admin Kalenderübersicht" [level=2] [ref=f5e195]
+                  - generic [ref=f5e196]:
+                    - button "Vorheriger Monat" [ref=f5e197] [cursor=pointer]: ‹
+                    - generic [ref=f5e198]: September 2026
+                    - button "Nächster Monat" [ref=f5e199] [cursor=pointer]: ›
+                - generic [ref=f5e204]:
+                  - generic [ref=f5e205]:
+                    - generic [ref=f5e206]: Mo
+                    - generic [ref=f5e207]: Di
+                    - generic [ref=f5e208]: Mi
+                    - generic [ref=f5e209]: Do
+                    - generic [ref=f5e210]: Fr
+                    - generic [ref=f5e211]: Sa
+                    - generic [ref=f5e212]: So
+                  - generic [ref=f5e213]:
+                    - button "31. August 2026" [ref=f5e214]:
+                      - generic "31. August 2026" [ref=f5e215]: "31"
+                    - button "1. September 2026" [ref=f5e216]:
+                      - generic "1. September 2026" [ref=f5e217]: "1"
+                    - button "2. September 2026" [ref=f5e218]:
+                      - generic "2. September 2026" [ref=f5e219]: "2"
+                    - button "3. September 2026" [ref=f5e220]:
+                      - generic "3. September 2026" [ref=f5e221]: "3"
+                    - button "4. September 2026" [ref=f5e222]:
+                      - generic "4. September 2026" [ref=f5e223]: "4"
+                    - button "5. September 2026" [ref=f5e224]:
+                      - generic "5. September 2026" [ref=f5e225]: "5"
+                    - button "6. September 2026" [ref=f5e226]:
+                      - generic "6. September 2026" [ref=f5e227]: "6"
+                    - button "7. September 2026" [ref=f5e228]:
+                      - generic "7. September 2026" [ref=f5e229]: "7"
+                    - button "8. September 2026" [ref=f5e230]:
+                      - generic "8. September 2026" [ref=f5e231]: "8"
+                    - button "9. September 2026" [ref=f5e232]:
+                      - generic "9. September 2026" [ref=f5e233]: "9"
+                    - button "10. September 2026" [ref=f5e234]:
+                      - generic "10. September 2026" [ref=f5e235]: "10"
+                    - button "11. September 2026" [ref=f5e236]:
+                      - generic "11. September 2026" [ref=f5e237]: "11"
+                    - button "12. September 2026" [ref=f5e238]:
+                      - generic "12. September 2026" [ref=f5e239]: "12"
+                    - button "13. September 2026" [ref=f5e240]:
+                      - generic "13. September 2026" [ref=f5e241]: "13"
+                    - button "14. September 2026" [ref=f5e242]:
+                      - generic "14. September 2026" [ref=f5e243]: "14"
+                    - button "15. September 2026" [ref=f5e244]:
+                      - generic "15. September 2026" [ref=f5e245]: "15"
+                    - button "16. September 2026" [ref=f5e246]:
+                      - generic "16. September 2026" [ref=f5e247]: "16"
+                    - button "17. September 2026" [ref=f5e248]:
+                      - generic "17. September 2026" [ref=f5e249]: "17"
+                    - button "18. September 2026" [ref=f5e250]:
+                      - generic "18. September 2026" [ref=f5e251]: "18"
+                    - button "19. September 2026" [ref=f5e252]:
+                      - generic "19. September 2026" [ref=f5e253]: "19"
+                    - button "20. September 2026" [ref=f5e254]:
+                      - generic "20. September 2026" [ref=f5e255]: "20"
+                    - button "21. September 2026" [ref=f5e256]:
+                      - generic "21. September 2026" [ref=f5e257]: "21"
+                    - button "22. September 2026" [ref=f5e258]:
+                      - generic "22. September 2026" [ref=f5e259]: "22"
+                    - button "23. September 2026" [ref=f5e260]:
+                      - generic "23. September 2026" [ref=f5e261]: "23"
+                    - button "24. September 2026" [ref=f5e262]:
+                      - generic "24. September 2026" [ref=f5e263]: "24"
+                    - button "25. September 2026" [ref=f5e264]:
+                      - generic "25. September 2026" [ref=f5e265]: "25"
+                    - button "26. September 2026" [ref=f5e266]:
+                      - generic "26. September 2026" [ref=f5e267]: "26"
+                    - button "27. September 2026" [ref=f5e268]:
+                      - generic "27. September 2026" [ref=f5e269]: "27"
+                    - button "28. September 2026" [ref=f5e270]:
+                      - generic "28. September 2026" [ref=f5e271]: "28"
+                    - button "29. September 2026" [ref=f5e272]:
+                      - generic "29. September 2026" [ref=f5e273]: "29"
+                    - button "30. September 2026" [ref=f5e274]:
+                      - generic "30. September 2026" [ref=f5e275]: "30"
+                    - button "1. Oktober 2026" [ref=f5e276]:
+                      - generic "1. Oktober 2026" [ref=f5e277]: "1"
+                    - button "2. Oktober 2026" [ref=f5e278]:
+                      - generic "2. Oktober 2026" [ref=f5e279]: "2"
+                    - button "3. Oktober 2026" [ref=f5e280]:
+                      - generic "3. Oktober 2026" [ref=f5e281]: "3"
+                    - button "4. Oktober 2026" [ref=f5e282]:
+                      - generic "4. Oktober 2026" [ref=f5e283]: "4"
+                - generic [ref=f5e284]:
+                  - button "Urlaub erstellen" [ref=f5e285] [cursor=pointer]
+                  - button "Krankheit melden" [ref=f5e286] [cursor=pointer]
+                - dialog [ref=f5e293]:
+                  - heading "Urlaub" [level=3] [ref=f5e294]
+                  - paragraph [ref=f5e295]: Zeitraum im Kalender wählen. Für Urlaub in weiteren Monaten zusätzliche Zeiträume vormerken und gemeinsam speichern.
+                  - group [ref=f5e297]:
+                    - generic [ref=f5e298]:
+                      - generic [ref=f5e299]: "Benutzer Auswahl:"
+                      - combobox "Benutzer Auswahl:" [disabled] [ref=f5e300]:
+                        - option "Bitte Benutzer auswählen"
+                        - option "Mirjam Burkart" [selected]
+                    - generic [ref=f5e301]:
+                      - generic [ref=f5e302]:
+                        - button "‹" [ref=f5e303] [cursor=pointer]
+                        - button "September 2026" [ref=f5e304] [cursor=pointer]
+                        - button "›" [ref=f5e305] [cursor=pointer]
+                      - generic [ref=f5e309]:
+                        - generic [ref=f5e310]:
+                          - generic [ref=f5e311]: Mo
+                          - generic [ref=f5e312]: Di
+                          - generic [ref=f5e313]: Mi
+                          - generic [ref=f5e314]: Do
+                          - generic [ref=f5e315]: Fr
+                          - generic [ref=f5e316]: Sa
+                          - generic [ref=f5e317]: So
+                        - generic [ref=f5e318]:
+                          - button "31. August 2026" [ref=f5e319]:
+                            - generic "31. August 2026" [ref=f5e320]: "31"
+                          - button "1. September 2026" [ref=f5e321]:
+                            - generic "1. September 2026" [ref=f5e322]: "1"
+                          - button "2. September 2026" [ref=f5e323]:
+                            - generic "2. September 2026" [ref=f5e324]: "2"
+                          - button "3. September 2026" [ref=f5e325]:
+                            - generic "3. September 2026" [ref=f5e326]: "3"
+                          - button "4. September 2026" [ref=f5e327]:
+                            - generic "4. September 2026" [ref=f5e328]: "4"
+                          - button "5. September 2026" [ref=f5e329]:
+                            - generic "5. September 2026" [ref=f5e330]: "5"
+                          - button "6. September 2026" [ref=f5e331]:
+                            - generic "6. September 2026" [ref=f5e332]: "6"
+                          - button "7. September 2026" [ref=f5e333]:
+                            - generic "7. September 2026" [ref=f5e334]: "7"
+                          - button "8. September 2026" [ref=f5e335]:
+                            - generic "8. September 2026" [ref=f5e336]: "8"
+                          - button "9. September 2026" [ref=f5e337]:
+                            - generic "9. September 2026" [ref=f5e338]: "9"
+                          - button "10. September 2026" [ref=f5e339]:
+                            - generic "10. September 2026" [ref=f5e340]: "10"
+                          - button "11. September 2026" [ref=f5e341]:
+                            - generic "11. September 2026" [ref=f5e342]: "11"
+                          - button "12. September 2026" [ref=f5e343]:
+                            - generic "12. September 2026" [ref=f5e344]: "12"
+                          - button "13. September 2026" [ref=f5e345]:
+                            - generic "13. September 2026" [ref=f5e346]: "13"
+                          - button "14. September 2026" [ref=f5e347]:
+                            - generic "14. September 2026" [ref=f5e348]: "14"
+                          - button "15. September 2026" [ref=f5e349]:
+                            - generic "15. September 2026" [ref=f5e350]: "15"
+                          - button "16. September 2026" [ref=f5e351]:
+                            - generic "16. September 2026" [ref=f5e352]: "16"
+                          - button "17. September 2026" [ref=f5e353]:
+                            - generic "17. September 2026" [ref=f5e354]: "17"
+                          - button "18. September 2026" [ref=f5e355]:
+                            - generic "18. September 2026" [ref=f5e356]: "18"
+                          - button "19. September 2026" [ref=f5e357]:
+                            - generic "19. September 2026" [ref=f5e358]: "19"
+                          - button "20. September 2026" [ref=f5e359]:
+                            - generic "20. September 2026" [ref=f5e360]: "20"
+                          - button "21. September 2026" [ref=f5e361]:
+                            - generic "21. September 2026" [ref=f5e362]: "21"
+                          - button "22. September 2026" [ref=f5e363]:
+                            - generic "22. September 2026" [ref=f5e364]: "22"
+                          - button "23. September 2026" [ref=f5e365]:
+                            - generic "23. September 2026" [ref=f5e366]: "23"
+                          - button "24. September 2026" [ref=f5e367]:
+                            - generic "24. September 2026" [ref=f5e368]: "24"
+                          - button "25. September 2026" [ref=f5e369]:
+                            - generic "25. September 2026" [ref=f5e370]: "25"
+                          - button "26. September 2026" [ref=f5e371]:
+                            - generic "26. September 2026" [ref=f5e372]: "26"
+                          - button "27. September 2026" [ref=f5e373]:
+                            - generic "27. September 2026" [ref=f5e374]: "27"
+                          - button "28. September 2026" [ref=f5e375]:
+                            - generic "28. September 2026" [ref=f5e376]: "28"
+                          - button "29. September 2026" [ref=f5e377]:
+                            - generic "29. September 2026" [ref=f5e378]: "29"
+                          - button "30. September 2026" [ref=f5e379]:
+                            - generic "30. September 2026" [ref=f5e380]: "30"
+                          - button "1. Oktober 2026" [ref=f5e381]:
+                            - generic "1. Oktober 2026" [ref=f5e382]: "1"
+                          - button "2. Oktober 2026" [ref=f5e383]:
+                            - generic "2. Oktober 2026" [ref=f5e384]: "2"
+                          - button "3. Oktober 2026" [ref=f5e385]:
+                            - generic "3. Oktober 2026" [ref=f5e386]: "3"
+                          - button "4. Oktober 2026" [ref=f5e387]:
+                            - generic "4. Oktober 2026" [ref=f5e388]: "4"
+                    - paragraph [ref=f5e389]:
+                      - generic [ref=f5e390]: Bereits eingetragen
+                      - generic [ref=f5e391]: Vorgemerkt
+                    - generic [ref=f5e392]:
+                      - generic [ref=f5e393]:
+                        - generic [ref=f5e394]: "Startdatum:"
+                        - textbox "Startdatum:" [ref=f5e395]: 2026-09-21
+                      - generic [ref=f5e396]:
+                        - generic [ref=f5e397]: "Enddatum:"
+                        - textbox "Enddatum:" [active] [ref=f5e398]: 2026-09-25
+                    - generic [ref=f5e399]:
+                      - checkbox "Halbtags Urlaub" [ref=f5e400]
+                      - generic [ref=f5e401] [cursor=pointer]: Halbtags Urlaub
+                    - generic [ref=f5e402]:
+                      - checkbox "Überstunden nutzen" [ref=f5e403]
+                      - generic [ref=f5e404] [cursor=pointer]: Überstunden nutzen
+                    - button "+ Weiteren Zeitraum vormerken" [ref=f5e406] [cursor=pointer]
+                    - generic [ref=f5e407]:
+                      - button "Bestätigen" [ref=f5e408] [cursor=pointer]
+                      - button "Schließen" [ref=f5e409] [cursor=pointer]
+            - article [ref=f5e287]:
+              - heading "Urlaubsanträge (alle Benutzer)" [level=2] [ref=f5e289]
+              - paragraph [ref=f5e291]: Keine Anträge gefunden.
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

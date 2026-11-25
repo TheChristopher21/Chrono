@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-09-12T12:29:10.568Z",
+  "base": "http://127.0.0.1:18086",
+  "propertyId": 1,
+  "ready": true,
+  "changed": true,
+  "contentType": "text/event-stream",
+  "taskId": 3,
+  "roomId": 50,
+  "changeObservedMs": 128,
+  "payloadContainsBusinessData": false
+}

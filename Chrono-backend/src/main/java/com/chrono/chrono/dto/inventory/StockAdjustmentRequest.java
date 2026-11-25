@@ -1,19 +1,32 @@
 package com.chrono.chrono.dto.inventory;
 
 import com.chrono.chrono.entities.inventory.StockMovementType;
+import com.chrono.chrono.entities.inventory.InventoryStatus;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class StockAdjustmentRequest {
-    private Long productId;
-    private Long warehouseId;
-    private BigDecimal quantityChange;
-    private StockMovementType type;
+    @NotNull private Long productId;
+    @NotNull private Long warehouseId;
+    private Long warehouseBinId;
+    @NotNull @Digits(integer = 15, fraction = 4) private BigDecimal quantityChange;
+    @NotNull private StockMovementType type;
+    @Size(max = 128)
     private String reference;
+    @Size(max = 512)
+    private String notes;
+    @Size(max = 64)
     private String lotNumber;
+    @Size(max = 64)
     private String serialNumber;
     private LocalDate expirationDate;
+    private InventoryStatus inventoryStatus = InventoryStatus.AVAILABLE;
+    @Size(max = 160)
+    private String idempotencyKey;
 
     public Long getProductId() {
         return productId;
@@ -30,6 +43,10 @@ public class StockAdjustmentRequest {
     public void setWarehouseId(Long warehouseId) {
         this.warehouseId = warehouseId;
     }
+
+    public Long getWarehouseBinId() { return warehouseBinId; }
+
+    public void setWarehouseBinId(Long warehouseBinId) { this.warehouseBinId = warehouseBinId; }
 
     public BigDecimal getQuantityChange() {
         return quantityChange;
@@ -55,6 +72,10 @@ public class StockAdjustmentRequest {
         this.reference = reference;
     }
 
+    public String getNotes() { return notes; }
+
+    public void setNotes(String notes) { this.notes = notes; }
+
     public String getLotNumber() {
         return lotNumber;
     }
@@ -78,4 +99,12 @@ public class StockAdjustmentRequest {
     public void setExpirationDate(LocalDate expirationDate) {
         this.expirationDate = expirationDate;
     }
+
+    public InventoryStatus getInventoryStatus() { return inventoryStatus; }
+
+    public void setInventoryStatus(InventoryStatus inventoryStatus) { this.inventoryStatus = inventoryStatus; }
+
+    public String getIdempotencyKey() { return idempotencyKey; }
+
+    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
 }

@@ -1,0 +1,173 @@
+- generic [ref=f20e2]:
+  - generic [ref=f20e47]:
+    - generic [ref=f20e48]:
+      - navigation "Hauptnavigation" [ref=f20e49]:
+        - link "Chrono" [ref=f20e51] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=f20e52]
+        - list [ref=f20e53]:
+          - listitem [ref=f20e54]:
+            - link "Arbeitszeit-Rechner" [ref=f20e55] [cursor=pointer]:
+              - /url: /arbeitszeit-rechner
+          - listitem [ref=f20e56]:
+            - button "Was ist neu?" [ref=f20e57] [cursor=pointer]
+          - listitem [ref=f20e61]:
+            - button "Light Mode" [ref=f20e62] [cursor=pointer]
+          - listitem [ref=f20e67]:
+            - button "🌐" [ref=f20e68] [cursor=pointer]
+          - listitem [ref=f20e71]:
+            - button "Default Admin" [ref=f20e72] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f20e73]: D
+        - button "Plattform" [ref=f20e78] [cursor=pointer]
+      - region "Chrono Arbeitsbereiche" [ref=f20e81]:
+        - generic [ref=f20e82]:
+          - tablist "Offene Arbeitsbereiche" [ref=f20e83]:
+            - generic [ref=f20e84]:
+              - tab "Mein Dashboard" [ref=f20e85] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f20e86]: Zeit
+              - 'button "Tab anheften: Mein Dashboard" [ref=f20e88] [cursor=pointer]'
+              - 'button "Tab schließen: Mein Dashboard" [ref=f20e89] [cursor=pointer]'
+            - generic [ref=f20e90]:
+              - tab "Admin-Start" [selected] [ref=f20e91] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f20e92]: Admin
+              - 'button "Tab anheften: Admin-Start" [ref=f20e94] [cursor=pointer]'
+              - 'button "Tab schließen: Admin-Start" [ref=f20e95] [cursor=pointer]'
+          - generic [ref=f20e96]:
+            - button "Arbeitsbereich öffnen" [ref=f20e97] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f20e98] [cursor=pointer]
+    - generic [ref=f20e99]:
+      - banner [ref=f20e100]:
+        - generic [ref=f20e101]:
+          - generic [ref=f20e102]: Arbeitszentrale
+          - heading "Admin-Dashboard" [level=2] [ref=f20e103]
+          - paragraph [ref=f20e104]: "Heute: 12.09.2026 (Samstag) - Aktuelle Woche: 07.09.2026 - 13.09.2026 - Alle Teams"
+          - paragraph [ref=f20e105]: Eingeloggt als Default Admin
+        - generic "Dashboard-Aktionen" [ref=f20e106]:
+          - button "Einstempeln" [ref=f20e107] [cursor=pointer]
+          - generic [ref=f20e108]: "Team: Alle"
+          - generic [ref=f20e109]: "Zeitraum: Diese Woche"
+          - button "Nur Problemfälle" [ref=f20e110] [cursor=pointer]
+          - button "Zeiten drucken" [ref=f20e111] [cursor=pointer]
+          - button "Befehle (Strg+K)" [ref=f20e112] [cursor=pointer]
+      - navigation "Admin-Dashboard Bereiche" [ref=f20e113]:
+        - button "Übersicht" [ref=f20e114]
+        - button "Zeitprüfung" [ref=f20e115]
+        - button "Anträge" [ref=f20e116]
+        - button "Kalender" [ref=f20e117]
+        - button "Module" [ref=f20e118]
+      - main [ref=f20e119]:
+        - generic [ref=f20e121]:
+          - generic [ref=f20e122]:
+            - button "Dashboard anpassen" [ref=f20e123] [cursor=pointer]
+            - status [ref=f20e124]: Mit dem Benutzerkonto synchronisiert
+          - generic [ref=f20e125]:
+            - region "Begrüßung & Zeitraum" [ref=f20e126]:
+              - region "Admin Übersicht" [ref=f20e129]:
+                - generic [ref=f20e130]:
+                  - generic [ref=f20e131]: Übersicht
+                  - heading "Guten Morgen, Default Admin" [level=3] [ref=f20e132]
+                  - paragraph [ref=f20e133]:
+                    - text: Diese Woche gibt es
+                    - strong [ref=f20e134]: "0"
+                    - text: offene Anträge und
+                    - strong [ref=f20e135]: "1"
+                    - text: Zeitprobleme.
+                - generic "Zeitraum" [ref=f20e136]:
+                  - generic [ref=f20e137]: Heute
+                  - strong [ref=f20e138]: 12.09.2026
+                  - generic [ref=f20e139]: 12.09.2026 - 19.09.2026
+            - region "Action Center" [ref=f20e140]:
+              - region "Action Center" [ref=f20e143]:
+                - generic [ref=f20e144]:
+                  - generic [ref=f20e145]:
+                    - generic [ref=f20e146]: Action Center
+                    - heading "Was jetzt wichtig ist" [level=3] [ref=f20e147]
+                  - button "Zeitprüfung öffnen" [ref=f20e148] [cursor=pointer]
+                - generic [ref=f20e149]:
+                  - article [ref=f20e150]:
+                    - generic [ref=f20e151]: Offene Aufgaben
+                    - strong [ref=f20e152]: "0"
+                    - heading "Anträge prüfen" [level=4] [ref=f20e153]
+                    - paragraph [ref=f20e154]: 0 Urlaub - 0 Korrekturen
+                    - button "Jetzt prüfen" [ref=f20e155] [cursor=pointer]
+                  - article [ref=f20e156]:
+                    - generic [ref=f20e157]: Zeitprobleme
+                    - strong [ref=f20e158]: "1"
+                    - heading "Problemfälle" [level=4] [ref=f20e159]
+                    - paragraph [ref=f20e160]: 1 fehlend - 0 unvollständig
+                    - button "Problemfälle öffnen" [ref=f20e161] [cursor=pointer]
+                  - article [ref=f20e162]:
+                    - generic [ref=f20e163]: Team-Saldo
+                    - strong [ref=f20e164]: 0h 00m
+                    - heading "Durchschnitt" [level=4] [ref=f20e165]
+                    - paragraph [ref=f20e166]: 0 negative Salden
+                    - button "Analyse öffnen" [ref=f20e167] [cursor=pointer]
+                  - article [ref=f20e168]:
+                    - generic [ref=f20e169]: Top-Saldo
+                    - strong [ref=f20e170]: 0h 00m
+                    - heading "Default Admin" [level=4] [ref=f20e171]
+                    - paragraph [ref=f20e172]: Höchster aktueller Saldo
+                    - button "Topliste anzeigen" [ref=f20e173] [cursor=pointer]
+            - region "Kritische Mitarbeitende" [ref=f20e174]:
+              - generic [ref=f20e177]:
+                - generic [ref=f20e178]:
+                  - generic [ref=f20e179]:
+                    - generic [ref=f20e180]: Zeitprüfung
+                    - heading "Kritische Mitarbeitende" [level=3] [ref=f20e181]
+                  - button "Alle Problemfälle" [ref=f20e182] [cursor=pointer]
+                - button "Default Admin 0h 00m OK" [ref=f20e184] [cursor=pointer]:
+                  - generic [ref=f20e185]: Default Admin
+                  - generic [ref=f20e186]: 0h 00m
+                  - generic [ref=f20e187]: OK
+            - region "Abwesenheiten im Team" [ref=f20e188]:
+              - generic [ref=f20e191]:
+                - generic [ref=f20e192]:
+                  - generic [ref=f20e193]:
+                    - generic [ref=f20e194]: Heute und 7 Tage
+                    - heading "Abwesenheiten im Team" [level=3] [ref=f20e195]
+                  - button "Kalender öffnen" [ref=f20e196] [cursor=pointer]
+                - paragraph [ref=f20e198]: Keine Abwesenheiten in den nächsten 7 Tagen.
+            - region "Offene Anträge" [ref=f20e199]:
+              - generic [ref=f20e202]:
+                - generic [ref=f20e203]:
+                  - generic [ref=f20e204]:
+                    - generic [ref=f20e205]: Antragscenter
+                    - heading "Offene Anträge" [level=3] [ref=f20e206]
+                  - generic [ref=f20e207]:
+                    - button "Korrekturen" [ref=f20e208] [cursor=pointer]
+                    - button "Urlaub" [ref=f20e209] [cursor=pointer]
+                - paragraph [ref=f20e211]: Keine offenen Anträge.
+            - region "Admin-Module" [ref=f20e212]:
+              - generic [ref=f20e215]:
+                - generic [ref=f20e216]:
+                  - generic [ref=f20e217]:
+                    - generic [ref=f20e218]: Schnellzugriff
+                    - heading "Admin-Module" [level=3] [ref=f20e219]
+                  - button "Alle Module" [ref=f20e220] [cursor=pointer]
+                - generic [ref=f20e221]:
+                  - link "Team Benutzerverwaltung" [ref=f20e222] [cursor=pointer]:
+                    - /url: /admin/users
+                    - generic [ref=f20e223]: Team
+                    - strong [ref=f20e224]: Benutzerverwaltung
+                  - link "Import Zeiten importieren" [ref=f20e225] [cursor=pointer]:
+                    - /url: /admin/import-times
+                    - generic [ref=f20e226]: Import
+                    - strong [ref=f20e227]: Zeiten importieren
+                  - link "Setup Firmeneinstellungen" [ref=f20e228] [cursor=pointer]:
+                    - /url: /admin/company-settings
+                    - generic [ref=f20e229]: Setup
+                    - strong [ref=f20e230]: Firmeneinstellungen
+                  - link "PW Admin-Passwort" [ref=f20e231] [cursor=pointer]:
+                    - /url: /admin/change-password
+                    - generic [ref=f20e232]: PW
+                    - strong [ref=f20e233]: Admin-Passwort
+                  - link "Wissen Firmenwissen" [ref=f20e234] [cursor=pointer]:
+                    - /url: /admin/knowledge
+                    - generic [ref=f20e235]: Wissen
+                    - strong [ref=f20e236]: Firmenwissen
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

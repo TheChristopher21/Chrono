@@ -1,0 +1,51 @@
+- generic [ref=f20e2]:
+  - generic [ref=f20e4]:
+    - navigation "Hauptnavigation" [ref=f20e6]:
+      - link "Chrono" [ref=f20e8] [cursor=pointer]:
+        - /url: /
+        - img "Chrono" [ref=f20e9]
+      - list [ref=f20e10]:
+        - listitem [ref=f20e11]:
+          - link "Plattform" [ref=f20e12] [cursor=pointer]:
+            - /url: /#platform
+        - listitem [ref=f20e13]:
+          - link "Lösungen" [ref=f20e14] [cursor=pointer]:
+            - /url: /#features
+        - listitem [ref=f20e15]:
+          - link "Preise" [ref=f20e16] [cursor=pointer]:
+            - /url: /#preise
+        - listitem [ref=f20e17]:
+          - link "Arbeitszeit-Rechner" [ref=f20e18] [cursor=pointer]:
+            - /url: /arbeitszeit-rechner
+        - listitem [ref=f20e19]:
+          - link "Login" [ref=f20e20] [cursor=pointer]:
+            - /url: /login
+        - listitem [ref=f20e21]:
+          - link "Demo anfragen" [ref=f20e22] [cursor=pointer]:
+            - /url: /register
+        - listitem [ref=f20e23]:
+          - button "Light Mode" [ref=f20e24] [cursor=pointer]
+        - listitem [ref=f20e29]:
+          - button "🌐" [ref=f20e30] [cursor=pointer]
+    - main [ref=f20e33]:
+      - generic [ref=f20e34]:
+        - link [ref=f20e35] [cursor=pointer]:
+          - /url: /
+          - img "Chrono" [ref=f20e36]
+        - generic [ref=f20e37]:
+          - heading "Willkommen zurück!" [level=1] [ref=f20e38]
+          - paragraph [ref=f20e39]: Melde dich an, um fortzufahren.
+        - generic [ref=f20e40]:
+          - generic [ref=f20e41]: Benutzername
+          - textbox "Benutzername" [ref=f20e42]:
+            - /placeholder: z. B. max.meier
+          - generic [ref=f20e43]: Passwort
+          - textbox "Passwort" [ref=f20e44]:
+            - /placeholder: "********"
+          - button "Login" [ref=f20e45] [cursor=pointer]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

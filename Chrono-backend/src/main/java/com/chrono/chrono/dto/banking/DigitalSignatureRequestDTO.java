@@ -11,6 +11,7 @@ public class DigitalSignatureRequestDTO {
     private final String documentPath;
     private final String signerEmail;
     private final SignatureStatus status;
+    private final LocalDateTime requestedAt;
     private final String providerReference;
     private final LocalDateTime completedAt;
     private final String signingUrl;
@@ -18,13 +19,15 @@ public class DigitalSignatureRequestDTO {
     private final LocalDateTime lastStatusCheck;
 
     public DigitalSignatureRequestDTO(Long id, String documentType, String documentPath, String signerEmail,
-                                      SignatureStatus status, String providerReference, LocalDateTime completedAt,
-                                      String signingUrl, String providerStatusMessage, LocalDateTime lastStatusCheck) {
+                                      SignatureStatus status, LocalDateTime requestedAt, String providerReference,
+                                      LocalDateTime completedAt, String signingUrl, String providerStatusMessage,
+                                      LocalDateTime lastStatusCheck) {
         this.id = id;
         this.documentType = documentType;
         this.documentPath = documentPath;
         this.signerEmail = signerEmail;
         this.status = status;
+        this.requestedAt = requestedAt;
         this.providerReference = providerReference;
         this.completedAt = completedAt;
         this.signingUrl = signingUrl;
@@ -39,6 +42,7 @@ public class DigitalSignatureRequestDTO {
                 request.getDocumentPath(),
                 request.getSignerEmail(),
                 request.getStatus(),
+                request.getRequestedAt(),
                 request.getProviderReference(),
                 request.getCompletedAt(),
                 request.getSigningUrl(),
@@ -64,6 +68,10 @@ public class DigitalSignatureRequestDTO {
 
     public SignatureStatus getStatus() {
         return status;
+    }
+
+    public LocalDateTime getRequestedAt() {
+        return requestedAt;
     }
 
     public String getProviderReference() {

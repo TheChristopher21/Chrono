@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.entities.SickLeave;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
@@ -67,8 +68,8 @@ public class SickLeaveController {
             User targetUser = userService.getUserByUsername(username);
 
             if (!admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-                if (admin.getCompany() == null || targetUser.getCompany() == null ||
-                        !admin.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                if (CompanyScope.companyFor(admin) == null || targetUser.getCompany() == null ||
+                        !CompanyScope.companyFor(admin).getId().equals(targetUser.getCompany().getId())) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)
                             .body(Map.of("message", "Admin hat keine Berechtigung für diesen Benutzer."));
                 }
@@ -88,7 +89,7 @@ public class SickLeaveController {
         User admin = userService.getUserByUsername(principal.getName());
         List<SickLeave> sickLeaves;
 
-        if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+        if (CompanyScope.isUnrestrictedSuperAdmin(admin)) {
             if (companyId != null) {
                 // SuperAdmin hat eine companyId im Request, also für diese Firma filtern
                 sickLeaves = sickLeaveService.getAllSickLeavesInCompany(companyId, admin);
@@ -97,12 +98,12 @@ public class SickLeaveController {
                 sickLeaves = sickLeaveService.getAllSickLeavesForSuperAdmin();
             }
         } else { // Regulärer Admin
-            if (admin.getCompany() == null) {
+            if (CompanyScope.companyFor(admin) == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN) // Admin ohne Firma
                         .body(List.of());
             }
             // Regulärer Admin sieht nur die seiner Firma, companyId Parameter wird ignoriert
-            sickLeaves = sickLeaveService.getAllSickLeavesInCompany(admin.getCompany().getId(), admin);
+            sickLeaves = sickLeaveService.getAllSickLeavesInCompany(CompanyScope.companyFor(admin).getId(), admin);
         }
         return ResponseEntity.ok(sickLeaves);
     }

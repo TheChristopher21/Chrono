@@ -1,0 +1,15 @@
+.payroll-configuration { margin: 1.5rem 0; }
+.payroll-configuration > p { max-width: 85ch; line-height: 1.5; }
+.payroll-configuration-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1.5rem; }
+.payroll-configuration fieldset { min-width: 0; display: flex; flex-direction: column; gap: .55rem; padding: 1rem; border: 1px solid var(--c-border, #b8c4cf); border-radius: 8px; }
+.payroll-configuration legend { font-weight: 600; padding: 0 .4rem; }
+.payroll-configuration input, .payroll-configuration select { box-sizing: border-box; width: 100%; padding: .65rem; font: inherit; background: var(--c-card, white); color: var(--c-text, #1e1f22); border: 1px solid var(--c-border, #b8c4cf); border-radius: 6px; }
+.payroll-configuration button { margin-top: .75rem; }
+.payroll-configuration-history { overflow-x: auto; }
+.payroll-configuration table { width: 100%; border-collapse: collapse; text-align: left; }
+.payroll-configuration th, .payroll-configuration td { padding: .75rem; border-bottom: 1px solid var(--c-border, #b8c4cf); vertical-align: top; }
+.payroll-configuration [role="alert"] { color: var(--c-error, #a32424); }
+.payroll-configuration .payroll-terms-confirm { display: flex; gap: .7rem; align-items: flex-start; line-height: 1.5; }
+.payroll-configuration input[type="checkbox"] { width: 1.1rem; flex-shrink: 0; margin-top: .25rem; }
+.payroll-configuration form[aria-label="Lohn- und Steuerregeln"] { max-width: 800px; }
+.payroll-configuration form[aria-label="Lohn- und Steuerregeln"] label { display: block; margin-bottom: .35rem; }

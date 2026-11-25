@@ -1,0 +1,98 @@
+/* Local browser preview only. Append after the inherited concept styles. */
+#chrono-browser-design .cp-vacation { margin: 0; }
+#chrono-browser-design .cp-vac-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+#chrono-browser-design .cp-vac-selection,
+#chrono-browser-design .cp-vac-plan { min-width: 0; }
+#chrono-browser-design .cp-vac-monthbar {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+#chrono-browser-design .cp-vac-monthbar h3 { text-align: center; font-size: 15px; }
+#chrono-browser-design .cp-vac-calendar { overflow: hidden; border-radius: 8px; }
+#chrono-browser-design .cp-vac-calendar .cp-cal-heading { padding: 7px 2px; }
+#chrono-browser-design .cp-vac-calendar .cp-cal-day {
+  min-height: 43px;
+  padding: 5px 3px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+#chrono-browser-design .cp-vac-calendar .cp-cal-day.cp-range {
+  background: var(--cp-soft);
+  color: var(--cp-accent);
+  font-weight: 600;
+}
+#chrono-browser-design .cp-vac-calendar .cp-cal-day:focus-visible {
+  position: relative;
+  outline: 2px solid var(--cp-accent);
+  outline-offset: -3px;
+}
+#chrono-browser-design .cp-vac-calendar .cp-event { max-width: 17px; margin: 3px auto 0; }
+#chrono-browser-design .cp-vac-legend { display: flex; gap: 13px; flex-wrap: wrap; margin-top: 9px; }
+#chrono-browser-design .cp-vac-legend > span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-legend .cp-vac-key { display: inline-block; width: 11px; height: 8px; border-radius: 2px; }
+#chrono-browser-design .cp-vac-key-selection { background: var(--cp-soft); border: 1px solid var(--cp-accent); }
+#chrono-browser-design .cp-vac-key-planned { border-bottom: 3px solid var(--cp-warn); }
+#chrono-browser-design .cp-vac-key-saved { height: 3px !important; background: var(--cp-accent); }
+#chrono-browser-design .cp-vac-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 17px; }
+#chrono-browser-design .cp-vac-dates input { width: 100%; font-variant-numeric: tabular-nums; }
+#chrono-browser-design .cp-vac-options { display: flex; gap: 13px 19px; flex-wrap: wrap; margin-top: 14px; }
+#chrono-browser-design .cp-vac-options input { margin: 0; }
+#chrono-browser-design .cp-vac-hours { margin-top: 13px; }
+#chrono-browser-design .cp-vac-hours > span { display: flex; align-items: center; gap: 8px; color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-hours input { width: 105px; color: var(--cp-ink); }
+#chrono-browser-design .cp-vac-add { margin-top: 16px; }
+#chrono-browser-design .cp-vac-add button { width: 100%; color: var(--cp-accent); }
+#chrono-browser-design .cp-vac-plan { border: 1px solid var(--cp-line); background: var(--cp-bg); border-radius: 10px; padding: 17px; display: flex; flex-direction: column; }
+#chrono-browser-design .cp-vac-person h3 { font-size: 12px; color: var(--cp-muted); margin-bottom: 8px; }
+#chrono-browser-design .cp-vac-person-select select { width: 100%; }
+#chrono-browser-design .cp-vac-person-value { display: grid; gap: 3px; }
+#chrono-browser-design .cp-vac-person-value strong { font-size: 16px; line-height: 1.35; }
+#chrono-browser-design .cp-vac-person-value > span { color: var(--cp-muted); font-size: 12px; }
+#chrono-browser-design .cp-vac-company { margin-top: 12px; align-items: flex-start; font-size: 11px; }
+#chrono-browser-design .cp-vac-company input { flex: none; margin-top: 3px; }
+#chrono-browser-design .cp-vac-periods { margin-top: 19px; border-top: 1px solid var(--cp-line); padding-top: 15px; }
+#chrono-browser-design .cp-vac-periods-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+#chrono-browser-design .cp-vac-periods-head h3 { font-size: 13px; }
+#chrono-browser-design .cp-vac-period-list { list-style: none; margin: 0; padding: 0; }
+#chrono-browser-design .cp-vac-period { display: flex; align-items: flex-start; gap: 7px; padding: 10px 0; border-top: 1px solid var(--cp-line); }
+#chrono-browser-design .cp-vac-period:first-child { border-top: 0; padding-top: 0; }
+#chrono-browser-design .cp-vac-period > div { flex: 1; min-width: 0; display: grid; gap: 3px; }
+#chrono-browser-design .cp-vac-period strong { font-size: 12px; line-height: 1.45; font-variant-numeric: tabular-nums; }
+#chrono-browser-design .cp-vac-period > div > span { font-size: 11px; color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-period button { flex: none; min-width: 27px; padding: 3px; background: transparent; }
+#chrono-browser-design .cp-vac-current { padding: 12px; border: 1px dashed var(--cp-line); border-radius: 7px; display: grid; gap: 4px; margin-top: 4px; }
+#chrono-browser-design .cp-vac-current-active { background: var(--cp-paper); border-style: solid; border-left: 3px solid var(--cp-accent); }
+#chrono-browser-design .cp-vac-current-label { font-size: 10px; color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-current strong { font-size: 12px; line-height: 1.5; }
+#chrono-browser-design .cp-vac-current > span:last-child:not(:first-child) { font-size: 11px; color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-save { padding-top: 18px; margin-top: auto; }
+#chrono-browser-design .cp-vac-save > button { width: 100%; min-height: 39px; }
+#chrono-browser-design .cp-vac-secondary { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+#chrono-browser-design .cp-vac-secondary button { background: transparent; border-color: transparent; font-size: 11px; padding: 5px; }
+#chrono-browser-design .cp-vac-status { grid-column: 1 / -1; border-top: 1px solid var(--cp-line); padding-top: 14px; font-size: 12px; line-height: 1.6; }
+#chrono-browser-design .cp-vac-hint { color: var(--cp-muted); }
+#chrono-browser-design .cp-vac-validation { color: var(--cp-bad); padding: 10px 12px; background: var(--cp-bg); border-left: 3px solid var(--cp-bad); border-radius: 3px; }
+#chrono-browser-design .cp-vac-validation ul { margin: 3px 0 0; padding-left: 17px; }
+#chrono-browser-design .cp-vac-saved { margin-top: 9px; color: var(--cp-good); }
+#chrono-browser-design .cp-vac-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 900px) {
+  #chrono-browser-design .cp-vac-layout { grid-template-columns: minmax(0, 1.35fr) minmax(230px, .9fr); gap: 20px 26px; }
+  #chrono-browser-design .cp-vac-plan { align-self: stretch; }
+}
+@media (max-width: 480px) {
+  #chrono-browser-design .cp-vac-layout { gap: 16px; }
+  #chrono-browser-design .cp-vac-plan { padding: 14px; }
+  #chrono-browser-design .cp-vac-dates { gap: 8px; }
+  #chrono-browser-design .cp-vac-dates input { padding: 8px 5px; font-size: 12px; }
+  #chrono-browser-design .cp-vac-options { gap: 12px; }
+  #chrono-browser-design .cp-vac-options label { font-size: 11px; }
+  #chrono-browser-design .cp-vac-calendar .cp-cal-day { min-height: 39px; }
+}

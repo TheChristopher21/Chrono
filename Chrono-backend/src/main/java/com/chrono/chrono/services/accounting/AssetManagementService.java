@@ -1,9 +1,12 @@
 package com.chrono.chrono.services.accounting;
 
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.accounting.*;
 import com.chrono.chrono.repositories.accounting.AssetRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,7 +26,10 @@ public class AssetManagementService {
     }
 
     @Transactional
-    public Asset registerAsset(Asset asset) {
+    public Asset registerAsset(Company company, Asset asset) {
+        AccountingService.requireCompany(company);
+        if (asset.getId() != null) throw new IllegalArgumentException("New asset must not have an ID");
+        asset.setCompany(company);
         if (asset.getAcquisitionDate() == null) {
             asset.setAcquisitionDate(LocalDate.now());
         }
@@ -33,13 +39,14 @@ public class AssetManagementService {
     }
 
     @Transactional(readOnly = true)
-    public List<Asset> listAssets() {
-        return assetRepository.findAll();
+    public List<Asset> listAssets(Company company) {
+        AccountingService.requireCompany(company);
+        return assetRepository.findByCompany_IdOrderByIdAsc(company.getId());
     }
 
     private void postAcquisition(Asset asset) {
-        Account fixedAsset = accountingService.ensureAccount("1510", "Maschinen", AccountType.ASSET);
-        Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
+        Account fixedAsset = accountingService.ensureAccount(asset.getCompany(), "1510", "Maschinen", AccountType.ASSET);
+        Account bank = accountingService.ensureAccount(asset.getCompany(), "1000", "Bank", AccountType.ASSET);
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(asset.getAcquisitionDate());
@@ -60,13 +67,16 @@ public class AssetManagementService {
         credit.setMemo("Payment");
 
         entry.setLines(java.util.List.of(debit, credit));
-        JournalEntry posted = accountingService.postEntry(entry);
+        JournalEntry posted = accountingService.postEntry(asset.getCompany(), entry);
         asset.setAcquisitionEntry(posted);
         assetRepository.save(asset);
     }
 
     @Transactional
-    public Asset runMonthlyDepreciation(Asset asset) {
+    public Asset runMonthlyDepreciation(Company company, Asset candidate) {
+        AccountingService.requireCompany(company);
+        Asset asset = assetRepository.findByIdAndCompany_Id(candidate.getId(), company.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
         if (asset.getStatus() != AssetStatus.ACTIVE) {
             return asset;
         }
@@ -81,8 +91,8 @@ public class AssetManagementService {
             return asset;
         }
 
-        Account expense = accountingService.ensureAccount("5200", "Abschreibungen", AccountType.EXPENSE);
-        Account contra = accountingService.ensureAccount("1520", "Anlagenabschreibung", AccountType.CONTRA_ASSET);
+        Account expense = accountingService.ensureAccount(company, "5200", "Abschreibungen", AccountType.EXPENSE);
+        Account contra = accountingService.ensureAccount(company, "1520", "Anlagenabschreibung", AccountType.CONTRA_ASSET);
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(LocalDate.now());
@@ -103,7 +113,7 @@ public class AssetManagementService {
         credit.setMemo("Accumulated depreciation");
 
         entry.setLines(java.util.List.of(debit, credit));
-        accountingService.postEntry(entry);
+        accountingService.postEntry(company, entry);
 
         asset.setAccumulatedDepreciation(asset.getAccumulatedDepreciation().add(monthly));
         asset.setLastDepreciationDate(LocalDate.now());

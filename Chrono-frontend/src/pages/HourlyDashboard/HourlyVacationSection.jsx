@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar'; // Stellt die Kalenderlogik bereit
+import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 import '../../styles/HourlyDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
 
 const HourlyVacationSection = ({
@@ -28,6 +29,8 @@ const HourlyVacationSection = ({
                 // um spezifische Kalender-Styles innerhalb des HourlyDashboards zu ermöglichen, falls nötig.
                 // z.B. cssScope="hourly-calendar"
             />
+
+            <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
         </section>
     );
 };
@@ -48,7 +51,7 @@ HourlyVacationSection.propTypes = {
             // Weitere Felder des VacationRequest-Objekts
         })
     ).isRequired,
-    onRefreshVacations: PropTypes.func.isRequired
+    onRefreshVacations: PropTypes.func
 };
 
 export default HourlyVacationSection;

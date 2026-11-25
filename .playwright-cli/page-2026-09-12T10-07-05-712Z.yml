@@ -1,0 +1,1292 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e2076]:
+    - generic [ref=f5e2077]:
+      - navigation "Hauptnavigation" [ref=f5e2078]:
+        - link "Chrono PMS" [ref=f5e2080] [cursor=pointer]:
+          - /url: /pms
+          - img "Chrono" [ref=f5e2081]
+        - list [ref=f5e2244]:
+          - listitem [ref=f5e2245]:
+            - link "Zu Chrono wechseln" [ref=f5e2246] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e2247]:
+            - button "Was ist neu?" [ref=f5e2248] [cursor=pointer]
+          - listitem [ref=f5e2252]:
+            - button "Light Mode" [ref=f5e2253] [cursor=pointer]
+          - listitem [ref=f5e2258]:
+            - button "🌐" [ref=f5e2259] [cursor=pointer]
+          - listitem [ref=f5e2262]:
+            - button "Default Admin" [ref=f5e2263] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2264]: D
+        - button "PMS-Bereiche" [ref=f5e2087] [cursor=pointer]
+      - region "PMS Arbeitsbereiche" [ref=f5e2090]:
+        - generic [ref=f5e2268]:
+          - tablist "Offene Arbeitsbereiche" [ref=f5e2269]:
+            - generic [ref=f5e2270]:
+              - tab "Hotelverwaltung (PMS)" [ref=f5e2271] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2272]: PMS
+              - 'button "Tab anheften: Hotelverwaltung (PMS)" [ref=f5e2274] [cursor=pointer]'
+              - 'button "Tab schließen: Hotelverwaltung (PMS)" [ref=f5e2275] [cursor=pointer]'
+            - generic [ref=f5e2276]:
+              - tab "PMS · Zimmerplan" [ref=f5e2277] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2278]: PMS
+              - 'button "Tab anheften: PMS · Zimmerplan" [ref=f5e2280] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Zimmerplan" [ref=f5e2281] [cursor=pointer]'
+            - generic [ref=f5e2282]:
+              - tab "PMS · Gastkonten & Zahlungen" [ref=f5e2283] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2284]: PMS
+              - 'button "Tab anheften: PMS · Gastkonten & Zahlungen" [ref=f5e2286] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Gastkonten & Zahlungen" [ref=f5e2287] [cursor=pointer]'
+            - generic [ref=f5e2288]:
+              - tab "PMS · Housekeeping & Reinigung" [selected] [ref=f5e2289] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2290]: PMS
+              - 'button "Tab anheften: PMS · Housekeeping & Reinigung" [ref=f5e2292] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Housekeeping & Reinigung" [ref=f5e2293] [cursor=pointer]'
+            - generic [ref=f5e2294]:
+              - tab "PMS · Rechnungen" [ref=f5e2295] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2296]: PMS
+              - 'button "Tab anheften: PMS · Rechnungen" [ref=f5e2298] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Rechnungen" [ref=f5e2299] [cursor=pointer]'
+            - generic [ref=f5e2300]:
+              - tab "PMS · Veranstaltungen & Ressourcen" [ref=f5e2301] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2302]: PMS
+              - 'button "Tab anheften: PMS · Veranstaltungen & Ressourcen" [ref=f5e2304] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Veranstaltungen & Ressourcen" [ref=f5e2305] [cursor=pointer]'
+            - generic [ref=f5e2306]:
+              - tab "PMS · Berichte & Kennzahlen" [ref=f5e2307] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e2308]: PMS
+              - 'button "Tab anheften: PMS · Berichte & Kennzahlen" [ref=f5e2310] [cursor=pointer]'
+              - 'button "Tab schließen: PMS · Berichte & Kennzahlen" [ref=f5e2311] [cursor=pointer]'
+          - generic [ref=f5e2312]:
+            - button "Arbeitsbereich öffnen" [ref=f5e2313] [cursor=pointer]
+            - button "Tab-Aktionen" [ref=f5e2314] [cursor=pointer]
+    - generic [ref=f5e2098]:
+      - complementary "PMS-Navigation" [ref=f5e2099]:
+        - button "Aktives Hotel Chrono Demo Hotel Zürich" [ref=f5e2315] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e2316]: CH
+          - generic [ref=f5e2317]:
+            - generic [ref=f5e2318]: Aktives Hotel
+            - strong [ref=f5e2319]: Chrono Demo Hotel Zürich
+          - generic [aria-hidden] [ref=f5e2320]: ⌄
+        - navigation "PMS-Arbeitsbereiche" [ref=f5e2100]:
+          - generic [ref=f5e2101]:
+            - generic [ref=f5e2321]: Rezeption
+            - button "Übersicht" [ref=f5e2102] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2103]: HQ
+              - text: Übersicht
+            - button "Reservierungen" [ref=f5e2104] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2105]: RES
+              - text: Reservierungen
+            - button "Zimmerplan" [ref=f5e2106] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2107]: ZIM
+              - text: Zimmerplan
+            - button "Gästeprofile" [ref=f5e2108] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2109]: GAS
+              - text: Gästeprofile
+            - button "Gastkonten & Zahlungen" [ref=f5e2110] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2111]: CHF
+              - text: Gastkonten & Zahlungen
+            - button "Gästeanmeldung" [ref=f5e2112] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2113]: DCI
+              - text: Gästeanmeldung
+          - generic [ref=f5e2114]:
+            - generic [ref=f5e2322]: Hotelbetrieb
+            - button "Housekeeping & Reinigung" [ref=f5e2115] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2116]: HK
+              - text: Housekeeping & Reinigung
+            - button "Gästekommunikation" [ref=f5e2117] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2118]: COM
+              - text: Gästekommunikation
+            - button "Veranstaltungen & Ressourcen" [ref=f5e2119] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2120]: VER
+              - text: Veranstaltungen & Ressourcen
+            - button "Verkauf & lokale Integrationen" [ref=f5e2121] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2122]: POS
+              - text: Verkauf & lokale Integrationen
+          - generic [ref=f5e2123]:
+            - generic [ref=f5e2323]: Verkauf & Partner
+            - button "Raten & Verfügbarkeit" [ref=f5e2124] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2125]: RAT
+              - text: Raten & Verfügbarkeit
+            - button "Gruppenreservierungen" [ref=f5e2126] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2127]: GRP
+              - text: Gruppenreservierungen
+            - button "Geschäftspartner" [ref=f5e2128] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2129]: ORG
+              - text: Geschäftspartner
+          - generic [ref=f5e2130]:
+            - generic [ref=f5e2324]: Steuerung & System
+            - button "Hotelportfolio" [ref=f5e2131] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2132]: HP
+              - text: Hotelportfolio
+            - button "Rechnungen" [ref=f5e2133] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2134]: RE
+              - text: Rechnungen
+            - button "Tagesabschluss" [ref=f5e2135] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2136]: NA
+              - text: Tagesabschluss
+            - button "Berichte & Kennzahlen" [ref=f5e2137] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2138]: KPI
+              - text: Berichte & Kennzahlen
+            - button "Schnittstellen" [ref=f5e2139] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f5e2140]: SYS
+              - text: Schnittstellen
+        - generic [ref=f5e2327]:
+          - strong [ref=f5e2328]: PMS betriebsbereit
+          - generic [ref=f5e2329]: Status- und Schnittstellenprüfung aktiv
+      - main [ref=f5e2141]:
+        - generic [ref=f5e2142]:
+          - generic [ref=f5e2143]:
+            - generic [ref=f5e2144]: Chrono Hotel-PMS
+            - heading "Chrono Demo Hotel Zürich" [level=1] [ref=f5e2145]
+          - button "Suchen oder Aktion starten Ctrl K" [ref=f5e2147] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e2148]: ⌕
+            - text: Suchen oder Aktion starten
+            - generic [ref=f5e2149]: Ctrl K
+        - region [ref=f5e2150]:
+          - generic [ref=f5e2152]:
+            - generic [ref=f5e2153]: Chrono Hotel-PMS · Chrono Demo Hotel Zürich
+            - heading "Housekeeping & Reinigung" [level=2] [ref=f5e2154]
+            - paragraph [ref=f5e2155]: Reinigung, Zimmerfreigabe und technische Sperren koordinieren. · Betriebstag 12.09.2026
+          - generic [ref=f5e2157]:
+            - region "Housekeeping-Arbeitsaufträge" [ref=f5e2158]:
+              - generic [ref=f5e2159]:
+                - generic [ref=f5e2160]:
+                  - generic [ref=f5e2161]: Chrono Demo Hotel Zürich · 2026-09-12
+                  - heading "Reinigung, Kontrolle und Abendservice" [level=3] [ref=f5e2162]
+                - button "Aktualisieren" [ref=f5e2163] [cursor=pointer]
+              - paragraph [ref=f5e2164]: Jede Arbeitsart hat ihren eigenen Auftrag pro Zimmer und Tag. Der Abendservice verändert die Freigabe des Zimmers nicht.
+              - generic [ref=f5e2165]:
+                - generic [ref=f5e2166]:
+                  - generic [ref=f5e2167]:
+                    - generic [ref=f5e2168]:
+                      - text: Zimmer, Mitarbeiter oder Notiz suchen
+                      - searchbox "Zimmer, Mitarbeiter oder Notiz suchen" [ref=f5e2169]
+                    - generic [ref=f5e2170]:
+                      - text: Arbeitsart filtern
+                      - combobox "Arbeitsart filtern" [ref=f5e2171]:
+                        - option "Alle Arbeitsarten" [selected]
+                        - option "Reinigung"
+                        - option "Kontrolle"
+                        - option "Abendservice"
+                    - generic [ref=f5e2172]:
+                      - text: Status filtern
+                      - combobox "Status filtern" [ref=f5e2173]:
+                        - option "Alle Status" [selected]
+                        - option "Offen"
+                        - option "In Arbeit"
+                        - option "Erledigt"
+                        - option "Bitte nicht stören"
+                        - option "Zurückgestellt"
+                  - status [ref=f5e2174]: 2 von 2 Aufgaben
+                  - generic [ref=f5e2175]:
+                    - button "Zimmer 102 · Reinigung Offen · Lea Priorität 90 · 35 Min. · Priorisierte Anreisevorbereitung" [active] [ref=f5e2176]:
+                      - strong [ref=f5e2177]: Zimmer 102 · Reinigung
+                      - generic [ref=f5e2178]: Offen · Lea
+                      - generic [ref=f5e2179]: Priorität 90 · 35 Min. · Priorisierte Anreisevorbereitung
+                    - button "Zimmer 10000 · Kontrolle In Arbeit · pms_load_housekeeping_qa Priorität 30 · 15 Min. · Isolated staff load fixture" [ref=f5e2180]:
+                      - strong [ref=f5e2181]: Zimmer 10000 · Kontrolle
+                      - generic [ref=f5e2182]: In Arbeit · pms_load_housekeeping_qa
+                      - generic [ref=f5e2183]: Priorität 30 · 15 Min. · Isolated staff load fixture
+                - generic [ref=f5e2184]:
+                  - generic [ref=f5e2185]:
+                    - heading "Zimmer 102 · Reinigung" [level=3] [ref=f5e2330]
+                    - button "Neue Aufgabe" [ref=f5e2331]
+                  - group [ref=f5e2188]:
+                    - generic [ref=f5e2189]:
+                      - generic [ref=f5e2332]:
+                        - text: Arbeitsstatus
+                        - combobox "Arbeitsstatus" [ref=f5e2333]:
+                          - option "Offen" [selected]
+                          - option "In Arbeit"
+                          - option "Erledigt"
+                          - option "Bitte nicht stören"
+                          - option "Zurückgestellt"
+                      - generic [ref=f5e2198]:
+                        - text: Zugewiesen an
+                        - textbox "Zugewiesen an" [ref=f5e2199]: Lea
+                      - generic [ref=f5e2200]:
+                        - text: Priorität
+                        - spinbutton "Priorität" [ref=f5e2201]: "90"
+                      - generic [ref=f5e2202]:
+                        - text: Geplante Minuten
+                        - spinbutton "Geplante Minuten" [ref=f5e2203]: "35"
+                      - generic [ref=f5e2204]:
+                        - text: Arbeitsnotiz
+                        - textbox "Arbeitsnotiz" [ref=f5e2205]: Priorisierte Anreisevorbereitung
+                    - button "Aufgabe speichern" [ref=f5e2207] [cursor=pointer]
+                  - region "Aufgabenverlauf" [ref=f5e2334]:
+                    - heading "Aufgabenverlauf" [level=4] [ref=f5e2335]
+                    - list [ref=f5e2336]:
+                      - listitem [ref=f5e2337]:
+                        - strong [ref=f5e2338]: Offen
+                        - generic [ref=f5e2339]: SYSTEM · 2026-09-12 11:49:11 · Lea
+                        - paragraph [ref=f5e2340]: Priorisierte Anreisevorbereitung
+                    - generic [ref=f5e2341]:
+                      - button "Verlauf zurück" [disabled] [ref=f5e2342]
+                      - generic [ref=f5e2343]: Seite 1 · 1 Einträge
+                      - button "Verlauf weiter" [disabled] [ref=f5e2344]
+            - generic [ref=f5e2208]:
+              - generic [ref=f5e2210]:
+                - generic [ref=f5e2211]: Technik
+                - heading "Wartung & Zimmerverfügbarkeit" [level=3] [ref=f5e2212]
+              - generic [ref=f5e2213]:
+                - generic [ref=f5e2214]:
+                  - text: Zimmer
+                  - combobox "Zimmer" [ref=f5e2215]:
+                    - option "Zimmer wählen" [selected]
+                    - option "101 · City Einzelzimmer"
+                    - option "102 · City Einzelzimmer"
+                    - option "201 · Classic Doppelzimmer"
+                    - option "202 · Classic Doppelzimmer"
+                    - option "203 · Classic Doppelzimmer"
+                    - option "301 · Limmat Suite"
+                    - option "302 · Limmat Suite"
+                    - option "10000 · City Einzelzimmer"
+                    - option "10001 · City Einzelzimmer"
+                    - option "10002 · City Einzelzimmer"
+                    - option "10003 · City Einzelzimmer"
+                    - option "10004 · City Einzelzimmer"
+                    - option "10005 · City Einzelzimmer"
+                    - option "10006 · City Einzelzimmer"
+                    - option "10007 · City Einzelzimmer"
+                    - option "10008 · City Einzelzimmer"
+                    - option "10009 · City Einzelzimmer"
+                    - option "10010 · City Einzelzimmer"
+                    - option "10011 · City Einzelzimmer"
+                    - option "10012 · City Einzelzimmer"
+                    - option "10013 · City Einzelzimmer"
+                    - option "10014 · City Einzelzimmer"
+                    - option "10015 · City Einzelzimmer"
+                    - option "10016 · City Einzelzimmer"
+                    - option "10017 · City Einzelzimmer"
+                    - option "10018 · City Einzelzimmer"
+                    - option "10019 · City Einzelzimmer"
+                    - option "10020 · City Einzelzimmer"
+                    - option "10021 · City Einzelzimmer"
+                    - option "10022 · City Einzelzimmer"
+                    - option "10023 · City Einzelzimmer"
+                    - option "10024 · City Einzelzimmer"
+                    - option "10025 · City Einzelzimmer"
+                    - option "10026 · City Einzelzimmer"
+                    - option "10027 · City Einzelzimmer"
+                    - option "10028 · City Einzelzimmer"
+                    - option "10029 · City Einzelzimmer"
+                    - option "10030 · City Einzelzimmer"
+                    - option "10031 · City Einzelzimmer"
+                    - option "10032 · City Einzelzimmer"
+                    - option "10033 · City Einzelzimmer"
+                    - option "10034 · City Einzelzimmer"
+                    - option "10035 · City Einzelzimmer"
+                    - option "10036 · City Einzelzimmer"
+                    - option "10037 · City Einzelzimmer"
+                    - option "10038 · City Einzelzimmer"
+                    - option "10039 · City Einzelzimmer"
+                    - option "10040 · City Einzelzimmer"
+                    - option "10041 · City Einzelzimmer"
+                    - option "10042 · City Einzelzimmer"
+                    - option "10043 · City Einzelzimmer"
+                    - option "10044 · City Einzelzimmer"
+                    - option "10045 · City Einzelzimmer"
+                    - option "10046 · City Einzelzimmer"
+                    - option "10047 · City Einzelzimmer"
+                    - option "10048 · City Einzelzimmer"
+                    - option "10049 · City Einzelzimmer"
+                    - option "10050 · City Einzelzimmer"
+                    - option "10051 · City Einzelzimmer"
+                    - option "10052 · City Einzelzimmer"
+                    - option "10053 · City Einzelzimmer"
+                    - option "10054 · City Einzelzimmer"
+                    - option "10055 · City Einzelzimmer"
+                    - option "10056 · City Einzelzimmer"
+                    - option "10057 · City Einzelzimmer"
+                    - option "10058 · City Einzelzimmer"
+                    - option "10059 · City Einzelzimmer"
+                    - option "10060 · City Einzelzimmer"
+                    - option "10061 · City Einzelzimmer"
+                    - option "10062 · City Einzelzimmer"
+                    - option "10063 · City Einzelzimmer"
+                    - option "10064 · City Einzelzimmer"
+                    - option "10065 · City Einzelzimmer"
+                    - option "10066 · City Einzelzimmer"
+                    - option "10067 · City Einzelzimmer"
+                    - option "10068 · City Einzelzimmer"
+                    - option "10069 · City Einzelzimmer"
+                    - option "10070 · City Einzelzimmer"
+                    - option "10071 · City Einzelzimmer"
+                    - option "10072 · City Einzelzimmer"
+                    - option "10073 · City Einzelzimmer"
+                    - option "10074 · City Einzelzimmer"
+                    - option "10075 · City Einzelzimmer"
+                    - option "10076 · City Einzelzimmer"
+                    - option "10077 · City Einzelzimmer"
+                    - option "10078 · City Einzelzimmer"
+                    - option "10079 · City Einzelzimmer"
+                    - option "10080 · City Einzelzimmer"
+                    - option "10081 · City Einzelzimmer"
+                    - option "10082 · City Einzelzimmer"
+                    - option "10083 · City Einzelzimmer"
+                    - option "10084 · City Einzelzimmer"
+                    - option "10085 · City Einzelzimmer"
+                    - option "10086 · City Einzelzimmer"
+                    - option "10087 · City Einzelzimmer"
+                    - option "10088 · City Einzelzimmer"
+                    - option "10089 · City Einzelzimmer"
+                    - option "10090 · City Einzelzimmer"
+                    - option "10091 · City Einzelzimmer"
+                    - option "10092 · City Einzelzimmer"
+                    - option "10093 · City Einzelzimmer"
+                    - option "10094 · City Einzelzimmer"
+                    - option "10095 · City Einzelzimmer"
+                    - option "10096 · City Einzelzimmer"
+                    - option "10097 · City Einzelzimmer"
+                    - option "10098 · City Einzelzimmer"
+                    - option "10099 · City Einzelzimmer"
+                    - option "10100 · City Einzelzimmer"
+                    - option "10101 · City Einzelzimmer"
+                    - option "10102 · City Einzelzimmer"
+                    - option "10103 · City Einzelzimmer"
+                    - option "10104 · City Einzelzimmer"
+                    - option "10105 · City Einzelzimmer"
+                    - option "10106 · City Einzelzimmer"
+                    - option "10107 · City Einzelzimmer"
+                    - option "10108 · City Einzelzimmer"
+                    - option "10109 · City Einzelzimmer"
+                    - option "10110 · City Einzelzimmer"
+                    - option "10111 · City Einzelzimmer"
+                    - option "10112 · City Einzelzimmer"
+                    - option "10113 · City Einzelzimmer"
+                    - option "10114 · City Einzelzimmer"
+                    - option "10115 · City Einzelzimmer"
+                    - option "10116 · City Einzelzimmer"
+                    - option "10117 · City Einzelzimmer"
+                    - option "10118 · City Einzelzimmer"
+                    - option "10119 · City Einzelzimmer"
+                    - option "10120 · City Einzelzimmer"
+                    - option "10121 · City Einzelzimmer"
+                    - option "10122 · City Einzelzimmer"
+                    - option "10123 · City Einzelzimmer"
+                    - option "10124 · City Einzelzimmer"
+                    - option "10125 · City Einzelzimmer"
+                    - option "10126 · City Einzelzimmer"
+                    - option "10127 · City Einzelzimmer"
+                    - option "10128 · City Einzelzimmer"
+                    - option "10129 · City Einzelzimmer"
+                    - option "10130 · City Einzelzimmer"
+                    - option "10131 · City Einzelzimmer"
+                    - option "10132 · City Einzelzimmer"
+                    - option "10133 · City Einzelzimmer"
+                    - option "10134 · City Einzelzimmer"
+                    - option "10135 · City Einzelzimmer"
+                    - option "10136 · City Einzelzimmer"
+                    - option "10137 · City Einzelzimmer"
+                    - option "10138 · City Einzelzimmer"
+                    - option "10139 · City Einzelzimmer"
+                    - option "10140 · City Einzelzimmer"
+                    - option "10141 · City Einzelzimmer"
+                    - option "10142 · City Einzelzimmer"
+                    - option "10143 · City Einzelzimmer"
+                    - option "10144 · City Einzelzimmer"
+                    - option "10145 · City Einzelzimmer"
+                    - option "10146 · City Einzelzimmer"
+                    - option "10147 · City Einzelzimmer"
+                    - option "10148 · City Einzelzimmer"
+                    - option "10149 · City Einzelzimmer"
+                    - option "10150 · City Einzelzimmer"
+                    - option "10151 · City Einzelzimmer"
+                    - option "10152 · City Einzelzimmer"
+                    - option "10153 · City Einzelzimmer"
+                    - option "10154 · City Einzelzimmer"
+                    - option "10155 · City Einzelzimmer"
+                    - option "10156 · City Einzelzimmer"
+                    - option "10157 · City Einzelzimmer"
+                    - option "10158 · City Einzelzimmer"
+                    - option "10159 · City Einzelzimmer"
+                    - option "10160 · City Einzelzimmer"
+                    - option "10161 · City Einzelzimmer"
+                    - option "10162 · City Einzelzimmer"
+                    - option "10163 · City Einzelzimmer"
+                    - option "10164 · City Einzelzimmer"
+                    - option "10165 · City Einzelzimmer"
+                    - option "10166 · City Einzelzimmer"
+                    - option "10167 · City Einzelzimmer"
+                    - option "10168 · City Einzelzimmer"
+                    - option "10169 · City Einzelzimmer"
+                    - option "10170 · City Einzelzimmer"
+                    - option "10171 · City Einzelzimmer"
+                    - option "10172 · City Einzelzimmer"
+                    - option "10173 · City Einzelzimmer"
+                    - option "10174 · City Einzelzimmer"
+                    - option "10175 · City Einzelzimmer"
+                    - option "10176 · City Einzelzimmer"
+                    - option "10177 · City Einzelzimmer"
+                    - option "10178 · City Einzelzimmer"
+                    - option "10179 · City Einzelzimmer"
+                    - option "10180 · City Einzelzimmer"
+                    - option "10181 · City Einzelzimmer"
+                    - option "10182 · City Einzelzimmer"
+                    - option "10183 · City Einzelzimmer"
+                    - option "10184 · City Einzelzimmer"
+                    - option "10185 · City Einzelzimmer"
+                    - option "10186 · City Einzelzimmer"
+                    - option "10187 · City Einzelzimmer"
+                    - option "10188 · City Einzelzimmer"
+                    - option "10189 · City Einzelzimmer"
+                    - option "10190 · City Einzelzimmer"
+                    - option "10191 · City Einzelzimmer"
+                    - option "10192 · City Einzelzimmer"
+                    - option "10193 · City Einzelzimmer"
+                    - option "10194 · City Einzelzimmer"
+                    - option "10195 · City Einzelzimmer"
+                    - option "10196 · City Einzelzimmer"
+                    - option "10197 · City Einzelzimmer"
+                    - option "10198 · City Einzelzimmer"
+                    - option "10199 · City Einzelzimmer"
+                    - option "10200 · City Einzelzimmer"
+                    - option "10201 · City Einzelzimmer"
+                    - option "10202 · City Einzelzimmer"
+                    - option "10203 · City Einzelzimmer"
+                    - option "10204 · City Einzelzimmer"
+                    - option "10205 · City Einzelzimmer"
+                    - option "10206 · City Einzelzimmer"
+                    - option "10207 · City Einzelzimmer"
+                    - option "10208 · City Einzelzimmer"
+                    - option "10209 · City Einzelzimmer"
+                    - option "10210 · City Einzelzimmer"
+                    - option "10211 · City Einzelzimmer"
+                    - option "10212 · City Einzelzimmer"
+                    - option "10213 · City Einzelzimmer"
+                    - option "10214 · City Einzelzimmer"
+                    - option "10215 · City Einzelzimmer"
+                    - option "10216 · City Einzelzimmer"
+                    - option "10217 · City Einzelzimmer"
+                    - option "10218 · City Einzelzimmer"
+                    - option "10219 · City Einzelzimmer"
+                    - option "10220 · City Einzelzimmer"
+                    - option "10221 · City Einzelzimmer"
+                    - option "10222 · City Einzelzimmer"
+                    - option "10223 · City Einzelzimmer"
+                    - option "10224 · City Einzelzimmer"
+                    - option "10225 · City Einzelzimmer"
+                    - option "10226 · City Einzelzimmer"
+                    - option "10227 · City Einzelzimmer"
+                    - option "10228 · City Einzelzimmer"
+                    - option "10229 · City Einzelzimmer"
+                    - option "10230 · City Einzelzimmer"
+                    - option "10231 · City Einzelzimmer"
+                    - option "10232 · City Einzelzimmer"
+                    - option "10233 · City Einzelzimmer"
+                    - option "10234 · City Einzelzimmer"
+                    - option "10235 · City Einzelzimmer"
+                    - option "10236 · City Einzelzimmer"
+                    - option "10237 · City Einzelzimmer"
+                    - option "10238 · City Einzelzimmer"
+                    - option "10239 · City Einzelzimmer"
+                    - option "10240 · City Einzelzimmer"
+                    - option "10241 · City Einzelzimmer"
+                    - option "10242 · City Einzelzimmer"
+                    - option "10243 · City Einzelzimmer"
+                    - option "10244 · City Einzelzimmer"
+                    - option "10245 · City Einzelzimmer"
+                    - option "10246 · City Einzelzimmer"
+                    - option "10247 · City Einzelzimmer"
+                    - option "10248 · City Einzelzimmer"
+                    - option "10249 · City Einzelzimmer"
+                    - option "10250 · City Einzelzimmer"
+                    - option "10251 · City Einzelzimmer"
+                    - option "10252 · City Einzelzimmer"
+                    - option "10253 · City Einzelzimmer"
+                    - option "10254 · City Einzelzimmer"
+                    - option "10255 · City Einzelzimmer"
+                    - option "10256 · City Einzelzimmer"
+                    - option "10257 · City Einzelzimmer"
+                    - option "10258 · City Einzelzimmer"
+                    - option "10259 · City Einzelzimmer"
+                    - option "10260 · City Einzelzimmer"
+                    - option "10261 · City Einzelzimmer"
+                    - option "10262 · City Einzelzimmer"
+                    - option "10263 · City Einzelzimmer"
+                    - option "10264 · City Einzelzimmer"
+                    - option "10265 · City Einzelzimmer"
+                    - option "10266 · City Einzelzimmer"
+                    - option "10267 · City Einzelzimmer"
+                    - option "10268 · City Einzelzimmer"
+                    - option "10269 · City Einzelzimmer"
+                    - option "10270 · City Einzelzimmer"
+                    - option "10271 · City Einzelzimmer"
+                    - option "10272 · City Einzelzimmer"
+                    - option "10273 · City Einzelzimmer"
+                    - option "10274 · City Einzelzimmer"
+                    - option "10275 · City Einzelzimmer"
+                    - option "10276 · City Einzelzimmer"
+                    - option "10277 · City Einzelzimmer"
+                    - option "10278 · City Einzelzimmer"
+                    - option "10279 · City Einzelzimmer"
+                    - option "10280 · City Einzelzimmer"
+                    - option "10281 · City Einzelzimmer"
+                    - option "10282 · City Einzelzimmer"
+                    - option "10283 · City Einzelzimmer"
+                    - option "10284 · City Einzelzimmer"
+                    - option "10285 · City Einzelzimmer"
+                    - option "10286 · City Einzelzimmer"
+                    - option "10287 · City Einzelzimmer"
+                    - option "10288 · City Einzelzimmer"
+                    - option "10289 · City Einzelzimmer"
+                    - option "10290 · City Einzelzimmer"
+                    - option "10291 · City Einzelzimmer"
+                    - option "10292 · City Einzelzimmer"
+                    - option "10293 · City Einzelzimmer"
+                    - option "10294 · City Einzelzimmer"
+                    - option "10295 · City Einzelzimmer"
+                    - option "10296 · City Einzelzimmer"
+                    - option "10297 · City Einzelzimmer"
+                    - option "10298 · City Einzelzimmer"
+                    - option "10299 · City Einzelzimmer"
+                    - option "10300 · City Einzelzimmer"
+                    - option "10301 · City Einzelzimmer"
+                    - option "10302 · City Einzelzimmer"
+                    - option "10303 · City Einzelzimmer"
+                    - option "10304 · City Einzelzimmer"
+                    - option "10305 · City Einzelzimmer"
+                    - option "10306 · City Einzelzimmer"
+                    - option "10307 · City Einzelzimmer"
+                    - option "10308 · City Einzelzimmer"
+                    - option "10309 · City Einzelzimmer"
+                    - option "10310 · City Einzelzimmer"
+                    - option "10311 · City Einzelzimmer"
+                    - option "10312 · City Einzelzimmer"
+                    - option "10313 · City Einzelzimmer"
+                    - option "10314 · City Einzelzimmer"
+                    - option "10315 · City Einzelzimmer"
+                    - option "10316 · City Einzelzimmer"
+                    - option "10317 · City Einzelzimmer"
+                    - option "10318 · City Einzelzimmer"
+                    - option "10319 · City Einzelzimmer"
+                    - option "10320 · City Einzelzimmer"
+                    - option "10321 · City Einzelzimmer"
+                    - option "10322 · City Einzelzimmer"
+                    - option "10323 · City Einzelzimmer"
+                    - option "10324 · City Einzelzimmer"
+                    - option "10325 · City Einzelzimmer"
+                    - option "10326 · City Einzelzimmer"
+                    - option "10327 · City Einzelzimmer"
+                    - option "10328 · City Einzelzimmer"
+                    - option "10329 · City Einzelzimmer"
+                    - option "10330 · City Einzelzimmer"
+                    - option "10331 · City Einzelzimmer"
+                    - option "10332 · City Einzelzimmer"
+                    - option "10333 · City Einzelzimmer"
+                    - option "10334 · City Einzelzimmer"
+                    - option "10335 · City Einzelzimmer"
+                    - option "10336 · City Einzelzimmer"
+                    - option "10337 · City Einzelzimmer"
+                    - option "10338 · City Einzelzimmer"
+                    - option "10339 · City Einzelzimmer"
+                    - option "10340 · City Einzelzimmer"
+                    - option "10341 · City Einzelzimmer"
+                    - option "10342 · City Einzelzimmer"
+                    - option "10343 · City Einzelzimmer"
+                    - option "10344 · City Einzelzimmer"
+                    - option "10345 · City Einzelzimmer"
+                    - option "10346 · City Einzelzimmer"
+                    - option "10347 · City Einzelzimmer"
+                    - option "10348 · City Einzelzimmer"
+                    - option "10349 · City Einzelzimmer"
+                    - option "10350 · City Einzelzimmer"
+                    - option "10351 · City Einzelzimmer"
+                    - option "10352 · City Einzelzimmer"
+                    - option "10353 · City Einzelzimmer"
+                    - option "10354 · City Einzelzimmer"
+                    - option "10355 · City Einzelzimmer"
+                    - option "10356 · City Einzelzimmer"
+                    - option "10357 · City Einzelzimmer"
+                    - option "10358 · City Einzelzimmer"
+                    - option "10359 · City Einzelzimmer"
+                    - option "10360 · City Einzelzimmer"
+                    - option "10361 · City Einzelzimmer"
+                    - option "10362 · City Einzelzimmer"
+                    - option "10363 · City Einzelzimmer"
+                    - option "10364 · City Einzelzimmer"
+                    - option "10365 · City Einzelzimmer"
+                    - option "10366 · City Einzelzimmer"
+                    - option "10367 · City Einzelzimmer"
+                    - option "10368 · City Einzelzimmer"
+                    - option "10369 · City Einzelzimmer"
+                    - option "10370 · City Einzelzimmer"
+                    - option "10371 · City Einzelzimmer"
+                    - option "10372 · City Einzelzimmer"
+                    - option "10373 · City Einzelzimmer"
+                    - option "10374 · City Einzelzimmer"
+                    - option "10375 · City Einzelzimmer"
+                    - option "10376 · City Einzelzimmer"
+                    - option "10377 · City Einzelzimmer"
+                    - option "10378 · City Einzelzimmer"
+                    - option "10379 · City Einzelzimmer"
+                    - option "10380 · City Einzelzimmer"
+                    - option "10381 · City Einzelzimmer"
+                    - option "10382 · City Einzelzimmer"
+                    - option "10383 · City Einzelzimmer"
+                    - option "10384 · City Einzelzimmer"
+                    - option "10385 · City Einzelzimmer"
+                    - option "10386 · City Einzelzimmer"
+                    - option "10387 · City Einzelzimmer"
+                    - option "10388 · City Einzelzimmer"
+                    - option "10389 · City Einzelzimmer"
+                    - option "10390 · City Einzelzimmer"
+                    - option "10391 · City Einzelzimmer"
+                    - option "10392 · City Einzelzimmer"
+                    - option "10393 · City Einzelzimmer"
+                    - option "10394 · City Einzelzimmer"
+                    - option "10395 · City Einzelzimmer"
+                    - option "10396 · City Einzelzimmer"
+                    - option "10397 · City Einzelzimmer"
+                    - option "10398 · City Einzelzimmer"
+                    - option "10399 · City Einzelzimmer"
+                    - option "10400 · City Einzelzimmer"
+                    - option "10401 · City Einzelzimmer"
+                    - option "10402 · City Einzelzimmer"
+                    - option "10403 · City Einzelzimmer"
+                    - option "10404 · City Einzelzimmer"
+                    - option "10405 · City Einzelzimmer"
+                    - option "10406 · City Einzelzimmer"
+                    - option "10407 · City Einzelzimmer"
+                    - option "10408 · City Einzelzimmer"
+                    - option "10409 · City Einzelzimmer"
+                    - option "10410 · City Einzelzimmer"
+                    - option "10411 · City Einzelzimmer"
+                    - option "10412 · City Einzelzimmer"
+                    - option "10413 · City Einzelzimmer"
+                    - option "10414 · City Einzelzimmer"
+                    - option "10415 · City Einzelzimmer"
+                    - option "10416 · City Einzelzimmer"
+                    - option "10417 · City Einzelzimmer"
+                    - option "10418 · City Einzelzimmer"
+                    - option "10419 · City Einzelzimmer"
+                    - option "10420 · City Einzelzimmer"
+                    - option "10421 · City Einzelzimmer"
+                    - option "10422 · City Einzelzimmer"
+                    - option "10423 · City Einzelzimmer"
+                    - option "10424 · City Einzelzimmer"
+                    - option "10425 · City Einzelzimmer"
+                    - option "10426 · City Einzelzimmer"
+                    - option "10427 · City Einzelzimmer"
+                    - option "10428 · City Einzelzimmer"
+                    - option "10429 · City Einzelzimmer"
+                    - option "10430 · City Einzelzimmer"
+                    - option "10431 · City Einzelzimmer"
+                    - option "10432 · City Einzelzimmer"
+                    - option "10433 · City Einzelzimmer"
+                    - option "10434 · City Einzelzimmer"
+                    - option "10435 · City Einzelzimmer"
+                    - option "10436 · City Einzelzimmer"
+                    - option "10437 · City Einzelzimmer"
+                    - option "10438 · City Einzelzimmer"
+                    - option "10439 · City Einzelzimmer"
+                    - option "10440 · City Einzelzimmer"
+                    - option "10441 · City Einzelzimmer"
+                    - option "10442 · City Einzelzimmer"
+                    - option "10443 · City Einzelzimmer"
+                    - option "10444 · City Einzelzimmer"
+                    - option "10445 · City Einzelzimmer"
+                    - option "10446 · City Einzelzimmer"
+                    - option "10447 · City Einzelzimmer"
+                    - option "10448 · City Einzelzimmer"
+                    - option "10449 · City Einzelzimmer"
+                    - option "10450 · City Einzelzimmer"
+                    - option "10451 · City Einzelzimmer"
+                    - option "10452 · City Einzelzimmer"
+                    - option "10453 · City Einzelzimmer"
+                    - option "10454 · City Einzelzimmer"
+                    - option "10455 · City Einzelzimmer"
+                    - option "10456 · City Einzelzimmer"
+                    - option "10457 · City Einzelzimmer"
+                    - option "10458 · City Einzelzimmer"
+                    - option "10459 · City Einzelzimmer"
+                    - option "10460 · City Einzelzimmer"
+                    - option "10461 · City Einzelzimmer"
+                    - option "10462 · City Einzelzimmer"
+                    - option "10463 · City Einzelzimmer"
+                    - option "10464 · City Einzelzimmer"
+                    - option "10465 · City Einzelzimmer"
+                    - option "10466 · City Einzelzimmer"
+                    - option "10467 · City Einzelzimmer"
+                    - option "10468 · City Einzelzimmer"
+                    - option "10469 · City Einzelzimmer"
+                    - option "10470 · City Einzelzimmer"
+                    - option "10471 · City Einzelzimmer"
+                    - option "10472 · City Einzelzimmer"
+                    - option "10473 · City Einzelzimmer"
+                    - option "10474 · City Einzelzimmer"
+                    - option "10475 · City Einzelzimmer"
+                    - option "10476 · City Einzelzimmer"
+                    - option "10477 · City Einzelzimmer"
+                    - option "10478 · City Einzelzimmer"
+                    - option "10479 · City Einzelzimmer"
+                    - option "10480 · City Einzelzimmer"
+                    - option "10481 · City Einzelzimmer"
+                    - option "10482 · City Einzelzimmer"
+                    - option "10483 · City Einzelzimmer"
+                    - option "10484 · City Einzelzimmer"
+                    - option "10485 · City Einzelzimmer"
+                    - option "10486 · City Einzelzimmer"
+                    - option "10487 · City Einzelzimmer"
+                    - option "10488 · City Einzelzimmer"
+                    - option "10489 · City Einzelzimmer"
+                    - option "10490 · City Einzelzimmer"
+                    - option "10491 · City Einzelzimmer"
+                    - option "10492 · City Einzelzimmer"
+                    - option "10493 · City Einzelzimmer"
+                    - option "10494 · City Einzelzimmer"
+                    - option "10495 · City Einzelzimmer"
+                    - option "10496 · City Einzelzimmer"
+                    - option "10497 · City Einzelzimmer"
+                    - option "10498 · City Einzelzimmer"
+                    - option "10499 · City Einzelzimmer"
+                    - option "10500 · City Einzelzimmer"
+                    - option "10501 · City Einzelzimmer"
+                    - option "10502 · City Einzelzimmer"
+                    - option "10503 · City Einzelzimmer"
+                    - option "10504 · City Einzelzimmer"
+                    - option "10505 · City Einzelzimmer"
+                    - option "10506 · City Einzelzimmer"
+                    - option "10507 · City Einzelzimmer"
+                    - option "10508 · City Einzelzimmer"
+                    - option "10509 · City Einzelzimmer"
+                    - option "10510 · City Einzelzimmer"
+                    - option "10511 · City Einzelzimmer"
+                    - option "10512 · City Einzelzimmer"
+                    - option "10513 · City Einzelzimmer"
+                    - option "10514 · City Einzelzimmer"
+                    - option "10515 · City Einzelzimmer"
+                    - option "10516 · City Einzelzimmer"
+                    - option "10517 · City Einzelzimmer"
+                    - option "10518 · City Einzelzimmer"
+                    - option "10519 · City Einzelzimmer"
+                    - option "10520 · City Einzelzimmer"
+                    - option "10521 · City Einzelzimmer"
+                    - option "10522 · City Einzelzimmer"
+                    - option "10523 · City Einzelzimmer"
+                    - option "10524 · City Einzelzimmer"
+                    - option "10525 · City Einzelzimmer"
+                    - option "10526 · City Einzelzimmer"
+                    - option "10527 · City Einzelzimmer"
+                    - option "10528 · City Einzelzimmer"
+                    - option "10529 · City Einzelzimmer"
+                    - option "10530 · City Einzelzimmer"
+                    - option "10531 · City Einzelzimmer"
+                    - option "10532 · City Einzelzimmer"
+                    - option "10533 · City Einzelzimmer"
+                    - option "10534 · City Einzelzimmer"
+                    - option "10535 · City Einzelzimmer"
+                    - option "10536 · City Einzelzimmer"
+                    - option "10537 · City Einzelzimmer"
+                    - option "10538 · City Einzelzimmer"
+                    - option "10539 · City Einzelzimmer"
+                    - option "10540 · City Einzelzimmer"
+                    - option "10541 · City Einzelzimmer"
+                    - option "10542 · City Einzelzimmer"
+                    - option "10543 · City Einzelzimmer"
+                    - option "10544 · City Einzelzimmer"
+                    - option "10545 · City Einzelzimmer"
+                    - option "10546 · City Einzelzimmer"
+                    - option "10547 · City Einzelzimmer"
+                    - option "10548 · City Einzelzimmer"
+                    - option "10549 · City Einzelzimmer"
+                    - option "10550 · City Einzelzimmer"
+                    - option "10551 · City Einzelzimmer"
+                    - option "10552 · City Einzelzimmer"
+                    - option "10553 · City Einzelzimmer"
+                    - option "10554 · City Einzelzimmer"
+                    - option "10555 · City Einzelzimmer"
+                    - option "10556 · City Einzelzimmer"
+                    - option "10557 · City Einzelzimmer"
+                    - option "10558 · City Einzelzimmer"
+                    - option "10559 · City Einzelzimmer"
+                    - option "10560 · City Einzelzimmer"
+                    - option "10561 · City Einzelzimmer"
+                    - option "10562 · City Einzelzimmer"
+                    - option "10563 · City Einzelzimmer"
+                    - option "10564 · City Einzelzimmer"
+                    - option "10565 · City Einzelzimmer"
+                    - option "10566 · City Einzelzimmer"
+                    - option "10567 · City Einzelzimmer"
+                    - option "10568 · City Einzelzimmer"
+                    - option "10569 · City Einzelzimmer"
+                    - option "10570 · City Einzelzimmer"
+                    - option "10571 · City Einzelzimmer"
+                    - option "10572 · City Einzelzimmer"
+                    - option "10573 · City Einzelzimmer"
+                    - option "10574 · City Einzelzimmer"
+                    - option "10575 · City Einzelzimmer"
+                    - option "10576 · City Einzelzimmer"
+                    - option "10577 · City Einzelzimmer"
+                    - option "10578 · City Einzelzimmer"
+                    - option "10579 · City Einzelzimmer"
+                    - option "10580 · City Einzelzimmer"
+                    - option "10581 · City Einzelzimmer"
+                    - option "10582 · City Einzelzimmer"
+                    - option "10583 · City Einzelzimmer"
+                    - option "10584 · City Einzelzimmer"
+                    - option "10585 · City Einzelzimmer"
+                    - option "10586 · City Einzelzimmer"
+                    - option "10587 · City Einzelzimmer"
+                    - option "10588 · City Einzelzimmer"
+                    - option "10589 · City Einzelzimmer"
+                    - option "10590 · City Einzelzimmer"
+                    - option "10591 · City Einzelzimmer"
+                    - option "10592 · City Einzelzimmer"
+                    - option "10593 · City Einzelzimmer"
+                    - option "10594 · City Einzelzimmer"
+                    - option "10595 · City Einzelzimmer"
+                    - option "10596 · City Einzelzimmer"
+                    - option "10597 · City Einzelzimmer"
+                    - option "10598 · City Einzelzimmer"
+                    - option "10599 · City Einzelzimmer"
+                    - option "10600 · City Einzelzimmer"
+                    - option "10601 · City Einzelzimmer"
+                    - option "10602 · City Einzelzimmer"
+                    - option "10603 · City Einzelzimmer"
+                    - option "10604 · City Einzelzimmer"
+                    - option "10605 · City Einzelzimmer"
+                    - option "10606 · City Einzelzimmer"
+                    - option "10607 · City Einzelzimmer"
+                    - option "10608 · City Einzelzimmer"
+                    - option "10609 · City Einzelzimmer"
+                    - option "10610 · City Einzelzimmer"
+                    - option "10611 · City Einzelzimmer"
+                    - option "10612 · City Einzelzimmer"
+                    - option "10613 · City Einzelzimmer"
+                    - option "10614 · City Einzelzimmer"
+                    - option "10615 · City Einzelzimmer"
+                    - option "10616 · City Einzelzimmer"
+                    - option "10617 · City Einzelzimmer"
+                    - option "10618 · City Einzelzimmer"
+                    - option "10619 · City Einzelzimmer"
+                    - option "10620 · City Einzelzimmer"
+                    - option "10621 · City Einzelzimmer"
+                    - option "10622 · City Einzelzimmer"
+                    - option "10623 · City Einzelzimmer"
+                    - option "10624 · City Einzelzimmer"
+                    - option "10625 · City Einzelzimmer"
+                    - option "10626 · City Einzelzimmer"
+                    - option "10627 · City Einzelzimmer"
+                    - option "10628 · City Einzelzimmer"
+                    - option "10629 · City Einzelzimmer"
+                    - option "10630 · City Einzelzimmer"
+                    - option "10631 · City Einzelzimmer"
+                    - option "10632 · City Einzelzimmer"
+                    - option "10633 · City Einzelzimmer"
+                    - option "10634 · City Einzelzimmer"
+                    - option "10635 · City Einzelzimmer"
+                    - option "10636 · City Einzelzimmer"
+                    - option "10637 · City Einzelzimmer"
+                    - option "10638 · City Einzelzimmer"
+                    - option "10639 · City Einzelzimmer"
+                    - option "10640 · City Einzelzimmer"
+                    - option "10641 · City Einzelzimmer"
+                    - option "10642 · City Einzelzimmer"
+                    - option "10643 · City Einzelzimmer"
+                    - option "10644 · City Einzelzimmer"
+                    - option "10645 · City Einzelzimmer"
+                    - option "10646 · City Einzelzimmer"
+                    - option "10647 · City Einzelzimmer"
+                    - option "10648 · City Einzelzimmer"
+                    - option "10649 · City Einzelzimmer"
+                    - option "10650 · City Einzelzimmer"
+                    - option "10651 · City Einzelzimmer"
+                    - option "10652 · City Einzelzimmer"
+                    - option "10653 · City Einzelzimmer"
+                    - option "10654 · City Einzelzimmer"
+                    - option "10655 · City Einzelzimmer"
+                    - option "10656 · City Einzelzimmer"
+                    - option "10657 · City Einzelzimmer"
+                    - option "10658 · City Einzelzimmer"
+                    - option "10659 · City Einzelzimmer"
+                    - option "10660 · City Einzelzimmer"
+                    - option "10661 · City Einzelzimmer"
+                    - option "10662 · City Einzelzimmer"
+                    - option "10663 · City Einzelzimmer"
+                    - option "10664 · City Einzelzimmer"
+                    - option "10665 · City Einzelzimmer"
+                    - option "10666 · City Einzelzimmer"
+                    - option "10667 · City Einzelzimmer"
+                    - option "10668 · City Einzelzimmer"
+                    - option "10669 · City Einzelzimmer"
+                    - option "10670 · City Einzelzimmer"
+                    - option "10671 · City Einzelzimmer"
+                    - option "10672 · City Einzelzimmer"
+                    - option "10673 · City Einzelzimmer"
+                    - option "10674 · City Einzelzimmer"
+                    - option "10675 · City Einzelzimmer"
+                    - option "10676 · City Einzelzimmer"
+                    - option "10677 · City Einzelzimmer"
+                    - option "10678 · City Einzelzimmer"
+                    - option "10679 · City Einzelzimmer"
+                    - option "10680 · City Einzelzimmer"
+                    - option "10681 · City Einzelzimmer"
+                    - option "10682 · City Einzelzimmer"
+                    - option "10683 · City Einzelzimmer"
+                    - option "10684 · City Einzelzimmer"
+                    - option "10685 · City Einzelzimmer"
+                    - option "10686 · City Einzelzimmer"
+                    - option "10687 · City Einzelzimmer"
+                    - option "10688 · City Einzelzimmer"
+                    - option "10689 · City Einzelzimmer"
+                    - option "10690 · City Einzelzimmer"
+                    - option "10691 · City Einzelzimmer"
+                    - option "10692 · City Einzelzimmer"
+                    - option "10693 · City Einzelzimmer"
+                    - option "10694 · City Einzelzimmer"
+                    - option "10695 · City Einzelzimmer"
+                    - option "10696 · City Einzelzimmer"
+                    - option "10697 · City Einzelzimmer"
+                    - option "10698 · City Einzelzimmer"
+                    - option "10699 · City Einzelzimmer"
+                    - option "10700 · City Einzelzimmer"
+                    - option "10701 · City Einzelzimmer"
+                    - option "10702 · City Einzelzimmer"
+                    - option "10703 · City Einzelzimmer"
+                    - option "10704 · City Einzelzimmer"
+                    - option "10705 · City Einzelzimmer"
+                    - option "10706 · City Einzelzimmer"
+                    - option "10707 · City Einzelzimmer"
+                    - option "10708 · City Einzelzimmer"
+                    - option "10709 · City Einzelzimmer"
+                    - option "10710 · City Einzelzimmer"
+                    - option "10711 · City Einzelzimmer"
+                    - option "10712 · City Einzelzimmer"
+                    - option "10713 · City Einzelzimmer"
+                    - option "10714 · City Einzelzimmer"
+                    - option "10715 · City Einzelzimmer"
+                    - option "10716 · City Einzelzimmer"
+                    - option "10717 · City Einzelzimmer"
+                    - option "10718 · City Einzelzimmer"
+                    - option "10719 · City Einzelzimmer"
+                    - option "10720 · City Einzelzimmer"
+                    - option "10721 · City Einzelzimmer"
+                    - option "10722 · City Einzelzimmer"
+                    - option "10723 · City Einzelzimmer"
+                    - option "10724 · City Einzelzimmer"
+                    - option "10725 · City Einzelzimmer"
+                    - option "10726 · City Einzelzimmer"
+                    - option "10727 · City Einzelzimmer"
+                    - option "10728 · City Einzelzimmer"
+                    - option "10729 · City Einzelzimmer"
+                    - option "10730 · City Einzelzimmer"
+                    - option "10731 · City Einzelzimmer"
+                    - option "10732 · City Einzelzimmer"
+                    - option "10733 · City Einzelzimmer"
+                    - option "10734 · City Einzelzimmer"
+                    - option "10735 · City Einzelzimmer"
+                    - option "10736 · City Einzelzimmer"
+                    - option "10737 · City Einzelzimmer"
+                    - option "10738 · City Einzelzimmer"
+                    - option "10739 · City Einzelzimmer"
+                    - option "10740 · City Einzelzimmer"
+                    - option "10741 · City Einzelzimmer"
+                    - option "10742 · City Einzelzimmer"
+                    - option "10743 · City Einzelzimmer"
+                    - option "10744 · City Einzelzimmer"
+                    - option "10745 · City Einzelzimmer"
+                    - option "10746 · City Einzelzimmer"
+                    - option "10747 · City Einzelzimmer"
+                    - option "10748 · City Einzelzimmer"
+                    - option "10749 · City Einzelzimmer"
+                    - option "10750 · City Einzelzimmer"
+                    - option "10751 · City Einzelzimmer"
+                    - option "10752 · City Einzelzimmer"
+                    - option "10753 · City Einzelzimmer"
+                    - option "10754 · City Einzelzimmer"
+                    - option "10755 · City Einzelzimmer"
+                    - option "10756 · City Einzelzimmer"
+                    - option "10757 · City Einzelzimmer"
+                    - option "10758 · City Einzelzimmer"
+                    - option "10759 · City Einzelzimmer"
+                    - option "10760 · City Einzelzimmer"
+                    - option "10761 · City Einzelzimmer"
+                    - option "10762 · City Einzelzimmer"
+                    - option "10763 · City Einzelzimmer"
+                    - option "10764 · City Einzelzimmer"
+                    - option "10765 · City Einzelzimmer"
+                    - option "10766 · City Einzelzimmer"
+                    - option "10767 · City Einzelzimmer"
+                    - option "10768 · City Einzelzimmer"
+                    - option "10769 · City Einzelzimmer"
+                    - option "10770 · City Einzelzimmer"
+                    - option "10771 · City Einzelzimmer"
+                    - option "10772 · City Einzelzimmer"
+                    - option "10773 · City Einzelzimmer"
+                    - option "10774 · City Einzelzimmer"
+                    - option "10775 · City Einzelzimmer"
+                    - option "10776 · City Einzelzimmer"
+                    - option "10777 · City Einzelzimmer"
+                    - option "10778 · City Einzelzimmer"
+                    - option "10779 · City Einzelzimmer"
+                    - option "10780 · City Einzelzimmer"
+                    - option "10781 · City Einzelzimmer"
+                    - option "10782 · City Einzelzimmer"
+                    - option "10783 · City Einzelzimmer"
+                    - option "10784 · City Einzelzimmer"
+                    - option "10785 · City Einzelzimmer"
+                    - option "10786 · City Einzelzimmer"
+                    - option "10787 · City Einzelzimmer"
+                    - option "10788 · City Einzelzimmer"
+                    - option "10789 · City Einzelzimmer"
+                    - option "10790 · City Einzelzimmer"
+                    - option "10791 · City Einzelzimmer"
+                    - option "10792 · City Einzelzimmer"
+                    - option "10793 · City Einzelzimmer"
+                    - option "10794 · City Einzelzimmer"
+                    - option "10795 · City Einzelzimmer"
+                    - option "10796 · City Einzelzimmer"
+                    - option "10797 · City Einzelzimmer"
+                    - option "10798 · City Einzelzimmer"
+                    - option "10799 · City Einzelzimmer"
+                    - option "10800 · City Einzelzimmer"
+                    - option "10801 · City Einzelzimmer"
+                    - option "10802 · City Einzelzimmer"
+                    - option "10803 · City Einzelzimmer"
+                    - option "10804 · City Einzelzimmer"
+                    - option "10805 · City Einzelzimmer"
+                    - option "10806 · City Einzelzimmer"
+                    - option "10807 · City Einzelzimmer"
+                    - option "10808 · City Einzelzimmer"
+                    - option "10809 · City Einzelzimmer"
+                    - option "10810 · City Einzelzimmer"
+                    - option "10811 · City Einzelzimmer"
+                    - option "10812 · City Einzelzimmer"
+                    - option "10813 · City Einzelzimmer"
+                    - option "10814 · City Einzelzimmer"
+                    - option "10815 · City Einzelzimmer"
+                    - option "10816 · City Einzelzimmer"
+                    - option "10817 · City Einzelzimmer"
+                    - option "10818 · City Einzelzimmer"
+                    - option "10819 · City Einzelzimmer"
+                    - option "10820 · City Einzelzimmer"
+                    - option "10821 · City Einzelzimmer"
+                    - option "10822 · City Einzelzimmer"
+                    - option "10823 · City Einzelzimmer"
+                    - option "10824 · City Einzelzimmer"
+                    - option "10825 · City Einzelzimmer"
+                    - option "10826 · City Einzelzimmer"
+                    - option "10827 · City Einzelzimmer"
+                    - option "10828 · City Einzelzimmer"
+                    - option "10829 · City Einzelzimmer"
+                    - option "10830 · City Einzelzimmer"
+                    - option "10831 · City Einzelzimmer"
+                    - option "10832 · City Einzelzimmer"
+                    - option "10833 · City Einzelzimmer"
+                    - option "10834 · City Einzelzimmer"
+                    - option "10835 · City Einzelzimmer"
+                    - option "10836 · City Einzelzimmer"
+                    - option "10837 · City Einzelzimmer"
+                    - option "10838 · City Einzelzimmer"
+                    - option "10839 · City Einzelzimmer"
+                    - option "10840 · City Einzelzimmer"
+                    - option "10841 · City Einzelzimmer"
+                    - option "10842 · City Einzelzimmer"
+                    - option "10843 · City Einzelzimmer"
+                    - option "10844 · City Einzelzimmer"
+                    - option "10845 · City Einzelzimmer"
+                    - option "10846 · City Einzelzimmer"
+                    - option "10847 · City Einzelzimmer"
+                    - option "10848 · City Einzelzimmer"
+                    - option "10849 · City Einzelzimmer"
+                    - option "10850 · City Einzelzimmer"
+                    - option "10851 · City Einzelzimmer"
+                    - option "10852 · City Einzelzimmer"
+                    - option "10853 · City Einzelzimmer"
+                    - option "10854 · City Einzelzimmer"
+                    - option "10855 · City Einzelzimmer"
+                    - option "10856 · City Einzelzimmer"
+                    - option "10857 · City Einzelzimmer"
+                    - option "10858 · City Einzelzimmer"
+                    - option "10859 · City Einzelzimmer"
+                    - option "10860 · City Einzelzimmer"
+                    - option "10861 · City Einzelzimmer"
+                    - option "10862 · City Einzelzimmer"
+                    - option "10863 · City Einzelzimmer"
+                    - option "10864 · City Einzelzimmer"
+                    - option "10865 · City Einzelzimmer"
+                    - option "10866 · City Einzelzimmer"
+                    - option "10867 · City Einzelzimmer"
+                    - option "10868 · City Einzelzimmer"
+                    - option "10869 · City Einzelzimmer"
+                    - option "10870 · City Einzelzimmer"
+                    - option "10871 · City Einzelzimmer"
+                    - option "10872 · City Einzelzimmer"
+                    - option "10873 · City Einzelzimmer"
+                    - option "10874 · City Einzelzimmer"
+                    - option "10875 · City Einzelzimmer"
+                    - option "10876 · City Einzelzimmer"
+                    - option "10877 · City Einzelzimmer"
+                    - option "10878 · City Einzelzimmer"
+                    - option "10879 · City Einzelzimmer"
+                    - option "10880 · City Einzelzimmer"
+                    - option "10881 · City Einzelzimmer"
+                    - option "10882 · City Einzelzimmer"
+                    - option "10883 · City Einzelzimmer"
+                    - option "10884 · City Einzelzimmer"
+                    - option "10885 · City Einzelzimmer"
+                    - option "10886 · City Einzelzimmer"
+                    - option "10887 · City Einzelzimmer"
+                    - option "10888 · City Einzelzimmer"
+                    - option "10889 · City Einzelzimmer"
+                    - option "10890 · City Einzelzimmer"
+                    - option "10891 · City Einzelzimmer"
+                    - option "10892 · City Einzelzimmer"
+                    - option "10893 · City Einzelzimmer"
+                    - option "10894 · City Einzelzimmer"
+                    - option "10895 · City Einzelzimmer"
+                    - option "10896 · City Einzelzimmer"
+                    - option "10897 · City Einzelzimmer"
+                    - option "10898 · City Einzelzimmer"
+                    - option "10899 · City Einzelzimmer"
+                    - option "10900 · City Einzelzimmer"
+                    - option "10901 · City Einzelzimmer"
+                    - option "10902 · City Einzelzimmer"
+                    - option "10903 · City Einzelzimmer"
+                    - option "10904 · City Einzelzimmer"
+                    - option "10905 · City Einzelzimmer"
+                    - option "10906 · City Einzelzimmer"
+                    - option "10907 · City Einzelzimmer"
+                    - option "10908 · City Einzelzimmer"
+                    - option "10909 · City Einzelzimmer"
+                    - option "10910 · City Einzelzimmer"
+                    - option "10911 · City Einzelzimmer"
+                    - option "10912 · City Einzelzimmer"
+                    - option "10913 · City Einzelzimmer"
+                    - option "10914 · City Einzelzimmer"
+                    - option "10915 · City Einzelzimmer"
+                    - option "10916 · City Einzelzimmer"
+                    - option "10917 · City Einzelzimmer"
+                    - option "10918 · City Einzelzimmer"
+                    - option "10919 · City Einzelzimmer"
+                    - option "10920 · City Einzelzimmer"
+                    - option "10921 · City Einzelzimmer"
+                    - option "10922 · City Einzelzimmer"
+                    - option "10923 · City Einzelzimmer"
+                    - option "10924 · City Einzelzimmer"
+                    - option "10925 · City Einzelzimmer"
+                    - option "10926 · City Einzelzimmer"
+                    - option "10927 · City Einzelzimmer"
+                    - option "10928 · City Einzelzimmer"
+                    - option "10929 · City Einzelzimmer"
+                    - option "10930 · City Einzelzimmer"
+                    - option "10931 · City Einzelzimmer"
+                    - option "10932 · City Einzelzimmer"
+                    - option "10933 · City Einzelzimmer"
+                    - option "10934 · City Einzelzimmer"
+                    - option "10935 · City Einzelzimmer"
+                    - option "10936 · City Einzelzimmer"
+                    - option "10937 · City Einzelzimmer"
+                    - option "10938 · City Einzelzimmer"
+                    - option "10939 · City Einzelzimmer"
+                    - option "10940 · City Einzelzimmer"
+                    - option "10941 · City Einzelzimmer"
+                    - option "10942 · City Einzelzimmer"
+                    - option "10943 · City Einzelzimmer"
+                    - option "10944 · City Einzelzimmer"
+                    - option "10945 · City Einzelzimmer"
+                    - option "10946 · City Einzelzimmer"
+                    - option "10947 · City Einzelzimmer"
+                    - option "10948 · City Einzelzimmer"
+                    - option "10949 · City Einzelzimmer"
+                    - option "10950 · City Einzelzimmer"
+                    - option "10951 · City Einzelzimmer"
+                    - option "10952 · City Einzelzimmer"
+                    - option "10953 · City Einzelzimmer"
+                    - option "10954 · City Einzelzimmer"
+                    - option "10955 · City Einzelzimmer"
+                    - option "10956 · City Einzelzimmer"
+                    - option "10957 · City Einzelzimmer"
+                    - option "10958 · City Einzelzimmer"
+                    - option "10959 · City Einzelzimmer"
+                    - option "10960 · City Einzelzimmer"
+                    - option "10961 · City Einzelzimmer"
+                    - option "10962 · City Einzelzimmer"
+                    - option "10963 · City Einzelzimmer"
+                    - option "10964 · City Einzelzimmer"
+                    - option "10965 · City Einzelzimmer"
+                    - option "10966 · City Einzelzimmer"
+                    - option "10967 · City Einzelzimmer"
+                    - option "10968 · City Einzelzimmer"
+                    - option "10969 · City Einzelzimmer"
+                    - option "10970 · City Einzelzimmer"
+                    - option "10971 · City Einzelzimmer"
+                    - option "10972 · City Einzelzimmer"
+                    - option "10973 · City Einzelzimmer"
+                    - option "10974 · City Einzelzimmer"
+                    - option "10975 · City Einzelzimmer"
+                    - option "10976 · City Einzelzimmer"
+                    - option "10977 · City Einzelzimmer"
+                    - option "10978 · City Einzelzimmer"
+                    - option "10979 · City Einzelzimmer"
+                    - option "10980 · City Einzelzimmer"
+                    - option "10981 · City Einzelzimmer"
+                    - option "10982 · City Einzelzimmer"
+                    - option "10983 · City Einzelzimmer"
+                    - option "10984 · City Einzelzimmer"
+                    - option "10985 · City Einzelzimmer"
+                    - option "10986 · City Einzelzimmer"
+                    - option "10987 · City Einzelzimmer"
+                    - option "10988 · City Einzelzimmer"
+                    - option "10989 · City Einzelzimmer"
+                    - option "10990 · City Einzelzimmer"
+                    - option "10991 · City Einzelzimmer"
+                    - option "10992 · City Einzelzimmer"
+                    - option "10993 · City Einzelzimmer"
+                    - option "10994 · City Einzelzimmer"
+                    - option "10995 · City Einzelzimmer"
+                    - option "10996 · City Einzelzimmer"
+                    - option "10997 · City Einzelzimmer"
+                    - option "10998 · City Einzelzimmer"
+                    - option "10999 · City Einzelzimmer"
+                - generic [ref=f5e2216]:
+                  - text: Priorität
+                  - combobox "Priorität" [ref=f5e2217]:
+                    - option "Niedrig"
+                    - option "Normal" [selected]
+                    - option "Hoch"
+                    - option "Kritisch"
+                - generic [ref=f5e2218]:
+                  - text: Titel
+                  - textbox "Titel" [ref=f5e2219]
+                - generic [ref=f5e2220]:
+                  - text: Zuständig
+                  - textbox "Zuständig" [ref=f5e2221]
+                - generic [ref=f5e2222]:
+                  - text: Fällig
+                  - textbox "Fällig" [ref=f5e2223]: 2026-09-12
+                - generic [ref=f5e2224]:
+                  - checkbox "Auswirkung auf die Zimmerverfügbarkeit erfassen" [checked] [ref=f5e2225]
+                  - text: Auswirkung auf die Zimmerverfügbarkeit erfassen
+                - generic [ref=f5e2226]:
+                  - text: Auswirkung auf Verfügbarkeit
+                  - combobox "Auswirkung auf Verfügbarkeit OOO und Eigennutzung nehmen das Zimmer aus dem Verkauf. Bei OOS bleibt es im Bestand und kann weiterhin zugewiesen werden." [ref=f5e2227]:
+                    - option "Ausser Betrieb – nicht verkaufbar (OOO)" [selected]
+                    - option "Eingeschränkter Betrieb – weiterhin zuweisbar (OOS)"
+                    - option "Eigennutzung – nicht verkaufbar"
+                  - generic [ref=f5e2228]: OOO und Eigennutzung nehmen das Zimmer aus dem Verkauf. Bei OOS bleibt es im Bestand und kann weiterhin zugewiesen werden.
+                - generic [ref=f5e2229]:
+                  - text: Von
+                  - textbox "Von" [ref=f5e2230]: 2026-09-12
+                - generic [ref=f5e2231]:
+                  - text: Bis
+                  - textbox "Bis" [ref=f5e2232]: 2026-09-13
+                - generic [ref=f5e2233]:
+                  - text: Beschreibung
+                  - textbox "Beschreibung" [ref=f5e2234]
+                - button "Wartungsauftrag erstellen" [ref=f5e2236] [cursor=pointer]
+              - article [ref=f5e2238]:
+                - generic [ref=f5e2239]:
+                  - generic [ref=f5e2240]: Zimmer 301 · Hoch · Offen
+                  - strong [ref=f5e2241]: Klimaanlage prüfen
+                  - generic [ref=f5e2242]: Technik-Team · Verfügbarkeitszeitraum erfasst
+                - button "Erledigt & freigeben" [ref=f5e2243] [cursor=pointer]
+  - generic:
+    - status:
+      - generic:
+        - generic:
+          - paragraph
+          - button "Schließen": ×

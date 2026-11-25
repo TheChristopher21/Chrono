@@ -15,6 +15,10 @@ import {
 import '../../styles/HourlyDashboardScoped.css'; // Einheitliches Design verwenden
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 import '../../styles/PercentageDashboardScoped.css';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 
 const PercentageWeekOverview = ({
                                     t,
@@ -24,6 +28,7 @@ const PercentageWeekOverview = ({
                                     weeklyWorked,
                                     weeklyExpected,
                                     weeklyDiff,
+                                    calculationStatus,
                                     handleManualPunch,
                                     openCorrectionModal,
                                     userProfile,
@@ -110,19 +115,25 @@ const PercentageWeekOverview = ({
                 <button onClick={handleCurrentWeek} className="button-secondary">{t('currentWeek', 'Aktuelle Woche')}</button>
             </div>
 
+            <CalculationStatusNotice status={calculationStatus} />
+
             <div className="weekly-summary">
                 <div className="summary-item">
                     <span className="summary-label">{t('actualTime', 'Ist (Woche)')}</span>
-                    <span className="summary-value">{minutesToHHMM(weeklyWorked)}</span>
+                    <span className="summary-value">
+                        {formatCalculatedMinutes(weeklyWorked, calculationStatus, minutesToHHMM)}
+                    </span>
                 </div>
                 <div className="summary-item">
                     <span className="summary-label">{t('expected', 'Soll (Woche)')}</span>
-                    <span className="summary-value">{minutesToHHMM(weeklyExpected)}</span>
+                    <span className="summary-value">
+                        {formatCalculatedMinutes(weeklyExpected, calculationStatus, minutesToHHMM)}
+                    </span>
                 </div>
                 <div className="summary-item">
                     <span className="summary-label">{t('weekBalance', 'Saldo (Woche)')}</span>
-                    <span className={`summary-value ${(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}`}>
-                        {minutesToHHMM(weeklyDiff)}
+                    <span className={`summary-value ${Number.isFinite(weeklyDiff) && weeklyDiff < 0 ? 'balance-negative' : 'balance-positive'}`}>
+                        {formatCalculatedMinutes(weeklyDiff, calculationStatus, minutesToHHMM)}
                     </span>
                 </div>
             </div>
@@ -133,7 +144,9 @@ const PercentageWeekOverview = ({
                     const summary = dailySummaries.find(s => s.date === isoDate);
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
-                    const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                    const rawVacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                    const hasWorkedEntries = Boolean(summary?.entries?.length);
+                    const vacationToday = hasWorkedEntries ? null : rawVacationToday;
                     const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                     const holidayName = holidaysForUserCanton && holidaysForUserCanton[isoDate];
 
@@ -267,9 +280,10 @@ PercentageWeekOverview.propTypes = {
     dailySummaries: PropTypes.array.isRequired,
     monday: PropTypes.instanceOf(Date).isRequired,
     setMonday: PropTypes.func.isRequired,
-    weeklyWorked: PropTypes.number.isRequired,
-    weeklyExpected: PropTypes.number.isRequired,
-    weeklyDiff: PropTypes.number.isRequired,
+    weeklyWorked: PropTypes.number,
+    weeklyExpected: PropTypes.number,
+    weeklyDiff: PropTypes.number,
+    calculationStatus: PropTypes.oneOf(Object.values(CALCULATION_STATUS)).isRequired,
     handleManualPunch: PropTypes.func.isRequired,
     openCorrectionModal: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,

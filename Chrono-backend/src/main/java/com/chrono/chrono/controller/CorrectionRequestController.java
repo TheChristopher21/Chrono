@@ -1,16 +1,19 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.security.CompanyScope;
 import com.chrono.chrono.dto.AdminCorrectionRequestDTO;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.CorrectionRequestService;
+import com.chrono.chrono.services.UserPermissionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +41,9 @@ public class CorrectionRequestController {
     @Autowired
     private CorrectionRequestService correctionRequestService;
 
+    @Autowired
+    private UserPermissionService userPermissionService;
+
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createCorrectionRequest(
@@ -58,8 +64,8 @@ public class CorrectionRequestController {
             boolean isSuperAdmin = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
             boolean isAdminOfSameCompany = false;
             if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
-                if (requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                    requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                if (CompanyScope.companyFor(requestingUser) != null && targetUser.getCompany() != null &&
+                    CompanyScope.companyFor(requestingUser).getId().equals(targetUser.getCompany().getId())) {
                     isAdminOfSameCompany = true;
                 }
             }
@@ -111,6 +117,12 @@ public class CorrectionRequestController {
         try {
             User currentUser = userRepo.findByUsername(principalName)
                     .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_VIEW,
+                    "Keine Berechtigung für das Admin-Dashboard."
+            );
 
             List<AdminCorrectionRequestDTO> requests;
 
@@ -118,18 +130,18 @@ public class CorrectionRequestController {
             boolean isSuperAdmin = currentUser.getRoles().stream()
                     .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
 
-            if (isSuperAdmin) {
+            if (isSuperAdmin && CompanyScope.selection() == null) {
                 requests = correctionRequestService.getAllRequestsForAdminDashboard();
             } else {
-                if (currentUser.getCompany() == null) {
+                if (CompanyScope.companyFor(currentUser) == null) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
                 }
-                requests = correctionRequestService.getRequestsByCompanyForAdminDashboard(currentUser.getCompany().getId());
+                requests = correctionRequestService.getRequestsByCompanyForAdminDashboard(CompanyScope.companyFor(currentUser).getId());
             }
 
             return ResponseEntity.ok(requests);
 
-        } catch (SecurityException ex) {
+        } catch (AccessDeniedException | SecurityException ex) {
             logger.warn("Sicherheitsverletzung beim Abrufen aller Korrekturanträge durch {}: {}", principalName, ex.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
         } catch (Exception e) {
@@ -174,9 +186,38 @@ public class CorrectionRequestController {
     // Add this new method inside the CorrectionRequestController class
 
     @GetMapping("/user/{username}")
-    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<CorrectionRequest>> getRequestsForUser(@PathVariable String username) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CorrectionRequest>> getRequestsForUser(@PathVariable String username, Principal principal) {
+        if (!canAccessUserRecords(principal, username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(correctionRequestService.getRequestsForUser(username));
+    }
+
+    private boolean canAccessUserRecords(Principal principal, String targetUsername) {
+        if (principal == null || targetUsername == null || targetUsername.isBlank()) {
+            return false;
+        }
+        User requester = userRepo.findByUsername(principal.getName())
+                .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+        User target = userRepo.findByUsername(targetUsername)
+                .orElseThrow(() -> new SecurityException("Zielbenutzer nicht in der Datenbank gefunden."));
+        CompanyScope.requireTarget(target);
+        if (requester.getUsername().equals(target.getUsername())) {
+            return true;
+        }
+        if (hasRole(requester, "ROLE_SUPERADMIN")) {
+            return true;
+        }
+        return hasRole(requester, "ROLE_ADMIN")
+                && CompanyScope.companyFor(requester) != null
+                && target.getCompany() != null
+                && CompanyScope.companyFor(requester).getId().equals(target.getCompany().getId());
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null && user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> roleName.equals(role.getRoleName()));
     }
 
     @PostMapping("/approve/{id}")
@@ -187,6 +228,14 @@ public class CorrectionRequestController {
             Principal principal
     ) {
         try {
+            User currentUser = userRepo.findByUsername(principal.getName())
+                    .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
             CorrectionRequest approvedRequest = correctionRequestService.approveRequest(id, comment, principal.getName());
             return ResponseEntity.ok(approvedRequest);
         } catch (SecurityException e) {
@@ -207,7 +256,15 @@ public class CorrectionRequestController {
             Principal principal
     ) {
          try {
-            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment);
+            User currentUser = userRepo.findByUsername(principal.getName())
+                    .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
+            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment, principal.getName());
             return ResponseEntity.ok(deniedRequest);
         } catch (SecurityException e) {
             logger.warn("Sicherheitsverletzung beim Ablehnen des Korrekturantrags ID {} durch {}: {}", id, principal.getName(), e.getMessage());

@@ -9,7 +9,16 @@ import java.util.List;
 @Service
 public class NfcService {
 
+    public static void validateBlockNumber(int blockNumber) {
+        // APDU encodes the block in one unsigned byte; reject aliases before
+        // any narrowing cast or hardware access can change their meaning.
+        if (blockNumber < 0 || blockNumber > 255) {
+            throw new IllegalArgumentException("NFC block must be between 0 and 255");
+        }
+    }
+
     public String readBlock(int blockNumber) throws Exception {
+        validateBlockNumber(blockNumber);
         TerminalFactory factory = TerminalFactory.getDefault();
         List<CardTerminal> terminals = factory.terminals().list();
 
@@ -181,6 +190,7 @@ public class NfcService {
      * Die bestehende writeBlock-Methode – ohne Schlüssel-Iteration.
      */
     public String writeBlock(int blockNumber, String hexData) throws Exception {
+        validateBlockNumber(blockNumber);
         if (hexData.length() != 32) {
             throw new Exception("Ungültige Länge! 32 Hex-Zeichen (16 Bytes) erwartet.");
         }
